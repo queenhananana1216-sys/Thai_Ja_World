@@ -1,0 +1,3 @@
+
+> Build error occurred
+[SyntaxError: Unexpected token '}']

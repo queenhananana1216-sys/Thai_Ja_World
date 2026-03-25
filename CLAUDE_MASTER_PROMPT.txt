@@ -1,0 +1,150 @@
+================================================================================
+Claude용 마스터 명령 프롬프트 — 태자 월드 (Thai Ja World)
+워크스페이스 루트를 연 뒤, 아래 전체를 복사해 Claude(또는 Cursor 에이전트)에 붙여넣기.
+================================================================================
+
+[역할]
+너는 Next.js 15 App Router + Supabase 프로젝트 "태자 월드"의 구현 파트너다.
+기존 봇 파이프라인은 동작 우선 — 불필요한 리네임/대규모 이동 금지. 신규 기능은 아래
+폴더·파일 규칙을 따른다.
+
+[제품 방향 — 디자인·카피]
+- "동네 로컬 홍보용 정적 사이트" ❌  /  "매일 들어오는 커뮤니티 허브" ⭕
+- 리조트·호텔·숙박예약·침실 인테리어 럭셔리 컷 금지. 정보 밀도 있는 카드·피드 UI.
+- 홈: 뉴스 한 줄(봇/게시 연동), 이용자 게시판 티저, 네비게이션(홈·로컬·게시판 등) 명확.
+- 로컬: 홍보 업체 목록 → 클릭 시 업체 **정보 상세**만 (LINE 등 링크 연결). **1차에서는 미니홈피(커스텀 공간) 비활성·제외.**
+- 도메인: thaijaworld.com (메타데이터·canonical 은 app/layout.tsx 와 환경에 맞출 것)
+
+[1차 출시 범위 — 확정 (이후 단계적 확장)]
+반드시 포함:
+1) 로컬 페이지: 관리자가 등록한 홍보 업체 노출, 카드/리스트 → 상세에서 설명·연락·**LINE 링크**
+   (외부 앱/웹 연결)까지. `local_businesses` 중심, slug 상세 `app/local/[slug]/page.tsx`.
+2) 게시판: (a) 봇이 쌓인 일일 기사를 **게시판/메인 한 줄**로 노출 가능하게
+   (구현 선택: `posts` 카테고리 `bot_news` 등 + 봇/크론이 글 insert, 또는
+   `processed_news` 조회 + 홈 teaser — 단, 사용자 경험은 "오늘의 한 줄" + 게시판 목록).
+   (b) **이용자 자유 게시판** 글쓰기·목록·상세·댓글(최소) 활성화 (`posts`/`comments`, RLS·인증).
+3) **관리자 페이지**: 웹 디자인 수정 없이 가능한 한 **업체 CRUD**(순서·노출·티어·링크),
+   게시/봇글 관련 설정·숨김 등 **운영 데이터는 admin 에서** 처리. (service_role 서버 라우트
+   또는 Supabase policy + 역할 테이블 — 구현 시 보안 점검 필수.)
+4) **제보(1차)**: UI에 **「익명 제보」** 진입점 — 클릭 시 **텔레그램 / 왓츠앱 / 라인**
+   링크로 이동(환경변수로 URL 관리: 예 `NEXT_PUBLIC_TIP_TELEGRAM_URL`,
+   `NEXT_PUBLIC_TIP_WHATSAPP_URL`, `NEXT_PUBLIC_TIP_LINE_URL`). 페이지에 **채널별로
+   어떤 정보가 메신저에 노출되는지(플랫폼이 식별자를 저장할 수 있음)** 한국어 안내 문구.
+   **법률·개인정보**: "완전 익명"과 "메신저로 제보"는 기술적으로 동시에 주장하기 어려움 —
+   카피는 「비공개 제보 채널」+ 동의/안내로 정리. 검증: 운영자가 텔레그램·왓츠앱으로 받은
+   내용을 **수동 검토**한 뒤 게시/반려; 자동 신원 확정은 Phase 2(봇 연동 등)로 미룰 수 있음.
+   DB `reports` 는 웹에서 제보 시에만 쓰거나, admin이 메신저 제보를 **수동 등록**해도 됨.
+
+[로그·백업 — SSD / 로컬 디스크]
+- 클라우드(Vercel)·Supabase는 호스트 SSD에 로그가 있어도 **사용자 PC의 E:\ SSD로 자동
+  미러링되지 않음.** "모든 로그가 SSD에 백업"은 아래 중 하나로 구현한다.
+  A) **운영 PC에서 주기 실행**(작업 스케줄러): 스크립트가 Supabase API·SQL 또는 dump로
+     `bot_actions`, (선택) `reports`, 감사 테이블을 끌어와 `E:\Backup\thaijaworld\YYYY-MM-DD\`
+     에 JSON/CSV/SQL 저장. 레포 템플릿: `scripts/backup_logs_to_ssd.ps1` (환경 변수로 URL·키 주입).
+  B) Supabase **자동 백업**(유료 플랜) + 주기적으로 프로젝트 소유자가 **다운로드**해 SSD에 보관.
+  C) 로그 스트림(Logflare 등) → 주기 export → 로컬.
+- 1차 구현: 최소 **A) 로컬 스크립트 + 폴더 규칙**을 문서화하고 env에 Supabase service role은
+  스크립트 전용 `.env.backup`(git 제외)로만 사용.
+
+1차에서 제외 (다음 Phase):
+- 가게 미니홈피( JSON 꾸미기 )·`shop_announcements` 운영 UI (DB는 있어도 1차 UX 비노출 가능).
+- 번개장터·구인구직 전용 UI/테이블.
+- 날씨·환율 실 API (자리만 잡거나 mock).
+
+[기술 스택]
+- Next.js 15, React 19, TypeScript (strict), `@/*` → `./src/*`
+ 서버 전용 Supabase: `src/bots/adapters/supabaseClient.ts` (SERVICE_ROLE, server-only)
+- 봇 API: `app/api/bot/*/route.ts` — 경로 유지 권장
+
+[DB 스키마 정본]
+- SQL 파일: `supabase/thai_ja_world_v2_initial.sql`
+- 주요 테이블 매핑 (코드·타입 네이밍은 snake_case 그대로 DB와 일치):
+  profiles, plazas, posts, comments,
+  local_businesses (mini_home jsonb, tier: premium|standard|basic),
+  shop_announcements (kind: notice|special_menu|hours|other),
+  reports,
+  news_sources, raw_news, processed_news, summaries, publish_logs,
+  bot_actions
+
+[절대 건드리기 전 확인할 기존 파일 — 봇]
+- `src/bots/orchestrator/runCollectLoop.ts`
+- `src/bots/orchestrator/runProcessNewsLoop.ts`
+- `src/bots/actions/collectArticles.ts` / `persistRawNews.ts` / `summarizeAndPersistNews.ts`
+- `src/bots/logging/botActionLogger.ts`
+- `app/api/bot/collect/route.ts` / `process-news/route.ts`
+→ 변경 시 반드시 "왜 필요한지" 한 줄 주석 + 동작 동일성 유지.
+
+[신규 코드 권장 폴더 구조 — 찾기 쉽게]
+(프로젝트 루트 = package.json 이 있는 폴더)
+
+app/
+  layout.tsx, page.tsx
+  local/
+    page.tsx                 ← 홍보 업체 목록
+    [slug]/page.tsx          ← 업체 정보 상세 (LINE 등) — 1차는 미니홈 아님
+  community/                 ← 게시판 루트 (경로명 팀 합의: /community/board 등)
+    boards/
+      page.tsx
+      [postId]/page.tsx
+  admin/                     ← 기존 bot-actions 외, local_businesses·posts 운영 CRUD 추가
+  api/
+    bot/                     ← 기존 유지
+    (향후 public read API는 app/api/public/ 또는 Route Handler만 추가)
+
+src/
+  bots/                      ← 봇 전용 (기존)
+  lib/
+    supabase/
+      browser.ts             ← anon 키, 클라이언트 컴포넌트용 (필요 시 생성)
+      server.ts              ← 서버 컴포넌트용 클라이언트 (필요 시; service와 혼동 금지)
+    utils/
+  types/
+    taeworld.ts              ← 공개 도메인 타입 (Post, Shop, Announcement 등 UI용)
+  features/                  ← 도메인별 묶음 (선택, 규모 커지면)
+    news/
+    shops/
+    community/
+
+components/                  ← (선택) 루트에 둘 경우 `src/components/` 로 통일해도 됨
+  layout/
+  community/
+  local/
+  weather/
+
+네이밍 규칙:
+- 컴포넌트: PascalCase 파일 (예: `NewsStrip.tsx`, `ShopCard.tsx`)
+- 유틸·쿼리: camelCase 파일 (예: `fetchProcessedNews.ts`)
+- DB 컬럼/테이블 참조 문자열: DB와 동일 snake_case
+- 한 라우트 전용 컴포넌트는 `app/.../_components/`에 두어도 됨 (admin 패턴과 통일)
+
+[구현 우선순위 — Phase]
+Phase 1 = 1차 출시 (위 [1차 출시 범위]와 동일)
+- 홈: 봇 뉴스 "한 줄" + 게시판으로 이어지는 링크, 이용자 게시판 최신 티저.
+- `app/local/page.tsx` + `app/local/[slug]/page.tsx` — 목록·상세·LINE 링크. mini_home 꾸미기 없음.
+- `app/community/...` — 게시판 목록/글쓰기/상세/댓글(최소), 카테고리로 봇뉴스 vs 자유글 구분 권장.
+- `app/admin/...` — 업체 CRUD, (선택) 글 숨김/고정; 기존 `admin/bot-actions` 유지.
+- 봇 기사를 게시판에 넣는 경로: 별도 서버 작업(예: process-news 후 `posts` insert) 또는
+  스케줄 API — 기존 `src/bots` 최소 침습.
+
+Phase 2 (확장)
+- 가게 미니홈(`mini_home` JSON)·`shop_announcements` 관리자/점주 UI.
+- 번개장터·구인구직.
+
+Phase 3
+- 날씨·환율 실 API, 개인화·추가 모더레이션 등.
+
+[환경 변수 참고]
+- `.env.example` 참조. `OPENAI_API_KEY`, `NEWS_*`, `SUPABASE_*` 등.
+- 클라이언트에 SERVICE_ROLE 절대 노출 금지.
+
+[작업 방식 지시]
+1) 먼저 레포에서 위 경로를 검색해 중복 구현이 없는지 확인한다.
+2) 작은 PR 단위: 한 Phase 안에서도 "홈 레이아웃만" 등 쪼갠다.
+3) 새 SQL이 필요하면 `supabase/` 에 번호 migration 추가, 정본 initial 과 충돌 나지 않게
+   설명 주석을 단다.
+4) 완료 시: 변경 파일 목록, 로컬 확인 방법(`npm run dev`), 필요한 env 키를 요약한다.
+
+================================================================================
+(끝) 위 박스 전체를 붙여넣은 뒤, 맨 아래에 한 줄로 목표를 덧붙이면 좋음.
+예: "Phase 1만 구현하고 홈에서 Supabase 뉴스 10개 뿌려줘"
+================================================================================

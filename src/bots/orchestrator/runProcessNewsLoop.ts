@@ -4,6 +4,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { isDuplicate, logFail, logSkip, logStart, logSuccess } from '../logging/botActionLogger';
+import { sendNewsSummarySlackDigest } from '../actions/notifyNewsSlack';
 import { summarizeAndPersistNewsBatch } from '../actions/summarizeAndPersistNews';
 
 export interface RunProcessNewsOptions {
@@ -83,14 +84,14 @@ export async function runProcessNewsLoop(
     };
   }
 
-  if (!batch.openaiConfigured) {
-    await logSkip(rowId, 'OPENAI_API_KEY 미설정 — 요약 스킵');
-    console.warn('[RunProcessNews] OPENAI_API_KEY 없음');
+  if (!batch.llmConfigured) {
+    await logSkip(rowId, 'LLM 미설정 — OPENAI_API_KEY 또는 LOCAL_LLM_BASE_URL 필요');
+    console.warn('[RunProcessNews] 요약용 LLM 미설정 (NEWS_SUMMARY_PROVIDER / 키·URL 확인)');
     return {
       run_id,
       skipped: false,
       success: false,
-      error: 'OPENAI_API_KEY not configured',
+      error: 'LLM not configured (OPENAI_API_KEY or LOCAL_LLM_BASE_URL)',
       output: { batch: batch.results },
     };
   }
@@ -141,6 +142,8 @@ export async function runProcessNewsLoop(
   console.log(
     `[RunProcessNews] ✓ SUCCESS run_id=${run_id} ok=${okCount} fail=${failCount}`,
   );
+
+  await sendNewsSummarySlackDigest(batch.slackDigest);
 
   return {
     run_id,

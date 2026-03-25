@@ -133,6 +133,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal Server Error';
     console.error('[API /api/bot/news-pipeline]', message);
-    return NextResponse.json({ status: 'error', error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ status: 'error', error: message }, { status: 500 });
   }
 }

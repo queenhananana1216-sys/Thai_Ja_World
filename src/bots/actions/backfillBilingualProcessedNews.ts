@@ -3,7 +3,9 @@
  */
 
 import { getServerSupabaseClient } from '../adapters/supabaseClient';
+import { sendNewsSummarySlackDigest } from './notifyNewsSlack';
 import {
+  isNewsSummaryLlmConfigured,
   summarizeAndPersistNewsBatch,
   type SummarizeBatchResult,
 } from './summarizeAndPersistNews';
@@ -52,7 +54,8 @@ export async function backfillBilingualProcessedNews(
       deleted_ids: 0,
       summarize: {
         results: [],
-        openaiConfigured: Boolean(process.env.OPENAI_API_KEY?.trim()),
+        llmConfigured: isNewsSummaryLlmConfigured(),
+        openaiConfigured: isNewsSummaryLlmConfigured(),
         dbError: `[processed_news select] ${error.message}`,
       },
     };
@@ -71,7 +74,8 @@ export async function backfillBilingualProcessedNews(
         deleted_ids: 0,
         summarize: {
           results: [],
-          openaiConfigured: Boolean(process.env.OPENAI_API_KEY?.trim()),
+          llmConfigured: isNewsSummaryLlmConfigured(),
+          openaiConfigured: isNewsSummaryLlmConfigured(),
           dbError: `[processed_news delete] ${delErr.message}`,
         },
       };
@@ -79,6 +83,7 @@ export async function backfillBilingualProcessedNews(
   }
 
   const summarize = await summarizeAndPersistNewsBatch(sumLimit);
+  await sendNewsSummarySlackDigest(summarize.slackDigest);
   return {
     scanned: rows?.length ?? 0,
     deleted_ids: toDelete.length,

@@ -98,6 +98,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal Server Error';
     console.error('[API /api/bot/collect] Unhandled error:', message);
-    return NextResponse.json({ status: 'error', error: 'Internal Server Error' }, { status: 500 });
+    // 디버깅용: 로컬에서 500 원인을 바로 확인할 수 있게 메시지 노출
+    return NextResponse.json(
+      { status: 'error', error: message },
+      { status: 500 },
+    );
   }
 }

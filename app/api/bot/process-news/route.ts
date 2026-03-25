@@ -7,7 +7,8 @@
  * Body (JSON, 모두 선택):
  * { "limit": 8, "idempotencyKey": "optional-key" }
  *
- * 필요 환경 변수: OPENAI_API_KEY, Supabase service role (기존과 동일)
+ * 필요 환경 변수: Supabase service role + 요약용 LLM
+ *   (OPENAI_API_KEY 또는 NEWS_SUMMARY_PROVIDER=local + LOCAL_LLM_BASE_URL 등, summarizeAndPersistNews.ts 주석 참고)
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
@@ -88,7 +89,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           error: result.error,
           output: result.output,
         },
-        { status: result.error === 'OPENAI_API_KEY not configured' ? 503 : 500 },
+        {
+          status:
+            result.error === 'LLM not configured (OPENAI_API_KEY or LOCAL_LLM_BASE_URL)' ||
+            result.error === 'OPENAI_API_KEY not configured'
+              ? 503
+              : 500,
+        },
       );
     }
 

@@ -81,8 +81,9 @@ async function callOpenAiBilingualSummary(
     '원문 언어와 관계없이 아래 여덟 필드를 모두 채우세요.',
     '반드시 아래 키만 가진 JSON 객체 한 개만 출력하세요 (다른 텍스트 금지):',
     '{"ko_title":"","ko_summary":"","ko_blurb":"","th_title":"","th_summary":"","th_blurb":""}',
-    '- ko_title, ko_summary: 자연스러운 한국어. 짧은 헤드라인 + 2~4문장 요약.',
-    '- ko_blurb: 한국어 한두 문장, 태국·한국 동네 커뮤니티 톤. 가볍게 위트 있게(과한 개그·비속어·혐오·정치 선동 금지).',
+    '- ko_title: 한국어 한 줄 헤드라인(팩트 기반, 제공된 제목/본문/출처 범위 내에서만). 영어 원문 제목을 그대로 복사하지 말고 한국어로 재작성.',
+    '- ko_summary: 한국어 2~4문장 요약. 반드시 첫 문장부터 “클릭을 부르는 훅”이 되게 작성하되, 검증되지 않은 내용(예: 확정된 범죄 여부, 특정 개인 신상, 확실하지 않은 수사 결과)은 절대 단정하지 말 것. 원문에 근거가 없으면 “보도에 따르면/관계자는/현지 매체는” 같은 완충 표현을 사용.',
+    '- ko_blurb: 피드 카드에 쓰는 1문장(짧은 첫줄) 훅. 40~90자 내외. 자극적이어도 되지만 과장/허위/명예훼손/혐오/정치 선동 금지. “보도에 따르면” 같은 근거 표현을 우선.',
     '- th_title, th_summary: 자연스러운 태국어(공손한 뉴스 톤).',
     '- th_blurb: 태국어로 같은 뉘앙스의 짧은 한마디(길이는 한국어 blurb 와 비슷하게).',
   ].join('\n');
@@ -99,7 +100,7 @@ async function callOpenAiBilingualSummary(
         {
           role: 'system',
           content:
-            'You are a news editor for a Thailand–Korea bilingual community site "Thai Ja World". Output valid JSON only. Korean fields: ko_title, ko_summary, ko_blurb. Thai fields: th_title, th_summary, th_blurb. Blurbs are short witty asides for the feed card — playful but tasteful, never offensive.',
+            'You are a news editor for a Thailand–Korea bilingual community site "Thai Ja World". Output valid JSON only. Korean fields: ko_title, ko_summary, ko_blurb. Thai fields: th_title, th_summary, th_blurb.\n\nRules:\n- Do NOT invent facts. Use only what is present in the provided title/body and keep it consistent with the source URL.\n- Avoid defamation: never state uncertain allegations as confirmed facts.\n- Avoid identifying private individuals; if names are not clearly provided in the input, use neutral wording.\n- Blurbs are click-worthy but responsible: short, attention-grabbing first lines without offensive, hateful, or political persuasion content.\n- Output only the JSON object specified.',
         },
         { role: 'user', content: userBlock },
       ],

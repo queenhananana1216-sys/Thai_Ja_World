@@ -13,15 +13,19 @@ function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise
   return fetch(input, { ...init, signal: ctrl.signal }).finally(() => clearTimeout(tid));
 }
 
-export function createBrowserClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !key) {
-    throw new Error('[BrowserClient] NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 필요');
-  }
-
+export function tryCreateBrowserClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!url || !key) return null;
   return createSupabaseBrowserClient(url, key, {
     global: { fetch: fetchWithTimeout },
   });
+}
+
+export function createBrowserClient() {
+  const client = tryCreateBrowserClient();
+  if (!client) {
+    throw new Error('[BrowserClient] NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 필요');
+  }
+  return client;
 }

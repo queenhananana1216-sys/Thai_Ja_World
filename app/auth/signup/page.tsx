@@ -174,6 +174,10 @@ function SignupForm() {
       <DailyNewsPushOptIn />
 
       <p className="auth-footer-links" style={{ marginTop: 22 }}>
+        <Link href={`/auth/phone?next=${encodeURIComponent(safeNext)}`} className="auth-footer-links__a">
+          {a.signupPhoneLink}
+        </Link>
+        <span style={{ margin: '0 0.35em', opacity: 0.5 }}>·</span>
         {a.hasAccount}{' '}
         <Link href={`/auth/login?next=${encodeURIComponent(safeNext)}`} className="auth-footer-links__a">
           {a.loginLink}

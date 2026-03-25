@@ -115,6 +115,10 @@ function LoginForm() {
         <Link href={`/auth/forgot?next=${encodeURIComponent(safeNext)}`} className="auth-footer-links__a">
           {a.forgotPassword}
         </Link>
+        <span style={{ margin: '0 0.5em', opacity: 0.4 }}>|</span>
+        <Link href={`/auth/phone?next=${encodeURIComponent(safeNext)}`} className="auth-footer-links__a">
+          {a.loginPhoneLink}
+        </Link>
       </p>
 
       <div className="auth-divider">

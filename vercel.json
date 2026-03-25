@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/news",
-      "schedule": "0 2,8,14,20 * * *"
+      "schedule": "0 2 * * *"
     },
     {
       "path": "/api/cron/purge-news",

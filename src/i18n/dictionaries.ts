@@ -223,6 +223,28 @@ export type Dictionary = {
     passwordTooLong: string;
     passwordNeedMix: string;
     passwordBanned: string;
+    /** Supabase Phone OTP (/auth/phone) */
+    phoneAuthTitle: string;
+    phoneAuthSubtitle: string;
+    phoneAuthPhoneLabel: string;
+    phoneAuthPhonePlaceholder: string;
+    phoneAuthPhoneHint: string;
+    phoneAuthNickOptional: string;
+    phoneAuthSendSms: string;
+    phoneAuthSendSmsLoading: string;
+    phoneAuthOtpLabel: string;
+    phoneAuthOtpHint: string;
+    phoneAuthOtpSentPrefix: string;
+    phoneAuthOtpSentSuffix: string;
+    phoneAuthVerify: string;
+    phoneAuthVerifyLoading: string;
+    phoneAuthResendSms: string;
+    phoneAuthChangeNumber: string;
+    phoneAuthInvalidPhone: string;
+    phoneAuthNoSupabase: string;
+    phoneAuthFooterEmailSignup: string;
+    signupPhoneLink: string;
+    loginPhoneLink: string;
   };
   minihome: {
     pageTitle: string;
@@ -485,6 +507,29 @@ const ko: Dictionary = {
     passwordTooLong: '비밀번호는 {max}자 이하여야 해요.',
     passwordNeedMix: '비밀번호에 글자와 숫자를 각각 한 글자 이상 넣어 주세요.',
     passwordBanned: '너무 흔한 비밀번호예요. 다른 조합을 써 주세요.',
+    phoneAuthTitle: '휴대폰 문자로 가입·로그인',
+    phoneAuthSubtitle:
+      '문자로 받은 인증번호만 확인합니다(통신사 본인인증 아님). Supabase에서 Phone 제공업체를 연결해야 합니다.',
+    phoneAuthPhoneLabel: '휴대폰 번호',
+    phoneAuthPhonePlaceholder: '0812345678 또는 +66812345678',
+    phoneAuthPhoneHint:
+      '태국: 081… 형식 또는 +66… / 한국: 010… 형식 또는 +82… — 하이픈·띄어쓰기는 자동으로 무시돼요.',
+    phoneAuthNickOptional: '첫 가입 시에만 프로필 이름으로 쓰여요. (선택)',
+    phoneAuthSendSms: '인증 문자 보내기',
+    phoneAuthSendSmsLoading: '보내는 중…',
+    phoneAuthOtpLabel: '인증번호',
+    phoneAuthOtpHint: 'SMS에 적힌 숫자 6자리(또는 안내된 자릿수)를 입력해 주세요.',
+    phoneAuthOtpSentPrefix: '다음 번호로 인증 문자를 보냈어요: ',
+    phoneAuthOtpSentSuffix: '',
+    phoneAuthVerify: '확인하고 시작하기',
+    phoneAuthVerifyLoading: '확인 중…',
+    phoneAuthResendSms: '문자 다시 받기',
+    phoneAuthChangeNumber: '번호 바꾸기',
+    phoneAuthInvalidPhone: '번호 형식을 확인해 주세요. (태국 081… / +66…, 한국 010… / +82…)',
+    phoneAuthNoSupabase: '앱에 Supabase 연결 정보가 없어요. 관리자에게 문의해 주세요.',
+    phoneAuthFooterEmailSignup: '이메일로 가입',
+    signupPhoneLink: '휴대폰 문자로 가입·로그인',
+    loginPhoneLink: '휴대폰 번호로 로그인',
   },
   minihome: {
     pageTitle: '내 미니홈',
@@ -748,6 +793,29 @@ const th: Dictionary = {
     passwordTooLong: 'รหัสผ่านต้องไม่เกิน {max} ตัว',
     passwordNeedMix: 'ใส่ทั้งตัวอักษรและตัวเลขอย่างน้อยอย่างละหนึ่งตัว',
     passwordBanned: 'รหัสนี้ค่อนข้างธรรมดา — ลองชุดอื่น',
+    phoneAuthTitle: 'สมัคร/เข้าสู่ระบบด้วย SMS',
+    phoneAuthSubtitle:
+      'ยืนยันเฉพาะรหัสใน SMS (ไม่ใช่ยืนยันตัวตนแบบผู้ให้บริการ) — ต้องเปิด Phone + SMS provider ใน Supabase',
+    phoneAuthPhoneLabel: 'เบอร์โทรศัพท์',
+    phoneAuthPhonePlaceholder: '0812345678 หรือ +66812345678',
+    phoneAuthPhoneHint:
+      'ไทย: 081… หรือ +66… / เกาหลี: 010… หรือ +82… — ขีด/ช่องว่างจะตัดออกให้',
+    phoneAuthNickOptional: 'ใช้ตอนสมัครครั้งแรกเท่านั้น (ไม่บังคับ)',
+    phoneAuthSendSms: 'ส่ง SMS ยืนยัน',
+    phoneAuthSendSmsLoading: 'กำลังส่ง…',
+    phoneAuthOtpLabel: 'รหัสยืนยัน',
+    phoneAuthOtpHint: 'ใส่ตัวเลข 6 หลัก (หรือตาม SMS)',
+    phoneAuthOtpSentPrefix: 'ส่งไปที่ ',
+    phoneAuthOtpSentSuffix: ' แล้ว',
+    phoneAuthVerify: 'ยืนยันและเริ่ม',
+    phoneAuthVerifyLoading: 'กำลังตรวจ…',
+    phoneAuthResendSms: 'ส่ง SMS อีกครั้ง',
+    phoneAuthChangeNumber: 'เปลี่ยนเบอร์',
+    phoneAuthInvalidPhone: 'รูปแบบเบอร์ไม่ถูกต้อง',
+    phoneAuthNoSupabase: 'ยังไม่ได้ตั้งค่า Supabase ในแอป',
+    phoneAuthFooterEmailSignup: 'สมัครด้วยอีเมล',
+    signupPhoneLink: 'สมัคร/เข้าสู่ระบบด้วย SMS',
+    loginPhoneLink: 'เข้าสู่ระบบด้วยเบอร์โทร',
   },
   minihome: {
     pageTitle: 'มินิโฮมของฉัน',

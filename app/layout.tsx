@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import FxRemoteWidget from './_components/FxRemoteWidget';
 import GlobalNav from './_components/GlobalNav';
 import Providers from './_components/Providers';
+import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { FX_SNAPSHOT_FALLBACK } from '@/lib/fx/fetchUsdFx';
@@ -29,12 +32,14 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();
   const d = getDictionary(locale);
+  const adminSession = await resolveAdminAccess();
 
   return (
     <html lang={locale}>
       <body>
         <Providers>
           <GlobalNav
+            showAdminConsole={!!adminSession}
             dict={{
               nav: d.nav,
               brandSuffix: d.brandSuffix,
@@ -51,6 +56,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             panelTitle={d.home.fxTitle}
           />
         </Providers>
+        <Analytics />
+        <SpeedInsights />
         <footer className="site-footer">{d.footer}</footer>
       </body>
     </html>

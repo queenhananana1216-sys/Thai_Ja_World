@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Analytics } from '@vercel/analytics/next';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import FxRemoteWidget from './_components/FxRemoteWidget';
+import VercelSpeedInsights from './_components/VercelSpeedInsights';
 import GlobalNav from './_components/GlobalNav';
 import Providers from './_components/Providers';
 import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
@@ -57,7 +57,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           />
         </Providers>
         <Analytics />
-        <SpeedInsights />
+        <VercelSpeedInsights />
         <footer className="site-footer">{d.footer}</footer>
       </body>
     </html>

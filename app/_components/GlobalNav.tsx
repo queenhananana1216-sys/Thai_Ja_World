@@ -14,9 +14,11 @@ const HREFS = ['/', '/local', '/community/boards'] as const;
 
 type Props = {
   dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board'>;
+  /** 관리자 화이트리스트(또는 개발용 허용 세션)일 때만 표시 */
+  showAdminConsole?: boolean;
 };
 
-export default function GlobalNav({ dict }: Props) {
+export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
   const pathname = usePathname();
   const labels = [dict.nav.home, dict.nav.local, dict.nav.community];
 
@@ -56,15 +58,17 @@ export default function GlobalNav({ dict }: Props) {
           }}
         />
         <LanguageSwitch labels={dict.lang} />
-        <Link
-          href="/admin"
-          className={
-            'global-header__console' +
-            (pathname.startsWith('/admin') ? ' global-header__console--active' : '')
-          }
-        >
-          {dict.nav.botConsole}
-        </Link>
+        {showAdminConsole && (
+          <Link
+            href="/admin"
+            className={
+              'global-header__console global-header__console--subtle' +
+              (pathname.startsWith('/admin') ? ' global-header__console--active' : '')
+            }
+          >
+            {dict.nav.botConsole}
+          </Link>
+        )}
       </nav>
     </header>
   );

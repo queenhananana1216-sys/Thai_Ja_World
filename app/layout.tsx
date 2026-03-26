@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import FxRemoteWidget from './_components/FxRemoteWidget';
 import GlobalNav from './_components/GlobalNav';
 import Providers from './_components/Providers';
@@ -52,6 +53,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           />
         </Providers>
         <footer className="site-footer">{d.footer}</footer>
+        <SpeedInsights />
       </body>
     </html>
   );

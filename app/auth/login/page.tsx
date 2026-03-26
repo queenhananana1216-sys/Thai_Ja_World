@@ -10,6 +10,7 @@ import TurnstileField from '../_components/TurnstileField';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { getTurnstileErrorHint } from '@/lib/auth/getTurnstileErrorHint';
 
 const HAS_TURNSTILE_UI = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim());
 
@@ -48,7 +49,13 @@ function LoginForm() {
 
     const captcha = await verifyTurnstileOnSubmit(HAS_TURNSTILE_UI, turnstileTokenRef.current);
     if (!captcha.ok) {
-      setError(captcha.reason === 'missing_token' ? a.turnstileIncomplete : a.turnstileVerifyFailed);
+      if (captcha.reason === 'missing_token') {
+        setError(a.turnstileIncomplete);
+        return;
+      }
+
+      const hint = getTurnstileErrorHint(captcha.codes);
+      setError(hint ? `${a.turnstileVerifyFailed} ${hint}` : a.turnstileVerifyFailed);
       return;
     }
 

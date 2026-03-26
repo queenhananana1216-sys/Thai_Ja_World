@@ -1,0 +1,41 @@
+# llangkka terminal prompt (PowerShell 7 / WSL bash 공용)
+
+add_newline = false
+
+# 애니/모션 최소화: 심볼 위주 + 모듈은 필요한 것만 사용
+format = "$directory$git_branch$git_status$cmd_duration$character"
+
+[character]
+success_symbol = " >"
+error_symbol = " !"
+vicmd_symbol = " :"
+
+[directory]
+truncation_length = 3
+truncate_to_repo = false
+read_only = " RO"
+
+[git_branch]
+symbol = " git:"
+truncation_length = 25
+
+[git_status]
+style = "bold red"
+
+[cmd_duration]
+min_time = 500
+format = " took [$duration] "
+
+# 가상환경(venv/conda) 표시를 숨김
+[python]
+disabled = true
+
+[conda]
+disabled = true
+
+[nix_shell]
+disabled = true
+
+[env_var]
+disabled = true
+

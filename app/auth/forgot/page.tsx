@@ -5,6 +5,7 @@ import { useState, type FormEvent } from 'react';
 import AuthPageShell from '../_components/AuthPageShell';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { getAuthSiteOrigin } from '@/lib/auth/getAuthSiteOrigin';
 
 export default function ForgotPasswordPage() {
   const { d } = useClientLocaleDictionary();
@@ -20,7 +21,7 @@ export default function ForgotPasswordPage() {
     setInfo(null);
     setLoading(true);
     const sb = createBrowserClient();
-    const origin = window.location.origin;
+    const origin = getAuthSiteOrigin();
     const { error: err } = await sb.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${origin}/auth/reset`,
     });

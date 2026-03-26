@@ -85,13 +85,13 @@ export async function runProcessNewsLoop(
   }
 
   if (!batch.llmConfigured) {
-    await logSkip(rowId, 'LLM 미설정 — OPENAI_API_KEY 또는 LOCAL_LLM_BASE_URL 필요');
+    await logSkip(rowId, 'LLM 미설정 — OPENAI_API_KEY / GEMINI_API_KEY / LOCAL_LLM_BASE_URL 중 하나 필요');
     console.warn('[RunProcessNews] 요약용 LLM 미설정 (NEWS_SUMMARY_PROVIDER / 키·URL 확인)');
     return {
       run_id,
       skipped: false,
       success: false,
-      error: 'LLM not configured (OPENAI_API_KEY or LOCAL_LLM_BASE_URL)',
+      error: 'LLM not configured (OPENAI_API_KEY, GEMINI_API_KEY, or LOCAL_LLM_BASE_URL)',
       output: { batch: batch.results },
     };
   }

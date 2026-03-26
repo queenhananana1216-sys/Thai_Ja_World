@@ -57,6 +57,25 @@ export default async function BoardsListPage({
 
   const listTitle = catFilter ? categoryLabel(catFilter, locale) : d.board.pageTitle;
 
+  // 리액션 카운트(좋아요/공감) — 목록에는 버튼 없이 숫자만 표시
+  const postIds = (list ?? []).map((p) => String(p.id));
+  const countsByPostId: Record<string, { like: number; heart: number }> = {};
+  if (postIds.length > 0) {
+    const { data: reactionRows } = await supabase
+      .from('post_reactions')
+      .select('post_id, kind')
+      .in('post_id', postIds);
+
+    for (const r of reactionRows ?? []) {
+      const pid = String(r.post_id);
+      const kind = String(r.kind);
+      const cur = countsByPostId[pid] ?? { like: 0, heart: 0 };
+      if (kind === 'like') cur.like += 1;
+      if (kind === 'heart') cur.heart += 1;
+      countsByPostId[pid] = cur;
+    }
+  }
+
   return (
     <div className="page-body board-page">
       <div className="board-toolbar">
@@ -86,6 +105,7 @@ export default async function BoardsListPage({
 
       {list.map((p) => {
         const pid = p.id as string;
+        const counts = countsByPostId[String(pid)] ?? { like: 0, heart: 0 };
         const thumb = Array.isArray(p.image_urls) && p.image_urls.length > 0 ? p.image_urls[0] : null;
         const excerpt = String(p.content ?? '').replace(/\s+/g, ' ').slice(0, 140);
         const cat = categoryLabel(String(p.category), locale);
@@ -95,7 +115,7 @@ export default async function BoardsListPage({
           <Link key={pid} href={`/community/boards/${pid}`} className="board-post" style={{ display: 'block' }}>
             <div className="board-post__meta">
               {cat} · {author} · {formatDate(p.created_at as string | null)} · {d.board.comments}{' '}
-              {p.comment_count ?? 0} · {d.board.views} {p.view_count ?? 0}
+              {p.comment_count ?? 0} · {d.board.views} {p.view_count ?? 0} · 좋아요 {counts.like} · 공감 {counts.heart}
             </div>
             <h2 className="board-post__title">{p.title as string}</h2>
             <p className="board-post__excerpt">{excerpt}</p>

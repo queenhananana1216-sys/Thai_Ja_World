@@ -7,6 +7,7 @@
  */
 import Link from 'next/link';
 import { formatLastSeenAdmin } from '@/lib/admin/formatLastSeen';
+import { getKstDayRangeISO, isTimestampInKstDay } from '@/lib/admin/kstDayRange';
 import { queryUserDirectory } from '@/lib/admin/userDirectoryQuery';
 
 interface PageProps {
@@ -20,6 +21,7 @@ function firstString(v: string | string[] | undefined): string | undefined {
 }
 
 export default async function AdminUsersPage({ searchParams }: PageProps) {
+  const kstToday = getKstDayRangeISO();
   const params = await searchParams;
   const q = firstString(params.q) ?? '';
   const sortRaw = firstString(params.sort);
@@ -36,7 +38,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   }
 
   return (
-    <main style={{ padding: '20px 24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <main className="admin-page" style={{ maxWidth: '1400px', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
         <h1 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>이용자 디렉터리</h1>
         <span style={{ fontSize: '11px', color: '#6b7280' }}>
@@ -127,6 +129,8 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
             {rows.map((r) => {
               const hot = Number(r.reports_total) >= 5;
               const seen = formatLastSeenAdmin(r.last_seen_at);
+              const joinedToday =
+                !!r.created_at && isTimestampInKstDay(r.created_at, kstToday);
               return (
                 <tr
                   key={r.profile_id}
@@ -137,6 +141,18 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                 >
                   <td style={{ padding: '10px 12px', fontWeight: hot ? 700 : 500 }}>
                     {r.display_name ?? '—'}
+                    {joinedToday && (
+                      <span
+                        style={{
+                          marginLeft: '6px',
+                          fontSize: '10px',
+                          color: '#0369a1',
+                          fontWeight: 700,
+                        }}
+                      >
+                        오늘 가입
+                      </span>
+                    )}
                     {hot && (
                       <span
                         style={{

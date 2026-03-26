@@ -22,7 +22,7 @@ export default function NewsQueueClient({ items }: { items: QueueItem[] }) {
 
   async function submit(
     id: string,
-    action: 'publish' | 'draft',
+    action: 'publish' | 'draft' | 'delete',
     fields: Pick<QueueItem, 'ko_title' | 'ko_summary' | 'th_title' | 'th_summary'>,
   ) {
     setMsg(null);
@@ -35,10 +35,14 @@ export default function NewsQueueClient({ items }: { items: QueueItem[] }) {
         body: JSON.stringify({
           processed_news_id: id,
           action,
-          ko_title: fields.ko_title,
-          ko_summary: fields.ko_summary,
-          th_title: fields.th_title,
-          th_summary: fields.th_summary,
+          ...(action === 'delete'
+            ? {}
+            : {
+                ko_title: fields.ko_title,
+                ko_summary: fields.ko_summary,
+                th_title: fields.th_title,
+                th_summary: fields.th_summary,
+              }),
         }),
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string };
@@ -46,7 +50,11 @@ export default function NewsQueueClient({ items }: { items: QueueItem[] }) {
         setMsg(j.error ?? `오류 (${res.status})`);
         return;
       }
-      setMsg(action === 'publish' ? '게시했습니다.' : '초안 저장했습니다.');
+      if (action === 'delete') {
+        setMsg('삭제했습니다. (수집 원문·요약·댓글까지 DB에서 제거됩니다)');
+      } else {
+        setMsg(action === 'publish' ? '게시했습니다.' : '초안 저장했습니다.');
+      }
       router.refresh();
     } finally {
       setBusyId(null);
@@ -99,7 +107,7 @@ function DraftCard({
   busy: boolean;
   onSubmit: (
     id: string,
-    action: 'publish' | 'draft',
+    action: 'publish' | 'draft' | 'delete',
     fields: Pick<QueueItem, 'ko_title' | 'ko_summary' | 'th_title' | 'th_summary'>,
   ) => Promise<void>;
 }) {
@@ -183,6 +191,36 @@ function DraftCard({
           }}
         >
           초안만 저장
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            if (
+              !window.confirm(
+                '이 기사를 완전히 삭제할까요?\n수집된 원문(raw_news)·요약·댓글이 DB에서 지워지며, 같은 피드가 다시 들어오면 새로 수집될 수 있습니다.',
+              )
+            ) {
+              return;
+            }
+            void onSubmit(item.id, 'delete', {
+              ko_title: koTitle,
+              ko_summary: koSummary,
+              th_title: thTitle,
+              th_summary: thSummary,
+            });
+          }}
+          style={{
+            padding: '8px 14px',
+            marginLeft: 'auto',
+            background: '#fef2f2',
+            color: '#b91c1c',
+            border: '1px solid #fecaca',
+            borderRadius: 6,
+            cursor: busy ? 'wait' : 'pointer',
+          }}
+        >
+          삭제(올리지 않음)
         </button>
       </div>
     </div>

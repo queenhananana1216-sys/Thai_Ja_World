@@ -12,6 +12,8 @@ import { checkPasswordStrength, type PasswordPolicyMessages } from '@/lib/auth/p
 import { PENDING_VERIFICATION_EMAIL_KEY } from '@/lib/auth/pendingVerification';
 import { verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { getAuthSiteOrigin } from '@/lib/auth/getAuthSiteOrigin';
+import { getTurnstileErrorHint } from '@/lib/auth/getTurnstileErrorHint';
 
 const HAS_TURNSTILE_UI = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim());
 
@@ -71,13 +73,19 @@ function SignupForm() {
 
     const captcha = await verifyTurnstileOnSubmit(HAS_TURNSTILE_UI, turnstileTokenRef.current);
     if (!captcha.ok) {
-      setError(captcha.reason === 'missing_token' ? a.turnstileIncomplete : a.turnstileVerifyFailed);
+      if (captcha.reason === 'missing_token') {
+        setError(a.turnstileIncomplete);
+        return;
+      }
+
+      const hint = getTurnstileErrorHint(captcha.codes);
+      setError(hint ? `${a.turnstileVerifyFailed} ${hint}` : a.turnstileVerifyFailed);
       return;
     }
 
     setLoading(true);
     const sb = createBrowserClient();
-    const origin = window.location.origin;
+    const origin = getAuthSiteOrigin();
     const { data, error: err } = await sb.auth.signUp({
       email: email.trim(),
       password,

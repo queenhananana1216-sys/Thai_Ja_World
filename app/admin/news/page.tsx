@@ -63,11 +63,12 @@ export default async function AdminNewsQueuePage() {
     <div style={{ padding: '20px 24px', maxWidth: 920 }}>
       <h1 style={{ fontSize: 18, margin: '0 0 8px' }}>뉴스 초안 큐</h1>
       <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.55 }}>
-        자동 번역·요약만 된 기사는 여기에 쌓입니다. 한·태 제목·요약을 손보고{' '}
-        <strong>홈에 게시</strong>를 누르면 홈·뉴스 상세에 노출됩니다.
+        봇이 수집·요약한 기사는 <code>NEWS_PUBLISH_MODE=manual</code> 일 때 여기(초안)에만 쌓입니다. 한·태 제목·요약을
+        고친 뒤 <strong>홈에 게시</strong>하면 홈·뉴스 상세에 노출됩니다. 올리지 않을 기사는{' '}
+        <strong>삭제(올리지 않음)</strong>으로 원문·요약·댓글을 DB에서 함께 제거할 수 있습니다.
         <br />
-        배치 예: 매일 <code>news-pipeline</code>에 <code>skipProcess: true</code>로 수집만 → 주 1~2회{' '}
-        <code>process-news</code>로 번역 적재 → 이 화면에서 일주일치를 나눠 게시.
+        Vercel Cron은 매일 한국 이른 아침(약 06시) 전후에 수집+요약을 한 번 돌리도록 설정되어 있습니다(
+        <code>vercel.json</code>·UTC 기준).
       </p>
       {error ? (
         <p style={{ color: '#b91c1c', marginTop: 16 }}>

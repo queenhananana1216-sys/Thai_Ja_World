@@ -210,6 +210,32 @@ a:hover {
   opacity: 1;
 }
 
+/* 관리자 진입 — 눈에 띄는 버튼 대신 헤더 톤에 묻힌 텍스트 링크 */
+.global-header__console--subtle {
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--tj-header-muted);
+  padding: 2px 6px;
+  border: none;
+  border-radius: 4px;
+  opacity: 0.72;
+  letter-spacing: 0.03em;
+}
+
+.global-header__console--subtle:hover {
+  opacity: 1;
+  color: #ece6f5;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.global-header__console--subtle.global-header__console--active {
+  opacity: 1;
+  color: #4c3d62;
+  background: linear-gradient(135deg, #fce7f3, #e9d5ff);
+  border: 1px solid rgba(196, 181, 253, 0.45);
+}
+
 .lang-switch {
   display: inline-flex;
   border-radius: 999px;

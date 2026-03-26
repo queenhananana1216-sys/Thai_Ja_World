@@ -19,6 +19,34 @@ import type { BotPolicyMode, IncidentSignal } from '../types/botTypes';
 
 const BOT_NAME = 'self_healer' as const;
 
+function incidentTypeKo(type: IncidentSignal['type']): string {
+  switch (type) {
+    case 'high_error_rate':
+      return '오류율 급증';
+    case 'service_unreachable':
+      return '서비스 연결 불가';
+    case 'bot_failed_streak':
+      return '봇 연속 실패';
+    default:
+      return String(type);
+  }
+}
+
+function severityKo(severity: IncidentSignal['severity']): string {
+  if (severity === 1) return '긴급(1)';
+  if (severity === 2) return '주의(2)';
+  return '안내(3)';
+}
+
+/** Slack 본문용 — 사용자에게 보이는 문구만 한국어로 통일 */
+function formatIncidentSlackLines(signal: IncidentSignal, runId: string): string {
+  return [
+    `• 유형: ${incidentTypeKo(signal.type)}`,
+    `• 심각도: ${severityKo(signal.severity)}`,
+    `• 실행 ID: \`${runId}\``,
+  ].join('\n');
+}
+
 // ── Slack 알림 (선택적) ───────────────────────────────────────────────────
 
 /**
@@ -81,8 +109,8 @@ export async function handleIncident(
   const rawMode = process.env.BOT_POLICY_MODE ?? 'manual';
   const policy_mode: BotPolicyMode = rawMode === 'auto' ? 'auto' : 'manual';
 
-  const incidentLabel = `type=${signal.type} severity=${signal.severity}`;
-  console.warn(`[SelfHeal] 인시던트 감지 — ${incidentLabel} policy=${policy_mode}`);
+  const incidentLabelLog = `type=${signal.type} severity=${signal.severity}`;
+  console.warn(`[SelfHeal] 인시던트 감지 — ${incidentLabelLog} policy=${policy_mode}`);
 
   // ── auto 모드 ──────────────────────────────────────────────────────────
   if (policy_mode === 'auto') {
@@ -125,10 +153,9 @@ export async function handleIncident(
     }
 
     await sendSlackAlert(
-      `🚨 *태자 월드 봇* — 인시던트 감지 (auto-heal dry-run)\n` +
-        `• ${incidentLabel}\n` +
-        `• run_id: \`${run_id}\`\n` +
-        `• Phase 3 에서 실제 복구 실행 예정`,
+      `🚨 *태자월드 봇* — 인시던트 감지 (자동 복구 연습 모드)\n` +
+        `${formatIncidentSlackLines(signal, run_id)}\n` +
+        `• 안내: 아직 실제 조치는 하지 않고 기록만 합니다. 이후 단계에서 자동 복구를 연결할 예정입니다.`,
     );
 
     return { run_id, policy_mode, action_taken: 'healed' };
@@ -158,10 +185,10 @@ export async function handleIncident(
   }
 
   await sendSlackAlert(
-    `⚠️ *태자 월드 봇* — 인시던트 수동 검토 필요\n` +
-      `• ${incidentLabel}\n` +
-      `• 자동 복구 비활성화 (BOT_POLICY_MODE=manual)\n` +
-      `• run_id: \`${run_id}\``,
+    `⚠️ *태자월드 봇* — 인시던트 수동 검토 필요\n` +
+      `${formatIncidentSlackLines(signal, run_id)}\n` +
+      `• 자동 복구: 꺼짐 (환경 변수 \`BOT_POLICY_MODE=manual\`)\n` +
+      `• 대시보드·로그에서 원인 확인 후 조치해 주세요.`,
   );
 
   return {

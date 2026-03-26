@@ -1,0 +1,8 @@
+{
+  "priority": ["th", "en"],
+  "pairs": {
+    "th->ko": "translate-th_ko",
+    "en->ko": "translate-en_ko"
+  }
+}
+

@@ -10,6 +10,7 @@ import AuthPageShell from '../_components/AuthPageShell';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { PENDING_VERIFICATION_EMAIL_KEY } from '@/lib/auth/pendingVerification';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { getAuthSiteOrigin } from '@/lib/auth/getAuthSiteOrigin';
 
 function maskEmail(email: string): string {
   const t = email.trim();
@@ -64,7 +65,7 @@ function CheckEmailInner() {
     setResendErr(null);
     setResendBusy(true);
     const sb = createBrowserClient();
-    const origin = window.location.origin;
+    const origin = getAuthSiteOrigin();
     const { error } = await sb.auth.resend({
       type: 'signup',
       email: email.trim(),

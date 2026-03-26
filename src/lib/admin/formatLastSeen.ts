@@ -1,5 +1,5 @@
-/** 관리자 테이블용: 최근 활동 ≈ 온라인 근접 (하트비트 간격과 맞춤) */
-const ONLINE_MS = 3 * 60 * 1000;
+/** 관리자 테이블·개요 카드와 동일: 최근 5분 내 하트비트면 활동 중으로 표시 */
+const ONLINE_MS = 5 * 60 * 1000;
 
 export function formatLastSeenAdmin(iso: string | null | undefined): {
   relative: string;

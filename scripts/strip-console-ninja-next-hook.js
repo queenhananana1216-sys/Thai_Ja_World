@@ -16,19 +16,25 @@ const target = path.join(
   'bundle5.js',
 );
 
-if (!fs.existsSync(target)) {
+try {
+  if (!fs.existsSync(target)) {
+    process.exit(0);
+  }
+
+  let s = fs.readFileSync(target, 'utf8');
+  const start = '/* build-hook-start */';
+  const end = '/* build-hook-end */';
+  const i = s.indexOf(start);
+  const j = s.indexOf(end);
+  if (i < 0 || j <= i) {
+    process.exit(0);
+  }
+
+  const stripped = s.slice(0, i) + s.slice(j + end.length);
+  fs.writeFileSync(target, stripped);
+  console.log('[strip-console-ninja-next-hook] Removed build hook from next bundle5.js');
+} catch (e) {
+  // Vercel/CI 등에서 node_modules 쓰기가 막히면 설치 전체가 실패하지 않도록 함
+  console.warn('[strip-console-ninja-next-hook] skipped:', e instanceof Error ? e.message : e);
   process.exit(0);
 }
-
-let s = fs.readFileSync(target, 'utf8');
-const start = '/* build-hook-start */';
-const end = '/* build-hook-end */';
-const i = s.indexOf(start);
-const j = s.indexOf(end);
-if (i < 0 || j <= i) {
-  process.exit(0);
-}
-
-const stripped = s.slice(0, i) + s.slice(j + end.length);
-fs.writeFileSync(target, stripped);
-console.log('[strip-console-ninja-next-hook] Removed build hook from next bundle5.js');

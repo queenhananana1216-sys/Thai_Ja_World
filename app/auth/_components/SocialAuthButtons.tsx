@@ -2,6 +2,7 @@
 
 import type { Dictionary } from '@/i18n/dictionaries';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { getAuthSiteOrigin } from '@/lib/auth/getAuthSiteOrigin';
 
 const GOOGLE_ENABLED = process.env.NEXT_PUBLIC_AUTH_GOOGLE === '1';
 const SHOW_DEV_GOOGLE_HINT =
@@ -40,7 +41,7 @@ export default function SocialAuthButtons({ next, social }: Props) {
 
   async function oauthGoogle() {
     const sb = createBrowserClient();
-    const origin = window.location.origin;
+    const origin = getAuthSiteOrigin();
     await sb.auth.signInWithOAuth({
       provider: 'google',
       options: {

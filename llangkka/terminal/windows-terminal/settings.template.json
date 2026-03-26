@@ -1,0 +1,27 @@
+{
+  "$schema": "https://aka.ms/terminal-profiles-schema",
+  "profiles": {
+    "defaults": {
+      "fontFace": "D2CodingLigature Nerd Font Mono",
+      "fontSize": 13,
+      "useAcrylic": false
+    },
+    "list": [
+      {
+        "guid": "{D9B7F2F2-2B6B-4A62-A7E6-7D0E3A7B2C11}",
+        "name": "llangkka PowerShell 7",
+        "commandline": "\"C:\\Program Files\\PowerShell\\7\\pwsh.exe\" -NoLogo",
+        "startingDirectory": "e:\\02_Workspace\\llangkka",
+        "hidden": false
+      },
+      {
+        "guid": "{D9B7F2F2-2B6B-4A62-A7E6-7D0E3A7B2C12}",
+        "name": "llangkka Ubuntu",
+        "commandline": "wsl.exe -d Ubuntu",
+        "startingDirectory": "e:\\02_Workspace\\llangkka",
+        "hidden": false
+      }
+    ]
+  }
+}
+

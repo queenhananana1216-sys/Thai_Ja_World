@@ -17,7 +17,7 @@ function formatDigest(items: NewsSlackDigestItem[]): string {
     const urlLine = it.source_url?.trim() ? `\n원문: ${it.source_url}` : '';
     return `【${i + 1}】 ${title}\n${body}${urlLine}`;
   });
-  let text = `${header}\n${blocks.join('\n\n────────────\n\n')}`;
+  let text = `${header}\n${blocks.join('\n\n─── 다음 기사 ───\n\n')}`;
   if (text.length > MAX_TEXT) {
     text = `${text.slice(0, MAX_TEXT - 20)}\n\n…(생략)`;
   }

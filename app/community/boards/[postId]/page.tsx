@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import PostComments, { type CommentRow } from '../_components/PostComments';
+import PostReactionsPanel from '../_components/PostReactionsPanel';
 import { createServerClient } from '@/lib/supabase/server';
 import { categoryLabel } from '@/lib/community/postCategories';
 import { getDictionary } from '@/i18n/dictionaries';
@@ -79,6 +80,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
           {cat} · {d.board.author} {authorName} · {formatDate(post.created_at as string | null)} ·{' '}
           {d.board.views} {post.view_count ?? 0}
         </div>
+        <PostReactionsPanel postId={postId} loginNextPath={path} />
         <h1 className="board-title" style={{ margin: '12px 0 16px' }}>
           {post.title as string}
         </h1>

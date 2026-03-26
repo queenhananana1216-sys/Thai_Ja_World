@@ -1,5 +1,7 @@
 /**
- * 관리자 뉴스 초안 편집·게시 (세션 쿠키 + ADMIN_ALLOWED_EMAILS 규칙과 /admin 레이아웃 동일)
+ * 관리자 뉴스 초안 편집·게시·삭제 (세션 쿠키 + ADMIN_ALLOWED_EMAILS 와 /admin 레이아웃 동일)
+ *
+ * action: publish | draft | delete — delete 는 미게시(published=false) 만, raw_news 삭제로 요약·댓글 cascade
  */
 import { NextResponse } from 'next/server';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
@@ -11,7 +13,7 @@ export const runtime = 'nodejs';
 
 type Body = {
   processed_news_id?: string;
-  action?: 'publish' | 'draft';
+  action?: 'publish' | 'draft' | 'delete';
   ko_title?: string;
   ko_summary?: string;
   th_title?: string;
@@ -32,33 +34,52 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabaseAuth.auth.getUser();
   if (!allowedActor(user?.email)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return NextResponse.json({ error: '권한이 없습니다. 관리자 이메일로 로그인했는지 확인하세요.' }, { status: 403 });
   }
 
   let body: Body;
   try {
     body = (await req.json()) as Body;
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    return NextResponse.json({ error: '요청 본문이 올바른 JSON이 아닙니다.' }, { status: 400 });
   }
 
   const id = typeof body.processed_news_id === 'string' ? body.processed_news_id.trim() : '';
   if (!id) {
-    return NextResponse.json({ error: 'processed_news_id required' }, { status: 400 });
+    return NextResponse.json({ error: 'processed_news_id 가 필요합니다.' }, { status: 400 });
   }
 
-  const action = body.action === 'draft' ? 'draft' : 'publish';
   const admin = createServiceRoleClient();
 
   const { data: row, error: fetchErr } = await admin
     .from('processed_news')
-    .select('id, clean_body')
+    .select('id, clean_body, published, raw_news_id')
     .eq('id', id)
     .maybeSingle();
 
   if (fetchErr || !row) {
-    return NextResponse.json({ error: fetchErr?.message ?? 'Not found' }, { status: 404 });
+    return NextResponse.json(
+      { error: fetchErr?.message ?? '해당 뉴스 초안을 찾을 수 없습니다.' },
+      { status: 404 },
+    );
   }
+
+  if (body.action === 'delete') {
+    if (row.published !== false) {
+      return NextResponse.json(
+        { error: '이미 홈에 게시된 기사는 여기서 삭제할 수 없습니다. 먼저 비공개 처리가 필요하면 별도 요청이 필요합니다.' },
+        { status: 400 },
+      );
+    }
+    const rawId = row.raw_news_id as string;
+    const { error: delErr } = await admin.from('raw_news').delete().eq('id', rawId);
+    if (delErr) {
+      return NextResponse.json({ error: delErr.message }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, deleted: true });
+  }
+
+  const action = body.action === 'draft' ? 'draft' : 'publish';
 
   const nextBody = mergeBilingualCleanBody(row.clean_body as string | null, {
     ko_title: body.ko_title,

@@ -2,10 +2,11 @@
  * summarizeAndPersistNews.ts — raw_news → LLM 한국어·태국어 제목·요약 → processed_news / summaries
  *
  * 환경 변수:
- * - NEWS_SUMMARY_PROVIDER: openai | local | auto (기본 auto)
+ * - NEWS_SUMMARY_PROVIDER: openai | gemini | local | auto (기본 auto)
  * - OpenAI: OPENAI_API_KEY, OPENAI_MODEL (기본 gpt-4o-mini)
+ * - Gemini(OpenAI 호환 엔드포인트): GEMINI_API_KEY, GEMINI_MODEL (기본 gemini-2.0-flash), GEMINI_OPENAI_BASE_URL (선택)
  * - 로컬(OpenAI 호환): LOCAL_LLM_BASE_URL (예: http://127.0.0.1:11434/v1), LOCAL_LLM_MODEL (기본 llama3.2), LOCAL_LLM_API_KEY (선택)
- * - auto: 키가 있으면 OpenAI 우선, 429/쿼터류 실패 시 LOCAL_LLM_BASE_URL 이 있으면 로컬로 폴백
+ * - auto: OpenAI 키 있으면 우선, 429/쿼터류 실패 시 GEMINI_API_KEY → 있으면 Gemini, 다음으로 LOCAL_LLM_BASE_URL 로컬 폴백
  *
  * processed_news.clean_body: { ko: {title,summary,blurb}, th: {...}, source_url }
  */
@@ -13,7 +14,7 @@
 import { getServerSupabaseClient } from '../adapters/supabaseClient';
 import { newsInsertAsPublished } from '@/lib/news/newsPublishMode';
 
-export type NewsSummaryProvider = 'openai' | 'local' | 'auto';
+export type NewsSummaryProvider = 'openai' | 'gemini' | 'local' | 'auto';
 
 export interface SummarizeRowResult {
   raw_news_id: string;
@@ -61,7 +62,7 @@ const LLM_TIMEOUT_MS = (() => {
 
 function normalizeNewsSummaryProvider(): NewsSummaryProvider {
   const v = (process.env.NEWS_SUMMARY_PROVIDER || 'auto').trim().toLowerCase();
-  if (v === 'openai' || v === 'local' || v === 'auto') return v;
+  if (v === 'openai' || v === 'gemini' || v === 'local' || v === 'auto') return v;
   return 'auto';
 }
 
@@ -69,9 +70,11 @@ function normalizeNewsSummaryProvider(): NewsSummaryProvider {
 export function isNewsSummaryLlmConfigured(): boolean {
   const p = normalizeNewsSummaryProvider();
   if (p === 'openai') return Boolean(process.env.OPENAI_API_KEY?.trim());
+  if (p === 'gemini') return Boolean(process.env.GEMINI_API_KEY?.trim());
   if (p === 'local') return Boolean(process.env.LOCAL_LLM_BASE_URL?.trim());
   return (
     Boolean(process.env.OPENAI_API_KEY?.trim()) ||
+    Boolean(process.env.GEMINI_API_KEY?.trim()) ||
     Boolean(process.env.LOCAL_LLM_BASE_URL?.trim())
   );
 }
@@ -159,6 +162,8 @@ function chatCompletionsUrlFromBase(baseUrl: string): string {
   const b = baseUrl.trim().replace(/\/+$/, '');
   if (b.endsWith('/v1/chat/completions')) return b;
   if (b.endsWith('/chat/completions')) return b;
+  // Gemini OpenAI 호환: …/v1beta/openai + /chat/completions (중간에 /v1 없음)
+  if (/\/openai$/i.test(b)) return `${b}/chat/completions`;
   if (b.endsWith('/v1')) return `${b}/chat/completions`;
   return `${b}/v1/chat/completions`;
 }
@@ -301,7 +306,8 @@ function parseBilingualPayloadFromContent(content: string, label: string): LlmBi
   }
 }
 
-function shouldFallbackOpenAiToLocal(err: unknown): boolean {
+/** OpenAI 429·쿼터 한도 시 다른 프로바이더(Gemini·로컬)로 넘길지 */
+function shouldFallbackFromOpenAi(err: unknown): boolean {
   if (err instanceof HttpCompletionError) {
     if (err.status === 429) return true;
     const low = err.message.toLowerCase();
@@ -328,6 +334,11 @@ async function callBilingualSummary(
   const provider = normalizeNewsSummaryProvider();
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
   const openaiModel = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
+  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  const geminiBase =
+    process.env.GEMINI_OPENAI_BASE_URL?.trim() ||
+    'https://generativelanguage.googleapis.com/v1beta/openai';
+  const geminiModel = process.env.GEMINI_MODEL?.trim() || 'gemini-2.0-flash';
   const localBase = process.env.LOCAL_LLM_BASE_URL?.trim();
   const localModel = process.env.LOCAL_LLM_MODEL?.trim() || 'llama3.2';
   const localKey = process.env.LOCAL_LLM_API_KEY?.trim();
@@ -360,8 +371,26 @@ async function callBilingualSummary(
     return parseBilingualPayloadFromContent(content, 'OpenAI');
   };
 
+  const runGemini = async () => {
+    if (!geminiKey) {
+      throw new Error('GEMINI_API_KEY 가 설정되지 않았습니다.');
+    }
+    // Gemini OpenAI 호환 레이어는 response_format 지원이 제한적일 수 있어 프롬프트+파서로 통일
+    const content = await callOpenAiCompatibleChatCompletion({
+      baseUrl: geminiBase,
+      model: geminiModel,
+      apiKey: geminiKey,
+      messages,
+      jsonObjectMode: false,
+    });
+    return parseBilingualPayloadFromContent(content, 'Gemini');
+  };
+
   if (provider === 'local') {
     return runLocal();
+  }
+  if (provider === 'gemini') {
+    return runGemini();
   }
   if (provider === 'openai') {
     return runOpenAi();
@@ -371,15 +400,39 @@ async function callBilingualSummary(
     try {
       return await runOpenAi();
     } catch (e) {
-      if (localBase && shouldFallbackOpenAiToLocal(e)) {
-        console.warn(
-          '[NewsSummary] OpenAI 실패 → 로컬 LLM 폴백:',
-          e instanceof Error ? e.message.slice(0, 220) : String(e),
-        );
-        return runLocal();
+      if (shouldFallbackFromOpenAi(e)) {
+        if (geminiKey) {
+          try {
+            console.warn(
+              '[NewsSummary] OpenAI 실패 → Gemini 폴백:',
+              e instanceof Error ? e.message.slice(0, 220) : String(e),
+            );
+            return await runGemini();
+          } catch (e2) {
+            if (localBase) {
+              console.warn(
+                '[NewsSummary] Gemini 실패 → 로컬 LLM 폴백:',
+                e2 instanceof Error ? e2.message.slice(0, 220) : String(e2),
+              );
+              return runLocal();
+            }
+            throw e2;
+          }
+        }
+        if (localBase) {
+          console.warn(
+            '[NewsSummary] OpenAI 실패 → 로컬 LLM 폴백:',
+            e instanceof Error ? e.message.slice(0, 220) : String(e),
+          );
+          return runLocal();
+        }
       }
       throw e;
     }
+  }
+
+  if (geminiKey) {
+    return runGemini();
   }
 
   if (localBase) {
@@ -387,7 +440,7 @@ async function callBilingualSummary(
   }
 
   throw new Error(
-    'NEWS_SUMMARY_PROVIDER=auto 일 때 OPENAI_API_KEY 또는 LOCAL_LLM_BASE_URL 중 하나가 필요합니다.',
+    'NEWS_SUMMARY_PROVIDER=auto 일 때 OPENAI_API_KEY, GEMINI_API_KEY, LOCAL_LLM_BASE_URL 중 하나 이상이 필요합니다.',
   );
 }
 

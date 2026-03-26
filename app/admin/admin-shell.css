@@ -1,0 +1,173 @@
+/* 관리자 영역 — 사이트 톤(--tj-*)과 맞춤 */
+.admin-shell {
+  min-height: 100vh;
+  font-family: 'Noto Sans KR', system-ui, sans-serif;
+  font-size: 14px;
+  background: var(--tj-bg);
+  background-image: var(--tj-bg-dots);
+  background-size: var(--tj-bg-size);
+  color: var(--tj-ink);
+}
+
+.admin-shell__nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #3d3648 0%, #4a4258 100%);
+  color: #f0eaf8;
+  box-shadow: 0 2px 20px rgba(58, 48, 78, 0.2);
+  border-bottom: 1px solid rgba(228, 220, 232, 0.12);
+}
+
+.admin-shell__nav a {
+  color: var(--tj-lilac-soft);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-shell__nav a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  text-decoration: none;
+}
+
+.admin-shell__nav a.admin-shell__nav-brand {
+  font-weight: 700;
+  color: #fff;
+  margin-right: 4px;
+}
+
+.admin-shell__nav a.admin-shell__nav-brand:hover {
+  color: var(--tj-lilac-soft);
+}
+
+.admin-shell__nav-hint {
+  margin-left: auto;
+  font-size: 11px;
+  color: rgba(245, 241, 248, 0.55);
+  max-width: 220px;
+  text-align: right;
+  line-height: 1.35;
+}
+
+.admin-shell__viewport {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+.admin-dash__title {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.admin-dash__lead {
+  margin: 0 0 24px;
+  font-size: 13px;
+  color: var(--tj-muted);
+  line-height: 1.6;
+  max-width: 52ch;
+}
+
+.admin-dash__alert {
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  background: #fff8e6;
+  border: 1px solid #f5d78a;
+  color: #7c5e10;
+}
+
+.admin-dash__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.admin-dash__card {
+  background: var(--tj-surface);
+  border: 1px solid var(--tj-line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: var(--tj-shadow);
+}
+
+.admin-dash__card-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tj-muted);
+  margin-bottom: 8px;
+}
+
+.admin-dash__card-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--tj-ink);
+  line-height: 1.1;
+}
+
+.admin-dash__card-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--tj-muted);
+  line-height: 1.45;
+}
+
+.admin-dash__links {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-dash__links li {
+  margin: 0;
+}
+
+.admin-dash__links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--tj-surface);
+  border: 1px solid var(--tj-line);
+  border-radius: 10px;
+  color: var(--tj-link);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(74, 66, 88, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-dash__links a:hover {
+  border-color: var(--tj-lilac);
+  box-shadow: var(--tj-shadow);
+  text-decoration: none;
+  color: var(--tj-link-hover);
+}
+
+.admin-dash__links span {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--tj-muted);
+}
+
+.admin-page {
+  background: transparent;
+}

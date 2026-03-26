@@ -1,0 +1,498 @@
+/**
+ * processAndPersistKnowledge.ts — raw_knowledge → LLM 구조화 → processed_knowledge / knowledge_summaries
+ *
+ * LLM 출력 strict JSON 스키마:
+ *   board_target, editorial_meta, ko{title,summary,checklist,cautions,tags}, th{...}, board_copy, sources[]
+ *
+ * 안전 원칙:
+ *   - PII(전화번호/주소/개인연락처/계좌/실명) 절대 출력 금지 — 시스템 프롬프트에 강하게 명시
+ *   - 비자/법률: 항상 디스클레이머 cautions 포함
+ *   - 과장("100% 보장" 등) 금지 — 불확실하면 confidence_level=low, cautions 강화
+ *   - JSON 파싱 실패 시 해당 항목 실패 처리 + bot_actions 기록
+ *
+ * 환경 변수: NEWS_SUMMARY_PROVIDER / OPENAI_API_KEY / GEMINI_API_KEY / LOCAL_LLM_BASE_URL
+ *            KNOWLEDGE_PUBLISH_MODE = manual(기본) | auto
+ */
+
+import { getServerSupabaseClient } from '../adapters/supabaseClient';
+import { knowledgeInsertAsPublished } from '@/lib/knowledge/knowledgePublishMode';
+
+// ── 타입 ──────────────────────────────────────────────────────────────────
+
+export interface KnowledgeProcessRowResult {
+  raw_knowledge_id: string;
+  ok: boolean;
+  board_target?: 'tips_board' | 'board_board';
+  error?: string;
+}
+
+export interface KnowledgeProcessBatchResult {
+  results: KnowledgeProcessRowResult[];
+  llmConfigured: boolean;
+  dbError?: string;
+}
+
+export interface KnowledgeLlmOutput {
+  board_target: 'tips_board' | 'board_board';
+  editorial_meta: {
+    novelty_score: number;
+    usefulness_score: number;
+    confidence_level: 'high' | 'medium' | 'low';
+    reasons: string[];
+  };
+  ko: {
+    title: string;
+    summary: string;
+    checklist: string[];
+    cautions: string[];
+    tags: string[];
+  };
+  th: {
+    title: string;
+    summary: string;
+    checklist: string[];
+    cautions: string[];
+    tags: string[];
+  };
+  board_copy: {
+    category_badge_text: string;
+    category_description: string;
+  };
+  sources: Array<{ external_url: string; source_name: string; retrieved_at: string }>;
+}
+
+// ── LLM 설정 ──────────────────────────────────────────────────────────────
+
+type LlmProvider = 'openai' | 'gemini' | 'local' | 'auto';
+
+const LLM_TIMEOUT_MS = (() => {
+  const raw = process.env.NEWS_LLM_TIMEOUT_MS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 120_000;
+})();
+
+function normalizeProvider(): LlmProvider {
+  const v = (process.env.NEWS_SUMMARY_PROVIDER || 'auto').trim().toLowerCase();
+  if (v === 'openai' || v === 'gemini' || v === 'local' || v === 'auto') return v;
+  return 'auto';
+}
+
+export function isKnowledgeLlmConfigured(): boolean {
+  const p = normalizeProvider();
+  if (p === 'openai') return Boolean(process.env.OPENAI_API_KEY?.trim());
+  if (p === 'gemini') return Boolean(process.env.GEMINI_API_KEY?.trim());
+  if (p === 'local') return Boolean(process.env.LOCAL_LLM_BASE_URL?.trim());
+  return (
+    Boolean(process.env.OPENAI_API_KEY?.trim()) ||
+    Boolean(process.env.GEMINI_API_KEY?.trim()) ||
+    Boolean(process.env.LOCAL_LLM_BASE_URL?.trim())
+  );
+}
+
+// ── HTTP LLM 호출 ─────────────────────────────────────────────────────────
+
+class HttpCompletionError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'HttpCompletionError';
+    this.status = status;
+  }
+}
+
+function chatCompletionsUrl(baseUrl: string): string {
+  const b = baseUrl.trim().replace(/\/+$/, '');
+  if (b.endsWith('/v1/chat/completions')) return b;
+  if (b.endsWith('/chat/completions')) return b;
+  if (/\/openai$/i.test(b)) return `${b}/chat/completions`;
+  if (b.endsWith('/v1')) return `${b}/chat/completions`;
+  return `${b}/v1/chat/completions`;
+}
+
+function stripMarkdownFence(content: string): string {
+  const t = content.trim();
+  const m = /^```(?:json)?\s*([\s\S]*?)```$/im.exec(t);
+  if (m?.[1]) return m[1].trim();
+  return t;
+}
+
+async function callLlm(params: {
+  baseUrl: string;
+  model: string;
+  apiKey: string | undefined;
+  messages: Array<{ role: string; content: string }>;
+  jsonObjectMode: boolean;
+}): Promise<string> {
+  const url = chatCompletionsUrl(params.baseUrl);
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (params.apiKey?.trim()) {
+    headers.Authorization = `Bearer ${params.apiKey.trim()}`;
+  }
+
+  const body: Record<string, unknown> = {
+    model: params.model,
+    messages: params.messages,
+    temperature: 0,
+    max_tokens: 4000,
+  };
+  if (params.jsonObjectMode) {
+    body.response_format = { type: 'json_object' };
+  }
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), LLM_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.toLowerCase().includes('aborted')) {
+      throw new Error(`${LLM_TIMEOUT_MS}ms LLM 타임아웃`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!res.ok) {
+    const t = await res.text();
+    throw new HttpCompletionError(res.status, `LLM HTTP ${res.status}: ${t.slice(0, 400)}`);
+  }
+
+  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  const content = data.choices?.[0]?.message?.content;
+  if (!content?.trim()) throw new Error('LLM 응답 본문이 비어 있습니다.');
+  return content;
+}
+
+function shouldFallback(err: unknown): boolean {
+  if (err instanceof HttpCompletionError && err.status === 429) return true;
+  const msg = err instanceof Error ? err.message : String(err);
+  const low = msg.toLowerCase();
+  return low.includes('429') && (low.includes('quota') || low.includes('rate'));
+}
+
+// ── 시스템 프롬프트 ───────────────────────────────────────────────────────
+
+const SYSTEM_PROMPT = `You are a pragmatic knowledge curator for "Thai Ja World" (Thailand–Korea community).
+Your job: given a Thai/Korea-related web article (title + excerpt + URL), output a structured JSON with practical information.
+
+CRITICAL SAFETY RULES — violating these is unacceptable:
+1. NEVER include PII: phone numbers, physical addresses, personal contact info, account numbers, real names of private individuals, personal identifiers. If present in source, OMIT or generalize.
+2. ALWAYS add legal/official disclaimer in cautions for visa, immigration, or legal topics: "법률 자문이 아닙니다. 실제 비자 신청 전 반드시 대사관·공식 기관에서 확인하세요."
+3. NEVER use expressions like "100% 가능", "보장", "확정" for uncertain facts. Use confidence_level=low and strengthen cautions instead.
+4. No exaggeration, no sensationalism, no political bias.
+5. Output ONLY valid JSON — no markdown fences, no extra text outside the JSON.
+
+ROUTING:
+- board_target="tips_board": clearly life tips / daily wisdom / practical hacks for living in Thailand
+- board_target="board_board": visa regulations, immigration procedures, documents, legal guides, or ANY ambiguous content
+- When in doubt → board_board (never force into tips_board)
+
+OUTPUT STRUCTURE (strict JSON):
+{
+  "board_target": "tips_board" | "board_board",
+  "editorial_meta": {
+    "novelty_score": 0-100,
+    "usefulness_score": 0-100,
+    "confidence_level": "high"|"medium"|"low",
+    "reasons": ["string"]
+  },
+  "ko": {
+    "title": "요즘 톤이되 자극/과장 금지. 300자 이내",
+    "summary": "300~600자. 실용적. 불확실한 내용은 '보도에 따르면/확인 필요' 표현 사용.",
+    "checklist": ["실행 가능한 스텝/체크리스트. PII 금지"],
+    "cautions": ["공식확인권장/법률자문아님/불확실성 명시. 비자·법률 관련은 반드시 포함"],
+    "tags": ["키워드5~8개. PII 금지"]
+  },
+  "th": {
+    "title": "자연스러운 태국어 제목",
+    "summary": "태국어 요약 300~600자",
+    "checklist": ["태국어 체크리스트"],
+    "cautions": ["태국어 주의사항. 비자·법률이면 'ข้อมูลนี้ไม่ใช่คำแนะนำทางกฎหมาย' 포함"],
+    "tags": ["태국어 키워드"]
+  },
+  "board_copy": {
+    "category_badge_text": "tips_board면 '꿀팁 한 스푼' 계열, board_board면 '비자·가이드 게시판' 계열",
+    "category_description": "짧은 카테고리 소개 1문장"
+  },
+  "sources": [{"external_url":"","source_name":"","retrieved_at":""}]
+}`;
+
+function buildUserBlock(title: string, body: string | null, sourceUrl: string, retrievedAt: string): string {
+  return [
+    `원문 제목: ${title || '(없음)'}`,
+    `원문 발췌(없으면 빈 값): ${body?.trim() || '(없음)'}`,
+    `출처 URL: ${sourceUrl}`,
+    `수집 시각: ${retrievedAt}`,
+    '',
+    '위 내용을 기반으로 앞서 지시한 JSON 스키마를 정확히 따라 출력하세요.',
+    '반드시 JSON 객체만 출력하고 다른 텍스트는 출력하지 마세요.',
+  ].join('\n');
+}
+
+// ── JSON 파싱/검증 ────────────────────────────────────────────────────────
+
+function isNonEmptyString(v: unknown): v is string {
+  return typeof v === 'string' && v.trim().length > 0;
+}
+
+function isStringArray(v: unknown): v is string[] {
+  return Array.isArray(v) && v.every((x) => typeof x === 'string');
+}
+
+function parseKnowledgeLlmOutput(raw: unknown): KnowledgeLlmOutput | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+
+  const boardTarget = o.board_target;
+  if (boardTarget !== 'tips_board' && boardTarget !== 'board_board') return null;
+
+  const ko = o.ko as Record<string, unknown> | null;
+  const th = o.th as Record<string, unknown> | null;
+  if (!ko || !th) return null;
+  if (!isNonEmptyString(ko.title) || !isNonEmptyString(ko.summary)) return null;
+  if (!isNonEmptyString(th.title) || !isNonEmptyString(th.summary)) return null;
+
+  const editorialMeta = (o.editorial_meta as Record<string, unknown> | null) ?? {};
+  const boardCopy = (o.board_copy as Record<string, unknown> | null) ?? {};
+
+  return {
+    board_target: boardTarget,
+    editorial_meta: {
+      novelty_score: typeof editorialMeta.novelty_score === 'number' ? Math.max(0, Math.min(100, editorialMeta.novelty_score)) : 50,
+      usefulness_score: typeof editorialMeta.usefulness_score === 'number' ? Math.max(0, Math.min(100, editorialMeta.usefulness_score)) : 50,
+      confidence_level:
+        editorialMeta.confidence_level === 'high' || editorialMeta.confidence_level === 'medium' || editorialMeta.confidence_level === 'low'
+          ? editorialMeta.confidence_level
+          : 'medium',
+      reasons: isStringArray(editorialMeta.reasons) ? editorialMeta.reasons : [],
+    },
+    ko: {
+      title: String(ko.title).trim(),
+      summary: String(ko.summary).trim(),
+      checklist: isStringArray(ko.checklist) ? ko.checklist : [],
+      cautions: isStringArray(ko.cautions) ? ko.cautions : [],
+      tags: isStringArray(ko.tags) ? ko.tags.slice(0, 8) : [],
+    },
+    th: {
+      title: String(th.title).trim(),
+      summary: String(th.summary).trim(),
+      checklist: isStringArray(th.checklist) ? th.checklist : [],
+      cautions: isStringArray(th.cautions) ? th.cautions : [],
+      tags: isStringArray(th.tags) ? th.tags.slice(0, 8) : [],
+    },
+    board_copy: {
+      category_badge_text: isNonEmptyString(boardCopy.category_badge_text)
+        ? String(boardCopy.category_badge_text).trim()
+        : boardTarget === 'tips_board' ? '꿀팁 한 스푼' : '비자·가이드 게시판',
+      category_description: isNonEmptyString(boardCopy.category_description)
+        ? String(boardCopy.category_description).trim()
+        : '',
+    },
+    sources: Array.isArray(o.sources)
+      ? (o.sources as Array<Record<string, unknown>>).map((s) => ({
+          external_url: typeof s.external_url === 'string' ? s.external_url : '',
+          source_name: typeof s.source_name === 'string' ? s.source_name : '',
+          retrieved_at: typeof s.retrieved_at === 'string' ? s.retrieved_at : new Date().toISOString(),
+        }))
+      : [],
+  };
+}
+
+function extractJsonFromContent(content: string): KnowledgeLlmOutput | null {
+  const raw = stripMarkdownFence(content);
+
+  const repairJson = (s: string) => s.replace(/,\s*([}\]])/g, '$1');
+  const tryParse = (s: string): unknown => {
+    try { return JSON.parse(s); } catch {
+      try { return JSON.parse(repairJson(s)); } catch { return null; }
+    }
+  };
+
+  const first = raw.indexOf('{');
+  const last = raw.lastIndexOf('}');
+  const candidates: string[] = [raw];
+  if (first >= 0 && last > first) candidates.push(raw.slice(first, last + 1));
+
+  for (const c of candidates) {
+    const parsed = tryParse(c);
+    if (parsed) {
+      const result = parseKnowledgeLlmOutput(parsed);
+      if (result) return result;
+    }
+  }
+  return null;
+}
+
+// ── LLM 라우터 ────────────────────────────────────────────────────────────
+
+async function callKnowledgeLlm(
+  title: string,
+  body: string | null,
+  sourceUrl: string,
+  retrievedAt: string,
+): Promise<KnowledgeLlmOutput> {
+  const messages = [
+    { role: 'system' as const, content: SYSTEM_PROMPT },
+    { role: 'user' as const, content: buildUserBlock(title, body, sourceUrl, retrievedAt) },
+  ];
+
+  const provider = normalizeProvider();
+  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  const openaiModel = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
+  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  const geminiBase = process.env.GEMINI_OPENAI_BASE_URL?.trim() || 'https://generativelanguage.googleapis.com/v1beta/openai';
+  const geminiModel = process.env.GEMINI_MODEL?.trim() || 'gemini-2.0-flash';
+  const localBase = process.env.LOCAL_LLM_BASE_URL?.trim();
+  const localModel = process.env.LOCAL_LLM_MODEL?.trim() || 'llama3.2';
+  const localKey = process.env.LOCAL_LLM_API_KEY?.trim();
+
+  const runLocal = async (): Promise<KnowledgeLlmOutput> => {
+    if (!localBase) throw new Error('LOCAL_LLM_BASE_URL 미설정');
+    const content = await callLlm({ baseUrl: localBase, model: localModel, apiKey: localKey, messages, jsonObjectMode: false });
+    const result = extractJsonFromContent(content);
+    if (!result) throw new Error(`로컬 LLM JSON 파싱 실패: ${content.slice(0, 300)}`);
+    return result;
+  };
+
+  const runOpenAi = async (): Promise<KnowledgeLlmOutput> => {
+    if (!openaiKey) throw new Error('OPENAI_API_KEY 미설정');
+    const content = await callLlm({ baseUrl: 'https://api.openai.com/v1', model: openaiModel, apiKey: openaiKey, messages, jsonObjectMode: true });
+    const result = extractJsonFromContent(content);
+    if (!result) throw new Error(`OpenAI JSON 파싱 실패: ${content.slice(0, 300)}`);
+    return result;
+  };
+
+  const runGemini = async (): Promise<KnowledgeLlmOutput> => {
+    if (!geminiKey) throw new Error('GEMINI_API_KEY 미설정');
+    const content = await callLlm({ baseUrl: geminiBase, model: geminiModel, apiKey: geminiKey, messages, jsonObjectMode: false });
+    const result = extractJsonFromContent(content);
+    if (!result) throw new Error(`Gemini JSON 파싱 실패: ${content.slice(0, 300)}`);
+    return result;
+  };
+
+  if (provider === 'local') return runLocal();
+  if (provider === 'gemini') return runGemini();
+  if (provider === 'openai') return runOpenAi();
+
+  // auto: OpenAI → Gemini → Local 폴백
+  if (openaiKey) {
+    try { return await runOpenAi(); }
+    catch (e) {
+      if (shouldFallback(e)) {
+        if (geminiKey) {
+          try { return await runGemini(); }
+          catch (e2) {
+            if (localBase) { return runLocal(); }
+            throw e2;
+          }
+        }
+        if (localBase) return runLocal();
+      }
+      throw e;
+    }
+  }
+  if (geminiKey) return runGemini();
+  if (localBase) return runLocal();
+
+  throw new Error('LLM 미설정 — OPENAI_API_KEY, GEMINI_API_KEY, LOCAL_LLM_BASE_URL 중 하나 필요');
+}
+
+// ── 메인 배치 처리 ────────────────────────────────────────────────────────
+
+export async function processAndPersistKnowledgeBatch(
+  limit: number,
+): Promise<KnowledgeProcessBatchResult> {
+  if (!isKnowledgeLlmConfigured()) {
+    return { results: [], llmConfigured: false };
+  }
+
+  const client = getServerSupabaseClient();
+  const cap = Math.min(Math.max(limit, 1), 30);
+
+  // processed_knowledge 가 없는 raw_knowledge 선택
+  const { data: processedRows, error: pe } = await client
+    .from('processed_knowledge')
+    .select('raw_knowledge_id');
+  if (pe) {
+    return { results: [], llmConfigured: true, dbError: `[processed_knowledge select] ${pe.message}` };
+  }
+
+  const done = new Set((processedRows ?? []).map((r) => r.raw_knowledge_id as string));
+
+  const { data: rawRows, error: re } = await client
+    .from('raw_knowledge')
+    .select('id, title_original, raw_body, external_url, fetched_at')
+    .order('fetched_at', { ascending: false })
+    .limit(200);
+  if (re) {
+    return { results: [], llmConfigured: true, dbError: `[raw_knowledge select] ${re.message}` };
+  }
+
+  if (!rawRows?.length) {
+    return { results: [], llmConfigured: true };
+  }
+
+  const todo = rawRows.filter((r) => !done.has(r.id as string)).slice(0, cap);
+  const results: KnowledgeProcessRowResult[] = [];
+
+  for (const row of todo) {
+    const rawId = row.id as string;
+    const title = (row.title_original as string)?.trim() || '(제목 없음)';
+    const url = (row.external_url as string) ?? '';
+    const body = row.raw_body as string | null;
+    const fetchedAt = (row.fetched_at as string) ?? new Date().toISOString();
+
+    try {
+      const llm = await callKnowledgeLlm(title, body, url, fetchedAt);
+
+      const cleanBody = JSON.stringify(llm);
+
+      const { data: proc, error: insP } = await client
+        .from('processed_knowledge')
+        .insert({
+          raw_knowledge_id: rawId,
+          clean_body: cleanBody,
+          language_default: 'ko',
+          board_target: llm.board_target,
+          published: knowledgeInsertAsPublished(),
+        })
+        .select('id')
+        .single();
+
+      if (insP || !proc?.id) {
+        results.push({ raw_knowledge_id: rawId, ok: false, error: insP?.message ?? 'processed_knowledge insert 실패' });
+        continue;
+      }
+
+      const pid = proc.id as string;
+
+      // knowledge_summaries: ko
+      await client.from('knowledge_summaries').insert({
+        processed_knowledge_id: pid,
+        summary_text: llm.ko.summary,
+        model: 'ko',
+      });
+
+      // knowledge_summaries: th
+      await client.from('knowledge_summaries').insert({
+        processed_knowledge_id: pid,
+        summary_text: llm.th.summary,
+        model: 'th',
+      });
+
+      results.push({ raw_knowledge_id: rawId, ok: true, board_target: llm.board_target });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      results.push({ raw_knowledge_id: rawId, ok: false, error: msg });
+    }
+  }
+
+  return { results, llmConfigured: true };
+}

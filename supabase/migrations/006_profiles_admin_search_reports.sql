@@ -2,8 +2,9 @@
 -- 006_profiles_admin_search_reports — 관리자용 회원 디렉터리 (초성 검색·신고 집계·스태프 플래그)
 -- =============================================================================
 
--- pg_trgm: 부분 문자열 검색·유사도 (Supabase에서 일반적으로 사용 가능)
-create extension if not exists pg_trgm;
+-- pg_trgm: 부분 문자열 검색·유사도 — extensions 스키마 (lint 0014, Supabase 권장)
+create schema if not exists extensions;
+create extension if not exists pg_trgm with schema extensions;
 
 -- -----------------------------------------------------------------------------
 -- profiles 컬럼
@@ -29,7 +30,7 @@ comment on column public.profiles.is_staff is
   'true 인 계정만 관리자 API/화면에서 민감 작업 허용 예정. 일반 사용자는 UPDATE 불가(트리거).';
 
 create index if not exists idx_profiles_admin_search_trgm
-  on public.profiles using gin (admin_search gin_trgm_ops);
+  on public.profiles using gin (admin_search extensions.gin_trgm_ops);
 
 create index if not exists idx_profiles_is_staff
   on public.profiles (is_staff) where is_staff = true;

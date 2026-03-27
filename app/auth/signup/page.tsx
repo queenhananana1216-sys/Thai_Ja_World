@@ -10,7 +10,7 @@ import TurnstileField from '../_components/TurnstileField';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { checkPasswordStrength, type PasswordPolicyMessages } from '@/lib/auth/passwordPolicy';
 import { PENDING_VERIFICATION_EMAIL_KEY } from '@/lib/auth/pendingVerification';
-import { verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
+import { supabaseAuthCaptchaOptions, verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { getAuthSiteOrigin } from '@/lib/auth/getAuthSiteOrigin';
 import { getTurnstileErrorHint } from '@/lib/auth/getTurnstileErrorHint';
@@ -86,12 +86,14 @@ function SignupForm() {
     setLoading(true);
     const sb = createBrowserClient();
     const origin = getAuthSiteOrigin();
+    const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
     const { data, error: err } = await sb.auth.signUp({
       email: email.trim(),
       password,
       options: {
         data: { display_name: displayName.trim() || email.split('@')[0] },
         emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
+        ...captchaOpts,
       },
     });
     setLoading(false);

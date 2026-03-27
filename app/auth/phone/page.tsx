@@ -11,7 +11,7 @@ import AuthPageShell from '../_components/AuthPageShell';
 import TurnstileField from '../_components/TurnstileField';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { normalizePhoneToE164 } from '@/lib/auth/normalizePhoneE164';
-import { verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
+import { supabaseAuthCaptchaOptions, verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
 import { tryCreateBrowserClient } from '@/lib/supabase/client';
 import { getTurnstileErrorHint } from '@/lib/auth/getTurnstileErrorHint';
 
@@ -80,6 +80,7 @@ function PhoneAuthForm() {
     }
 
     setLoading(true);
+    const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
     const { error: err } = await sb.auth.signInWithOtp({
       phone: normalized.e164,
       options: {
@@ -87,6 +88,7 @@ function PhoneAuthForm() {
         data: {
           display_name: displayName.trim() || undefined,
         },
+        ...captchaOpts,
       },
     });
     setLoading(false);
@@ -133,15 +135,26 @@ function PhoneAuthForm() {
 
   async function resendSms() {
     setError(null);
+    const captcha = await verifyTurnstileOnSubmit(HAS_TURNSTILE_UI, turnstileTokenRef.current);
+    if (!captcha.ok) {
+      if (captcha.reason === 'missing_token') {
+        setError(a.turnstileIncomplete);
+        return;
+      }
+      const hint = getTurnstileErrorHint(captcha.codes);
+      setError(hint ? `${a.turnstileVerifyFailed} ${hint}` : a.turnstileVerifyFailed);
+      return;
+    }
     const sb = tryCreateBrowserClient();
     if (!sb) {
       setError(a.phoneAuthNoSupabase);
       return;
     }
     setLoading(true);
+    const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
     const { error: err } = await sb.auth.signInWithOtp({
       phone: e164,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: true, ...captchaOpts },
     });
     setLoading(false);
     if (err) setError(err.message);
@@ -215,6 +228,9 @@ function PhoneAuthForm() {
             required
           />
           <p className="auth-field-hint">{a.phoneAuthOtpHint}</p>
+          {HAS_TURNSTILE_UI ? (
+            <TurnstileField tokenRef={turnstileTokenRef} loadingLabel={a.turnstileLoading} />
+          ) : null}
           {error ? <p className="auth-inline-error">{error}</p> : null}
           <button type="submit" className="board-form__submit" disabled={loading}>
             {loading ? a.phoneAuthVerifyLoading : a.phoneAuthVerify}

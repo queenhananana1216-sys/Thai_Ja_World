@@ -32,3 +32,16 @@ export async function verifyTurnstileOnSubmit(
     return { ok: false, reason: 'verify_failed' };
   }
 }
+
+/**
+ * Supabase 대시보드에서 Auth CAPTCHA(Turnstile)를 켠 경우 signUp / signInWithPassword /
+ * signInWithOtp 의 options 에 이 객체를 펼쳐 넣어야 한다. (안 넣으면 "captcha verification" 실패)
+ */
+export function supabaseAuthCaptchaOptions(
+  hasTurnstileUi: boolean,
+  token: string | null,
+): { captchaToken: string } | undefined {
+  const t = token?.trim();
+  if (!hasTurnstileUi || !t) return undefined;
+  return { captchaToken: t };
+}

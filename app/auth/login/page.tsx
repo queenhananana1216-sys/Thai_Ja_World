@@ -8,7 +8,7 @@ import DailyNewsPushOptIn from '../_components/DailyNewsPushOptIn';
 import SocialAuthButtons from '../_components/SocialAuthButtons';
 import TurnstileField from '../_components/TurnstileField';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
-import { verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
+import { supabaseAuthCaptchaOptions, verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { getTurnstileErrorHint } from '@/lib/auth/getTurnstileErrorHint';
 
@@ -61,9 +61,11 @@ function LoginForm() {
 
     setLoading(true);
     const sb = createBrowserClient();
+    const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
     const { error: err } = await sb.auth.signInWithPassword({
       email: email.trim(),
       password,
+      ...(captchaOpts ? { options: captchaOpts } : {}),
     });
     setLoading(false);
     if (err) {

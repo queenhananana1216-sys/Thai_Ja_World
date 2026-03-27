@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import PostComments, { type CommentRow } from '../_components/PostComments';
@@ -6,9 +7,56 @@ import { createServerClient } from '@/lib/supabase/server';
 import { categoryLabel } from '@/lib/community/postCategories';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
+import JsonLd from '@/lib/seo/JsonLd';
+import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { formatDate } from '@/lib/utils/formatDate';
 
 type PageProps = { params: Promise<{ postId: string }> };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { postId } = await params;
+  const locale = await getLocale();
+  const d = getDictionary(locale);
+  const supabase = createServerClient();
+  const { data: post } = await supabase
+    .from('posts')
+    .select('id, title, content, created_at, image_urls')
+    .eq('id', postId)
+    .eq('moderation_status', 'safe')
+    .maybeSingle();
+
+  if (!post) {
+    return { title: d.board.pageTitle, robots: { index: false, follow: true } };
+  }
+
+  const description = trimForMetaDescription(String(post.content ?? ''));
+  const url = absoluteUrl(`/community/boards/${postId}`);
+  const images = Array.isArray(post.image_urls) ? (post.image_urls as string[]) : [];
+  const ogImage = typeof images[0] === 'string' ? images[0] : undefined;
+  const titleStr = String(post.title ?? '');
+
+  return {
+    title: titleStr,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title: titleStr,
+      description,
+      url,
+      type: 'article',
+      publishedTime: post.created_at as string,
+      siteName: d.seo.defaultTitle,
+      locale: locale === 'th' ? 'th_TH' : 'ko_KR',
+      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
+    },
+    twitter: {
+      card: ogImage ? 'summary_large_image' : 'summary',
+      title: titleStr,
+      description,
+    },
+    robots: { index: true, follow: true },
+  };
+}
 
 export default async function BoardPostDetailPage({ params }: PageProps) {
   const { postId } = await params;
@@ -68,9 +116,23 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const images = Array.isArray(post.image_urls) ? post.image_urls : [];
   const cat = categoryLabel(String(post.category), locale);
   const path = `/community/boards/${postId}`;
+  const pageUrl = absoluteUrl(path);
 
   return (
     <div className="page-body board-page">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'DiscussionForumPosting',
+          headline: post.title as string,
+          ...(post.content
+            ? { text: trimForMetaDescription(post.content as string, 8000) }
+            : {}),
+          datePublished: post.created_at as string,
+          url: pageUrl,
+          author: { '@type': 'Person', name: authorName },
+        }}
+      />
       <Link href="/community/boards" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
         ← {d.board.backToList}
       </Link>

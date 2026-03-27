@@ -17,3 +17,15 @@
 - `extensions\offline-ai` : 로컬 LLM(예: Ollama/llama.cpp 계열) 다운로드/캐시 구조
 - `extensions\offline-translation` : 오프라인 번역(예: Argos Translate 계열) 데이터 캐시 구조
 
+## 화면 번역(옵션 B, 초간단)
+
+- 한글만 보고 쓰려면: `docs\screen-translation-simple-ko.md`
+- 모드 안내 스크립트: `tools\screen-translation\screen-translate-modes.ps1`
+- 상세(RST·Ollama·SSD): `docs\screen-translation-ocr-toggle.md`
+
+## A 환경 — 로컬 전용(외부로 번역 텍스트 안 보내기)
+
+- 가이드: `docs\local-only-privacy-setup-ko.md`
+- 세션 적용: `tools\local-only\apply-session-local-only.ps1`
+- 점검: `tools\local-only\verify-a-environment.ps1`
+

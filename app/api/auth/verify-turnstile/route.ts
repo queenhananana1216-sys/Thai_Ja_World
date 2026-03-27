@@ -1,5 +1,8 @@
 /**
- * Cloudflare Turnstile 검증 (무료). 시크릿 없으면 개발용으로 통과.
+ * Cloudflare Turnstile 단독 검증용 (테스트·비-Supabase 폼 등).
+ * Supabase Auth 에 `captchaToken` 을 넘기기 **전**에 이 API를 호출하면 안 된다.
+ * 토큰은 1회용이라 여기서 소비되면 Supabase 검증이 실패한다.
+ *
  * https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
  */
 import { NextResponse } from 'next/server';

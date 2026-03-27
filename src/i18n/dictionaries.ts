@@ -265,6 +265,10 @@ export type Dictionary = {
     defaultDescription: string;
     homeTitle: string;
     homeDescription: string;
+    /** /community/boards 리스트 — 메타·OG */
+    boardsListDescription: string;
+    /** /community/trade — 메타·OG */
+    tradeHubDescription: string;
   };
   /** 일일 뉴스 웹 푸시 옵트인 (로그인·가입 화면) */
   push: {
@@ -551,6 +555,10 @@ const ko: Dictionary = {
     homeTitle: '홈 — 태자 월드',
     homeDescription:
       '태국에 사는 사람들의 플랫폼 — 광장, 익명 한줄장, 익명 제보, 로컬 가게, 오늘의 소식',
+    boardsListDescription:
+      '태국 한인 광장 — 익명 한줄장, 중고·알바, 잡담. 방콕·파타야 로컬 톡을 한국어로.',
+    tradeHubDescription:
+      '중고 나눔·구인구직으로 바로 가기 — 광장의 플리마켓·알바 게시판 허브.',
   },
   push: {
     optInTitle: '🔔 하루 한 번 · 태국 핫이슈 한 줄',
@@ -837,6 +845,10 @@ const th: Dictionary = {
     homeTitle: 'หน้าแรก — Thai Ja World',
     homeDescription:
       'แพลตฟอร์มคนอยู่ไทย — ลานชุมชน ตลาดนิรนาม แจ้งเบาะแส ร้านท้องถิ่น ข่าววันนี้',
+    boardsListDescription:
+      'ลานชุมชนคนเกาหลีในไทย — ตลาดบรรทัดเดียว มือสอง หางาน คุยสบายๆ กรุงเทพ·พัทยา',
+    tradeHubDescription:
+      'ศูนย์กลางมือสองและหางาน — เข้าบอร์ดเฟลามาร์เก็ตและงาน Part-time',
   },
   push: {
     optInTitle: '🔔 วันละครั้ง · ประเด็นร้อนไทย หนึ่งบรรทัด',

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createServerClient } from '@/lib/supabase/server';
 import {
@@ -7,6 +8,30 @@ import {
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { formatDate } from '@/lib/utils/formatDate';
+import { absoluteUrl } from '@/lib/seo/site';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const d = getDictionary(locale);
+  const title = d.board.pageTitle;
+  const description = d.seo.boardsListDescription;
+  const url = absoluteUrl('/community/boards');
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: 'website',
+      siteName: d.seo.defaultTitle,
+      locale: locale === 'th' ? 'th_TH' : 'ko_KR',
+    },
+    twitter: { card: 'summary_large_image', title, description },
+    robots: { index: true, follow: true },
+  };
+}
 
 async function profileNames(ids: string[]): Promise<Record<string, string>> {
   const u = [...new Set(ids)];

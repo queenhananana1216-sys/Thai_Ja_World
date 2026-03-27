@@ -20,6 +20,9 @@ npm-debug.log*
 # Workspace scratch (로컬 임시, 커밋 금지)
 .tmp/
 
+# 로컬 junction/심링크(예: /mnt/e/02_Workspace) — Git에 올리면 Vercel에서 ENOENT
+02_Workspace
+
 # OS
 .DS_Store
 Thumbs.db

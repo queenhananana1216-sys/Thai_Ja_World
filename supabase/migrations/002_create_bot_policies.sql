@@ -10,7 +10,7 @@
 --   Option B) supabase db push (supabase CLI 사용 시)
 -- =============================================================
 
-create table if not exists bot_policies (
+create table if not exists public.bot_policies (
   id               uuid        primary key default gen_random_uuid(),
 
   -- 정책 모드: 'auto' = 인시던트 자동 처리, 'manual' = 사람 검토 필요
@@ -36,8 +36,11 @@ create table if not exists bot_policies (
 );
 
 -- updated_at 자동 갱신 트리거 함수
-create or replace function update_updated_at_column()
-returns trigger language plpgsql as $$
+create or replace function public.update_updated_at_column()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
 begin
   new.updated_at = now();
   return new;
@@ -45,11 +48,11 @@ end;
 $$;
 
 create trigger trg_bot_policies_updated_at
-  before update on bot_policies
-  for each row execute function update_updated_at_column();
+  before update on public.bot_policies
+  for each row execute function public.update_updated_at_column();
 
 -- 기본 보수적 정책 행
-insert into bot_policies (
+insert into public.bot_policies (
   policy_mode,
   heal_threshold,
   allowed_actions,
@@ -62,7 +65,7 @@ insert into bot_policies (
 ) on conflict do nothing;
 
 create index if not exists idx_bot_policies_is_active
-  on bot_policies (is_active);
+  on public.bot_policies (is_active);
 
 -- =============================================================
 -- Phase 2 → Phase 3 마이그레이션 가이드:

@@ -22,6 +22,12 @@ export async function generateMetadata(): Promise<Metadata> {
       template: d.seo.titleTemplate,
     },
     description: d.seo.defaultDescription,
+    /** 네이버 서치어드바이저 — HTML 태그 방식 소유확인 */
+    verification: {
+      other: {
+        'naver-site-verification': '9242e16d7b7d2e8a177c9b1dbe89409aaa4a4f76',
+      },
+    },
   };
 }
 

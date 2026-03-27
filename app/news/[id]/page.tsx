@@ -224,6 +224,13 @@ export default async function NewsStoryPage({ params }: PageProps) {
           </div>
         )}
 
+        {detail.editorNote && (
+          <div className="news-story__editor" style={{ marginTop: 22 }}>
+            <p className="news-story__editor-label">{h.newsDetailEditorLabel}</p>
+            <p className="news-story__editor-body">{detail.editorNote}</p>
+          </div>
+        )}
+
         {detail.sourceUrl && (
           <p style={{ marginTop: 28 }}>
             <a

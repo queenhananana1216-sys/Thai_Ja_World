@@ -1,4 +1,5 @@
 import { newsDetailFromProcessed } from '@/lib/news/processedNewsDisplay';
+import type { BangkokWeatherPair } from '@/lib/weather/bangkokWeatherSnippet';
 
 export type ProcessedNewsDigestRow = {
   id: string;
@@ -18,10 +19,11 @@ function oneLine(
   return `${raw.slice(0, Math.max(0, maxLen - 1)).trim()}…`;
 }
 
-/** 최신 1건 기준 — 알림 제목·본문(한·태 한 줄씩) */
+/** 최신 1건 + (선택) 방콕 날씨 — 다이제스트형 알림 본문 */
 export function buildDailyWebPushPayload(
   row: ProcessedNewsDigestRow,
   origin: string,
+  weather?: BangkokWeatherPair | null,
 ): { title: string; body: string; url: string; tag: string } | null {
   const rawTitle = row.raw_news?.title ?? null;
   const ko = newsDetailFromProcessed(
@@ -44,9 +46,15 @@ export function buildDailyWebPushPayload(
   if (!koLine && !thLine) return null;
 
   const base = origin.replace(/\/$/, '');
+  const lines: string[] = [];
+  if (weather) {
+    lines.push(`🌤 ${weather.ko} · ${weather.th}`);
+  }
+  lines.push(`🇰🇷 ${koLine || '—'}`, `🇹🇭 ${thLine || '—'}`);
+
   return {
-    title: '🔥 태자 월드 · 오늘 태국, 이 한 줄이면 됨',
-    body: [`🇰🇷 ${koLine || '—'}`, `🇹🇭 ${thLine || '—'}`].join('\n'),
+    title: '태자 월드 · 오늘 살이 참고 한 줄',
+    body: lines.join('\n'),
     url: `${base}/news/${row.id}`,
     tag: `daily-news-${row.id}`,
   };

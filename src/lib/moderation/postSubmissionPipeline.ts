@@ -109,7 +109,8 @@ export async function createModeratedPost(
       ok: false,
       status: 403,
       code: 'invalid',
-      message: '한줄 나눔장·알바 코너는 정식 오픈 전까지 새 글 작성이 잠시 막혀 있어요.',
+      message:
+        '중고·알바 말머리는 정식 오픈 전까지 새 글만 잠시 닫아 두었어요. 목록 보기와 예전 글 읽기는 그대로 이용하실 수 있어요.',
     };
   }
 

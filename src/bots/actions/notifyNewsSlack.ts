@@ -1,4 +1,4 @@
-import 'server-only';
+/** 봇·API 전용 — server-only 생략(tsx CLI 호환). 클라이언트에서 import 금지 */
 
 import type { NewsSlackDigestItem } from './summarizeAndPersistNews';
 import { postSlackIncomingWebhook } from '@/lib/slack/slackIncomingWebhook';

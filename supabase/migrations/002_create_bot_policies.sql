@@ -67,6 +67,16 @@ insert into public.bot_policies (
 create index if not exists idx_bot_policies_is_active
   on public.bot_policies (is_active);
 
+-- RLS: 클라이언트(anon/authenticated) 차단 — 봇/관리는 service_role (RLS 우회, lint 0008)
+alter table public.bot_policies enable row level security;
+
+drop policy if exists bot_policies_no_client_access on public.bot_policies;
+create policy bot_policies_no_client_access on public.bot_policies
+  for all
+  to anon, authenticated
+  using (false)
+  with check (false);
+
 -- =============================================================
 -- Phase 2 → Phase 3 마이그레이션 가이드:
 --

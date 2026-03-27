@@ -9,7 +9,9 @@
     "build": "next build",
     "start": "next start",
     "type-check": "tsc --noEmit",
-    "lint": "next lint"
+    "lint": "next lint",
+    "news:ingest": "tsx scripts/run-news-ingest-once.ts",
+    "news:backfill-editor-notes": "tsx scripts/run-backfill-editor-notes-once.ts"
   },
   "dependencies": {
     "@github/copilot-sdk": "^0.2.0",
@@ -30,6 +32,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/web-push": "^3.6.4",
+    "dotenv": "^17.3.1",
     "prisma": "^7.6.0",
     "shadcn": "^4.1.1",
     "typescript": "^5.7.0"

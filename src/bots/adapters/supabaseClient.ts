@@ -11,7 +11,7 @@
  *   SUPABASE_SERVICE_ROLE_KEY     — Service Role 키 (RLS 우회, 쓰기 전용 목적)
  */
 
-import 'server-only';
+/** Next 앱 외부(tsx CLI 등)에서도 봇을 돌릴 수 있게 server-only 미사용 — 이 모듈은 API·봇에서만 import 할 것 */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // ── 환경 변수 검증 ─────────────────────────────────────────────────────────

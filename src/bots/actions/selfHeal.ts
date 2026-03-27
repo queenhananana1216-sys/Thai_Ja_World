@@ -12,7 +12,7 @@
  *   - 이 파일을 클라이언트 번들에 포함하지 마세요 ('server-only' 가드 적용).
  */
 
-import 'server-only';
+/** 봇 전용 — server-only 생략(tsx CLI 호환) */
 import { randomUUID } from 'node:crypto';
 import { logFail, logSkip, logStart, logSuccess } from '../logging/botActionLogger';
 import type { BotPolicyMode, IncidentSignal } from '../types/botTypes';

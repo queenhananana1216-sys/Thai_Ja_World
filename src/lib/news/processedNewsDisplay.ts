@@ -4,7 +4,13 @@
 
 import type { Locale } from '@/i18n/types';
 
-export type LangBlock = { title?: string; summary?: string; blurb?: string };
+export type LangBlock = {
+  title?: string;
+  summary?: string;
+  blurb?: string;
+  /** 편집실 한마디(요약 아래 표시). 구 기사에는 없을 수 있음 */
+  editor_note?: string;
+};
 
 export type ParsedCleanBody = {
   ko?: LangBlock;
@@ -75,6 +81,8 @@ export type NewsDetailParts = {
   summary: string | null;
   /** 짧은 위트 톤(없으면 요약 앞부분으로 대체) */
   blurb: string | null;
+  /** 요약 뒤에 붙는 편집실 톤(선택) */
+  editorNote: string | null;
   sourceUrl: string | null;
 };
 
@@ -108,6 +116,11 @@ export function newsDetailFromProcessed(
 
   const blurb = blurbRaw || blurbFallbackFromSummary(base.summary_text);
 
+  const editorRaw =
+    nonEmpty(primary?.editor_note) ||
+    nonEmpty(fallback?.editor_note) ||
+    null;
+
   const sourceUrl =
     (typeof parsed.source_url === 'string' && parsed.source_url.trim()) ||
     rawExternalUrl?.trim() ||
@@ -117,6 +130,7 @@ export function newsDetailFromProcessed(
     title: base.title,
     summary: base.summary_text,
     blurb,
+    editorNote: editorRaw,
     sourceUrl,
   };
 }

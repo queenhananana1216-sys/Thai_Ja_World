@@ -5,7 +5,7 @@
  * 브라우저 번들에 절대 포함되지 않도록 'server-only' 가드를 선언합니다.
  */
 
-import 'server-only';
+/** 관리·API 전용 — server-only 생략(tsx CLI 호환) */
 import { getServerSupabaseClient } from './supabaseClient';
 import type { AdminFilters, BotActionRow } from '../types/botTypes';
 

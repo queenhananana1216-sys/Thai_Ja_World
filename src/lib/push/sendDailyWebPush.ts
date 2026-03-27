@@ -4,6 +4,7 @@ import {
   buildDailyWebPushPayload,
   type ProcessedNewsDigestRow,
 } from '@/lib/push/digestFromProcessed';
+import { fetchBangkokWeatherPairForPush } from '@/lib/weather/bangkokWeatherSnippet';
 
 function normalizeNewsRowForDigest(row: unknown): ProcessedNewsDigestRow | null {
   if (!row || typeof row !== 'object') return null;
@@ -93,7 +94,8 @@ export async function sendDailyWebPushDigest(origin: string): Promise<DailyPushR
   }
 
   const digestRow = normalizeNewsRowForDigest(newsRow);
-  const payload = digestRow ? buildDailyWebPushPayload(digestRow, origin) : null;
+  const weather = await fetchBangkokWeatherPairForPush();
+  const payload = digestRow ? buildDailyWebPushPayload(digestRow, origin, weather) : null;
   if (!payload) {
     result.skippedReason = 'empty_digest';
     return result;

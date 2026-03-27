@@ -24,7 +24,7 @@ const labels: Record<
   free: { ko: '자유', th: 'ทั่วไป' },
   restaurant: { ko: '맛집', th: 'ร้านแนะนำ' },
   info: { ko: '정보', th: 'ข้อมูล' },
-  flea: { ko: '한줄 나눔장', th: 'แผงบรรทัดเดียว' },
+  flea: { ko: '중고·거래', th: 'มือสอง' },
   job: { ko: '알바·구인', th: 'งาน·จ้าง' },
 };
 

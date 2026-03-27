@@ -1044,6 +1044,30 @@ a:hover {
   color: var(--tj-ink);
 }
 
+.news-story__editor {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border-left: 3px solid rgba(100, 116, 139, 0.45);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.news-story__editor-label {
+  margin: 0 0 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--tj-muted);
+  text-transform: uppercase;
+}
+
+.news-story__editor-body {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--tj-ink);
+  font-style: italic;
+}
+
 .digest-strip {
   display: grid;
   grid-template-columns: 1fr 1fr;

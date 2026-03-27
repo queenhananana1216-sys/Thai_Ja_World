@@ -1,8 +1,7 @@
 /**
- * Slack Incoming Webhooks — 서버 전용, SSRF 방지(hooks.slack.com 만).
+ * Slack Incoming Webhooks — SSRF 방지(hooks.slack.com 만).
+ * server-only 생략: 봇 tsx CLI 경로에서도 로드됨. 클라이언트에서 import 금지.
  */
-
-import 'server-only';
 
 export function isAllowedSlackIncomingWebhookUrl(url: string): boolean {
   return url.trim().startsWith('https://hooks.slack.com/');

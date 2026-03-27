@@ -313,11 +313,11 @@ export default function HomePageClient() {
         <h1 id="home-hero-title" className="home-hero__title">
           {h.title}
         </h1>
+        <p className="home-hero__kicker">{h.heroKicker}</p>
         <p className="home-hero__lead">
-          {h.leadBefore}
-          <strong className="home-hero__accent">{h.leadAccent}</strong>
-          {h.leadAfter}
+          <strong className="home-hero__accent">{h.heroLead}</strong>
         </p>
+        <p className="home-hero__sub">{h.heroSub}</p>
         <p id="home-mini-teaser" className="home-hero__dream">
           {h.dreamIntro}
           <strong className="home-hero__accent">
@@ -339,13 +339,13 @@ export default function HomePageClient() {
             <span className="hub-tile__sub">{h.hubLocalSub}</span>
           </Link>
           <Link href="/community/trade" className="hub-tile">
-            <span className="hub-tile__emoji">📌</span>
+            <span className="hub-tile__emoji">🧺</span>
             <span>{h.hubNotice}</span>
             <span className="hub-tile__sub">{h.hubNoticeSub}</span>
           </Link>
           {hasTip ? (
             <div className="hub-tile" style={{ cursor: 'default' }}>
-              <span className="hub-tile__emoji">🕵️</span>
+              <span className="hub-tile__emoji">📬</span>
               <span>{h.hubTip}</span>
               <span
                 className="hub-tile__sub"
@@ -370,7 +370,7 @@ export default function HomePageClient() {
             </div>
           ) : (
             <div className="hub-tile" style={{ opacity: 0.85 }}>
-              <span className="hub-tile__emoji">🕵️</span>
+              <span className="hub-tile__emoji">📬</span>
               <span>{h.hubTip}</span>
               <span className="hub-tile__sub">{h.hubTipSoon}</span>
             </div>

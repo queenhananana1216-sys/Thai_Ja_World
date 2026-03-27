@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import MinihomeRoomView from '../_components/MinihomeRoomView';
 import { createServerClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
+import type { MinihomePublicRow } from '@/types/minihome';
 
 export default async function MinihomePublicPage({
   params,
@@ -15,7 +17,7 @@ export default async function MinihomePublicPage({
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from('user_minihomes')
-    .select('public_slug, title, tagline, is_public')
+    .select('public_slug, title, tagline, intro_body, theme, layout_modules, is_public')
     .eq('public_slug', slug)
     .maybeSingle();
 
@@ -23,26 +25,21 @@ export default async function MinihomePublicPage({
 
   const locale = await getLocale();
   const d = getDictionary(locale);
-  const m = d.minihome;
+  const row = data as MinihomePublicRow;
 
   return (
-    <div className="page-body board-page">
+    <div className="page-body board-page minihome-public-page">
       <div className="board-toolbar">
-        <h1 className="board-title">{data.title ?? data.public_slug}</h1>
         <Link href="/community/boards" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
-          {d.nav.community}
+          ← {d.nav.community}
         </Link>
       </div>
-      {data.tagline ? (
-        <p style={{ margin: '0 0 20px', color: '#475569', fontSize: '0.95rem' }}>{data.tagline}</p>
-      ) : null}
-
-      <div className="card" style={{ padding: 18, marginBottom: 12, opacity: 0.72 }}>
-        <p style={{ margin: 0, fontWeight: 600 }}>{m.guestbookLocked}</p>
-      </div>
-      <div className="card" style={{ padding: 18, opacity: 0.72 }}>
-        <p style={{ margin: 0, fontWeight: 600 }}>{m.albumLocked}</p>
-      </div>
+      <MinihomeRoomView
+        data={row}
+        labels={d.minihome}
+        navCommunity={d.nav.community}
+        variant="page"
+      />
     </div>
   );
 }

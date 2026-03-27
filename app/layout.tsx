@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { Noto_Sans_KR, Noto_Sans_Thai } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import FxRemoteWidget from './_components/FxRemoteWidget';
 import VercelSpeedInsights from './_components/VercelSpeedInsights';
@@ -10,6 +11,20 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { FX_SNAPSHOT_FALLBACK } from '@/lib/fx/fetchUsdFx';
 import './globals.css';
+
+const notoSansKr = Noto_Sans_KR({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-noto-kr',
+  display: 'swap',
+});
+
+const notoSansThai = Noto_Sans_Thai({
+  subsets: ['latin', 'thai'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-noto-th',
+  display: 'swap',
+});
 
 /** 프로덕션 도메인 연결 시 OG/절대 URL 기준 — locale 쿠키에 맞춰 기본 메타 */
 export async function generateMetadata(): Promise<Metadata> {
@@ -41,7 +56,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const adminSession = await resolveAdminAccess();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={`${notoSansKr.variable} ${notoSansThai.variable}`}>
       <body>
         <Providers>
           <GlobalNav

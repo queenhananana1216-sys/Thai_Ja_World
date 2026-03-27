@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import AuthPageShell from '../_components/AuthPageShell';
+import AuthPasswordInput from '../_components/AuthPasswordInput';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { checkPasswordStrength, type PasswordPolicyMessages } from '@/lib/auth/passwordPolicy';
 import { createBrowserClient } from '@/lib/supabase/client';
@@ -87,14 +88,15 @@ export default function ResetPasswordPage() {
       <form className="board-form" onSubmit={(e) => void onSubmit(e)}>
         <p className="auth-field-hint">{a.passwordHint}</p>
         <label htmlFor="pw">{a.newPasswordLabel}</label>
-        <input
+        <AuthPasswordInput
           id="pw"
-          type="password"
           autoComplete="new-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={setPassword}
           required
           minLength={8}
+          showLabel={a.passwordShow}
+          hideLabel={a.passwordHide}
         />
         {error ? <p className="auth-inline-error">{error}</p> : null}
         <button type="submit" className="board-form__submit" disabled={loading}>

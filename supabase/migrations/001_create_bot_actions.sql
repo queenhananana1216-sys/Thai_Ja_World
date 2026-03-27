@@ -41,3 +41,13 @@ create index if not exists idx_bot_actions_run_id
 
 create index if not exists idx_bot_actions_action_type_created
   on bot_actions (action_type, created_at desc);
+
+-- RLS: 클라이언트(anon/authenticated)는 접근 불가 — 봇·관리 API는 service_role (RLS 우회)
+alter table public.bot_actions enable row level security;
+
+drop policy if exists bot_actions_no_client_access on public.bot_actions;
+create policy bot_actions_no_client_access on public.bot_actions
+  for all
+  to anon, authenticated
+  using (false)
+  with check (false);

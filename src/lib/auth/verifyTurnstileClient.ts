@@ -32,3 +32,17 @@ export function supabaseAuthCaptchaOptions(
   if (!hasTurnstileUi || !t) return undefined;
   return { captchaToken: t };
 }
+
+/** Supabase/캡차 오류 문구에 토큰 재발급이 필요한 경우 (1회용 토큰 소진·중복 검증 등) */
+export function shouldRefreshTurnstileFromAuthMessage(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('timeout-or-duplicate') ||
+    lower.includes('invalid-input-secret') ||
+    lower.includes('captcha') ||
+    lower.includes('turnstile') ||
+    message.includes('서버 검증') ||
+    message.includes('보안 확인') ||
+    message.includes('토큰이 이미')
+  );
+}

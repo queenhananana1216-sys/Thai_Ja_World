@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useRef, useState, type FormEvent } from 'react';
 import AuthPageShell from '../_components/AuthPageShell';
+import AuthPasswordInput from '../_components/AuthPasswordInput';
 import DailyNewsPushOptIn from '../_components/DailyNewsPushOptIn';
 import SocialAuthButtons from '../_components/SocialAuthButtons';
 import TurnstileField from '../_components/TurnstileField';
@@ -158,14 +159,15 @@ function SignupForm() {
           required
         />
         <label htmlFor="password">{a.password}</label>
-        <input
+        <AuthPasswordInput
           id="password"
-          type="password"
           autoComplete="new-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={setPassword}
           required
           minLength={8}
+          showLabel={a.passwordShow}
+          hideLabel={a.passwordHide}
         />
         <p className="auth-field-hint">{a.passwordHint}</p>
         <TurnstileField tokenRef={turnstileTokenRef} loadingLabel={a.turnstileLoading} />

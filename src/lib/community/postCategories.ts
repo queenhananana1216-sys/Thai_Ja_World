@@ -24,8 +24,8 @@ const labels: Record<
   free: { ko: '자유', th: 'ทั่วไป' },
   restaurant: { ko: '맛집', th: 'ร้านแนะนำ' },
   info: { ko: '정보', th: 'ข้อมูล' },
-  flea: { ko: '익명 한줄장', th: 'ตลาดบรรทัดเดียว' },
-  job: { ko: '구인구직', th: 'หางาน' },
+  flea: { ko: '한줄 나눔장', th: 'แผงบรรทัดเดียว' },
+  job: { ko: '알바·구인', th: 'งาน·จ้าง' },
 };
 
 export function categoryLabel(slug: string, locale: Locale): string {

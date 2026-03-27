@@ -19,9 +19,12 @@ export type Dictionary = {
   home: {
     tag: string;
     title: string;
-    leadBefore: string;
-    leadAccent: string;
-    leadAfter: string;
+    /** 히어로 키워드 줄 (제보함·맛집 등) */
+    heroKicker: string;
+    /** 히어로 메인 한 줄 */
+    heroLead: string;
+    /** 히어로 서브 설명 — 줄바꿈은 \\n */
+    heroSub: string;
     dreamIntro: string;
     dreamMinihome: string;
     dreamMid: string;
@@ -125,7 +128,7 @@ export type Dictionary = {
     sendComment: string;
     loginForComment: string;
     views: string;
-    /** 익명 한줄장·구인 목록 상단 안내 */
+    /** 한줄 나눔장·구인 허브 상단 안내 */
     gatedBanner: string;
     /** 게이트 구역에서 글쓰기 버튼 대체 */
     newPostDisabled: string;
@@ -218,6 +221,9 @@ export type Dictionary = {
     devGoogleBadge: string;
     devGoogleTail: string;
     turnstileLoading: string;
+    /** 비밀번호 표시 토글(마스킹 상태에서는 브라우저가 복사를 막는 경우가 많음) */
+    passwordShow: string;
+    passwordHide: string;
     passwordHint: string;
     passwordTooShort: string;
     passwordTooLong: string;
@@ -251,6 +257,29 @@ export type Dictionary = {
     yourSpace: string;
     slugLabel: string;
     publicPage: string;
+    previewOverlay: string;
+    openFullPage: string;
+    closeOverlay: string;
+    overlayLoading: string;
+    overlayLoadError: string;
+    editSectionTitle: string;
+    editHint: string;
+    fieldTitle: string;
+    fieldTagline: string;
+    fieldIntro: string;
+    fieldIntroHint: string;
+    fieldAccent: string;
+    fieldWallpaper: string;
+    fieldWallpaperHint: string;
+    fieldPublic: string;
+    save: string;
+    saving: string;
+    saved: string;
+    saveError: string;
+    sectionIntro: string;
+    sectionGuestbook: string;
+    sectionPhotos: string;
+    layoutHint: string;
     guestbookLocked: string;
     albumLocked: string;
     needsLogin: string;
@@ -299,28 +328,29 @@ const ko: Dictionary = {
   logoAria: '태국에 살자 월드 홈',
   lang: { ko: '한국어', th: 'ไทย' },
   footer:
-    '© 2026 태자 월드 · thaijaworld.com | 익명 한줄장·알바·핫이슈·맛집·미니홈 — 태국 사는 한국어 SNS 피드',
+    '© 2026 Thai Ja World · thaijaworld.com | 태국 한인 커뮤니티 — 제보함·나눔장·알바·맛집·미니홈',
   tierPremium: '프리미엄',
   tierStandard: '스탠다드',
   home: {
-    tag: 'Thai Ja World · 미니홈 DNA, 2026 에디션 ♪',
-    title: '태국 사는 한국어 피드 — 오늘 톡은 여기서',
-    leadBefore: '뉴스 포털 그만 두고 ',
-    leadAccent: '익명 한줄장 · 알바 · 핫이슈 · 맛집 · 로컬 · 익명 제보',
-    leadAfter: ' 한 화면에 몰아넣은 동네 피드. 태국 살이 정보도 밈도 여기서.',
-    dreamIntro: 'Next drop · ',
-    dreamMinihome: '미니홈',
-    dreamMid: ' — BGM 깔고 스킨·미니미로 ',
-    dreamPersonal: '내 방',
-    dreamOutro: ' 꾸미고 스타일 포인트 쌓는 그 텐션, ㄹㅇ 그 시절인데 UI만 2026. 우선은 광장부터 천천히.',
-    hubBoard: '자유게시판',
-    hubBoardSub: 'TMI · 정보 · 오늘 뭐 떴냐',
+    tag: 'THAI JA WORLD · 태자 커뮤니티',
+    title: '태국 한인들 모이는 곳',
+    heroKicker: '제보함 · 소식 · 알바 · 맛집',
+    heroLead: '필요한 건 여기서 바로',
+    heroSub:
+      '제보함 · 한줄 나눔장 · 맛집 · 로컬 피드\n태국 살이에 필요한 얘기는 가볍게 올리고\n바로 이어지는 동네형 커뮤니티',
+    dreamIntro: '곧 오픈 · ',
+    dreamMinihome: '미니홈피',
+    dreamMid: '내 개인 공간. ',
+    dreamPersonal: '미니 홈피를 꾸며 보세요 ~ ',
+    dreamOutro: '공개·비공개 설정 가능.',
+    hubBoard: '광장 수다',
+    hubBoardSub: '잡담 · 정보 · 오늘 뭐 떴냐',
     hubLocal: '로컬 가게',
     hubLocalSub: '우리 동네 맛집 · 홍보 · LINE',
-    hubNotice: '익명 한줄장 · 구인·거래',
-    hubNoticeSub: '닉네임만 보이게 · 한줄·구인 글 바로 쓰기',
-    hubTip: '익명 제보',
-    hubTipSoon: '텔레·라인만 연결하면 끝 · 채널 열리면 알려 드릴게요',
+    hubNotice: '한줄 나눔장 · 알바·거래',
+    hubNoticeSub: '닉만 보임 · 한 줄이면 충분 · 글 바로 쓰기',
+    hubTip: '제보함',
+    hubTipSoon: '채널만 열면 이 타일에서 바로 이동 · 지금은 연결 준비 중',
     hotLabel: '🔥 지금 태국에서 포인트 잡을 이슈',
     hotNewsBadge: '브리핑',
     hotNewsEmpty: '여긴 아직 조용해요. 곧 태국 살이에 쓸 만한 이슈로 채울게요.',
@@ -370,11 +400,11 @@ const ko: Dictionary = {
       stylePreviewLine: '{own} − {cost} → {after}',
       styleOwnLine: '보유 {own}★',
     },
-    tipDigestTitle: '익명 제보 · 연락',
-    tipTelegram: '텔레그램으로 익명 제보',
-    tipWhatsapp: '왓츠앱으로 익명 제보',
-    tipLine: '라인으로 익명 제보',
-    tipEnvHint: '.env에 제보 URL 넣으면 여기서 바로 열려요.',
+    tipDigestTitle: '제보함 · 연결',
+    tipTelegram: 'Telegram 제보함',
+    tipWhatsapp: 'WhatsApp 제보함',
+    tipLine: 'LINE 제보함',
+    tipEnvHint: '운영 설정(.env)에 링크만 넣으면 이 카드에서 바로 열려요.',
     newsTitle: '태국 살이 스냅샷',
     newsSub:
       '헤드라인 + 두세 줄 요약으로 기사처럼 읽히게 모았어요. 원문은 제목을 누르면 열려요. (ไทย 상단 언어 전환)',
@@ -391,43 +421,43 @@ const ko: Dictionary = {
   },
   board: {
     pageTitle: '광장 게시판',
-    newPost: '글쓰기',
+    newPost: '톡 남기기',
     login: '로그인',
     signup: '회원가입',
     logout: '로그아웃',
-    empty: '첫 글을 남겨 주세요! 맛집·정보 환영해요.',
+    empty: '첫 톡 남겨 주세요! 맛집·정보 환영해요.',
     category: '말머리',
     title: '제목',
     body: '내용',
     imagesHint: '사진 (최대 3장, JPG/PNG/WebP)',
-    submit: '등록하기',
+    submit: '올리기',
     uploading: '올리는 중…',
     needLogin: '글쓰기는 로그인 후 이용할 수 있어요.',
     backToList: '목록으로',
     author: '작성자',
     comments: '댓글',
     commentBody: '댓글을 입력하세요',
-    sendComment: '댓글 등록',
-    loginForComment: '댓글은 로그인 후 작성할 수 있어요.',
+    sendComment: '댓글 달기',
+    loginForComment: '로그인하고 댓글 달기',
     views: '조회',
     gatedBanner:
       '이 구역은 정식 오픈 전입니다. 목록·기존 글은 열람만 가능하고, 새 글 작성은 잠시 닫혀 있어요.',
     newPostDisabled: '글쓰기 준비 중',
-    tradeHubTitle: '익명 한줄장 · 구인·거래',
+    tradeHubTitle: '한줄 나눔장 · 알바·거래',
     tradeHubIntro:
-      '프로필 닉만 보이는 한줄 장터·구인이에요. 목록에서 글쓰기로 바로 올릴 수 있어요.',
-    tradeFleaCta: '한줄 장터 목록',
-    tradeJobCta: '구인구직 목록',
-    tradeAllBoards: '전체 광장으로',
+      '닉만 보이는 짧은 나눔·알바 코너예요. 부담은 줄이고 톤은 살린 한 줄 플리 — 목록에서 바로 올리기.',
+    tradeFleaCta: '나눔장 구경하기',
+    tradeJobCta: '알바·구인 보러 가기',
+    tradeAllBoards: '광장 전체보기',
     emptyGated: '아직 이 말머리로 올라온 글이 없어요. 정식 오픈 후 글쓰기가 열립니다.',
     mod: {
       nsfw: '부적절한 텍스트·이미지로 판단되어 등록할 수 없어요. 반복 시 계정 제한이 생길 수 있어요.',
       promo:
-        '홍보·외부 유도 성격이 강해요. 한줄 장터·구인 말머리를 쓰거나 연락처·단톡 링크를 줄여 주세요.',
+        '홍보·외부 유도가 강해요. 나눔장·알바 말머리로 옮기거나 연락처·단톡 링크를 줄여 주세요.',
       banned: '현재 커뮤니티 이용이 제한된 계정이에요. 제한 해제 후 다시 시도해 주세요.',
       imagePolicy:
         '이미지 검사를 위해 운영 환경에 OPENAI_API_KEY 가 필요해요. 관리자에게 문의하거나 텍스트만 등록해 주세요.',
-      scam: '사기·불법 금융으로 판단되어 계정이 제한되었어요. 이의가 있으면 제보 채널로 연락 주세요.',
+      scam: '사기·불법 금융으로 판단되어 계정이 제한되었어요. 이의가 있으면 제보함으로 연락 주세요.',
       server: '검증 서버 오류예요. 잠시 후 다시 시도해 주세요.',
       auth: '로그인이 필요하거나 세션이 만료됐어요. 다시 로그인해 주세요.',
       generic: '등록할 수 없어요. 내용을 수정한 뒤 다시 시도해 주세요.',
@@ -506,6 +536,8 @@ const ko: Dictionary = {
     devGoogleBadge: '[개발]',
     devGoogleTail: ' Google 로그인: Supabase Provider + ',
     turnstileLoading: '보안 확인 로딩 중…',
+    passwordShow: '비밀번호 표시',
+    passwordHide: '비밀번호 숨기기',
     passwordHint: '8자 이상, 글자·숫자를 함께 사용해 주세요.',
     passwordTooShort: '비밀번호는 {min}자 이상이어야 해요.',
     passwordTooLong: '비밀번호는 {max}자 이하여야 해요.',
@@ -536,12 +568,36 @@ const ko: Dictionary = {
     loginPhoneLink: '휴대폰 번호로 로그인',
   },
   minihome: {
-    pageTitle: '내 미니홈',
-    yourSpace: '개인 공간이 준비됐어요. 아래 기능은 1차 오픈 후 순차적으로 켜질 예정이에요.',
+    pageTitle: '내 미니홈 · 설정',
+    yourSpace:
+      '내 공간은 백엔드에 저장돼요. 메인룸 글·테마는 여기서 바꾸고, 미리보기는 오버레이로 바로 확인해 보세요.',
     slugLabel: '공개 주소',
-    publicPage: '공개 미니홈 보기',
-    guestbookLocked: '일촌평 — 준비 중 (DB만 연결됨, 작성·수정 불가)',
-    albumLocked: '사진첩 — 준비 중 (앨범·업로드 UI와 스토리지는 다음 단계)',
+    publicPage: '전체 페이지로 열기',
+    previewOverlay: '미니홈 미리보기 (오버레이)',
+    openFullPage: '새 탭에서 전체 페이지',
+    closeOverlay: '닫기',
+    overlayLoading: '미니홈 불러오는 중…',
+    overlayLoadError: '열 수 없어요. 비공개이거나 주소가 달라요.',
+    editSectionTitle: '미니홈 꾸미기',
+    editHint: '제목·한 줄 소개·메인룸 글은 방문자에게 보여요. 포인트 색은 테두리에 반영돼요.',
+    fieldTitle: '미니홈 제목',
+    fieldTagline: '한 줄 소개',
+    fieldIntro: '메인룸 글',
+    fieldIntroHint: '플레인 텍스트만 (줄바꿈 가능). 나중에 다이어리·BGM 블록은 DB layout_modules로 순서만 추가하면 확장돼요.',
+    fieldAccent: '포인트 색',
+    fieldWallpaper: '배경 이미지 URL (선택)',
+    fieldWallpaperHint: 'HTTPS 이미지 링크. 비우면 기본 배경만 사용해요.',
+    fieldPublic: '공개 미니홈 (끄면 나만 볼 수 있어요)',
+    save: '저장',
+    saving: '저장 중…',
+    saved: '저장됐어요.',
+    saveError: '저장에 실패했어요. 잠시 후 다시 시도해 주세요.',
+    sectionIntro: '메인룸',
+    sectionGuestbook: '일촌평',
+    sectionPhotos: '사진첩',
+    layoutHint: '블록 순서(intro → 일촌평 → 사진첩)는 DB의 layout_modules로 관리 — 추후 관리 UI 연결 예정.',
+    guestbookLocked: '일촌평 — 준비 중 (쓰기 RLS·UI 다음 단계)',
+    albumLocked: '사진첩 — 준비 중 (스토리지·업로드 다음 단계)',
     needsLogin: '미니홈은 로그인 후 이용할 수 있어요.',
     notProvisioned: '미니홈 행이 아직 없어요. SQL 마이그레이션 005를 적용했는지 확인해 주세요.',
     privateOrMissing: '비공개이거나 없는 미니홈이에요.',
@@ -551,14 +607,14 @@ const ko: Dictionary = {
     defaultTitle: '태자 월드 (Thai Ja World)',
     titleTemplate: '%s | 태자 월드',
     defaultDescription:
-      '태국 로컬 커뮤니티 — 익명 한줄장·구인·익명 제보·오늘의 이슈·미니홈 감성',
+      '태국에 사는 한국인 커뮤니티 — 제보함·한줄 나눔장·맛집·로컬·미니홈',
     homeTitle: '홈 — 태자 월드',
     homeDescription:
-      '태국에 사는 사람들의 플랫폼 — 광장, 익명 한줄장, 익명 제보, 로컬 가게, 오늘의 소식',
+      '태국 한인 커뮤니티 — 광장·나눔장·제보함·로컬 가게·뉴스 스냅샷·미니홈(준비 중)',
     boardsListDescription:
-      '태국 한인 광장 — 익명 한줄장, 중고·알바, 잡담. 방콕·파타야 로컬 톡을 한국어로.',
+      '태국 한인 광장 — 한줄 나눔장, 나눔·알바, 잡담. 방콕·파타야 로컬 톡을 한국어로.',
     tradeHubDescription:
-      '중고 나눔·구인구직으로 바로 가기 — 광장의 플리마켓·알바 게시판 허브.',
+      '짧은 나눔·알바 허브 — 광장 말머리에서 바로 이동해 보세요.',
   },
   push: {
     optInTitle: '🔔 하루 한 번 · 태국 핫이슈 한 줄',
@@ -591,28 +647,29 @@ const th: Dictionary = {
   logoAria: 'Thai Ja World — หน้าแรก',
   lang: { ko: '한국어', th: 'ไทย' },
   footer:
-    '© 2026 Thai Ja World · thaijaworld.com | ตลาดนิรนาม · หางาน · เทรนด์ · ร้าน · มินิโฮม — ฟีดภาษาเกาหลีที่ไทย',
+    '© 2026 Thai Ja World · thaijaworld.com | ชุมชนคนเกาหลีในไทย — กล่องแจ้งเรื่อง·แผงบรรทัดเดียว·งาน·ร้าน·มินิโฮม',
   tierPremium: 'พรีเมียม',
   tierStandard: 'สแตนดาร์ด',
   home: {
-    tag: 'Thai Ja World · DNA มินิโฮม เวอร์ชัน 2026 ♪',
-    title: 'ฟีดภาษาเกาหลีที่ไทย — คุยวันนี้ที่นี่',
-    leadBefore: 'เลิกเว็บข่าวทึบๆ มาเถอะ ',
-    leadAccent: 'ตลาดบรรทัดเดียวแบบนิรนาม · หางาน · เทรนด์ · ร้าน · แจ้งเบาะแสนิรนาม',
-    leadAfter: ' รวมหน้าเดียวเหมือนกรุ๊ปแชทหมู่บ้าน — ชีวิตที่ไทย ทั้งข่าวทั้งมีม อยู่ที่นี่',
-    dreamIntro: 'Next drop · ',
+    tag: 'THAI JA WORLD · ชุมชนไทจา',
+    title: 'ที่ที่คนเกาหลีในไทยมารวมกัน',
+    heroKicker: 'กล่องแจ้งเรื่อง · ฟีด · งาน · ร้านเด็ด',
+    heroLead: 'สิ่งที่ต้องการ — อยู่ที่นี่เลย',
+    heroSub:
+      'กล่องแจ้งเรื่อง · แผงบรรทัดเดียว · ร้านแนะนำ · ข้อมูลท้องถิ่น\nเรื่องที่ชีวิตในไทยต้องใช้ — โพสต์เบาๆ แล้วต่อยอดได้ทันที\nชุมชนสไตล์เพื่อนบ้านปี 2026',
+    dreamIntro: 'เร็วๆ นี้ · ',
     dreamMinihome: 'มินิโฮม',
-    dreamMid: ' — BGM สกิน มินิมี ตกแต่ง ',
-    dreamPersonal: 'ห้องฉัน',
-    dreamOutro: ' เก็บสไตล์พอยต์ ฟีลยุคนั้นแต่ UI ปี 2026 — ตอนนี้เริ่มจากลานก่อน ค่อยๆ ไป',
-    hubBoard: 'บอร์ดคุย',
-    hubBoardSub: 'TMI · ข่าวคราว · วันนี้มีอะไรฮิต',
+    dreamMid: 'พื้นที่ส่วนตัว ',
+    dreamPersonal: 'แต่งมินิโฮมของคุณ ~ ',
+    dreamOutro: 'เลือกเปิดเผยหรือส่วนตัวได้',
+    hubBoard: 'ลานคุย',
+    hubBoardSub: 'คุยเล่น · ข่าวคราว · วันนี้มีอะไรฮิต',
     hubLocal: 'ร้านท้องถิ่น',
     hubLocalSub: 'แนะนำร้าน · โปรโมท · LINE',
-    hubNotice: 'ตลาดบรรทัดเดียว · ซื้อขาย·หางาน',
-    hubNoticeSub: 'เห็นแค่ชื่อโปรไฟล์ · โพสต์บรรทัดเดียว/หางานได้เลย',
-    hubTip: 'แจ้งเบาะแสนิรนาม',
-    hubTipSoon: 'แค่เชื่อม Telegram/LINE — เปิดช่องทางเมื่อไหร่จะบอก',
+    hubNotice: 'แผงบรรทัดเดียว · ซื้อขาย·หางาน',
+    hubNoticeSub: 'เห็นแค่ชื่อเล่น · โพสต์สั้นๆ พอ · เขียนได้ทันที',
+    hubTip: 'กล่องแจ้งเรื่อง',
+    hubTipSoon: 'เชื่อมช่องทางแล้วกดจากตรงนี้ได้เลย · ตอนนี้กำลังเตรียม',
     hotLabel: '🔥 เรื่องเด่นที่ไทยตอนนี้',
     hotNewsBadge: 'สรุป',
     hotNewsEmpty: 'ยังเงียบอยู่ — เดี๋ยวเติมประเด็นที่คนอยู่ไทยต้องรู้',
@@ -662,11 +719,11 @@ const th: Dictionary = {
       stylePreviewLine: '{own} − {cost} → {after}',
       styleOwnLine: 'มี {own}★',
     },
-    tipDigestTitle: 'แจ้งเบาะแสนิรนาม · ติดต่อ',
-    tipTelegram: 'แจ้งผ่าน Telegram (นิรนาม)',
-    tipWhatsapp: 'แจ้งผ่าน WhatsApp (นิรนาม)',
-    tipLine: 'แจ้งผ่าน LINE (นิรนาม)',
-    tipEnvHint: 'ใส่ URL ใน .env แล้วลิงก์จะโผล่ที่นี่',
+    tipDigestTitle: 'กล่องแจ้งเรื่อง · ลิงก์',
+    tipTelegram: 'Telegram — กล่องแจ้งเรื่อง',
+    tipWhatsapp: 'WhatsApp — กล่องแจ้งเรื่อง',
+    tipLine: 'LINE — กล่องแจ้งเรื่อง',
+    tipEnvHint: 'ตั้งค่า URL ใน .env แล้วการ์ดนี้จะเปิดลิงก์ให้ทันที',
     newsTitle: 'สรุปชีวิตที่ไทยวันนี้',
     newsSub:
       'หัวข้อ + สรุป 2–3 บรรทัด แบบข่าวสั้น — กดหัวข้อเพื่อไปต้นฉบับ (สลับไทยที่เมนูด้านบน)',
@@ -683,38 +740,38 @@ const th: Dictionary = {
   },
   board: {
     pageTitle: 'บอร์ดลานชุมชน',
-    newPost: 'เขียนโพสต์',
+    newPost: 'โพสต์สั้นๆ',
     login: 'เข้าสู่ระบบ',
     signup: 'สมัครสมาชิก',
     logout: 'ออกจากระบบ',
-    empty: 'โพสต์แรกรอคุณอยู่! แชร์ร้านอร่อยหรือข้อมูลได้เลย',
+    empty: 'โพสต์แรกมาโล่งๆ หน่อย! ร้านเด็ด·ข้อมูลยินดี',
     category: 'หมวด',
     title: 'หัวข้อ',
     body: 'เนื้อหา',
     imagesHint: 'รูปภาพ (สูงสุด 3 รูป, JPG/PNG/WebP)',
-    submit: 'โพสต์',
+    submit: 'ส่งเลย',
     uploading: 'กำลังอัปโหลด…',
     needLogin: 'ต้องเข้าสู่ระบบก่อนเพื่อโพสต์',
     backToList: 'กลับรายการ',
     author: 'ผู้เขียน',
     comments: 'ความคิดเห็น',
     commentBody: 'แสดงความคิดเห็น',
-    sendComment: 'ส่ง',
-    loginForComment: 'เข้าสู่ระบบเพื่อคอมเมนต์',
+    sendComment: 'คอมเมนต์',
+    loginForComment: 'ล็อกอินแล้วคอมเมนต์',
     views: 'ดู',
     gatedBanner:
       'โซนนี้ยังไม่เปิดโพสต์ใหม่ — ดูรายการ/โพสต์เดิมได้เท่านั้น จะเปิดให้โพสต์พร้อมเปิดตัวจริง',
     newPostDisabled: 'โพสต์เร็วๆ นี้',
-    tradeHubTitle: 'ตลาดบรรทัดเดียว · ซื้อขาย·หางาน',
+    tradeHubTitle: 'แผงบรรทัดเดียว · ซื้อขาย·หางาน',
     tradeHubIntro:
-      'เห็นแค่ชื่อโปรไฟล์ — โพสต์จากรายการหรือปุ่มเขียนได้เลย',
-    tradeFleaCta: 'ดูตลาดบรรทัดเดียว',
-    tradeJobCta: 'ดูหางาน',
-    tradeAllBoards: 'ไปบอร์ดทั้งหมด',
+      'เห็นแค่ชื่อเล่น — โพสต์สั้นๆ แบบตลาดนัดออนไลน์ กดจากรายการหรือปุ่มเขียนได้เลย',
+    tradeFleaCta: 'แวะแผงบรรทัดเดียว',
+    tradeJobCta: 'ดูงาน·จ้าง',
+    tradeAllBoards: 'ไปลานทั้งหมด',
     emptyGated: 'ยังไม่มีโพสต์ในหมวดนี้ — โพสต์จะเปิดเมื่อเปิดตัวจริง',
     mod: {
       nsfw: 'ข้อความ/รูปไม่ผ่านการตรวจ — ลองแก้แล้วโพสต์ใหม่ (ทำซ้ำอาจถูกจำกัดบัญชี)',
-      promo: 'คล้ายโฆษณา/ชวนออกนอกเว็บ — ใช้หมวดตลาดบรรทัดเดียว/หางาน หรือลดลิงก์·ช่องทางติดต่อ',
+      promo: 'คล้ายโฆษณา/ชวนออกนอกเว็บ — ใช้หมวดแผงบรรทัดเดียว/หางาน หรือลดลิงก์·ช่องทางติดต่อ',
       banned: 'บัญชีนี้ถูกจำกัดการใช้บอร์ดชั่วคราว',
       imagePolicy: 'ตรวจรูปต้องใช้ OPENAI_API_KEY บนเซิร์ฟเวอร์ — ลองโพสต์แบบข้อความอย่างเดียวหรือติดต่อแอดมิน',
       scam: 'ตรวจพบคำที่เกี่ยวกับการหลอกลวง/การเงินผิดกฎ — บัญชีถูกจำกัด',
@@ -796,6 +853,8 @@ const th: Dictionary = {
     devGoogleBadge: '[dev]',
     devGoogleTail: ' Google login: Supabase Provider + ',
     turnstileLoading: 'กำลังโหลดการยืนยันความปลอดภัย…',
+    passwordShow: 'แสดงรหัสผ่าน',
+    passwordHide: 'ซ่อนรหัสผ่าน',
     passwordHint: 'อย่างน้อย 8 ตัว มีทั้งตัวอักษรและตัวเลข',
     passwordTooShort: 'รหัสผ่านต้องมีอย่างน้อย {min} ตัว',
     passwordTooLong: 'รหัสผ่านต้องไม่เกิน {max} ตัว',
@@ -826,12 +885,36 @@ const th: Dictionary = {
     loginPhoneLink: 'เข้าสู่ระบบด้วยเบอร์โทร',
   },
   minihome: {
-    pageTitle: 'มินิโฮมของฉัน',
-    yourSpace: 'พื้นที่ส่วนตัวพร้อมแล้ว — ฟีเจอร์ด้านล่างจะเปิดทีละส่วนหลังรุ่นแรก',
+    pageTitle: 'มินิโฮมของฉัน · ตั้งค่า',
+    yourSpace:
+      'ข้อมูลเก็บในฐานข้อมูล — แก้หัวข้อ·คำโปรย·ห้องหลักได้ที่นี่ กดดูตัวอย่างแบบโอเวอร์เลย์',
     slugLabel: 'ลิงก์สาธารณะ',
-    publicPage: 'ดูมินิโฮมแบบสาธารณะ',
-    guestbookLocked: 'ทักทาย/ข้อความ — กำลังเตรียม (มีตารางแล้ว ยังโพสต์ไม่ได้)',
-    albumLocked: 'อัลบั้มรูป — กำลังเตรียม (อัปโหลดและ UI รอลำดับถัดไป)',
+    publicPage: 'เปิดเต็มหน้า',
+    previewOverlay: 'ดูตัวอย่าง (โอเวอร์เลย์)',
+    openFullPage: 'แท็บใหม่ — เต็มหน้า',
+    closeOverlay: 'ปิด',
+    overlayLoading: 'กำลังโหลดมินิโฮม…',
+    overlayLoadError: 'เปิดไม่ได้ — อาจเป็นส่วนตัวหรือลิงก์ไม่ถูก',
+    editSectionTitle: 'แต่งมินิโฮม',
+    editHint: 'หัวข้อ·คำโปรย·ห้องหลัก ผู้เยี่ยมจะเห็น สีเน้นใช้กรอบ',
+    fieldTitle: 'ชื่อมินิโฮม',
+    fieldTagline: 'คำโปรยบรรทัดเดียว',
+    fieldIntro: 'ข้อความห้องหลัก',
+    fieldIntroHint: 'ข้อความธรรมดา (ขึ้นบรรทัดได้) บล็อกอื่นๆ จะต่อจาก layout_modules ใน DB',
+    fieldAccent: 'สีเน้น',
+    fieldWallpaper: 'URL รูปพื้นหลัง (ไม่บังคับ)',
+    fieldWallpaperHint: 'ลิงก์ HTTPS เท่านั้น — ว่าง = พื้นหลังเริ่มต้น',
+    fieldPublic: 'เปิดมินิโฮมสาธารณะ (ปิด = เห็นแค่เจ้าของ)',
+    save: 'บันทึก',
+    saving: 'กำลังบันทึก…',
+    saved: 'บันทึกแล้ว',
+    saveError: 'บันทึกไม่สำเร็จ — ลองใหม่',
+    sectionIntro: 'ห้องหลัก',
+    sectionGuestbook: 'ทักทาย',
+    sectionPhotos: 'อัลบั้ม',
+    layoutHint: 'ลำดับบล็อกอยู่ที่ layout_modules ใน DB — UI จัดการจะตามมา',
+    guestbookLocked: 'ทักทาย — กำลังเตรียม (RLS/UI ขั้นถัดไป)',
+    albumLocked: 'อัลบั้ม — กำลังเตรียม (ที่เก็บไฟล์ถัดไป)',
     needsLogin: 'ต้องเข้าสู่ระบบก่อนใช้มินิโฮม',
     notProvisioned: 'ยังไม่มีแถวมินิโฮม — ตรวจว่ารัน migration 005 แล้วหรือยัง',
     privateOrMissing: 'มินิโฮมส่วนตัวหรือไม่มีลิงก์นี้',
@@ -841,14 +924,14 @@ const th: Dictionary = {
     defaultTitle: 'Thai Ja World (태자 월드)',
     titleTemplate: '%s | Thai Ja World',
     defaultDescription:
-      'ชุมชนคนเกาหลีในไทย — ตลาดบรรทัดเดียวแบบนิรนาม · หางาน · แจ้งเบาะแส · เทรนด์วันนี้ · มินิโฮม',
+      'ชุมชนคนเกาหลีในไทย — กล่องแจ้งเรื่อง · แผงบรรทัดเดียว · ร้านแนะนำ · ข้อมูลท้องถิ่น · มินิโฮม',
     homeTitle: 'หน้าแรก — Thai Ja World',
     homeDescription:
-      'แพลตฟอร์มคนอยู่ไทย — ลานชุมชน ตลาดนิรนาม แจ้งเบาะแส ร้านท้องถิ่น ข่าววันนี้',
+      'ชุมชนไทจา — ลานคุย·แผงบรรทัดเดียว·กล่องแจ้งเรื่อง·ร้านท้องถิ่น·สรุปข่าว·มินิโฮม (เร็วๆ นี้)',
     boardsListDescription:
-      'ลานชุมชนคนเกาหลีในไทย — ตลาดบรรทัดเดียว มือสอง หางาน คุยสบายๆ กรุงเทพ·พัทยา',
+      'ลานชุมชนคนเกาหลีในไทย — แผงบรรทัดเดียว มือสอง หางาน คุยสบายๆ กรุงเทพ·พัทยา',
     tradeHubDescription:
-      'ศูนย์กลางมือสองและหางาน — เข้าบอร์ดเฟลามาร์เก็ตและงาน Part-time',
+      'โพสต์สั้นๆ ซื้อขาย·หางาน — ฮับจากลานชุมชน กดแล้วไปต่อได้เลย',
   },
   push: {
     optInTitle: '🔔 วันละครั้ง · ประเด็นร้อนไทย หนึ่งบรรทัด',

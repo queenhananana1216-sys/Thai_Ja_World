@@ -29,7 +29,8 @@
 
 body {
   margin: 0;
-  font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui,
+  font-family: var(--font-noto-kr, 'Noto Sans KR'), var(--font-noto-th, 'Noto Sans Thai'),
+    'Apple SD Gothic Neo', 'Malgun Gothic', 'Sukhumvit Set', 'Leelawadee UI', system-ui,
     -apple-system, sans-serif;
   background-color: var(--tj-bg);
   background-image: var(--tj-bg-dots);
@@ -38,6 +39,11 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
+}
+
+html[lang='th'] body {
+  font-family: var(--font-noto-th, 'Noto Sans Thai'), var(--font-noto-kr, 'Noto Sans KR'),
+    'Sukhumvit Set', 'Leelawadee UI', system-ui, -apple-system, sans-serif;
 }
 
 a {
@@ -422,6 +428,57 @@ a:hover {
   resize: vertical;
 }
 
+.board-form .auth-password-field {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.board-form .auth-password-field__input {
+  width: 100%;
+  max-width: 100%;
+  padding: 10px 44px 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--tj-line);
+  font-family: inherit;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.board-form .auth-password-field__toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--tj-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.board-form .auth-password-field__toggle:hover {
+  color: var(--tj-ink);
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.board-form .auth-password-field__toggle:focus-visible {
+  outline: 2px solid rgba(124, 58, 237, 0.45);
+  outline-offset: 2px;
+}
+
+.board-form .auth-password-field__toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
 .board-form__submit {
   background: linear-gradient(135deg, #7c3aed, #a78bfa);
   color: #fff;
@@ -738,18 +795,36 @@ a:hover {
 .home-hero__title {
   font-size: clamp(1.35rem, 3.5vw, 1.75rem);
   font-weight: 800;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   line-height: 1.25;
   letter-spacing: -0.02em;
   color: #3d3550;
 }
 
-.home-hero__lead {
-  margin: 0 0 20px;
-  font-size: 0.92rem;
-  color: var(--tj-muted);
-  line-height: 1.55;
+.home-hero__kicker {
+  margin: 0 0 6px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #6b5f8c;
   max-width: 36rem;
+}
+
+.home-hero__lead {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  color: var(--tj-muted);
+  line-height: 1.5;
+  max-width: 36rem;
+}
+
+.home-hero__sub {
+  margin: 0 0 20px;
+  font-size: 0.88rem;
+  color: var(--tj-muted);
+  line-height: 1.65;
+  max-width: 22rem;
+  white-space: pre-line;
 }
 
 .home-hero__accent {
@@ -1589,4 +1664,209 @@ a:hover {
   padding: 40px 20px;
   color: #94a3b8;
   font-size: 0.88rem;
+}
+
+/* ── 미니홈 (싸이월드형 룸 + 오버레이) ───────────────────────────────────── */
+
+.minihome-public-page .minihome-room {
+  margin-top: 4px;
+}
+
+.minihome-room {
+  border-radius: 22px;
+  padding: 18px 14px 22px;
+  background-color: #f4effb;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.minihome-room--overlay {
+  padding-top: 0;
+}
+
+.minihome-room__paper {
+  margin: 0 auto;
+  max-width: 520px;
+  background: rgba(255, 253, 254, 0.97);
+  border-radius: 18px;
+  border: 2px solid var(--mh-accent, #7c3aed);
+  padding: 20px 18px 18px;
+}
+
+.minihome-room__overlay-bar {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto 12px;
+  max-width: 520px;
+}
+
+.minihome-room__close {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--tj-ink);
+  box-shadow: 0 2px 12px rgba(74, 66, 88, 0.12);
+}
+
+.minihome-room__close:hover {
+  background: #fff;
+}
+
+.minihome-room__full-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--tj-link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.minihome-room__slug {
+  font-size: 0.72rem;
+  color: var(--tj-muted);
+  margin: 0 0 4px;
+  letter-spacing: 0.06em;
+}
+
+.minihome-room__title {
+  font-size: clamp(1.2rem, 3vw, 1.45rem);
+  font-weight: 800;
+  margin: 0;
+  color: var(--tj-ink);
+  letter-spacing: -0.02em;
+}
+
+.minihome-room__tagline {
+  margin: 8px 0 0;
+  font-size: 0.92rem;
+  color: var(--tj-muted);
+  line-height: 1.5;
+}
+
+.minihome-room__section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(196, 181, 253, 0.55);
+}
+
+.minihome-room__section-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mh-accent, #7c3aed);
+  margin: 0 0 10px;
+}
+
+.minihome-room__intro-body {
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--tj-ink);
+  margin: 0;
+}
+
+.minihome-room__section--soon {
+  opacity: 0.88;
+}
+
+.minihome-room__soon {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--tj-muted);
+  line-height: 1.5;
+}
+
+.minihome-room__footer {
+  margin-top: 22px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tj-line);
+  font-size: 0.85rem;
+}
+
+.minihome-overlay {
+  margin: 0;
+  border: none;
+  padding: 0;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.minihome-overlay::backdrop {
+  background: rgba(35, 28, 48, 0.5);
+}
+
+.minihome-overlay__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  cursor: pointer;
+}
+
+.minihome-overlay__sheet {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  overflow: auto;
+  padding: 14px 12px 40px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.minihome-overlay__sheet > * {
+  pointer-events: auto;
+}
+
+.minihome-overlay__state {
+  text-align: center;
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 28px 16px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+}
+
+.minihome-overlay__state--err {
+  color: #fecaca;
+}
+
+.minihome-edit-form__h {
+  font-size: 1.02rem;
+  margin: 0 0 6px;
+  color: var(--tj-ink);
+}
+
+.minihome-edit-form__hint {
+  margin: 0 0 18px;
+  font-size: 0.86rem;
+  color: var(--tj-muted);
+  line-height: 1.55;
+}
+
+.minihome-edit-form__check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 0.88rem;
+  color: var(--tj-ink);
+  cursor: pointer;
+}
+
+.minihome-edit-form__check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--tj-link);
 }

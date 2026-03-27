@@ -109,7 +109,7 @@ export async function createModeratedPost(
       ok: false,
       status: 403,
       code: 'invalid',
-      message: '익명 한줄장·구인구직 게시판은 정식 오픈 전까지 새 글 작성이 제한됩니다.',
+      message: '한줄 나눔장·알바 코너는 정식 오픈 전까지 새 글 작성이 잠시 막혀 있어요.',
     };
   }
 

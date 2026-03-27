@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useRef, useState, type FormEvent } from 'react';
 import AuthPageShell from '../_components/AuthPageShell';
+import AuthPasswordInput from '../_components/AuthPasswordInput';
 import DailyNewsPushOptIn from '../_components/DailyNewsPushOptIn';
 import SocialAuthButtons from '../_components/SocialAuthButtons';
 import TurnstileField from '../_components/TurnstileField';
@@ -105,13 +106,14 @@ function LoginForm() {
           required
         />
         <label htmlFor="password">{a.password}</label>
-        <input
+        <AuthPasswordInput
           id="password"
-          type="password"
           autoComplete="current-password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={setPassword}
           required
+          showLabel={a.passwordShow}
+          hideLabel={a.passwordHide}
         />
         <TurnstileField tokenRef={turnstileTokenRef} loadingLabel={a.turnstileLoading} />
         {error ? <p className="auth-inline-error">{error}</p> : null}

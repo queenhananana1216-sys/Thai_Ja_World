@@ -1,5 +1,7 @@
 # 전체 화면 OCR/번역 토글 (옵션 B)
 
+**처음이면 먼저** [screen-translation-simple-ko.md](screen-translation-simple-ko.md) (한글 초간단)을 보세요.
+
 `RSTGameTranslation`을 SSD에 두고 실행한 뒤, 오버레이 표시와 번역 시작/정지를 빠르게 껐다 켤 수 있게 합니다.
 
 ## 1) SSD에 설치(다운로드/압축해제)

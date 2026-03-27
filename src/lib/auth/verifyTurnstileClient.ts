@@ -1,5 +1,11 @@
 /**
- * 로그인/가입 폼에서 Turnstile 토큰을 서버에 맡겨 검증할 때 사용.
+ * 로그인/가입 폼에서 Turnstile 토큰 존재 여부만 확인한다.
+ *
+ * Cloudflare Turnstile 토큰은 보통 **1회만** siteverify 가능하다.
+ * 여기서 /api/auth/verify-turnstile 로 먼저 검증한 뒤 같은 토큰을 Supabase
+ * `captchaToken` 으로 넘기면, Supabase 쪽 두 번째 검증이 실패해
+ * "captcha verification process failed" 가 난다.
+ * 따라서 Supabase Auth CAPTCHA 를 쓰는 흐름에서는 **원격 사전 검증을 하지 않는다.**
  */
 export type VerifyTurnstileClientResult =
   | { ok: true }
@@ -11,26 +17,7 @@ export async function verifyTurnstileOnSubmit(
 ): Promise<VerifyTurnstileClientResult> {
   if (!hasTurnstileUi) return { ok: true };
   if (!token?.trim()) return { ok: false, reason: 'missing_token' };
-  try {
-    const res = await fetch('/api/auth/verify-turnstile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-    });
-    if (res.ok) return { ok: true };
-
-    // /api/auth/verify-turnstile 가 반환하는 error-codes 를 프론트에 그대로 전달한다.
-    // (reason 은 고정으로 두고, codes 로 원인을 더 정확히 파악한다.)
-    try {
-      const json = (await res.json()) as { error?: string; codes?: string[] };
-      if (json.error === 'missing_token') return { ok: false, reason: 'missing_token' };
-      return { ok: false, reason: 'verify_failed', codes: json.codes ?? [] };
-    } catch {
-      return { ok: false, reason: 'verify_failed' };
-    }
-  } catch {
-    return { ok: false, reason: 'verify_failed' };
-  }
+  return { ok: true };
 }
 
 /**

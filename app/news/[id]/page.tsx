@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import NewsComments, { type NewsCommentRow } from '../_components/NewsComments';
@@ -5,9 +6,71 @@ import { createServerClient } from '@/lib/supabase/server';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { newsDetailFromProcessed } from '@/lib/news/processedNewsDisplay';
+import JsonLd from '@/lib/seo/JsonLd';
+import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { extractHostname, formatDate } from '@/lib/utils/formatDate';
 
 type PageProps = { params: Promise<{ id: string }> };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const locale = await getLocale();
+  const d = getDictionary(locale);
+  const supabase = createServerClient();
+  const { data: row } = await supabase
+    .from('processed_news')
+    .select(
+      'id, clean_body, created_at, raw_news(title, external_url, published_at), summaries(summary_text, model)',
+    )
+    .eq('id', id)
+    .eq('published', true)
+    .maybeSingle();
+
+  if (!row) {
+    return { title: d.home.newsTitle, robots: { index: false, follow: true } };
+  }
+
+  const rn = row.raw_news as unknown as {
+    title: string;
+    external_url: string;
+    published_at: string | null;
+  } | null;
+
+  const sums = row.summaries as unknown as
+    | { summary_text: string; model: string | null }[]
+    | null;
+
+  const detail = newsDetailFromProcessed(
+    row.clean_body as string | null,
+    rn?.title ?? null,
+    rn?.external_url ?? null,
+    sums ?? null,
+    locale,
+  );
+
+  const description = trimForMetaDescription(
+    [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
+  );
+  const url = absoluteUrl(`/news/${id}`);
+  const datePublished = rn?.published_at ?? (row.created_at as string);
+
+  return {
+    title: detail.title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title: detail.title,
+      description,
+      url,
+      type: 'article',
+      publishedTime: datePublished,
+      siteName: d.seo.defaultTitle,
+      locale: locale === 'th' ? 'th_TH' : 'ko_KR',
+    },
+    twitter: { card: 'summary_large_image', title: detail.title, description },
+    robots: { index: true, follow: true },
+  };
+}
 
 export default async function NewsStoryPage({ params }: PageProps) {
   const { id } = await params;
@@ -78,10 +141,38 @@ export default async function NewsStoryPage({ params }: PageProps) {
   }));
 
   const path = `/news/${id}`;
+  const pageUrl = absoluteUrl(path);
   const host = detail.sourceUrl ? extractHostname(detail.sourceUrl) : '';
+  const datePublished = rn?.published_at ?? (row.created_at as string);
+  const jsonDesc = trimForMetaDescription(
+    [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
+    8000,
+  );
 
   return (
     <div className="page-body board-page">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'NewsArticle',
+          headline: detail.title,
+          description: jsonDesc,
+          datePublished,
+          dateModified: row.created_at as string,
+          url: pageUrl,
+          mainEntityOfPage: { '@type': 'WebPage', '@id': pageUrl },
+          publisher: {
+            '@type': 'Organization',
+            name: d.seo.defaultTitle,
+            url: absoluteUrl('/'),
+          },
+          ...(detail.sourceUrl
+            ? {
+                isBasedOn: detail.sourceUrl,
+              }
+            : {}),
+        }}
+      />
       <Link href="/" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
         {h.newsDetailBack}
       </Link>

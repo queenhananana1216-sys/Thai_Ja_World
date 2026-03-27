@@ -17,6 +17,9 @@ dist/
 *.log
 npm-debug.log*
 
+# Workspace scratch (로컬 임시, 커밋 금지)
+.tmp/
+
 # OS
 .DS_Store
 Thumbs.db

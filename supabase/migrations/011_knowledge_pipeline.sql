@@ -91,9 +91,15 @@ create index if not exists knowledge_summaries_pk_id_idx
 
 -- ── RLS 정책 ────────────────────────────────────────────────────────────
 
--- knowledge_sources (관리 전용 — 공개 읽기 불필요)
--- RLS 만 켜고 정책 없음 → anon/authenticated 는 접근 불가. service_role 은 RLS 우회로 파이프라인만 쓰기.
+-- knowledge_sources (관리·파이프라인 전용 — API 클라이언트 차단, lint 0008)
 alter table public.knowledge_sources enable row level security;
+
+drop policy if exists knowledge_sources_no_client_access on public.knowledge_sources;
+create policy knowledge_sources_no_client_access on public.knowledge_sources
+  for all
+  to anon, authenticated
+  using (false)
+  with check (false);
 
 -- raw_knowledge (공개 읽기 허용 — 출처 URL 노출용)
 alter table public.raw_knowledge enable row level security;

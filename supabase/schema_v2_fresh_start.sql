@@ -328,6 +328,14 @@ alter table public.summaries enable row level security;
 alter table public.publish_logs enable row level security;
 alter table public.bot_actions enable row level security;
 
+-- bot_actions: 서버 봇 로그 — PostgREST anon/authenticated 명시 차단 (lint 0008, service_role 은 RLS 우회)
+drop policy if exists bot_actions_no_client_access on public.bot_actions;
+create policy bot_actions_no_client_access on public.bot_actions
+  for all
+  to anon, authenticated
+  using (false)
+  with check (false);
+
 -- profiles: 누구나 읽기(공개 프로필) — 민감 필드 생기면 컬럼/뷰로 제한할 것
 drop policy if exists profiles_select_all on public.profiles;
 create policy profiles_select_all on public.profiles for select using (true);
@@ -423,9 +431,6 @@ create policy summaries_select on public.summaries for select using (true);
 
 drop policy if exists publish_logs_select on public.publish_logs;
 create policy publish_logs_select on public.publish_logs for select using (true);
-
--- bot_actions: 클라이언트에서는 읽기 불가(관리자 API만 service role)
--- 정책 없음 = anon/authenticated는 접근 불가
 
 -- =============================================================================
 -- 선택: 데모용 plaza 1개

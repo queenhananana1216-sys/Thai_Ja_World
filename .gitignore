@@ -20,7 +20,7 @@ npm-debug.log*
 # Workspace scratch (로컬 임시, 커밋 금지)
 .tmp/
 
-# 로컬 junction/심링크(예: /mnt/e/02_Workspace) — Git에 올리면 Vercel에서 ENOENT
+# WSL→Windows 심링크를 커밋하면 Vercel Linux 에서 ENOENT (/vercel/path0/02_Workspace)
 02_Workspace
 
 # OS

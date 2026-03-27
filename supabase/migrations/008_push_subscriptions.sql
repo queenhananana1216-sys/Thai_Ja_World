@@ -13,7 +13,10 @@ create table if not exists public.push_subscriptions (
 create index if not exists idx_push_subscriptions_user_id on public.push_subscriptions (user_id);
 
 create or replace function public.set_push_subscriptions_updated_at()
-returns trigger language plpgsql as $$
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
 begin
   new.updated_at = now();
   return new;

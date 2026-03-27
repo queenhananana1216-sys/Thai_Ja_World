@@ -92,37 +92,26 @@ create index if not exists knowledge_summaries_pk_id_idx
 -- ── RLS 정책 ────────────────────────────────────────────────────────────
 
 -- knowledge_sources (관리 전용 — 공개 읽기 불필요)
+-- RLS 만 켜고 정책 없음 → anon/authenticated 는 접근 불가. service_role 은 RLS 우회로 파이프라인만 쓰기.
 alter table public.knowledge_sources enable row level security;
-create policy "knowledge_sources: service role full access"
-  on public.knowledge_sources for all
-  using (true) with check (true);
 
 -- raw_knowledge (공개 읽기 허용 — 출처 URL 노출용)
 alter table public.raw_knowledge enable row level security;
 create policy "raw_knowledge: public read"
   on public.raw_knowledge for select
   using (true);
-create policy "raw_knowledge: service role write"
-  on public.raw_knowledge for all
-  using (true) with check (true);
 
 -- processed_knowledge (공개 읽기는 published=true 만)
 alter table public.processed_knowledge enable row level security;
 create policy "processed_knowledge: public read published"
   on public.processed_knowledge for select
   using (published = true);
-create policy "processed_knowledge: service role full"
-  on public.processed_knowledge for all
-  using (true) with check (true);
 
 -- knowledge_summaries (공개 읽기 허용 — 요약 노출용)
 alter table public.knowledge_summaries enable row level security;
 create policy "knowledge_summaries: public read"
   on public.knowledge_summaries for select
   using (true);
-create policy "knowledge_summaries: service role write"
-  on public.knowledge_summaries for all
-  using (true) with check (true);
 
 -- ── 기본 소스 시드 데이터 ─────────────────────────────────────────────────
 -- 태국 비자/생활 관련 Google News RSS (search_rss 방식)

@@ -70,6 +70,6 @@ export async function middleware(request: NextRequest) {
 /** `_next/*` 전부 제외 — 청크·RSC·HMR 요청이 미들웨어를 타면 로딩이 멈춘 것처럼 보일 수 있음 */
 export const config = {
   matcher: [
-    '/((?!_next/|api/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/|api/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|html)$).*)',
   ],
 };

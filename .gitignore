@@ -20,6 +20,9 @@ npm-debug.log*
 # Workspace scratch (로컬 임시, 커밋 금지)
 .tmp/
 
+# 빈 중첩 폴더 — .gitmodules 없이 gitlink(160000)만 있으면 클론 시 서브모듈 경고 발생
+Thai_Ja_World/
+
 # WSL→Windows 심링크·junction — Git에 올리면 Vercel Linux에서 ENOENT
 02_Workspace
 

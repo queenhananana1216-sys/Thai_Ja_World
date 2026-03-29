@@ -39,8 +39,12 @@ export default async function ShopMinihomePage({
   return (
     <div className="page-body" style={{ padding: '0 0 48px' }}>
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '16px' }}>
+        <Link href="/" style={{ fontSize: 13, color: 'var(--tj-link, #7c3aed)' }}>
+          ← 홈
+        </Link>
+        <span style={{ margin: '0 8px', color: 'var(--tj-muted, #94a3b8)' }}>|</span>
         <Link href="/local" style={{ fontSize: 13, color: 'var(--tj-link, #7c3aed)' }}>
-          ← 로컬 맛집 목록
+          로컬 가게 목록
         </Link>
       </div>
       <ShopMinihomeClient spot={spot} />

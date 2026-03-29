@@ -3,13 +3,14 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { LOCALE_COOKIE, isLocale } from '@/i18n/types';
 
-/** /news/[id] 는 비회원도 기사 본문만 열람. 댓글·커뮤니티·로컬·미니홈·관리자는 로그인 필요 */
-const PROTECTED_PREFIXES = ['/community', '/local', '/minihome', '/admin'] as const;
+/** /news/[id]·/minihome/[slug](공개)·/shop/[slug] 는 비회원 열람. /minihome(내 편집)·커뮤니티·로컬·관리자는 로그인 필요 */
+const PROTECTED_PREFIXES = ['/community', '/local', '/admin'] as const;
 
 function pathRequiresAuth(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`),
-  );
+  if (pathname === '/minihome' || pathname === '/minihome/') return true;
+  if (pathname.startsWith('/minihome/')) return false;
+
+  return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
 /** layout에서 cookies() 대신 헤더만 읽게 해 일부 환경의 dev 무한 대기 완화 */

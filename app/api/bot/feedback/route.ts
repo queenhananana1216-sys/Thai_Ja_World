@@ -18,6 +18,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { scoreTopicsFromEngagementAndLog } from '@/bots/actions/scoreTopics';
+import { isCronAuthorized } from '@/lib/cronAuth';
 
 export const runtime = 'nodejs';
 
@@ -66,6 +67,10 @@ function isStringArray(v: unknown): v is string[] {
 // ── POST 핸들러 ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (!isCronAuthorized(req.headers.get('authorization'))) {
+    return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
+  }
+
   let rawBody: unknown = {};
   try {
     const text = await req.text();

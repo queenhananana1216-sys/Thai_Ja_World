@@ -78,6 +78,7 @@ const CATEGORIES = [
   { v: 'restaurant', l: '맛집·식당' },
   { v: 'cafe', l: '카페' },
   { v: 'night_market', l: '야시장·길거리' },
+  { v: 'massage', l: '마사지·스파' },
   { v: 'service', l: '서비스' },
   { v: 'shopping', l: '쇼핑' },
   { v: 'other', l: '기타' },
@@ -260,6 +261,41 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
     }
   }
 
+  async function quickPublish(id: string) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await postJson({ action: 'publish', id });
+      setMsg('공개했습니다. 필요하면 «수정»으로 문구를 다듬으세요.');
+      router.refresh();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function quickUnpublish(id: string) {
+    if (!confirm('비공개로 바꿀까요? 사이트 목록에서 내려갑니다.')) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await postJson({ action: 'unpublish', id });
+      setMsg('비공개로 바꿨습니다.');
+      router.refresh();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const orderedSpots = [...spots].sort((a, b) => {
+    if (a.is_published !== b.is_published) return a.is_published ? 1 : -1;
+    return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  });
+  const pendingCount = spots.filter((s) => !s.is_published).length;
+
   async function onPickFiles(files: FileList | null) {
     if (!files?.length) return;
     setBusy(true);
@@ -306,14 +342,31 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
 
       <p style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>
         사진은 <strong>한 줄에 URL 하나</strong> 또는 파일 업로드(Storage 공개 URL 자동 추가). LINE은 고객용 링크만
-        넣으면 됩니다. 공개 여부는 &quot;공개&quot; 체크 시 사이트에서 조회 가능(RLS).{' '}
+        넣으면 됩니다. <strong>승인 대기</strong> 행은 «승인·공개»만 눌러도 목록에 올라가고, 이후 «수정»으로
+        상호·주소·문구를 다듬으면 됩니다. 공개 여부는 RLS로 비공개 시 사용자에게 안 보입니다.{' '}
         <strong>오너 이메일</strong>을 넣으면 해당 계정이 <code>/my-local-shop</code>에서 BGM·메뉴·스킨만 수정할 수
-        있습니다(슬러그·공개 여부 등 운영 필드는 관리자만). 미니홈 URL은{' '}
-        <code>/shop/공개슬러그</code> 입니다.
+        있습니다. 미니홈 URL은 <code>/shop/공개슬러그</code> 입니다.
       </p>
 
+      {pendingCount > 0 ? (
+        <p
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: '#b45309',
+            marginBottom: 12,
+            padding: '10px 12px',
+            background: '#fffbeb',
+            borderRadius: 8,
+            border: '1px solid #fcd34d',
+          }}
+        >
+          승인 대기 {pendingCount}곳 — 내용 확인 후 «승인·공개» 또는 «수정»을 눌러 주세요.
+        </p>
+      ) : null}
+
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {spots.map((s) => (
+        {orderedSpots.map((s) => (
           <li
             key={s.id}
             style={{
@@ -349,17 +402,38 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
                 ) : null}
               </div>
             </div>
-            <button
-              type="button"
-              disabled={busy}
-              style={{ ...btnGhost, fontSize: 12, padding: '8px 12px' }}
-              onClick={() => {
-                setMsg(null);
-                setForm(rowToForm(s));
-              }}
-            >
-              수정
-            </button>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+              {!s.is_published ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  style={{ ...btnPrimary, fontSize: 12, padding: '8px 12px' }}
+                  onClick={() => void quickPublish(s.id)}
+                >
+                  승인·공개
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy}
+                  style={{ ...btnGhost, fontSize: 12, padding: '8px 12px' }}
+                  onClick={() => void quickUnpublish(s.id)}
+                >
+                  비공개로
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={busy}
+                style={{ ...btnGhost, fontSize: 12, padding: '8px 12px' }}
+                onClick={() => {
+                  setMsg(null);
+                  setForm(rowToForm(s));
+                }}
+              >
+                수정
+              </button>
+            </div>
           </li>
         ))}
       </ul>

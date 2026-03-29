@@ -17,10 +17,15 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { runKnowledgeCollectLoop } from '@/bots/orchestrator/runKnowledgeCollectLoop';
 import { runKnowledgeProcessLoop } from '@/bots/orchestrator/runKnowledgeProcessLoop';
+import { isCronAuthorized } from '@/lib/cronAuth';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (!isCronAuthorized(req.headers.get('authorization'))) {
+    return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
+  }
+
   let body: Record<string, unknown> = {};
   try {
     const text = await req.text();

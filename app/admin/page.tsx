@@ -22,6 +22,7 @@ export default async function AdminDashboardPage() {
   let draftNews: number | null = null;
   let publishedNews: number | null = null;
   let draftKnowledge: number | null = null;
+  let draftLocalSpots: number | null = null;
   let dbNote: string | null = null;
 
   try {
@@ -80,6 +81,14 @@ export default async function AdminDashboardPage() {
     if (!eK) {
       draftKnowledge = cK ?? 0;
     }
+
+    const { count: cLs, error: eLs } = await admin
+      .from('local_spots')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_published', false);
+    if (!eLs) {
+      draftLocalSpots = cLs ?? 0;
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     dbNote = msg.includes('SUPABASE_SERVICE_ROLE_KEY') || msg.includes('Invalid API key')
@@ -117,6 +126,14 @@ export default async function AdminDashboardPage() {
             <p style={{ margin: '8px 0 0', fontSize: 12 }}>{knowledgePublishPipelineHint()}</p>
           </div>
         </div>
+        <p style={{ margin: '16px 0 0', fontSize: 13, color: '#64748b', lineHeight: 1.55 }}>
+          <strong>아침 루틴:</strong> 크론이 돌면 뉴스·지식 초안이 쌓입니다.{' '}
+          <Link href="/admin/news">뉴스 큐</Link>·<Link href="/admin/knowledge">지식 큐</Link>에서 승인하면 홈·광장에
+          반영됩니다. 맛집·마사지 초안은{' '}
+          <Link href="/admin/local-spots">로컬 가게</Link>에서 «승인·공개» 후 문구만 손보면 됩니다. 수동으로 봇을 돌릴
+          때는 <code>POST /api/bot/…</code> 요청에 <code>Authorization: Bearer {'<CRON_SECRET>'}</code> 를 붙이세요
+          (로컬에서 시크릿 미설정이면 검증 생략).
+        </p>
       </section>
 
       <div className="admin-dash__grid">
@@ -149,6 +166,11 @@ export default async function AdminDashboardPage() {
           title="지식 초안(미게시)"
           value={draftKnowledge === null ? '—' : String(draftKnowledge)}
           hint="KNOWLEDGE_PUBLISH_MODE=manual(기본)일 때 /admin/knowledge 큐"
+        />
+        <StatCard
+          title="로컬 가게·비공개(승인 대기)"
+          value={draftLocalSpots === null ? '—' : String(draftLocalSpots)}
+          hint="local_spots 중 is_published=false — 시드 초안·신규 등록"
         />
       </div>
 
@@ -185,9 +207,9 @@ export default async function AdminDashboardPage() {
         </li>
         <li>
           <Link href="/admin/local-spots">
-            로컬 가게 · 맛집
+            로컬 가게 · 맛집 · 마사지
             <span>
-              사진·설명·LINE·오너 이메일·미니홈 슬러그 — <code>local_spots</code> /{' '}
+              승인 대기 행은 «승인·공개» 한 번으로 노출 — 이후 수정. <code>local_spots</code> /{' '}
               <code>/shop/…</code>·<code>/my-local-shop</code>
             </span>
           </Link>

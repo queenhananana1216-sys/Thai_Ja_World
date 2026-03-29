@@ -30,11 +30,12 @@ export default async function AdminLocalSpotsPage() {
           ← 관리자 개요
         </Link>
       </p>
-      <h1 className="admin-dash__title">로컬 가게 · 맛집</h1>
+      <h1 className="admin-dash__title">로컬 가게 · 맛집 · 마사지</h1>
       <p className="admin-dash__lead">
-        사진(URL 또는 업로드), 설명, LINE 링크를 넣고 공개하면 사용자용 API·화면에서 조회할 수 있습니다.{' '}
-        <code>extra</code> JSON으로 전화·주소·지도 URL 등을 자유롭게 확장하세요. 오너 이메일·미니홈 슬러그는{' '}
-        <code>/my-local-shop</code>·<code>/shop/슬러그</code>와 연결됩니다. 테이블: <code>public.local_spots</code>
+        시드로 들어온 초안은 <strong>비공개</strong> 상태입니다. «승인·공개»만 눌러도 사이트에 올라가니, 그다음 «수정»으로
+        상호·주소·사진을 다듬으세요. 사진(URL 또는 업로드), LINE, <code>extra</code>(전화·지도 등), 오너 이메일·미니홈은
+        기존과 동일합니다. 테이블: <code>public.local_spots</code> — 마이그레이션 <code>047</code>·<code>048</code>
+        (카테고리 massage + 초안 시드).
       </p>
 
       {err && (

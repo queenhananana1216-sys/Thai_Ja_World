@@ -184,7 +184,7 @@ function buildStubBilingualPayload(
     ko_title: clampPlainText(head, 200),
     ko_summary,
     ko_blurb: clampPlainText(head, 100),
-    ko_editor_note: `LLM 없음·오류로 메타만으로 초안을 만들었어요.${errTail}`,
+    ko_editor_note: `LLM 없음·오류로 원문 제목·발췌만으로 초안을 만들었어요.${errTail}`,
     th_title: clampPlainText(head, 200),
     th_summary:
       excerpt.length > 0
@@ -204,8 +204,8 @@ function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: 
     `원문 본문(없으면 빈 값): ${body?.trim() || '(없음)'}`,
     `출처 URL: ${sourceUrl}`,
     '',
-    '위는 태국·동남아 관련 뉴스 기사 메타데이터입니다.',
-    '원문 언어와 관계없이 아래 여덟 필드를 모두 채우세요.',
+    '아래는 태국·동남아 지역과 관련된 원문 제목·본문 발췌·출처입니다. 사람이 읽기 좋은 헤드라인과 요약으로 다듬어 주세요.',
+    '원문 언어와 관계없이 아래 여덟 필드를 모두 채우세요. ko_title에는 "메타데이터" 같은 내부 용어를 넣지 마세요.',
     '반드시 아래 키만 가진 JSON 객체 한 개만 출력하세요 (다른 텍스트 금지):',
     '{"ko_title":"","ko_summary":"","ko_blurb":"","ko_editor_note":"","th_title":"","th_summary":"","th_blurb":"","th_editor_note":""}',
     '- ko_title: 한국어 한 줄 헤드라인(팩트 기반, 제공된 제목/본문/출처 범위 내에서만). 영어 원문 제목을 그대로 복사하지 말고 한국어로 재작성.',
@@ -634,7 +634,7 @@ interface EditorNotesLlmInput {
 
 function buildEditorNotesUserBlock(input: EditorNotesLlmInput): string {
   return [
-    '아래는 이미 편집된 기사 메타(요약·한 줄 훅)입니다. 팩트를 다시 쓰지 말고, 편집실 한마디만 새로 쓰세요.',
+    '아래는 이미 편집된 기사 초안(요약·한 줄 훅)입니다. 팩트를 다시 쓰지 말고, 편집실 한마디만 새로 쓰세요.',
     `출처 URL: ${input.source_url || '(없음)'}`,
     '',
     '[한국어]',

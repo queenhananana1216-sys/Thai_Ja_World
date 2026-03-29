@@ -11,6 +11,13 @@ export type Dictionary = {
     /** 일촌 받은함 */
     ilchon: string;
     botConsole: string;
+    /** 로그인 시 헤더 빠른 링크 */
+    memberMinihome: string;
+    /** 받은 일촌 신청(메시지) */
+    memberNotesInbox: string;
+    /** 맺은 일촌 목록 */
+    memberFriends: string;
+    memberQuickNavAria: string;
   };
   brandSuffix: string;
   logoAria: string;
@@ -40,6 +47,8 @@ export type Dictionary = {
     hubNoticeSub: string;
     hubTip: string;
     hubTipSoon: string;
+    hubMinihome: string;
+    hubMinihomeSub: string;
     hotLabel: string;
     hotNewsBadge: string;
     hotNewsEmpty: string;
@@ -414,6 +423,10 @@ const ko: Dictionary = {
     community: '광장',
     ilchon: '일촌',
     botConsole: '관리자',
+    memberMinihome: '미니홈',
+    memberNotesInbox: '받은 신청·쪽지',
+    memberFriends: '내 일촌',
+    memberQuickNavAria: '회원 빠른 메뉴',
   },
   brandSuffix: '월드',
   logoAria: '태국에 살자 월드 홈',
@@ -429,8 +442,8 @@ const ko: Dictionary = {
     heroLead: '막히면 여기서부터',
     heroSub:
       '집·비자·병원비처럼 막히는 일, 겪은 걸 나누면 다음 사람한테 닿아요.\n홍보보다 팁·주의·정리를 먼저 — 가볍게 올려도 돼요.\n필요할 때만 들러도 괜찮아요.',
-    dreamIntro: '곧 오픈 · ',
-    dreamMinihome: '미니홈. ',
+    dreamIntro: '지금 쓸 수 있어요 · ',
+    dreamMinihome: '미니홈으로 ',
     dreamMid: '내 방, 내 규칙. ',
     dreamPersonal: '배경부터 한 줄 소개까지 꾸미고, ',
     dreamOutro: '공개와 비공개는 손끝에서 정해요.',
@@ -442,6 +455,8 @@ const ko: Dictionary = {
     hubNoticeSub: '닉네임만 보여요 · 짧게 써도 되고 · 바로 작성',
     hubTip: '제보함',
     hubTipSoon: '채널만 연결되면 여기서 바로 열려요 · 지금은 연결 준비 중이에요',
+    hubMinihome: '미니홈',
+    hubMinihomeSub: '배경·소개 글 · 공개 설정',
     hotLabel: '🔥 오늘 태국 살이에 닿는 참고 한 줄',
     hotNewsBadge: '브리핑',
     hotNewsEmpty: '아직 조용해요. 곧 태국 살이에 닿는 이야기로 채울게요.',
@@ -831,6 +846,10 @@ const th: Dictionary = {
     community: 'ลานชุมชน',
     ilchon: 'เพื่อน (อิลชอน)',
     botConsole: 'ผู้ดูแล',
+    memberMinihome: 'มินิโฮม',
+    memberNotesInbox: 'คำขอ·ข้อความ',
+    memberFriends: 'เพื่อนของฉัน',
+    memberQuickNavAria: 'เมนูด่วนสมาชิก',
   },
   brandSuffix: 'เวิลด์',
   logoAria: 'Thai Ja World — หน้าแรก',
@@ -846,8 +865,8 @@ const th: Dictionary = {
     heroLead: 'ติดขัดตรงไหน — เริ่มที่นี่',
     heroSub:
       'บ้าน·วีซ่า·ค่ารพ ที่ติดขัด แชร์ประสบการณ์แล้วคนถัดไปได้ประโยชน์\nเน้นช่วยเหลือ·ข้อควรระวัง·สรุป มากกว่าโฆษณา — โพสต์สั้นๆ ก็ได้\nอยากเข้ามาตอนไหนก็ได้',
-    dreamIntro: 'เร็วๆ นี้ · ',
-    dreamMinihome: 'มินิโฮม. ',
+    dreamIntro: 'ใช้ได้แล้วตอนนี้ · ',
+    dreamMinihome: 'ไปมินิโฮม ',
     dreamMid: 'ห้องของฉัน กฎของฉัน ',
     dreamPersonal: 'ตั้งแต่วอลเปเปอร์ถึงคำโปรยบรรทัดเดียว แต่งได้เลย ',
     dreamOutro: 'เปิดเผยหรือส่วนตัว เลือกที่ปลายนิ้ว',
@@ -859,6 +878,8 @@ const th: Dictionary = {
     hubNoticeSub: 'เห็นแค่ชื่อเล่น · สั้นก็ได้ · โพสต์ได้ทันที',
     hubTip: 'กล่องแจ้งเรื่อง',
     hubTipSoon: 'เชื่อมช่องแล้วเปิดจากตรงนี้ได้เลย · ตอนนี้กำลังเตรียมการ',
+    hubMinihome: 'มินิโฮม',
+    hubMinihomeSub: 'พื้นหลัง·แนะนำตัว · ตั้งค่าเปิดเผย',
     hotLabel: '🔥 วันนี้ที่ไทย — บรรทัดเดียวที่ควรรู้',
     hotNewsBadge: 'สรุป',
     hotNewsEmpty: 'ยังเงียบอยู่ — เดี๋ยวเติมเรื่องที่คนอยู่ไทยต้องรู้',

@@ -26,53 +26,63 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
   return (
     <header className="global-header">
       <nav className="site-container global-header__inner">
-        <Link href="/" className="global-header__logo" aria-label={dict.logoAria}>
-          <BrandPhrase variant="dark" />
-          <span className="global-header__logo-suffix">{dict.brandSuffix}</span>
-        </Link>
-        <SiteSearch />
-        <div className="global-header__nav">
-          {HREFS.map((href, i) => {
-            const isActive =
-              href === '/'
-                ? pathname === '/'
-                : href === '/community/boards'
-                  ? pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade')
-                  : href === '/ilchon'
-                    ? pathname.startsWith('/ilchon')
-                    : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={
-                  'global-header__link' + (isActive ? ' global-header__link--active' : '')
-                }
-              >
-                {labels[i]}
-              </Link>
-            );
-          })}
-        </div>
-        <AuthBar
-          labels={{
-            login: dict.board.login,
-            signup: dict.board.signup,
-            logout: dict.board.logout,
-          }}
-        />
-        <LanguageSwitch labels={dict.lang} />
-        {showAdminConsole && (
-          <Link
-            href="/admin"
-            className={
-              'global-header__console global-header__console--subtle' +
-              (pathname.startsWith('/admin') ? ' global-header__console--active' : '')
-            }
-          >
-            {dict.nav.botConsole}
+        <div className="global-header__row global-header__row--top">
+          <Link href="/" className="global-header__logo" aria-label={dict.logoAria}>
+            <BrandPhrase variant="dark" />
+            <span className="global-header__logo-suffix">{dict.brandSuffix}</span>
           </Link>
-        )}
+          <div className="global-header__nav">
+            {HREFS.map((href, i) => {
+              const isActive =
+                href === '/'
+                  ? pathname === '/'
+                  : href === '/community/boards'
+                    ? pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade')
+                    : href === '/ilchon'
+                      ? pathname.startsWith('/ilchon')
+                      : pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={
+                    'global-header__link' + (isActive ? ' global-header__link--active' : '')
+                  }
+                >
+                  {labels[i]}
+                </Link>
+              );
+            })}
+          </div>
+          <AuthBar
+            memberNav={{
+              minihome: dict.nav.memberMinihome,
+              notesInbox: dict.nav.memberNotesInbox,
+              friends: dict.nav.memberFriends,
+              ariaLabel: dict.nav.memberQuickNavAria,
+            }}
+            labels={{
+              login: dict.board.login,
+              signup: dict.board.signup,
+              logout: dict.board.logout,
+            }}
+          />
+          <LanguageSwitch labels={dict.lang} />
+          {showAdminConsole && (
+            <Link
+              href="/admin"
+              className={
+                'global-header__console global-header__console--subtle' +
+                (pathname.startsWith('/admin') ? ' global-header__console--active' : '')
+              }
+            >
+              {dict.nav.botConsole}
+            </Link>
+          )}
+        </div>
+        <div className="global-header__row global-header__row--search">
+          <SiteSearch />
+        </div>
       </nav>
     </header>
   );

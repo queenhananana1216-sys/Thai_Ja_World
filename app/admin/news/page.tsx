@@ -63,12 +63,17 @@ export default async function AdminNewsQueuePage() {
     <div style={{ padding: '20px 24px', maxWidth: 920 }}>
       <h1 style={{ fontSize: 18, margin: '0 0 8px' }}>뉴스 초안 큐</h1>
       <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.55 }}>
-        봇이 수집·요약한 기사는 <code>NEWS_PUBLISH_MODE=manual</code> 일 때 여기(초안)에만 쌓입니다. 한·태 제목·요약을
-        고친 뒤 <strong>홈에 게시</strong>하면 홈·뉴스 상세에 노출됩니다. 올리지 않을 기사는{' '}
-        <strong>삭제(올리지 않음)</strong>으로 원문·요약·댓글을 DB에서 함께 제거할 수 있습니다.
+        <strong>목록이 비어 있나요?</strong> 배포 환경에서 <code>NEWS_PUBLISH_MODE</code>가 비어 있거나{' '}
+        <code>auto</code>이면, 봇이 만든 기사는 <strong>저장과 동시에 이미 공개</strong>됩니다. 그 경우 이 큐는 0이
+        정상이고, 홈·뉴스 목록에서 이미 보입니다. <strong>승인 후 올리기</strong>를 쓰려면 Vercel(또는 호스트) 환경변수에{' '}
+        <code>NEWS_PUBLISH_MODE=manual</code> 을 넣고 재배포하세요. 그다음부터 생성되는 건만 여기에 쌓입니다.
         <br />
-        Vercel Cron은 매일 한국 이른 아침(약 06시) 전후에 수집+요약을 한 번 돌리도록 설정되어 있습니다(
-        <code>vercel.json</code>·UTC 기준).
+        <br />
+        <code>manual</code>일 때: 한·태 제목·요약을 고친 뒤 <strong>홈에 게시</strong>하면 홈·뉴스 상세에 노출됩니다.
+        올리지 않을 기사는 <strong>삭제(올리지 않음)</strong>으로 원문·요약·댓글을 DB에서 함께 제거할 수 있습니다.
+        <br />
+        <br />
+        Vercel Cron은 <code>vercel.json</code> 기준 하루 2회(UTC) 수집+요약을 돌리도록 설정되어 있습니다.
       </p>
       {error ? (
         <p style={{ color: '#b91c1c', marginTop: 16 }}>

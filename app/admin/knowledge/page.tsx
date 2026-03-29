@@ -3,6 +3,7 @@
  *
  * DB: 011_knowledge_pipeline.sql / 012_knowledge_publish_to_posts.sql 적용 필요
  */
+import Link from 'next/link';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import KnowledgeQueueClient, { type KnowledgeQueueItem } from './_components/KnowledgeQueueClient';
 import type { KnowledgeLlmOutput } from '@/bots/actions/processAndPersistKnowledge';
@@ -77,8 +78,15 @@ export default async function AdminKnowledgeQueuePage() {
     <div style={{ padding: '20px 24px', maxWidth: 960, margin: '0 auto' }}>
       <h1 style={{ fontSize: 18, margin: '0 0 8px', fontWeight: 700 }}>지식 초안 큐</h1>
       <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.55 }}>
-        LLM이 수집·가공한 지식은 <code>KNOWLEDGE_PUBLISH_MODE=manual</code> 일 때 여기(초안)에 쌓입니다.
-        관리자 승인 시 <strong>공개 게시판(posts)</strong>에 올라갑니다.
+        <strong>기본(미설정)</strong>은 manual과 같아 초안에 쌓입니다. <code>KNOWLEDGE_PUBLISH_MODE=auto</code>이면 가공
+        직후 공개될 수 있어 이 큐가 비어 있을 수 있어요.
+        <br />
+        <br />
+        승인 시 <strong>공개 게시판(posts)</strong>에 올라갑니다. 비어 있고 봇 기록에는 성공만 보이면{' '}
+        <Link href="/admin/bot-actions" style={{ color: '#2563eb' }}>
+          봇 기록
+        </Link>
+        에서 지식 크론·LLM 오류를 확인해 보세요.
       </p>
 
       <KnowledgeQueueClient items={items} />

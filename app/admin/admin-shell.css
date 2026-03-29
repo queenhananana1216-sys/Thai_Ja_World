@@ -12,13 +12,16 @@
 .admin-shell__nav {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 16px;
+  flex-wrap: nowrap;
+  gap: 6px 12px;
   padding: 12px 20px;
   background: linear-gradient(135deg, #3d3648 0%, #4a4258 100%);
   color: #f0eaf8;
   box-shadow: 0 2px 20px rgba(58, 48, 78, 0.2);
   border-bottom: 1px solid rgba(228, 220, 232, 0.12);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .admin-shell__nav a {
@@ -49,11 +52,26 @@
 
 .admin-shell__nav-hint {
   margin-left: auto;
+  flex-shrink: 0;
   font-size: 11px;
   color: rgba(245, 241, 248, 0.55);
-  max-width: 220px;
+  max-width: min(220px, 28vw);
   text-align: right;
   line-height: 1.35;
+}
+
+@media (max-width: 1100px) {
+  .admin-shell__nav {
+    flex-wrap: wrap;
+  }
+
+  .admin-shell__nav-hint {
+    flex-basis: 100%;
+    margin-left: 0;
+    margin-top: 4px;
+    max-width: none;
+    text-align: left;
+  }
 }
 
 .admin-shell__viewport {

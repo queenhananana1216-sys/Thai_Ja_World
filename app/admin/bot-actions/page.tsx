@@ -76,6 +76,21 @@ export default async function BotActionsPage({ searchParams }: PageProps) {
         >
           최대 200행 조회
         </span>
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#92400e',
+            background: '#fef3c7',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            maxWidth: 420,
+            lineHeight: 1.4,
+          }}
+        >
+          <code>bot_actions</code>는 기본 <strong>7일</strong> 보관 후 매일 크론(
+          <code>/api/cron/purge-bot-actions</code>)으로 삭제됩니다. 환경변수{' '}
+          <code>BOT_ACTIONS_RETENTION_DAYS</code>로 일수 조정 가능.
+        </span>
       </div>
 
       {/* useSearchParams 사용 클라이언트 컴포넌트는 Suspense 로 감쌉니다 */}

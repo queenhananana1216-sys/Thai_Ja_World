@@ -11,7 +11,8 @@
     "type-check": "tsc --noEmit",
     "lint": "next lint",
     "news:ingest": "tsx scripts/run-news-ingest-once.ts",
-    "news:backfill-editor-notes": "tsx scripts/run-backfill-editor-notes-once.ts"
+    "news:backfill-editor-notes": "tsx scripts/run-backfill-editor-notes-once.ts",
+    "bot:knowledge:daemon": "node scripts/run-knowledge-cron-daemon.mjs"
   },
   "dependencies": {
     "@github/copilot-sdk": "^0.2.0",

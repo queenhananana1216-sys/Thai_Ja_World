@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { BrandPhrase } from './BrandPhrase';
 import { HubTipSocialIcons } from './HubTipSocialIcons';
+import SiteSearch from './SiteSearch';
 import { useHeroSiteCopy } from '@/contexts/HeroSiteCopyContext';
 import { getDictionary } from '@/i18n/dictionaries';
 import { readLocaleCookie } from '@/i18n/readLocaleCookie';
@@ -316,27 +317,34 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   return (
     <div className="page-body">
       <section className="home-hero" aria-labelledby="home-hero-title">
-        <p className="home-hero__tag">{heroTag}</p>
-        <p className="home-hero__brand">
-          <BrandPhrase variant="light" />
-        </p>
-        <h1 id="home-hero-title" className="home-hero__title">
-          {heroTitle}
-        </h1>
-        <p className="home-hero__kicker">{heroKicker}</p>
-        <p className="home-hero__lead">
-          <strong className="home-hero__accent">{heroLeadLine}</strong>
-        </p>
-        <p className="home-hero__sub">{heroSubBlock}</p>
-        <p id="home-mini-teaser" className="home-hero__dream">
-          {h.dreamIntro}
-          <strong className="home-hero__accent">
-            <Link href={isLoggedIn ? '/minihome' : loginNextHref('/minihome')}>{h.dreamMinihome}</Link>
-          </strong>
-          {h.dreamMid}
-          <strong className="home-hero__accent">{h.dreamPersonal}</strong>
-          {h.dreamOutro}
-        </p>
+        <div className="home-hero__top">
+          <div className="home-hero__copy">
+            <p className="home-hero__tag">{heroTag}</p>
+            <p className="home-hero__brand">
+              <BrandPhrase variant="light" />
+            </p>
+            <h1 id="home-hero-title" className="home-hero__title">
+              {heroTitle}
+            </h1>
+            <p className="home-hero__kicker">{heroKicker}</p>
+            <p className="home-hero__lead">
+              <strong className="home-hero__accent">{heroLeadLine}</strong>
+            </p>
+            <p className="home-hero__sub">{heroSubBlock}</p>
+            <p id="home-mini-teaser" className="home-hero__dream">
+              {h.dreamIntro}
+              <strong className="home-hero__accent">
+                <Link href={isLoggedIn ? '/minihome' : loginNextHref('/minihome')}>{h.dreamMinihome}</Link>
+              </strong>
+              {h.dreamMid}
+              <strong className="home-hero__accent">{h.dreamPersonal}</strong>
+              {h.dreamOutro}
+            </p>
+          </div>
+          <div className="home-hero__search-col">
+            <SiteSearch variant="hero" />
+          </div>
+        </div>
         <div className="hub-tiles">
           <Link
             href={isLoggedIn ? '/community/boards' : loginNextHref('/community/boards')}

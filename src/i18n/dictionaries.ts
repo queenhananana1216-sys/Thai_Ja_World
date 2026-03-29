@@ -358,6 +358,15 @@ export type Dictionary = {
     errorNotAuth: string;
     errorSelf: string;
   };
+  /** 글로벌·히어로 경로 검색 */
+  search: {
+    ariaLabel: string;
+    heroTitle: string;
+    placeholder: string;
+    hint: string;
+    noResults: string;
+    quickHeading: string;
+  };
   weather: { city: string; condition: string };
   /** 기본·홈 메타 (locale별) */
   seo: {
@@ -751,6 +760,14 @@ const ko: Dictionary = {
     errorAlreadyIlchon: '이미 일촌이에요.',
     errorNotAuth: '로그인이 필요해요.',
     errorSelf: '자기 자신에게는 보낼 수 없어요.',
+  },
+  search: {
+    ariaLabel: '페이지·게시판 경로 검색',
+    heroTitle: '가고 싶은 곳을 바로 찾기',
+    placeholder: '검색… (예: ㅂㅈ, 비자, /local)',
+    hint: '한글 초성만으로도 찾을 수 있어요. 예: ㅂㅈ → 비자·정보 게시판 · 태국어·경로도 OK',
+    noResults: '맞는 메뉴가 없어요. 다른 단어로 해보세요.',
+    quickHeading: '자주 가는 곳',
   },
   weather: { city: '방콕', condition: '맑음' },
   seo: {
@@ -1147,6 +1164,14 @@ const th: Dictionary = {
     errorAlreadyIlchon: 'เป็นเพื่อนกันแล้ว',
     errorNotAuth: 'ต้องล็อกอิน',
     errorSelf: 'ส่งหาตัวเองไม่ได้',
+  },
+  search: {
+    ariaLabel: 'ค้นหาเส้นทาง·บอร์ด',
+    heroTitle: 'ค้นหาหน้าที่ต้องการ',
+    placeholder: 'ค้นหา… (เช่น วีซ่า, /local, งาน)',
+    hint: 'พิมพ์คีย์เวิร์ดไทยหรือพาธได้ · ตัวอย่าง: วีซ่า → บอร์ดข้อมูล',
+    noResults: 'ไม่พบเมนูที่ตรง — ลองคำอื่น',
+    quickHeading: 'ทางลัด',
   },
   weather: { city: 'กรุงเทพฯ', condition: 'แจ่มใส' },
   seo: {

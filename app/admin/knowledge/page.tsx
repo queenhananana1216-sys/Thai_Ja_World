@@ -43,6 +43,33 @@ export default async function AdminKnowledgeQueuePage() {
     diagnostics = null;
   }
 
+  let orphanRawKnowledge: Array<{
+    id: string;
+    title_original: string;
+    external_url: string | null;
+    fetched_at: string;
+  }> = [];
+  try {
+    const { data: linked } = await admin.from('processed_knowledge').select('raw_knowledge_id');
+    const done = new Set((linked ?? []).map((r) => String(r.raw_knowledge_id)));
+    const { data: raws } = await admin
+      .from('raw_knowledge')
+      .select('id, title_original, external_url, fetched_at')
+      .order('fetched_at', { ascending: false })
+      .limit(120);
+    orphanRawKnowledge = (raws ?? [])
+      .filter((r) => !done.has(String(r.id)))
+      .slice(0, 80)
+      .map((r) => ({
+        id: String(r.id),
+        title_original: ((r.title_original as string) ?? '').trim() || '(제목 없음)',
+        external_url: (r.external_url as string | null) ?? null,
+        fetched_at: String(r.fetched_at ?? ''),
+      }));
+  } catch {
+    orphanRawKnowledge = [];
+  }
+
   const { data: rows, error } = await admin
     .from('processed_knowledge')
     .select(
@@ -114,10 +141,10 @@ export default async function AdminKnowledgeQueuePage() {
         <br />
         <strong>SQL만 돌렸는데 비어 있나요?</strong> 이 목록은 <code>processed_knowledge</code> 중{' '}
         <code>published=false</code> 만 보여 줍니다. 원문만 <code>raw_knowledge</code>에 있으면 지식 가공 크론이{' '}
-        <code>processed_knowledge</code> 행을 만들어야 합니다.
+        <code>processed_knowledge</code> 행을 만들어야 합니다. 원문만 있으면 «승인 큐에 올리기»로 스텁 초안을 만들 수 있습니다.
       </p>
 
-      <KnowledgeQueueClient items={items} diagnostics={diagnostics} />
+      <KnowledgeQueueClient items={items} diagnostics={diagnostics} orphanRawKnowledge={orphanRawKnowledge} />
     </div>
   );
 }

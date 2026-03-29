@@ -877,6 +877,8 @@ async function persistBilingualProcessedNews(
   client: ReturnType<typeof getServerSupabaseClient>,
   row: RawNewsTodoRow,
   llm: LlmBilingualPayload,
+  /** false 를 넣으면 항상 미게시 초안(관리자 «승인 큐에 올리기»용) */
+  publishedOverride?: boolean,
 ): Promise<SummarizeRowResult> {
   const url = row.external_url ?? '';
   const cleanBody = JSON.stringify({
@@ -895,13 +897,16 @@ async function persistBilingualProcessedNews(
     source_url: url,
   });
 
+  const publishedFlag =
+    publishedOverride !== undefined ? publishedOverride : newsInsertAsPublished();
+
   const { data: proc, error: insP } = await client
     .from('processed_news')
     .insert({
       raw_news_id: row.id,
       clean_body: cleanBody,
       language: 'ko',
-      published: newsInsertAsPublished(),
+      published: publishedFlag,
     })
     .select('id')
     .single();
@@ -937,6 +942,81 @@ async function persistBilingualProcessedNews(
   }
 
   return { raw_news_id: row.id, ok: true };
+}
+
+export type EnsureNewsDraftResult = {
+  ok: boolean;
+  raw_news_id: string;
+  processed_news_id?: string;
+  error?: string;
+  already_existed?: boolean;
+};
+
+/**
+ * `processed_news` 가 없는 `raw_news` 에 LLM 없이 스텁 초안을 넣습니다. 항상 `published=false`.
+ * 관리자 «승인 큐에 올리기» 전용.
+ */
+export async function ensureNewsDraftFromRawNewsId(
+  rawNewsId: string,
+): Promise<EnsureNewsDraftResult> {
+  const id = rawNewsId.trim();
+  if (!id) {
+    return { ok: false, raw_news_id: id, error: 'raw_news_id 가 비었습니다.' };
+  }
+  const client = getServerSupabaseClient();
+
+  const { data: existing, error: exErr } = await client
+    .from('processed_news')
+    .select('id')
+    .eq('raw_news_id', id)
+    .maybeSingle();
+  if (exErr) {
+    return { ok: false, raw_news_id: id, error: exErr.message };
+  }
+  if (existing?.id) {
+    return {
+      ok: true,
+      raw_news_id: id,
+      processed_news_id: String(existing.id),
+      already_existed: true,
+    };
+  }
+
+  const { data: raw, error: re } = await client
+    .from('raw_news')
+    .select('id,title,raw_body,external_url')
+    .eq('id', id)
+    .maybeSingle();
+  if (re) {
+    return { ok: false, raw_news_id: id, error: re.message };
+  }
+  if (!raw) {
+    return { ok: false, raw_news_id: id, error: 'raw_news 를 찾을 수 없습니다.' };
+  }
+
+  const title = raw.title?.trim() || '(제목 없음)';
+  const url = raw.external_url ?? '';
+  const llm = buildStubBilingualPayload(title, raw.raw_body, url);
+  const rowResult = await persistBilingualProcessedNews(
+    client,
+    raw as RawNewsTodoRow,
+    llm,
+    false,
+  );
+  if (!rowResult.ok) {
+    return { ok: false, raw_news_id: id, error: rowResult.error };
+  }
+
+  const { data: proc } = await client
+    .from('processed_news')
+    .select('id')
+    .eq('raw_news_id', id)
+    .maybeSingle();
+  return {
+    ok: true,
+    raw_news_id: id,
+    ...(proc?.id ? { processed_news_id: String(proc.id) } : {}),
+  };
 }
 
 /**

@@ -29,6 +29,13 @@ export type KnowledgeQueueDiagnostics = {
   knowledgeModeAuto: boolean;
 };
 
+export type OrphanRawKnowledgeItem = {
+  id: string;
+  title_original: string;
+  external_url: string | null;
+  fetched_at: string;
+};
+
 function parseLlmFields(cleanBody: unknown, rawTitle: string): Partial<KnowledgeQueueItem> {
   try {
     const llm =
@@ -87,12 +94,16 @@ function boardLabel(target: 'tips_board' | 'board_board'): string {
 export default function KnowledgeQueueClient({
   items,
   diagnostics,
+  orphanRawKnowledge = [],
 }: {
   items: KnowledgeQueueItem[];
   diagnostics?: KnowledgeQueueDiagnostics | null;
+  orphanRawKnowledge?: OrphanRawKnowledgeItem[];
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [ensureBusyRawId, setEnsureBusyRawId] = useState<string | null>(null);
+  const [ensureBulkBusy, setEnsureBulkBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function submit(
@@ -134,12 +145,149 @@ export default function KnowledgeQueueClient({
     }
   }
 
+  async function ensureDraftForRaw(rawKnowledgeId: string) {
+    setMsg(null);
+    setEnsureBusyRawId(rawKnowledgeId);
+    try {
+      const res = await fetch('/api/admin/knowledge-ensure-draft', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw_knowledge_id: rawKnowledgeId }),
+      });
+      const j = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        already_existed?: boolean;
+      };
+      if (!res.ok) {
+        setMsg(j.error ?? `오류 (${res.status})`);
+        return;
+      }
+      setMsg(j.already_existed ? '이미 초안이 있어 목록만 새로고침합니다.' : '승인 큐에 스텁 초안을 넣었습니다.');
+      router.refresh();
+    } finally {
+      setEnsureBusyRawId(null);
+    }
+  }
+
+  async function ensureDraftBulk() {
+    const n = Math.min(20, Math.max(1, orphanRawKnowledge.length || 15));
+    if (
+      !window.confirm(
+        `DB에서 최근 순으로 processed 없는 지식 원문 최대 ${n}건에 스텁 초안을 만들까요?\n` +
+          '(이미 초안이 생긴 건 건너뜁니다.)',
+      )
+    ) {
+      return;
+    }
+    setEnsureBulkBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/admin/knowledge-ensure-draft', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bulk_limit: n }),
+      });
+      const j = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        created?: number;
+        skipped_existing?: number;
+        attempted?: number;
+      };
+      if (!res.ok) {
+        setMsg(j.error ?? `오류 (${res.status})`);
+        return;
+      }
+      setMsg(
+        `처리 시도 ${j.attempted ?? n}건 · 새로 만든 초안 ${j.created ?? 0}건 · 이미 있던 건 ${j.skipped_existing ?? 0}건`,
+      );
+      router.refresh();
+    } finally {
+      setEnsureBulkBusy(false);
+    }
+  }
+
+  const orphanPanel =
+    orphanRawKnowledge.length > 0 ? (
+      <div
+        style={{
+          marginBottom: 20,
+          padding: 14,
+          background: '#fffbeb',
+          border: '1px solid #fcd34d',
+          borderRadius: 10,
+        }}
+      >
+        <strong style={{ display: 'block', marginBottom: 8, fontSize: 14, color: '#78350f' }}>
+          원문만 있는 지식 (processed_knowledge 없음) — {orphanRawKnowledge.length}건 표시
+        </strong>
+        <p style={{ margin: '0 0 12px', fontSize: 12, color: '#92400e', lineHeight: 1.55 }}>
+          스텁은 비자·가이드 게시판용 JSON 초안입니다. «승인 큐에 올리기» 후 편집하고 «공개 보드에 게시»하세요.
+        </p>
+        <button
+          type="button"
+          disabled={ensureBulkBusy}
+          onClick={() => void ensureDraftBulk()}
+          style={{
+            padding: '10px 14px',
+            marginBottom: 12,
+            background: '#d97706',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: ensureBulkBusy ? 'wait' : 'pointer',
+          }}
+        >
+          {ensureBulkBusy
+            ? '처리 중…'
+            : `고아 원문 최대 ${Math.min(20, Math.max(orphanRawKnowledge.length, 1))}건 한 번에 큐에 올리기`}
+        </button>
+        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#451a03', lineHeight: 1.6 }}>
+          {orphanRawKnowledge.map((o) => (
+            <li key={o.id} style={{ marginBottom: 8 }}>
+              <a
+                href={o.external_url?.trim() ? o.external_url : '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#b45309' }}
+              >
+                {o.title_original.slice(0, 72)}
+                {o.title_original.length > 72 ? '…' : ''}
+              </a>
+              <span style={{ color: '#9ca3af', marginLeft: 6 }}>({o.id.slice(0, 8)}…)</span>
+              <button
+                type="button"
+                disabled={ensureBusyRawId === o.id || ensureBulkBusy}
+                onClick={() => void ensureDraftForRaw(o.id)}
+                style={{
+                  marginLeft: 10,
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  background: '#fef3c7',
+                  border: '1px solid #fbbf24',
+                  borderRadius: 6,
+                  cursor: ensureBusyRawId === o.id ? 'wait' : 'pointer',
+                }}
+              >
+                {ensureBusyRawId === o.id ? '…' : '승인 큐에 올리기'}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : null;
+
   if (items.length === 0) {
     return (
       <div style={{ marginTop: 16 }}>
+        {orphanPanel}
         <p style={{ color: '#6b7280', margin: '0 0 12px' }}>
           대기 중인 초안이 없습니다. 가공 파이프라인이 <code>processed_knowledge</code>를{' '}
-          <code>published=false</code>로 넣으면 여기에 보입니다.
+          <code>published=false</code>로 넣으면 여기에 보입니다. 위 노란 칸에서 원문만 있는 항목을 큐에 올릴 수 있어요.
         </p>
         {diagnostics ? (
           <div
@@ -198,6 +346,7 @@ export default function KnowledgeQueueClient({
 
   return (
     <div style={{ marginTop: 12 }}>
+      {orphanPanel}
       {msg ? <p style={{ color: '#059669', fontSize: 13, marginBottom: 12 }}>{msg}</p> : null}
       {boardOrder.map((board) => {
         const list = byBoard.get(board);

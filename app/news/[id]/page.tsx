@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import NewsComments, { type NewsCommentRow } from '../_components/NewsComments';
 import { createServerClient } from '@/lib/supabase/server';
+import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { newsDetailFromProcessed } from '@/lib/news/processedNewsDisplay';
@@ -77,6 +78,11 @@ export default async function NewsStoryPage({ params }: PageProps) {
   const locale = await getLocale();
   const d = getDictionary(locale);
   const h = d.home;
+  const authSb = await createServerSupabaseAuthClient();
+  const {
+    data: { user },
+  } = await authSb.auth.getUser();
+
   const supabase = createServerClient();
 
   const { data: row, error } = await supabase
@@ -110,35 +116,38 @@ export default async function NewsStoryPage({ params }: PageProps) {
     locale,
   );
 
-  const { data: rawComments, error: commentsErr } = await supabase
-    .from('news_comments')
-    .select('id, content, created_at, author_id')
-    .eq('processed_news_id', id)
-    .order('created_at', { ascending: true });
+  let comments: NewsCommentRow[] = [];
+  if (user) {
+    const { data: rawComments, error: commentsErr } = await supabase
+      .from('news_comments')
+      .select('id, content, created_at, author_id')
+      .eq('processed_news_id', id)
+      .order('created_at', { ascending: true });
 
-  const commentRows = !commentsErr ? (rawComments ?? []) : [];
+    const commentRows = !commentsErr ? (rawComments ?? []) : [];
 
-  const authorIds = [...new Set(commentRows.map((c) => c.author_id as string))];
-  let profs: { id: string; display_name: string | null }[] | null = [];
-  if (authorIds.length > 0) {
-    const q = await supabase
-      .from('profiles')
-      .select('id, display_name')
-      .in('id', authorIds);
-    profs = q.data;
+    const authorIds = [...new Set(commentRows.map((c) => c.author_id as string))];
+    let profs: { id: string; display_name: string | null }[] | null = [];
+    if (authorIds.length > 0) {
+      const q = await supabase
+        .from('profiles')
+        .select('id, display_name')
+        .in('id', authorIds);
+      profs = q.data;
+    }
+
+    const nameMap: Record<string, string> = {};
+    for (const p of profs ?? []) {
+      nameMap[p.id as string] = (p.display_name as string) || 'member';
+    }
+
+    comments = commentRows.map((c) => ({
+      id: c.id as string,
+      content: c.content as string,
+      created_at: c.created_at as string,
+      display_name: nameMap[c.author_id as string] ?? 'member',
+    }));
   }
-
-  const nameMap: Record<string, string> = {};
-  for (const p of profs ?? []) {
-    nameMap[p.id as string] = (p.display_name as string) || 'member';
-  }
-
-  const comments: NewsCommentRow[] = commentRows.map((c) => ({
-    id: c.id as string,
-    content: c.content as string,
-    created_at: c.created_at as string,
-    display_name: nameMap[c.author_id as string] ?? 'member',
-  }));
 
   const path = `/news/${id}`;
   const pageUrl = absoluteUrl(path);
@@ -260,12 +269,36 @@ export default async function NewsStoryPage({ params }: PageProps) {
         )}
       </article>
 
-      <NewsComments
-        processedNewsId={id}
-        initial={comments}
-        labels={d.board}
-        loginNextPath={path}
-      />
+      {!user ? (
+        <div className="news-story__guest-note card" style={{ marginTop: 22, padding: '16px 18px' }}>
+          <p style={{ margin: '0 0 12px', fontSize: '0.86rem', lineHeight: 1.55, color: 'var(--tj-ink)' }}>
+            {h.newsDetailGuestNote}
+          </p>
+          <p style={{ margin: 0, fontSize: '0.85rem' }}>
+            <Link
+              href={`/auth/login?next=${encodeURIComponent(path)}`}
+              style={{ color: 'var(--tj-link)', fontWeight: 600, marginRight: 12 }}
+            >
+              {d.board.login}
+            </Link>
+            <Link
+              href={`/auth/signup?next=${encodeURIComponent(path)}`}
+              style={{ color: 'var(--tj-link)', fontWeight: 600 }}
+            >
+              {d.board.signup}
+            </Link>
+          </p>
+        </div>
+      ) : null}
+
+      {user ? (
+        <NewsComments
+          processedNewsId={id}
+          initial={comments}
+          labels={d.board}
+          loginNextPath={path}
+        />
+      ) : null}
     </div>
   );
 }

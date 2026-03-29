@@ -3,7 +3,8 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { LOCALE_COOKIE, isLocale } from '@/i18n/types';
 
-const PROTECTED_PREFIXES = ['/news', '/community', '/local', '/minihome', '/admin'] as const;
+/** /news/[id] 는 비회원도 기사 본문만 열람. 댓글·커뮤니티·로컬·미니홈·관리자는 로그인 필요 */
+const PROTECTED_PREFIXES = ['/community', '/local', '/minihome', '/admin'] as const;
 
 function pathRequiresAuth(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(

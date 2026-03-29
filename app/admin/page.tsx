@@ -95,8 +95,8 @@ export default async function AdminDashboardPage() {
       <ul className="admin-dash__links">
         <li>
           <Link href="/admin/home-hero">
-            홈 히어로 문구
-            <span>태그·브랜드·제목·키워드·본문 — 한·태 각각 수정</span>
+            홈 메인 문구
+            <span>히어로·비회원 안내·한 줄 제보 띠 — 한·태 각각 수정</span>
           </Link>
         </li>
         <li>

@@ -18,6 +18,10 @@ import { formatDate, extractHostname } from '@/lib/utils/formatDate';
 
 const HOME_FETCH_BUDGET_MS = 12_000;
 
+function loginNextHref(path: string): string {
+  return `/auth/login?next=${encodeURIComponent(path)}`;
+}
+
 type WeatherRow = { key: string; label: string; temp: number | null; condition: string };
 
 function tipEnv() {
@@ -189,7 +193,7 @@ function ShopMiniCard({
   );
 }
 
-export default function HomePageClient() {
+export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) {
   const [locale, setLocale] = useState<Locale>('ko');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [shops, setShops] = useState<LocalBusiness[]>([]);
@@ -220,6 +224,13 @@ export default function HomePageClient() {
   const heroKicker = locale === 'th' ? heroSite.heroKickerTh : heroSite.heroKickerKo;
   const heroLeadLine = locale === 'th' ? heroSite.heroLeadTh : heroSite.heroLeadKo;
   const heroSubBlock = locale === 'th' ? heroSite.heroSubTh : heroSite.heroSubKo;
+  const hotLabelUi = locale === 'th' ? heroSite.hotLabelTh : heroSite.hotLabelKo;
+  const hotFootnoteUi = locale === 'th' ? heroSite.hotFootnoteTh : heroSite.hotFootnoteKo;
+  const guestPubLab = locale === 'th' ? heroSite.guestPublicLabelTh : heroSite.guestPublicLabelKo;
+  const guestPubBody = locale === 'th' ? heroSite.guestPublicBodyTh : heroSite.guestPublicBodyKo;
+  const guestMemLab = locale === 'th' ? heroSite.guestMemberLabelTh : heroSite.guestMemberLabelKo;
+  const guestMemBody = locale === 'th' ? heroSite.guestMemberBodyTh : heroSite.guestMemberBodyKo;
+  const guestCta = locale === 'th' ? heroSite.guestLoginCtaTh : heroSite.guestLoginCtaKo;
   const tips = useMemo(() => tipEnv(), []);
   const hasTip = Boolean(tips.tg || tips.wa || tips.line || tips.fb || tips.tt);
 
@@ -245,10 +256,9 @@ export default function HomePageClient() {
     let cancelled = false;
     void (async () => {
       const timeout = new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), HOME_FETCH_BUDGET_MS));
-      const result = await Promise.race([
-        Promise.all([fetchNewsBrowser(), fetchFeaturedShopsBrowser()]),
-        timeout,
-      ]);
+      const newsP = fetchNewsBrowser();
+      const shopsP = isLoggedIn ? fetchFeaturedShopsBrowser() : Promise.resolve([] as LocalBusiness[]);
+      const result = await Promise.race([Promise.all([newsP, shopsP]), timeout]);
       if (cancelled) return;
       if (result === 'timeout') {
         setNews([]);
@@ -263,9 +273,15 @@ export default function HomePageClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isLoggedIn]);
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      setWeatherBusy(false);
+      setWeatherRows([]);
+      setWeatherErr(false);
+      return;
+    }
     let cancelled = false;
     void (async () => {
       setWeatherBusy(true);
@@ -311,7 +327,7 @@ export default function HomePageClient() {
     return () => {
       cancelled = true;
     };
-  }, [locale, h.weatherBangkok, h.weatherChiangMai, h.weatherPattaya]);
+  }, [isLoggedIn, locale, h.weatherBangkok, h.weatherChiangMai, h.weatherPattaya]);
 
   return (
     <div className="page-body">
@@ -331,24 +347,30 @@ export default function HomePageClient() {
         <p id="home-mini-teaser" className="home-hero__dream">
           {h.dreamIntro}
           <strong className="home-hero__accent">
-            <Link href="/minihome">{h.dreamMinihome}</Link>
+            <Link href={isLoggedIn ? '/minihome' : loginNextHref('/minihome')}>{h.dreamMinihome}</Link>
           </strong>
           {h.dreamMid}
           <strong className="home-hero__accent">{h.dreamPersonal}</strong>
           {h.dreamOutro}
         </p>
         <div className="hub-tiles">
-          <Link href="/community/boards" className="hub-tile">
+          <Link
+            href={isLoggedIn ? '/community/boards' : loginNextHref('/community/boards')}
+            className="hub-tile"
+          >
             <span className="hub-tile__emoji">💬</span>
             <span>{h.hubBoard}</span>
             <span className="hub-tile__sub">{h.hubBoardSub}</span>
           </Link>
-          <Link href="/local" className="hub-tile">
+          <Link href={isLoggedIn ? '/local' : loginNextHref('/local')} className="hub-tile">
             <span className="hub-tile__emoji">🏪</span>
             <span>{h.hubLocal}</span>
             <span className="hub-tile__sub">{h.hubLocalSub}</span>
           </Link>
-          <Link href="/community/trade" className="hub-tile">
+          <Link
+            href={isLoggedIn ? '/community/trade' : loginNextHref('/community/trade')}
+            className="hub-tile"
+          >
             <span className="hub-tile__emoji">🧺</span>
             <span>{h.hubNotice}</span>
             <span className="hub-tile__sub">{h.hubNoticeSub}</span>
@@ -380,8 +402,8 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="hot-strip" aria-label={h.hotLabel}>
-        <p className="hot-strip__label">{h.hotLabel}</p>
+      <section className="hot-strip" aria-label={hotLabelUi}>
+        <p className="hot-strip__label">{hotLabelUi}</p>
         {listsBusy ? (
           <p className="hot-strip__state">{h.hotNewsLoading}</p>
         ) : hotNewsItems.length === 0 ? (
@@ -419,9 +441,32 @@ export default function HomePageClient() {
             })}
           </ul>
         )}
-        <p className="hot-strip__footnote">{h.hotFootnote}</p>
+        <p className="hot-strip__footnote">{hotFootnoteUi}</p>
       </section>
 
+      {!isLoggedIn ? (
+        <div className="guest-home-split card">
+          <div className="guest-home-split__grid">
+            <div className="guest-home-split__box guest-home-split__box--read">
+              <p className="guest-home-split__label">{guestPubLab}</p>
+              <p className="guest-home-split__body">{guestPubBody}</p>
+            </div>
+            <div className="guest-home-split__box guest-home-split__box--member">
+              <p className="guest-home-split__label">{guestMemLab}</p>
+              <p className="guest-home-split__body">{guestMemBody}</p>
+            </div>
+          </div>
+          <Link
+            href={loginNextHref('/')}
+            className="board-form__submit guest-home-split__cta"
+            style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}
+          >
+            {guestCta}
+          </Link>
+        </div>
+      ) : null}
+
+      {isLoggedIn ? (
       <section style={{ marginBottom: 28 }}>
         <div className="section-header">
           <h2 className="section-title">{h.shopsTitle}</h2>
@@ -451,7 +496,9 @@ export default function HomePageClient() {
           </div>
         )}
       </section>
+      ) : null}
 
+      {isLoggedIn ? (
       <div className="digest-strip">
         <div className="digest-cell digest-cell--weather">
           <p className="digest-cell__title">{h.weatherTitle}</p>
@@ -526,7 +573,9 @@ export default function HomePageClient() {
           )}
         </div>
       </div>
+      ) : null}
 
+      {isLoggedIn ? (
       <section className="news-section-muted" aria-labelledby="news-muted-title">
         <div className="section-header">
           <div>
@@ -558,6 +607,7 @@ export default function HomePageClient() {
           </div>
         )}
       </section>
+      ) : null}
     </div>
   );
 }

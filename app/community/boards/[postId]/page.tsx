@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import PostAuthorMenu from '../_components/PostAuthorMenu';
 import PostComments, { type CommentRow } from '../_components/PostComments';
 import PostReactionsPanel from '../_components/PostReactionsPanel';
-import { createServerClient } from '@/lib/supabase/server';
+import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { categoryLabel } from '@/lib/community/postCategories';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
@@ -17,10 +18,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { postId } = await params;
   const locale = await getLocale();
   const d = getDictionary(locale);
-  const supabase = createServerClient();
+  const supabase = await createServerSupabaseAuthClient();
   const { data: post } = await supabase
     .from('posts')
-    .select('id, title, content, created_at, image_urls')
+    .select('id, title, content, created_at, image_urls, author_hidden')
     .eq('id', postId)
     .eq('moderation_status', 'safe')
     .maybeSingle();
@@ -29,6 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: d.board.pageTitle, robots: { index: false, follow: true } };
   }
 
+  const noIndex = Boolean(post.author_hidden);
   const description = trimForMetaDescription(String(post.content ?? ''));
   const url = absoluteUrl(`/community/boards/${postId}`);
   const images = Array.isArray(post.image_urls) ? (post.image_urls as string[]) : [];
@@ -54,7 +56,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: titleStr,
       description,
     },
-    robots: { index: true, follow: true },
+    robots: noIndex ? { index: false, follow: true } : { index: true, follow: true },
   };
 }
 
@@ -62,12 +64,16 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const { postId } = await params;
   const locale = await getLocale();
   const d = getDictionary(locale);
-  const supabase = createServerClient();
+  const supabase = await createServerSupabaseAuthClient();
+  const {
+    data: { user: viewer },
+  } = await supabase.auth.getUser();
+  const viewerId = viewer?.id ?? null;
 
   const { data: post, error } = await supabase
     .from('posts')
     .select(
-      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls',
+      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden',
     )
     .eq('id', postId)
     .eq('moderation_status', 'safe')
@@ -117,6 +123,8 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const cat = categoryLabel(String(post.category), locale);
   const path = `/community/boards/${postId}`;
   const pageUrl = absoluteUrl(path);
+  const isAuthor = viewerId !== null && viewerId === (post.author_id as string);
+  const authorHidden = Boolean(post.author_hidden);
 
   return (
     <div className="page-body board-page">
@@ -141,7 +149,28 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
         <div className="board-post__meta">
           {cat} · {d.board.author} {authorName} · {formatDate(post.created_at as string | null)} ·{' '}
           {d.board.views} {post.view_count ?? 0}
+          {authorHidden ? (
+            <>
+              {' '}
+              · <span style={{ color: 'var(--tj-muted)' }}>{d.board.postPrivateBadge}</span>
+            </>
+          ) : null}
         </div>
+        {isAuthor ? (
+          <PostAuthorMenu
+            postId={postId}
+            authorHidden={authorHidden}
+            labels={{
+              postOwnerMenu: d.board.postOwnerMenu,
+              postDelete: d.board.postDelete,
+              postMakePrivate: d.board.postMakePrivate,
+              postMakePublic: d.board.postMakePublic,
+              postDeleteConfirm: d.board.postDeleteConfirm,
+              postBusy: d.board.postBusy,
+              postActionError: d.board.postActionError,
+            }}
+          />
+        ) : null}
         <PostReactionsPanel postId={postId} loginNextPath={path} />
         <h1 className="board-title" style={{ margin: '12px 0 16px' }}>
           {post.title as string}
@@ -161,7 +190,13 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
         ))}
       </article>
 
-      <PostComments postId={postId} initial={comments} labels={d.board} loginNextPath={path} />
+      <PostComments
+        postId={postId}
+        initial={comments}
+        labels={d.board}
+        loginNextPath={path}
+        showLoginHint={!viewerId}
+      />
     </div>
   );
 }

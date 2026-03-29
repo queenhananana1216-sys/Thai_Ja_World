@@ -2,7 +2,7 @@
  * POST /api/bot/process-news
  *
  * raw_news 중 아직 processed_news 가 없는 항목을 LLM으로 한국어·태국어 제목·요약을 생성해 저장합니다.
- * NEWS_PUBLISH_MODE=manual 이면 published=false 초안만 저장 → /admin/news 에서 게시.
+ * 기본(manual·미설정)은 published=false 초안 → /admin/news «홈에 게시». NEWS_PUBLISH_MODE=auto 는 즉시 공개.
  *
  * Body (JSON, 모두 선택):
  * { "limit": 8, "idempotencyKey": "optional-key" }

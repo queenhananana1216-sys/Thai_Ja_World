@@ -138,7 +138,7 @@ export default async function AdminDashboardPage() {
         <StatCard
           title="뉴스 초안(미게시)"
           value={draftNews === null ? '—' : String(draftNews)}
-          hint="manual 모드에서만 쌓임. auto면 0이 정상"
+          hint="미게시 초안. auto 모드면 0일 수 있음"
         />
         <StatCard
           title="뉴스 공개(처리분)"

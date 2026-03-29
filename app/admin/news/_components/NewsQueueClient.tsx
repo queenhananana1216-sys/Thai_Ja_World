@@ -64,7 +64,9 @@ export default function NewsQueueClient({ items }: { items: QueueItem[] }) {
   if (items.length === 0) {
     return (
       <p style={{ color: '#6b7280', marginTop: 16 }}>
-        대기 중인 초안이 없습니다. <code>NEWS_PUBLISH_MODE=manual</code> 이고 LLM 처리가 되면 여기에 쌓입니다.
+        대기 중인 초안이 없습니다. 뉴스 크론이 돌고 요약이 생성되면 여기에 쌓입니다. 계속 비면{' '}
+        <code>/admin/bot-actions</code>·OpenAI(또는 Gemini) 키·Vercel Cron을 확인해 보세요. (
+        <code>NEWS_PUBLISH_MODE=auto</code>이면 초안 없이 바로 공개됩니다.)
       </p>
     );
   }

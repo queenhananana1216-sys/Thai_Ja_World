@@ -496,3 +496,165 @@ export async function processAndPersistKnowledgeBatch(
 
   return { results, llmConfigured: true };
 }
+
+function clampKnowledgePlain(s: string, max: number): string {
+  const t = s.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1).trim()}…`;
+}
+
+/** LLM 없이 관리자 승인 큐용 최소 구조 (항상 board_board, confidence low) */
+function buildKnowledgeStubLlmOutput(
+  title: string,
+  rawBody: string | null,
+  sourceUrl: string,
+  fetchedAt: string,
+): KnowledgeLlmOutput {
+  const head = title.trim() || '(제목 없음)';
+  const body = rawBody?.trim() ?? '';
+  const excerpt = body.length > 0 ? clampKnowledgePlain(body, 1200) : '';
+  const visaKo =
+    '법률 자문이 아닙니다. 실제 비자 신청 전 반드시 대사관·공식 기관에서 확인하세요.';
+  const visaTh =
+    'ข้อมูลนี้ไม่ใช่คำแนะนำทางกฎหมาย — โปรดยืนยันกับสถานทูตหรือหน่วยงานทางการเสมอ';
+  const koSummary = excerpt
+    ? `${excerpt}\n\n—\n(자동 초안: 원문 발췌. LLM 가공 전입니다. 승인 전에 다듬어 주세요.)`
+    : `원문 본문이 비어 있거나 매우 짧습니다. 출처를 확인한 뒤 편집해 주세요.\n${sourceUrl}`;
+
+  return {
+    board_target: 'board_board',
+    editorial_meta: {
+      novelty_score: 40,
+      usefulness_score: 45,
+      confidence_level: 'low',
+      reasons: ['관리자 스텁 초안 — LLM 미가공'],
+    },
+    ko: {
+      title: clampKnowledgePlain(head, 200),
+      summary: koSummary,
+      checklist: ['출처에서 공식 정보를 확인합니다.', visaKo],
+      cautions: [visaKo, '자동 생성 초안이므로 게시 전 내용을 반드시 검토하세요.'],
+      tags: ['Thailand', '자동초안', '검토필요'],
+    },
+    th: {
+      title: clampKnowledgePlain(head, 200),
+      summary:
+        excerpt.length > 0
+          ? '(อัตโนมัติ) มีเนื้อหาต้นฉบับบางส่วนในสรุปภาษาเกาหลี — โปรดเขียนสรุปภาษาไทยก่อนเผยแพร่'
+          : '(อัตโนมัติ) ยังไม่มีเนื้อหาเพียงพอ',
+      checklist: ['ตรวจสอบจากแหล่งข้อมูลทางการ', visaTh],
+      cautions: [visaTh, 'ร่างอัตโนมัติ — ต้องตรวจทานก่อนเผยแพร่'],
+      tags: ['Thailand', 'draft'],
+    },
+    board_copy: {
+      category_badge_text: '비자·가이드 게시판',
+      category_description: '태국 생활·비자 관련 정보(자동 초안)',
+    },
+    sources: [
+      {
+        external_url: sourceUrl,
+        source_name: '수집 원문',
+        retrieved_at: fetchedAt,
+      },
+    ],
+  };
+}
+
+export type EnsureKnowledgeDraftResult = {
+  ok: boolean;
+  raw_knowledge_id: string;
+  processed_knowledge_id?: string;
+  error?: string;
+  already_existed?: boolean;
+};
+
+/**
+ * `processed_knowledge` 가 없는 `raw_knowledge` 에 스텁 JSON을 넣습니다. 항상 `published=false`.
+ */
+export async function ensureKnowledgeDraftFromRawKnowledgeId(
+  rawKnowledgeId: string,
+): Promise<EnsureKnowledgeDraftResult> {
+  const id = rawKnowledgeId.trim();
+  if (!id) {
+    return { ok: false, raw_knowledge_id: id, error: 'raw_knowledge_id 가 비었습니다.' };
+  }
+  const client = getServerSupabaseClient();
+
+  const { data: existing, error: exErr } = await client
+    .from('processed_knowledge')
+    .select('id')
+    .eq('raw_knowledge_id', id)
+    .maybeSingle();
+  if (exErr) {
+    return { ok: false, raw_knowledge_id: id, error: exErr.message };
+  }
+  if (existing?.id) {
+    return {
+      ok: true,
+      raw_knowledge_id: id,
+      processed_knowledge_id: String(existing.id),
+      already_existed: true,
+    };
+  }
+
+  const { data: raw, error: re } = await client
+    .from('raw_knowledge')
+    .select('id, title_original, raw_body, external_url, fetched_at')
+    .eq('id', id)
+    .maybeSingle();
+  if (re) {
+    return { ok: false, raw_knowledge_id: id, error: re.message };
+  }
+  if (!raw) {
+    return { ok: false, raw_knowledge_id: id, error: 'raw_knowledge 를 찾을 수 없습니다.' };
+  }
+
+  const title = (raw.title_original as string)?.trim() || '(제목 없음)';
+  const url = (raw.external_url as string) ?? '';
+  const body = raw.raw_body as string | null;
+  const fetchedAt = (raw.fetched_at as string) ?? new Date().toISOString();
+  const llm = buildKnowledgeStubLlmOutput(title, body, url, fetchedAt);
+  const cleanBody = JSON.stringify(llm);
+
+  const { data: proc, error: insP } = await client
+    .from('processed_knowledge')
+    .insert({
+      raw_knowledge_id: id,
+      clean_body: cleanBody,
+      language_default: 'ko',
+      board_target: llm.board_target,
+      published: false,
+    })
+    .select('id')
+    .single();
+
+  if (insP || !proc?.id) {
+    return {
+      ok: false,
+      raw_knowledge_id: id,
+      error: insP?.message ?? 'processed_knowledge insert 실패',
+    };
+  }
+
+  const pid = proc.id as string;
+
+  const { error: sKo } = await client.from('knowledge_summaries').insert({
+    processed_knowledge_id: pid,
+    summary_text: llm.ko.summary,
+    model: 'ko',
+  });
+  if (sKo) {
+    return { ok: false, raw_knowledge_id: id, error: sKo.message };
+  }
+
+  const { error: sTh } = await client.from('knowledge_summaries').insert({
+    processed_knowledge_id: pid,
+    summary_text: llm.th.summary,
+    model: 'th',
+  });
+  if (sTh) {
+    return { ok: false, raw_knowledge_id: id, error: sTh.message };
+  }
+
+  return { ok: true, raw_knowledge_id: id, processed_knowledge_id: pid };
+}

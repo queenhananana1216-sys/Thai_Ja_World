@@ -38,6 +38,33 @@ export default async function AdminNewsQueuePage() {
     diagnostics = null;
   }
 
+  let orphanRawNews: Array<{
+    id: string;
+    title: string;
+    external_url: string | null;
+    fetched_at: string;
+  }> = [];
+  try {
+    const { data: linked } = await admin.from('processed_news').select('raw_news_id');
+    const done = new Set((linked ?? []).map((r) => String(r.raw_news_id)));
+    const { data: raws } = await admin
+      .from('raw_news')
+      .select('id, title, external_url, fetched_at')
+      .order('fetched_at', { ascending: false })
+      .limit(120);
+    orphanRawNews = (raws ?? [])
+      .filter((r) => !done.has(String(r.id)))
+      .slice(0, 80)
+      .map((r) => ({
+        id: String(r.id),
+        title: ((r.title as string) ?? '').trim() || '(제목 없음)',
+        external_url: (r.external_url as string | null) ?? null,
+        fetched_at: String(r.fetched_at ?? ''),
+      }));
+  } catch {
+    orphanRawNews = [];
+  }
+
   const { data: rows, error } = await admin
     .from('processed_news')
     .select(
@@ -99,15 +126,15 @@ export default async function AdminNewsQueuePage() {
         <br />
         <strong>SQL만 실행했는데 비어 있나요?</strong> 이 화면은 <code>processed_news</code> 중{' '}
         <code>published=false</code> 인 행만 보여 줍니다. 원문만 <code>raw_news</code>에 있으면 봇이 요약해{' '}
-        <code>processed_news</code>를 만들어야 하고, 예전에 이미 <code>published=true</code> 로 들어간 기사는
-        아래 «승인 대기로 옮기기»로 되돌릴 수 있어요.
+        <code>processed_news</code>를 만들어야 하고,         예전에 이미 <code>published=true</code> 로 들어간 기사는
+        아래 «승인 대기로 옮기기»로 되돌릴 수 있어요. 원문만 쌓여 있으면 «승인 큐에 올리기»로 스텁 초안을 만들 수 있습니다.
       </p>
       {error ? (
         <p style={{ color: '#b91c1c', marginTop: 16 }}>
           DB 오류: {error.message} — <code>009_processed_news_published.sql</code> 마이그레이션 적용 여부를 확인하세요.
         </p>
       ) : (
-        <NewsQueueClient items={items} diagnostics={diagnostics} />
+        <NewsQueueClient items={items} diagnostics={diagnostics} orphanRawNews={orphanRawNews} />
       )}
     </div>
   );

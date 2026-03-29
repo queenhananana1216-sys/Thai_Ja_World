@@ -15,9 +15,23 @@ export type QueueItem = {
   th_summary: string;
 };
 
-export default function NewsQueueClient({ items }: { items: QueueItem[] }) {
+export type NewsQueueDiagnostics = {
+  draftCount: number;
+  publishedCount: number;
+  rawNewsRecentCount: number;
+  newsModeAuto: boolean;
+};
+
+export default function NewsQueueClient({
+  items,
+  diagnostics,
+}: {
+  items: QueueItem[];
+  diagnostics?: NewsQueueDiagnostics | null;
+}) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function submit(
@@ -61,13 +75,102 @@ export default function NewsQueueClient({ items }: { items: QueueItem[] }) {
     }
   }
 
+  async function unpublishRecentForQueue() {
+    const n = Math.min(20, Math.max(1, diagnostics?.publishedCount ?? 0));
+    if (
+      !window.confirm(
+        `최근 공개 중인 뉴스 ${n}건을 «승인 대기»(published=false)로 되돌릴까요?\n` +
+          '홈·뉴스에서는 잠시 안 보이다가, 여기서 다시 «홈에 게시»를 누르면 올라갑니다.',
+      )
+    ) {
+      return;
+    }
+    setBulkBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/admin/news-unpublish-recent', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: n }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string; updated?: number; message?: string };
+      if (!res.ok) {
+        setMsg(j.error ?? `오류 (${res.status})`);
+        return;
+      }
+      setMsg(
+        j.updated === 0
+          ? (j.message ?? '옮길 공개 기사가 없습니다.')
+          : `승인 대기로 ${j.updated}건 옮겼습니다. 목록을 새로고침합니다.`,
+      );
+      router.refresh();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   if (items.length === 0) {
     return (
-      <p style={{ color: '#6b7280', marginTop: 16 }}>
-        대기 중인 초안이 없습니다. 뉴스 크론이 돌고 요약이 생성되면 여기에 쌓입니다. 계속 비면{' '}
-        <code>/admin/bot-actions</code>·OpenAI(또는 Gemini) 키·Vercel Cron을 확인해 보세요. (
-        <code>NEWS_PUBLISH_MODE=auto</code>이면 초안 없이 바로 공개됩니다.)
-      </p>
+      <div style={{ marginTop: 16 }}>
+        <p style={{ color: '#6b7280', margin: '0 0 12px' }}>
+          대기 중인 초안이 없습니다. 봇이 <code>processed_news</code>를 만들고 <code>published=false</code>로 넣으면
+          여기에 보입니다. 원문만 있으면 크론/LLM이 요약 단계까지 돌아야 해요.
+        </p>
+        {diagnostics ? (
+          <div
+            style={{
+              padding: 14,
+              background: '#f9fafb',
+              borderRadius: 10,
+              border: '1px solid #e5e7eb',
+              fontSize: 13,
+              lineHeight: 1.55,
+              color: '#374151',
+            }}
+          >
+            <strong style={{ display: 'block', marginBottom: 8 }}>DB 요약(지금)</strong>
+            <ul style={{ margin: '0 0 12px', paddingLeft: 18 }}>
+              <li>
+                승인 대기 초안: <strong>{diagnostics.draftCount}</strong>건
+              </li>
+              <li>
+                이미 공개(processed): <strong>{diagnostics.publishedCount}</strong>건
+              </li>
+              <li>
+                최근 14일 수집 원문(raw_news): <strong>{diagnostics.rawNewsRecentCount}</strong>건
+              </li>
+              <li>
+                배포 뉴스 모드:{' '}
+                <strong>{diagnostics.newsModeAuto ? 'auto (저장 시 곧바로 공개 경향)' : 'manual/기본 (초안 큐)'}</strong>
+              </li>
+            </ul>
+            {diagnostics.publishedCount > 0 ? (
+              <button
+                type="button"
+                disabled={bulkBusy}
+                onClick={() => void unpublishRecentForQueue()}
+                style={{
+                  padding: '10px 14px',
+                  background: '#7c3aed',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: bulkBusy ? 'wait' : 'pointer',
+                }}
+              >
+                {bulkBusy ? '처리 중…' : `최근 공개 ${Math.min(20, diagnostics.publishedCount)}건 → 승인 대기로 옮기기`}
+              </button>
+            ) : (
+              <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>
+                공개된 processed_news 가 없으면, 위 버튼 대신 봇 파이프라인으로 새 요약을 만들어야 합니다.
+              </p>
+            )}
+          </div>
+        ) : null}
+      </div>
     );
   }
 

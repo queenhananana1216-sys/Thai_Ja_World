@@ -1,8 +1,9 @@
 /**
  * 뉴스 초안 큐 — 기본(manual·미설정)은 LLM 결과를 초안만 저장, 승인 후 게시
  */
-import NewsQueueClient, { type QueueItem } from './_components/NewsQueueClient';
+import NewsQueueClient, { type NewsQueueDiagnostics, type QueueItem } from './_components/NewsQueueClient';
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
+import { newsInsertAsPublished } from '@/lib/news/newsPublishMode';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 function mondayLabelKst(iso: string): string {
@@ -18,6 +19,25 @@ function mondayLabelKst(iso: string): string {
 
 export default async function AdminNewsQueuePage() {
   const admin = createServiceRoleClient();
+  const since14d = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  let diagnostics: NewsQueueDiagnostics | null = null;
+  try {
+    const [dDraft, dPub, dRaw] = await Promise.all([
+      admin.from('processed_news').select('id', { count: 'exact', head: true }).eq('published', false),
+      admin.from('processed_news').select('id', { count: 'exact', head: true }).eq('published', true),
+      admin.from('raw_news').select('id', { count: 'exact', head: true }).gte('fetched_at', since14d),
+    ]);
+    diagnostics = {
+      draftCount: dDraft.count ?? 0,
+      publishedCount: dPub.count ?? 0,
+      rawNewsRecentCount: dRaw.count ?? 0,
+      newsModeAuto: newsInsertAsPublished(),
+    };
+  } catch {
+    diagnostics = null;
+  }
+
   const { data: rows, error } = await admin
     .from('processed_news')
     .select(
@@ -75,13 +95,19 @@ export default async function AdminNewsQueuePage() {
         <br />
         큐가 계속 비어 있으면 뉴스 크론·LLM 키·봇 기록(<code>/admin/bot-actions</code>)을 확인해 보세요. Vercel Cron은{' '}
         <code>vercel.json</code> 기준 하루 2회(UTC) 수집+요약입니다.
+        <br />
+        <br />
+        <strong>SQL만 실행했는데 비어 있나요?</strong> 이 화면은 <code>processed_news</code> 중{' '}
+        <code>published=false</code> 인 행만 보여 줍니다. 원문만 <code>raw_news</code>에 있으면 봇이 요약해{' '}
+        <code>processed_news</code>를 만들어야 하고, 예전에 이미 <code>published=true</code> 로 들어간 기사는
+        아래 «승인 대기로 옮기기»로 되돌릴 수 있어요.
       </p>
       {error ? (
         <p style={{ color: '#b91c1c', marginTop: 16 }}>
           DB 오류: {error.message} — <code>009_processed_news_published.sql</code> 마이그레이션 적용 여부를 확인하세요.
         </p>
       ) : (
-        <NewsQueueClient items={items} />
+        <NewsQueueClient items={items} diagnostics={diagnostics} />
       )}
     </div>
   );

@@ -5,8 +5,12 @@
  */
 import Link from 'next/link';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
-import KnowledgeQueueClient, { type KnowledgeQueueItem } from './_components/KnowledgeQueueClient';
+import KnowledgeQueueClient, {
+  type KnowledgeQueueDiagnostics,
+  type KnowledgeQueueItem,
+} from './_components/KnowledgeQueueClient';
 import type { KnowledgeLlmOutput } from '@/bots/actions/processAndPersistKnowledge';
+import { knowledgeInsertAsPublished } from '@/lib/knowledge/knowledgePublishMode';
 
 function parseKnowledgeCleanBody(existing: unknown): KnowledgeLlmOutput | null {
   try {
@@ -20,6 +24,24 @@ function parseKnowledgeCleanBody(existing: unknown): KnowledgeLlmOutput | null {
 
 export default async function AdminKnowledgeQueuePage() {
   const admin = createServiceRoleClient();
+  const since14d = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  let diagnostics: KnowledgeQueueDiagnostics | null = null;
+  try {
+    const [dDraft, dPub, dRaw] = await Promise.all([
+      admin.from('processed_knowledge').select('id', { count: 'exact', head: true }).eq('published', false),
+      admin.from('processed_knowledge').select('id', { count: 'exact', head: true }).eq('published', true),
+      admin.from('raw_knowledge').select('id', { count: 'exact', head: true }).gte('fetched_at', since14d),
+    ]);
+    diagnostics = {
+      draftCount: dDraft.count ?? 0,
+      publishedCount: dPub.count ?? 0,
+      rawRecentCount: dRaw.count ?? 0,
+      knowledgeModeAuto: knowledgeInsertAsPublished(),
+    };
+  } catch {
+    diagnostics = null;
+  }
 
   const { data: rows, error } = await admin
     .from('processed_knowledge')
@@ -88,9 +110,14 @@ export default async function AdminKnowledgeQueuePage() {
           봇 기록
         </Link>
         ·지식 크론·LLM 키를 확인해 보세요.
+        <br />
+        <br />
+        <strong>SQL만 돌렸는데 비어 있나요?</strong> 이 목록은 <code>processed_knowledge</code> 중{' '}
+        <code>published=false</code> 만 보여 줍니다. 원문만 <code>raw_knowledge</code>에 있으면 지식 가공 크론이{' '}
+        <code>processed_knowledge</code> 행을 만들어야 합니다.
       </p>
 
-      <KnowledgeQueueClient items={items} />
+      <KnowledgeQueueClient items={items} diagnostics={diagnostics} />
     </div>
   );
 }

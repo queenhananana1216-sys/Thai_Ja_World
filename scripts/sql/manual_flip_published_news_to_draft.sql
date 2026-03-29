@@ -1,0 +1,13 @@
+-- Supabase SQL 에디터에서만 선택 실행 (자동 마이그레이션에 넣지 마세요)
+-- 예전에 published=true 로만 쌓인 뉴스를 승인 큐로 되돌릴 때 예시입니다.
+-- 앱에서는 /admin/news 에서 «최근 공개 N건 → 승인 대기로 옮기기» 버튼으로 같은 효과를 낼 수 있습니다.
+
+-- 예: 최근 20건 공개 → 초안
+-- update public.processed_news
+-- set published = false
+-- where id in (
+--   select id from public.processed_news
+--   where published = true
+--   order by created_at desc
+--   limit 20
+-- );

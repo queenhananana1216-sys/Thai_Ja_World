@@ -8,6 +8,8 @@
  * - 로컬(OpenAI 호환): LOCAL_LLM_BASE_URL (예: http://127.0.0.1:11434/v1), LOCAL_LLM_MODEL (기본 llama3.2), LOCAL_LLM_API_KEY (선택)
  * - auto: OpenAI 키 있으면 우선, 429/쿼터류 실패 시 GEMINI_API_KEY → 있으면 Gemini, 다음으로 LOCAL_LLM_BASE_URL 로컬 폴백
  * - NEWS_LLM_FETCH_RETRIES: LLM POST fetch 재시도 횟수(기본 3). "fetch failed" 류 일시 오류 완화
+ * - NEWS_SUMMARY_FALLBACK_STUB: LLM 없음/호출 실패 시 원문 메타만으로 초안(processed_news) 생성 여부.
+ *   1|true|yes|on = 항상 허용, 0|false|no|off = 끔. 미설정 시 NEWS_PUBLISH_MODE 가 manual/review/draft 이면 켜짐(자동 게시 모드에선 끔).
  *
  * processed_news.clean_body: { ko: {title,summary,blurb,editor_note}, th: {...}, source_url }
  */
@@ -81,6 +83,17 @@ export function isNewsSummaryLlmConfigured(): boolean {
   );
 }
 
+/**
+ * LLM 미동작·오류 시에도 관리자 큐에 초안을 쌓을지.
+ * 기본: 수동 승인 모드에서만 true (키 만료·Vercel 타임아웃으로 사이트가 죽는 것 방지).
+ */
+export function stubOnLlmFailure(): boolean {
+  const raw = process.env.NEWS_SUMMARY_FALLBACK_STUB?.trim().toLowerCase();
+  if (raw === '0' || raw === 'false' || raw === 'no' || raw === 'off') return false;
+  if (raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on') return true;
+  return !newsInsertAsPublished();
+}
+
 function batchNotReady(dbError?: string): SummarizeBatchResult {
   return {
     results: [],
@@ -144,6 +157,41 @@ function parseLlmPayload(raw: unknown): LlmBilingualPayload | null {
     th_summary: o.th_summary.trim(),
     th_blurb: clamp(String(o.th_blurb), 160),
     th_editor_note: thEd,
+  };
+}
+
+function clampPlainText(s: string, max: number): string {
+  const t = s.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1).trim()}…`;
+}
+
+/** LLM 없이 관리자 승인 큐용 최소 초안 (한·태 블록 형식은 동일) */
+function buildStubBilingualPayload(
+  title: string,
+  rawBody: string | null,
+  sourceUrl: string,
+  llmErrorHint?: string,
+): LlmBilingualPayload {
+  const head = title.trim() || '(제목 없음)';
+  const body = rawBody?.trim() ?? '';
+  const excerpt = body.length > 0 ? clampPlainText(body, 1400) : '';
+  const ko_summary = excerpt
+    ? `${excerpt}\n\n—\n(자동 초안: 원문 발췌. LLM 요약 전이거나 실패했습니다. 승인 전에 다듬어 주세요.)`
+    : `원문 본문이 비어 있거나 매우 짧습니다. 아래 출처를 확인한 뒤 제목·요약을 작성해 주세요.\n${sourceUrl}`;
+  const errTail = llmErrorHint ? ` (${clampPlainText(llmErrorHint, 140)})` : '';
+  return {
+    ko_title: clampPlainText(head, 200),
+    ko_summary,
+    ko_blurb: clampPlainText(head, 100),
+    ko_editor_note: `LLM 없음·오류로 메타만으로 초안을 만들었어요.${errTail}`,
+    th_title: clampPlainText(head, 200),
+    th_summary:
+      excerpt.length > 0
+        ? '(อัตโนมัติ) มีข้อความต้นฉบับบางส่วนในสรุปภาษาเกาหลี — โปรดเขียนสรุปภาษาไทยก่อนเผยแพร่'
+        : '(อัตโนมัติ) ยังไม่มีเนื้อหาเพียงพอ — โปรดแก้ไขก่อนเผยแพร่',
+    th_blurb: clampPlainText(head, 100),
+    th_editor_note: 'ร่างอัตโนมัติ — แก้ภาษาไทยก่อนเผยแพร่',
   };
 }
 
@@ -818,13 +866,90 @@ export async function backfillProcessedNewsEditorNotes(
   return { llmConfigured: true, days: d, limit: maxLimit, scanned, eligible, updated, errors };
 }
 
+type RawNewsTodoRow = {
+  id: string;
+  title: string | null;
+  raw_body: string | null;
+  external_url: string | null;
+};
+
+async function persistBilingualProcessedNews(
+  client: ReturnType<typeof getServerSupabaseClient>,
+  row: RawNewsTodoRow,
+  llm: LlmBilingualPayload,
+): Promise<SummarizeRowResult> {
+  const url = row.external_url ?? '';
+  const cleanBody = JSON.stringify({
+    ko: {
+      title: llm.ko_title,
+      summary: llm.ko_summary,
+      blurb: llm.ko_blurb,
+      ...(llm.ko_editor_note ? { editor_note: llm.ko_editor_note } : {}),
+    },
+    th: {
+      title: llm.th_title,
+      summary: llm.th_summary,
+      blurb: llm.th_blurb,
+      ...(llm.th_editor_note ? { editor_note: llm.th_editor_note } : {}),
+    },
+    source_url: url,
+  });
+
+  const { data: proc, error: insP } = await client
+    .from('processed_news')
+    .insert({
+      raw_news_id: row.id,
+      clean_body: cleanBody,
+      language: 'ko',
+      published: newsInsertAsPublished(),
+    })
+    .select('id')
+    .single();
+
+  if (insP || !proc?.id) {
+    return {
+      raw_news_id: row.id,
+      ok: false,
+      error: insP?.message ?? 'processed_news insert 실패',
+    };
+  }
+
+  const pid = proc.id as string;
+
+  const { error: sKo } = await client.from('summaries').insert({
+    processed_news_id: pid,
+    summary_text: llm.ko_summary,
+    model: 'ko',
+  });
+
+  if (sKo) {
+    return { raw_news_id: row.id, ok: false, error: sKo.message };
+  }
+
+  const { error: sTh } = await client.from('summaries').insert({
+    processed_news_id: pid,
+    summary_text: llm.th_summary,
+    model: 'th',
+  });
+
+  if (sTh) {
+    return { raw_news_id: row.id, ok: false, error: sTh.message };
+  }
+
+  return { raw_news_id: row.id, ok: true };
+}
+
 /**
  * 아직 processed_news 가 없는 raw_news 최대 `limit`건에 대해 한국어·태국어 요약 후 저장합니다.
+ * 수동 게시 모드에서는 LLM 미설정·오류 시에도 원문 메타 스텁으로 초안을 넣어 승인 큐가 비지 않게 합니다.
  */
 export async function summarizeAndPersistNewsBatch(
   limit: number,
 ): Promise<SummarizeBatchResult> {
-  if (!isNewsSummaryLlmConfigured()) {
+  const allowStub = stubOnLlmFailure();
+  const llmReady = isNewsSummaryLlmConfigured();
+
+  if (!llmReady && !allowStub) {
     return batchNotReady();
   }
 
@@ -853,8 +978,10 @@ export async function summarizeAndPersistNewsBatch(
     return batchReadyPartial(`[raw_news select] ${re.message}`);
   }
 
+  const effectiveLlmFlag = llmReady || allowStub;
+
   if (!rawRows?.length) {
-    return { results: [], llmConfigured: true, openaiConfigured: true };
+    return { results: [], llmConfigured: effectiveLlmFlag, openaiConfigured: effectiveLlmFlag };
   }
 
   const todo = rawRows.filter((r) => !done.has(r.id)).slice(0, cap);
@@ -865,93 +992,45 @@ export async function summarizeAndPersistNewsBatch(
     const title = row.title?.trim() || '(제목 없음)';
     const url = row.external_url ?? '';
 
-    try {
-      const llm = await callBilingualSummary(title, row.raw_body, url);
+    let llm: LlmBilingualPayload;
+    let usedStub = false;
 
-      const cleanBody = JSON.stringify({
-        ko: {
-          title: llm.ko_title,
-          summary: llm.ko_summary,
-          blurb: llm.ko_blurb,
-          ...(llm.ko_editor_note ? { editor_note: llm.ko_editor_note } : {}),
-        },
-        th: {
-          title: llm.th_title,
-          summary: llm.th_summary,
-          blurb: llm.th_blurb,
-          ...(llm.th_editor_note ? { editor_note: llm.th_editor_note } : {}),
-        },
-        source_url: url,
-      });
-
-      const { data: proc, error: insP } = await client
-        .from('processed_news')
-        .insert({
-          raw_news_id: row.id,
-          clean_body: cleanBody,
-          language: 'ko',
-          published: newsInsertAsPublished(),
-        })
-        .select('id')
-        .single();
-
-      if (insP || !proc?.id) {
-        results.push({
-          raw_news_id: row.id,
-          ok: false,
-          error: insP?.message ?? 'processed_news insert 실패',
-        });
-        continue;
+    if (!llmReady) {
+      llm = buildStubBilingualPayload(title, row.raw_body, url);
+      usedStub = true;
+      console.warn(`[NewsSummarize] LLM 미설정 — 스텁 초안만 저장 raw_news_id=${row.id}`);
+    } else {
+      try {
+        llm = await callBilingualSummary(title, row.raw_body, url);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (!allowStub) {
+          results.push({ raw_news_id: row.id, ok: false, error: msg });
+          continue;
+        }
+        console.warn(
+          `[NewsSummarize] LLM 실패 → 스텁 초안 raw_news_id=${row.id}: ${msg.slice(0, 280)}`,
+        );
+        llm = buildStubBilingualPayload(title, row.raw_body, url, msg);
+        usedStub = true;
       }
+    }
 
-      const pid = proc.id as string;
-
-      const { error: sKo } = await client.from('summaries').insert({
-        processed_news_id: pid,
-        summary_text: llm.ko_summary,
-        model: 'ko',
-      });
-
-      if (sKo) {
-        results.push({
-          raw_news_id: row.id,
-          ok: false,
-          error: sKo.message,
-        });
-        continue;
-      }
-
-      const { error: sTh } = await client.from('summaries').insert({
-        processed_news_id: pid,
-        summary_text: llm.th_summary,
-        model: 'th',
-      });
-
-      if (sTh) {
-        results.push({
-          raw_news_id: row.id,
-          ok: false,
-          error: sTh.message,
-        });
-        continue;
-      }
-
-      results.push({ raw_news_id: row.id, ok: true });
+    const rowResult = await persistBilingualProcessedNews(client, row as RawNewsTodoRow, llm);
+    results.push(rowResult);
+    if (rowResult.ok && !usedStub) {
       slackDigest.push({
         ko_title: llm.ko_title,
         ko_summary: llm.ko_summary,
         source_url: url,
       });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      results.push({ raw_news_id: row.id, ok: false, error: msg });
     }
   }
 
   return {
     results,
-    llmConfigured: true,
-    openaiConfigured: true,
+    llmConfigured: effectiveLlmFlag,
+    openaiConfigured: effectiveLlmFlag,
     ...(slackDigest.length > 0 ? { slackDigest } : {}),
   };
 }

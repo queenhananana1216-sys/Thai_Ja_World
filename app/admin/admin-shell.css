@@ -171,3 +171,82 @@
 .admin-page {
   background: transparent;
 }
+
+.admin-dash__alert--ok {
+  background: #e8f7ef;
+  border-color: #9dd4b3;
+  color: #1e5c3a;
+}
+
+.admin-home-hero-form__fieldset {
+  border: 1px solid var(--tj-line);
+  border-radius: 12px;
+  padding: 16px 18px 18px;
+  margin: 0 0 18px;
+  background: var(--tj-surface);
+}
+
+.admin-home-hero-form__fieldset legend {
+  padding: 0 8px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.admin-home-hero-form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.admin-home-hero-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tj-muted);
+}
+
+.admin-home-hero-form input,
+.admin-home-hero-form textarea {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--tj-line);
+  background: #fff;
+  color: var(--tj-ink);
+}
+
+.admin-home-hero-form__textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.admin-home-hero-form__hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--tj-muted);
+  line-height: 1.5;
+}
+
+.admin-home-hero-form__actions {
+  margin-top: 8px;
+}
+
+.admin-home-hero-form__submit {
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #6b5a8a 0%, #5a4a78 100%);
+  color: #fff;
+}
+
+.admin-home-hero-form__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

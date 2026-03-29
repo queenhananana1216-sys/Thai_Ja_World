@@ -92,6 +92,8 @@ export type Dictionary = {
     tipTelegram: string;
     tipWhatsapp: string;
     tipLine: string;
+    tipFacebook: string;
+    tipTiktok: string;
     tipEnvHint: string;
     newsTitle: string;
     newsSub: string;
@@ -407,6 +409,8 @@ const ko: Dictionary = {
     tipTelegram: 'Telegram 제보함',
     tipWhatsapp: 'WhatsApp 제보함',
     tipLine: 'LINE 제보함',
+    tipFacebook: 'Facebook 제보함',
+    tipTiktok: 'TikTok (홍보·소식)',
     tipEnvHint: '운영 쪽에서 링크를 넣어 두면 이 카드에서 바로 열려요.',
     newsTitle: '태국 살이 참고 스냅샷',
     newsSub:
@@ -738,6 +742,8 @@ const th: Dictionary = {
     tipTelegram: 'Telegram — กล่องแจ้งเรื่อง',
     tipWhatsapp: 'WhatsApp — กล่องแจ้งเรื่อง',
     tipLine: 'LINE — กล่องแจ้งเรื่อง',
+    tipFacebook: 'Facebook — กล่องแจ้งเรื่อง',
+    tipTiktok: 'TikTok — โปรโมชัน·อัปเดต',
     tipEnvHint: 'ฝั่งผู้ดูแลใส่ลิงก์ไว้ การ์ดนี้จะเปิดให้ทันที',
     newsTitle: 'สรุปอ้างอิงชีวิตที่ไทย',
     newsSub:

@@ -6,6 +6,8 @@
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { BrandPhrase } from './BrandPhrase';
+import { HubTipSocialIcons } from './HubTipSocialIcons';
+import { useHeroSiteCopy } from '@/contexts/HeroSiteCopyContext';
 import { getDictionary } from '@/i18n/dictionaries';
 import { readLocaleCookie } from '@/i18n/readLocaleCookie';
 import { TJ_LOCALE_CHANGE_EVENT, type Locale } from '@/i18n/types';
@@ -23,6 +25,8 @@ function tipEnv() {
     tg: process.env.NEXT_PUBLIC_TIP_TELEGRAM_URL?.trim(),
     wa: process.env.NEXT_PUBLIC_TIP_WHATSAPP_URL?.trim(),
     line: process.env.NEXT_PUBLIC_TIP_LINE_URL?.trim(),
+    fb: process.env.NEXT_PUBLIC_TIP_FACEBOOK_URL?.trim(),
+    tt: process.env.NEXT_PUBLIC_TIP_TIKTOK_URL?.trim(),
   };
 }
 
@@ -210,8 +214,14 @@ export default function HomePageClient() {
 
   const d = useMemo(() => getDictionary(locale), [locale]);
   const h = d.home;
+  const heroSite = useHeroSiteCopy();
+  const heroTitle = locale === 'th' ? heroSite.titleTh : heroSite.titleKo;
+  const heroTag = locale === 'th' ? heroSite.tagTh : heroSite.tagKo;
+  const heroKicker = locale === 'th' ? heroSite.heroKickerTh : heroSite.heroKickerKo;
+  const heroLeadLine = locale === 'th' ? heroSite.heroLeadTh : heroSite.heroLeadKo;
+  const heroSubBlock = locale === 'th' ? heroSite.heroSubTh : heroSite.heroSubKo;
   const tips = useMemo(() => tipEnv(), []);
-  const hasTip = Boolean(tips.tg || tips.wa || tips.line);
+  const hasTip = Boolean(tips.tg || tips.wa || tips.line || tips.fb || tips.tt);
 
   const newsLocalized = useMemo(
     () =>
@@ -306,18 +316,18 @@ export default function HomePageClient() {
   return (
     <div className="page-body">
       <section className="home-hero" aria-labelledby="home-hero-title">
-        <p className="home-hero__tag">{h.tag}</p>
+        <p className="home-hero__tag">{heroTag}</p>
         <p className="home-hero__brand">
           <BrandPhrase variant="light" />
         </p>
         <h1 id="home-hero-title" className="home-hero__title">
-          {h.title}
+          {heroTitle}
         </h1>
-        <p className="home-hero__kicker">{h.heroKicker}</p>
+        <p className="home-hero__kicker">{heroKicker}</p>
         <p className="home-hero__lead">
-          <strong className="home-hero__accent">{h.heroLead}</strong>
+          <strong className="home-hero__accent">{heroLeadLine}</strong>
         </p>
-        <p className="home-hero__sub">{h.heroSub}</p>
+        <p className="home-hero__sub">{heroSubBlock}</p>
         <p id="home-mini-teaser" className="home-hero__dream">
           {h.dreamIntro}
           <strong className="home-hero__accent">
@@ -347,25 +357,17 @@ export default function HomePageClient() {
             <div className="hub-tile" style={{ cursor: 'default' }}>
               <span className="hub-tile__emoji">📬</span>
               <span>{h.hubTip}</span>
-              <span
-                className="hub-tile__sub"
-                style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
-              >
-                {tips.tg && (
-                  <a href={tips.tg} target="_blank" rel="noopener noreferrer" className="hub-tile__link">
-                    TG
-                  </a>
-                )}
-                {tips.wa && (
-                  <a href={tips.wa} target="_blank" rel="noopener noreferrer" className="hub-tile__link">
-                    WA
-                  </a>
-                )}
-                {tips.line && (
-                  <a href={tips.line} target="_blank" rel="noopener noreferrer" className="hub-tile__link">
-                    LINE
-                  </a>
-                )}
+              <span className="hub-tile__sub hub-tile__sub--tip-icons">
+                <HubTipSocialIcons
+                  tips={tips}
+                  labels={{
+                    tg: h.tipTelegram,
+                    wa: h.tipWhatsapp,
+                    line: h.tipLine,
+                    fb: h.tipFacebook,
+                    tt: h.tipTiktok,
+                  }}
+                />
               </span>
             </div>
           ) : (
@@ -501,6 +503,20 @@ export default function HomePageClient() {
                 <li style={{ padding: '4px 0' }}>
                   <a href={tips.line} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--tj-link)' }}>
                     {h.tipLine}
+                  </a>
+                </li>
+              )}
+              {tips.fb && (
+                <li style={{ padding: '4px 0' }}>
+                  <a href={tips.fb} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--tj-link)' }}>
+                    {h.tipFacebook}
+                  </a>
+                </li>
+              )}
+              {tips.tt && (
+                <li style={{ padding: '4px 0' }}>
+                  <a href={tips.tt} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--tj-link)' }}>
+                    {h.tipTiktok}
                   </a>
                 </li>
               )}

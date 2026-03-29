@@ -345,6 +345,14 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
         </div>
         <div className="hub-tiles">
           <Link
+            href={isLoggedIn ? '/minihome' : loginNextHref('/minihome')}
+            className="hub-tile"
+          >
+            <span className="hub-tile__emoji">🏠</span>
+            <span>{h.hubMinihome}</span>
+            <span className="hub-tile__sub">{h.hubMinihomeSub}</span>
+          </Link>
+          <Link
             href={isLoggedIn ? '/community/boards' : loginNextHref('/community/boards')}
             className="hub-tile"
           >

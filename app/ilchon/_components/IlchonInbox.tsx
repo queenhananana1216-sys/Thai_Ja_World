@@ -182,7 +182,11 @@ export default function IlchonInbox({ labels }: { labels: Dictionary['ilchon'] }
 
       <p className="ilchon-page__lead">{labels.pageLead}</p>
 
-      <section className="ilchon-page__section" aria-labelledby="ilchon-in">
+      <section
+        id="ilchon-received"
+        className="ilchon-page__section"
+        aria-labelledby="ilchon-in"
+      >
         <h2 id="ilchon-in" className="ilchon-page__h2">
           {labels.incomingTitle}
         </h2>

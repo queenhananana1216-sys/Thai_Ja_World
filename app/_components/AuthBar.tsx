@@ -7,7 +7,20 @@ import { createBrowserClient } from '@/lib/supabase/client';
 
 type Labels = { login: string; signup: string; logout: string };
 
-export default function AuthBar({ labels }: { labels: Labels }) {
+type MemberNavLabels = {
+  minihome: string;
+  notesInbox: string;
+  friends: string;
+  ariaLabel: string;
+};
+
+export default function AuthBar({
+  labels,
+  memberNav,
+}: {
+  labels: Labels;
+  memberNav: MemberNavLabels;
+}) {
   const router = useRouter();
   const pathname = usePathname() || '/';
   const authNext = encodeURIComponent(
@@ -66,13 +79,26 @@ export default function AuthBar({ labels }: { labels: Labels }) {
   }
 
   return (
-    <div className="auth-bar">
-      <span className="auth-bar__email" title={email}>
-        {email.length > 18 ? `${email.slice(0, 16)}…` : email}
-      </span>
-      <button type="button" className="auth-bar__btn" onClick={() => void logout()}>
-        {labels.logout}
-      </button>
+    <div className="auth-bar-cluster">
+      <nav className="member-quick-nav" aria-label={memberNav.ariaLabel}>
+        <Link href="/minihome" className="member-quick-nav__link">
+          {memberNav.minihome}
+        </Link>
+        <Link href="/ilchon#ilchon-received" className="member-quick-nav__link">
+          {memberNav.notesInbox}
+        </Link>
+        <Link href="/ilchon#ilchon-friends" className="member-quick-nav__link">
+          {memberNav.friends}
+        </Link>
+      </nav>
+      <div className="auth-bar">
+        <span className="auth-bar__email" title={email}>
+          {email.length > 18 ? `${email.slice(0, 16)}…` : email}
+        </span>
+        <button type="button" className="auth-bar__btn" onClick={() => void logout()}>
+          {labels.logout}
+        </button>
+      </div>
     </div>
   );
 }

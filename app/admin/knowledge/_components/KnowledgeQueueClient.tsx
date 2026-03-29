@@ -22,6 +22,13 @@ export type KnowledgeQueueItem = {
   usefulness_score: number;
 };
 
+export type KnowledgeQueueDiagnostics = {
+  draftCount: number;
+  publishedCount: number;
+  rawRecentCount: number;
+  knowledgeModeAuto: boolean;
+};
+
 function parseLlmFields(cleanBody: unknown, rawTitle: string): Partial<KnowledgeQueueItem> {
   try {
     const llm =
@@ -77,7 +84,13 @@ function boardLabel(target: 'tips_board' | 'board_board'): string {
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────
 
-export default function KnowledgeQueueClient({ items }: { items: KnowledgeQueueItem[] }) {
+export default function KnowledgeQueueClient({
+  items,
+  diagnostics,
+}: {
+  items: KnowledgeQueueItem[];
+  diagnostics?: KnowledgeQueueDiagnostics | null;
+}) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -123,14 +136,53 @@ export default function KnowledgeQueueClient({ items }: { items: KnowledgeQueueI
 
   if (items.length === 0) {
     return (
-      <p style={{ color: '#6b7280', marginTop: 16 }}>
-        대기 중인 초안이 없습니다. 지식 크론·LLM이 돌면 여기에 쌓입니다. (
-        <code>KNOWLEDGE_PUBLISH_MODE=auto</code>이면 초안 없이 바로 공개될 수 있어요.){' '}
-        <a href="/admin/bot-actions" style={{ color: '#2563eb' }}>
-          봇 기록
-        </a>
-        을 확인해 보세요.
-      </p>
+      <div style={{ marginTop: 16 }}>
+        <p style={{ color: '#6b7280', margin: '0 0 12px' }}>
+          대기 중인 초안이 없습니다. 가공 파이프라인이 <code>processed_knowledge</code>를{' '}
+          <code>published=false</code>로 넣으면 여기에 보입니다.
+        </p>
+        {diagnostics ? (
+          <div
+            style={{
+              padding: 14,
+              background: '#f9fafb',
+              borderRadius: 10,
+              border: '1px solid #e5e7eb',
+              fontSize: 13,
+              lineHeight: 1.55,
+              color: '#374151',
+            }}
+          >
+            <strong style={{ display: 'block', marginBottom: 8 }}>DB 요약(지금)</strong>
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              <li>
+                승인 대기 초안: <strong>{diagnostics.draftCount}</strong>건
+              </li>
+              <li>
+                이미 공개 처리분: <strong>{diagnostics.publishedCount}</strong>건
+              </li>
+              <li>
+                최근 14일 수집 원문(raw_knowledge): <strong>{diagnostics.rawRecentCount}</strong>건
+              </li>
+              <li>
+                배포 지식 모드:{' '}
+                <strong>
+                  {diagnostics.knowledgeModeAuto ? 'auto (초안 생략 가능)' : 'manual/기본 (초안 큐)'}
+                </strong>
+              </li>
+            </ul>
+            {diagnostics.rawRecentCount > 0 && diagnostics.draftCount === 0 ? (
+              <p style={{ margin: '12px 0 0', fontSize: 12, color: '#92400e' }}>
+                원문은 있는데 초안이 0이면, 지식 가공 크론/LLM이 아직 안 돌았거나 실패했을 수 있어요.{' '}
+                <a href="/admin/bot-actions" style={{ color: '#2563eb' }}>
+                  봇 기록
+                </a>
+                을 확인해 보세요.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     );
   }
 

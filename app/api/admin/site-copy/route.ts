@@ -3,7 +3,7 @@
  */
 import { NextResponse } from 'next/server';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
-import { HERO_SITE_COPY_KEYS, type HeroSiteCopyKey } from '@/lib/siteCopy/heroCopyDefaults';
+import { SITE_COPY_HOME_KEYS, type SiteCopyHomeKey } from '@/lib/siteCopy/heroCopyDefaults';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
@@ -12,12 +12,16 @@ export const runtime = 'nodejs';
 const MAX_LEN_SHORT = 200;
 const MAX_LEN_BRAND = 160;
 const MAX_LEN_SUB = 3000;
+const MAX_LEN_BODY = 1200;
+const MAX_LEN_HOT_NOTE = 2000;
 
 type Entry = { key: string; locale: string; value: string };
 
 function maxLenForKey(key: string): number {
   if (key.startsWith('home_hero_brand_')) return MAX_LEN_BRAND;
   if (key === 'home_hero_sub') return MAX_LEN_SUB;
+  if (key === 'home_hot_footnote') return MAX_LEN_HOT_NOTE;
+  if (key === 'home_guest_public_body' || key === 'home_guest_member_body') return MAX_LEN_BODY;
   return MAX_LEN_SHORT;
 }
 
@@ -29,14 +33,21 @@ function allowedActor(email: string | undefined): boolean {
   return list.includes(e);
 }
 
-function isAllowedKey(key: string, locale: string): key is HeroSiteCopyKey {
-  if (!HERO_SITE_COPY_KEYS.includes(key as HeroSiteCopyKey)) return false;
+function isAllowedKey(key: string, locale: string): key is SiteCopyHomeKey {
+  if (!SITE_COPY_HOME_KEYS.includes(key as SiteCopyHomeKey)) return false;
   if (
     key === 'home_hero_title' ||
     key === 'home_hero_tag' ||
     key === 'home_hero_kicker' ||
     key === 'home_hero_lead' ||
-    key === 'home_hero_sub'
+    key === 'home_hero_sub' ||
+    key === 'home_guest_public_label' ||
+    key === 'home_guest_public_body' ||
+    key === 'home_guest_member_label' ||
+    key === 'home_guest_member_body' ||
+    key === 'home_guest_login_cta' ||
+    key === 'home_hot_label' ||
+    key === 'home_hot_footnote'
   ) {
     return locale === 'ko' || locale === 'th';
   }

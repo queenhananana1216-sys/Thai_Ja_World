@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import HomePageClient from './_components/HomePageClient';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
+import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
 export async function generateMetadata(): Promise<Metadata> {
   const loc = await getLocale();
@@ -15,6 +16,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function HomePage() {
-  return <HomePageClient />;
+export default async function HomePage() {
+  const auth = await createServerSupabaseAuthClient();
+  const {
+    data: { user },
+  } = await auth.auth.getUser();
+  return <HomePageClient isLoggedIn={!!user} />;
 }

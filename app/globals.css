@@ -976,6 +976,65 @@ a:hover {
   background: linear-gradient(145deg, #06c755 0%, #00b900 100%);
 }
 
+/* 홈 — 비회원: 읽기 vs 참여(회원) 안내 (한·태 동일 레이아웃) */
+.guest-home-split {
+  margin-bottom: 28px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid var(--tj-line);
+  background: var(--tj-surface);
+  box-shadow: var(--tj-shadow);
+}
+
+.guest-home-split__grid {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 560px) {
+  .guest-home-split__grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+}
+
+.guest-home-split__box {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(228, 220, 232, 0.95);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.guest-home-split__box--read {
+  border-left: 3px solid #7c6fa3;
+}
+
+.guest-home-split__box--member {
+  border-left: 3px solid #c4b5fd;
+}
+
+.guest-home-split__label {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #6b5a8a;
+  text-transform: none;
+}
+
+.guest-home-split__body {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--tj-ink);
+  white-space: pre-line;
+}
+
+.guest-home-split__cta {
+  margin-top: 2px;
+}
+
 .hot-strip {
   background: var(--tj-surface);
   border: 1px solid var(--tj-line);
@@ -1089,6 +1148,7 @@ a:hover {
   font-size: 0.72rem;
   color: #94a3b8;
   line-height: 1.45;
+  white-space: pre-line;
 }
 
 .news-story__wit {

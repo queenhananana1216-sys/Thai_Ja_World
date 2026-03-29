@@ -2,13 +2,18 @@ import 'server-only';
 
 import {
   getMergedDefaultsFromI18n,
-  HERO_SITE_COPY_KEYS,
+  SITE_COPY_HOME_KEYS,
   type MergedHeroSiteCopy,
 } from '@/lib/siteCopy/heroCopyDefaults';
 import { createServerClient } from '@/lib/supabase/server';
 
-export type { HeroSiteCopyKey, MergedHeroSiteCopy } from '@/lib/siteCopy/heroCopyDefaults';
-export { HERO_SITE_COPY_KEYS } from '@/lib/siteCopy/heroCopyDefaults';
+export type {
+  HeroSiteCopyKey,
+  MainHomeSiteCopyKey,
+  MergedHeroSiteCopy,
+  SiteCopyHomeKey,
+} from '@/lib/siteCopy/heroCopyDefaults';
+export { HERO_SITE_COPY_KEYS, MAIN_HOME_SITE_COPY_KEYS, SITE_COPY_HOME_KEYS } from '@/lib/siteCopy/heroCopyDefaults';
 
 /** 레이아웃 SSR용 — 테이블·네트워크 오류 시 i18n 기본값 */
 export async function fetchMergedHeroSiteCopy(): Promise<MergedHeroSiteCopy> {
@@ -18,7 +23,7 @@ export async function fetchMergedHeroSiteCopy(): Promise<MergedHeroSiteCopy> {
     const { data, error } = await sb
       .from('site_copy')
       .select('key, locale, value')
-      .in('key', [...HERO_SITE_COPY_KEYS]);
+      .in('key', [...SITE_COPY_HOME_KEYS]);
 
     if (error || !data?.length) {
       return defaults;
@@ -41,6 +46,20 @@ export async function fetchMergedHeroSiteCopy(): Promise<MergedHeroSiteCopy> {
       heroLeadTh: row('home_hero_lead', 'th') || defaults.heroLeadTh,
       heroSubKo: row('home_hero_sub', 'ko') || defaults.heroSubKo,
       heroSubTh: row('home_hero_sub', 'th') || defaults.heroSubTh,
+      guestPublicLabelKo: row('home_guest_public_label', 'ko') || defaults.guestPublicLabelKo,
+      guestPublicLabelTh: row('home_guest_public_label', 'th') || defaults.guestPublicLabelTh,
+      guestPublicBodyKo: row('home_guest_public_body', 'ko') || defaults.guestPublicBodyKo,
+      guestPublicBodyTh: row('home_guest_public_body', 'th') || defaults.guestPublicBodyTh,
+      guestMemberLabelKo: row('home_guest_member_label', 'ko') || defaults.guestMemberLabelKo,
+      guestMemberLabelTh: row('home_guest_member_label', 'th') || defaults.guestMemberLabelTh,
+      guestMemberBodyKo: row('home_guest_member_body', 'ko') || defaults.guestMemberBodyKo,
+      guestMemberBodyTh: row('home_guest_member_body', 'th') || defaults.guestMemberBodyTh,
+      guestLoginCtaKo: row('home_guest_login_cta', 'ko') || defaults.guestLoginCtaKo,
+      guestLoginCtaTh: row('home_guest_login_cta', 'th') || defaults.guestLoginCtaTh,
+      hotLabelKo: row('home_hot_label', 'ko') || defaults.hotLabelKo,
+      hotLabelTh: row('home_hot_label', 'th') || defaults.hotLabelTh,
+      hotFootnoteKo: row('home_hot_footnote', 'ko') || defaults.hotFootnoteKo,
+      hotFootnoteTh: row('home_hot_footnote', 'th') || defaults.hotFootnoteTh,
     };
   } catch {
     return defaults;

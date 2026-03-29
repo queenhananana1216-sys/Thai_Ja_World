@@ -110,6 +110,14 @@ export type Dictionary = {
     newsDetailExternalCta: string;
     newsDetailExternalHint: string;
     newsDetailMissing: string;
+    /** 비회원 홈: 읽기 vs 참여 구분 (한·태 동일 구조) */
+    guestHomePublicLabel: string;
+    guestHomePublicBody: string;
+    guestHomeMemberLabel: string;
+    guestHomeMemberBody: string;
+    guestHomeLoginCta: string;
+    /** 기사 하단 — 비회원에게만 (댓글·참여 불가 안내) */
+    newsDetailGuestNote: string;
   };
   board: {
     pageTitle: string;
@@ -426,6 +434,14 @@ const ko: Dictionary = {
     newsDetailExternalCta: '원문 기사 열기',
     newsDetailExternalHint: '출처 언론·매체 사이트로 이동해요.',
     newsDetailMissing: '찾으시는 소식이 없거나 기간이 지났어요. 홈으로 돌아가 주세요.',
+    guestHomePublicLabel: '읽기 (비회원 OK)',
+    guestHomePublicBody: '홈의 한 줄 제보, 태자 기사 본문·요약 — 로그인 없이 볼 수 있어요.',
+    guestHomeMemberLabel: '참여·이용 (회원)',
+    guestHomeMemberBody:
+      '날씨·로컬 가게·광장·중고·알바·미니홈, 기사 댓글 등 — 로그인(또는 가입) 후에만 가능해요.',
+    guestHomeLoginCta: '로그인 또는 가입하고 전체 열기',
+    newsDetailGuestNote:
+      '댓글·광장·거래 등 커뮤니티 참여는 회원만 가능해요. 아래에서 로그인하거나 가입해 주세요.',
   },
   board: {
     pageTitle: '광장 게시판',
@@ -759,6 +775,14 @@ const th: Dictionary = {
     newsDetailExternalCta: 'เปิดบทความต้นทาง',
     newsDetailExternalHint: 'จะไปเว็บสื่อต้นทาง',
     newsDetailMissing: 'หาเรื่องนี้ไม่เจอหรือหมดอายุแล้ว กลับหน้าแรกได้เลย',
+    guestHomePublicLabel: 'อ่าน (ไม่ต้องสมัคร)',
+    guestHomePublicBody: 'บรรทัดเดียวในหน้าแรก บทความ Thai Ja ฉบับเต็มและสรุป — ไม่ต้องล็อกอิน',
+    guestHomeMemberLabel: 'มีส่วนร่วม (สมาชิก)',
+    guestHomeMemberBody:
+      'สภาพอากาศ·ร้านท้องถิ่น·บอร์ด·มือสอง·งานพาร์ทไทม์·มินิโฮม ความคิดเห็นข่าว — ต้องเข้าสู่ระบบหรือสมัครสมาชิก',
+    guestHomeLoginCta: 'เข้าสู่ระบบหรือสมัครเพื่อเปิดทั้งหมด',
+    newsDetailGuestNote:
+      'ความคิดเห็น·บอร์ด·ซื้อขาย ใช้ได้เฉพาะสมาชิก กรุณาเข้าสู่ระบบหรือสมัครด้านล่าง',
   },
   board: {
     pageTitle: 'บอร์ดลานชุมชน',

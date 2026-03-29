@@ -1,7 +1,7 @@
 /**
  * GET /api/cron/news — Vercel Cron 전용 (수집 + 요약 한 번에)
  *
- * vercel.json 스케줄: `0 21 * * *` (UTC) ≈ 한국 시간 이른 아침 06:00 전후.
+ * vercel.json 스케줄: `0 3,21 * * *` (UTC) — 하루 2회(수집+요약).
  *
  * Vercel 대시보드에서 같은 이름의 CRON_SECRET 을 설정하면
  * 요청 헤더 Authorization: Bearer <CRON_SECRET> 으로 검증됩니다.

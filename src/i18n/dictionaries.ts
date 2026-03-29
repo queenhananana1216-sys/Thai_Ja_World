@@ -8,6 +8,8 @@ export type Dictionary = {
     home: string;
     local: string;
     community: string;
+    /** 일촌 받은함 */
+    ilchon: string;
     botConsole: string;
   };
   brandSuffix: string;
@@ -314,6 +316,48 @@ export type Dictionary = {
     /** 내 미니홈 설정 화면 안내 */
     previewPanelsHint: string;
   };
+  /** 싸이 스타일 일촌 신청·수락·목록 */
+  ilchon: {
+    pageTitle: string;
+    pageLead: string;
+    needLogin: string;
+    goLogin: string;
+    requestButton: string;
+    requestTitle: string;
+    messageLabel: string;
+    messagePlaceholder: string;
+    proposedNickLabel: string;
+    proposedNickHint: string;
+    sendRequest: string;
+    sending: string;
+    close: string;
+    alreadyIlchon: string;
+    pendingOutbound: string;
+    pendingInbound: string;
+    openInbox: string;
+    accept: string;
+    reject: string;
+    cancelRequest: string;
+    acceptTitle: string;
+    nickYouCallThem: string;
+    nickTheyCallYou: string;
+    nickYouCallThemHint: string;
+    nickTheyCallYouHint: string;
+    confirmAccept: string;
+    incomingTitle: string;
+    outgoingTitle: string;
+    friendsTitle: string;
+    incomingEmpty: string;
+    outgoingEmpty: string;
+    friendsEmpty: string;
+    youCallThemLabel: string;
+    proposedFromThem: string;
+    errorGeneric: string;
+    errorPendingExists: string;
+    errorAlreadyIlchon: string;
+    errorNotAuth: string;
+    errorSelf: string;
+  };
   weather: { city: string; condition: string };
   /** 기본·홈 메타 (locale별) */
   seo: {
@@ -350,6 +394,7 @@ const ko: Dictionary = {
     home: '홈',
     local: '로컬',
     community: '광장',
+    ilchon: '일촌',
     botConsole: '관리자',
   },
   brandSuffix: '월드',
@@ -665,6 +710,48 @@ const ko: Dictionary = {
     previewPanelsHint:
       '미리보기·공개 페이지에서 왼쪽 메뉴로 일촌평·방명록·사진첩 창을 열고 닫을 수 있어요. (싸이 스타일 플로팅 창)',
   },
+  ilchon: {
+    pageTitle: '일촌',
+    pageLead:
+      '신청을 보내고, 상대가 수락하면 서로 부르는 일촌명이 정해져요. 받은 신청은 여기서 수락·거절할 수 있어요.',
+    needLogin: '일촌은 로그인한 뒤 이용할 수 있어요.',
+    goLogin: '로그인하기',
+    requestButton: '일촌 신청',
+    requestTitle: '일촌 신청 보내기',
+    messageLabel: '메시지 (선택)',
+    messagePlaceholder: '짧게 인사를 남겨도 돼요.',
+    proposedNickLabel: '내가 상대를 부를 이름 (선택)',
+    proposedNickHint: '수락 화면에서 상대가 확인·수정할 수 있어요.',
+    sendRequest: '신청 보내기',
+    sending: '보내는 중…',
+    close: '닫기',
+    alreadyIlchon: '이미 일촌이에요.',
+    pendingOutbound: '신청을 보냈어요. 상대 수락을 기다리는 중이에요.',
+    pendingInbound: '상대가 보낸 신청이 있어요. 일촌함에서 확인해 주세요.',
+    openInbox: '일촌함 열기',
+    accept: '수락',
+    reject: '거절',
+    cancelRequest: '신청 취소',
+    acceptTitle: '일촌 맺기',
+    nickYouCallThem: '내가 신청자를 부를 이름',
+    nickTheyCallYou: '신청자가 나를 부를 이름',
+    nickYouCallThemHint: '내 미니홈·목록에 쓸 애칭이에요.',
+    nickTheyCallYouHint: '상대가 제안했으면 그대로 두거나 고쳐 주세요.',
+    confirmAccept: '일촌 맺기',
+    incomingTitle: '받은 신청',
+    outgoingTitle: '보낸 신청',
+    friendsTitle: '내 일촌',
+    incomingEmpty: '받은 신청이 없어요.',
+    outgoingEmpty: '보낸 대기 중인 신청이 없어요.',
+    friendsEmpty: '아직 맺은 일촌이 없어요. 미니홈에서 신청해 보세요.',
+    youCallThemLabel: '내가 부르는 이름',
+    proposedFromThem: '신청자가 나를 부르고 싶어 하는 이름(제안)',
+    errorGeneric: '잠시 안 됐어요. 다시 시도해 주세요.',
+    errorPendingExists: '이미 진행 중인 신청이 있어요.',
+    errorAlreadyIlchon: '이미 일촌이에요.',
+    errorNotAuth: '로그인이 필요해요.',
+    errorSelf: '자기 자신에게는 보낼 수 없어요.',
+  },
   weather: { city: '방콕', condition: '맑음' },
   seo: {
     defaultTitle: '태자 월드 (Thai Ja World)',
@@ -706,6 +793,7 @@ const th: Dictionary = {
     home: 'หน้าแรก',
     local: 'ร้านท้องถิ่น',
     community: 'ลานชุมชน',
+    ilchon: 'เพื่อน (อิลชอน)',
     botConsole: 'ผู้ดูแล',
   },
   brandSuffix: 'เวิลด์',
@@ -1017,6 +1105,48 @@ const th: Dictionary = {
     cyIntroEmpty: 'ยังไม่มีข้อความแนะนำในห้องหลัก',
     previewPanelsHint:
       'ตัวอย่าง/หน้าสาธารณะ — เปิด-ปิด ทักทาย·สมุดเยี่ยม·อัลบั้ม จากเมนูซ้าย (สไตล์หน้าต่างลอยแบบไซเวิลด์)',
+  },
+  ilchon: {
+    pageTitle: 'เพื่อน (อิลชอน)',
+    pageLead:
+      'ส่งคำขอ — เมื่ออีกฝ่ายยอมรับ จะตั้งชื่อเรียกกันได้สองทาง ดูคำขอที่ได้รับและยอมรับ/ปฏิเสธได้ที่นี่',
+    needLogin: 'ล็อกอินก่อนถึงใช้ฟีเจอร์นี้ได้',
+    goLogin: 'ไปล็อกอิน',
+    requestButton: 'ขอเป็นเพื่อน',
+    requestTitle: 'ส่งคำขอเป็นเพื่อน',
+    messageLabel: 'ข้อความ (ไม่บังคับ)',
+    messagePlaceholder: 'ทักทายสั้นๆ ก็ได้',
+    proposedNickLabel: 'ชื่อที่ฉันเรียกอีกฝ่าย (ไม่บังคับ)',
+    proposedNickHint: 'ตอนยอมรับ อีกฝ่ายจะเห็นและแก้ได้',
+    sendRequest: 'ส่งคำขอ',
+    sending: 'กำลังส่ง…',
+    close: 'ปิด',
+    alreadyIlchon: 'เป็นเพื่อนกันแล้ว',
+    pendingOutbound: 'ส่งคำขอแล้ว — รออีกฝ่ายยอมรับ',
+    pendingInbound: 'มีคำขอจากอีกฝ่าย — เปิดกล่องเพื่อนดู',
+    openInbox: 'เปิดกล่องเพื่อน',
+    accept: 'ยอมรับ',
+    reject: 'ปฏิเสธ',
+    cancelRequest: 'ยกเลิกคำขอ',
+    acceptTitle: 'ยืนยันเป็นเพื่อน',
+    nickYouCallThem: 'ชื่อที่ฉันเรียกคนที่ขอ',
+    nickTheyCallYou: 'ชื่อที่คนที่ขอจะเรียกฉัน',
+    nickYouCallThemHint: 'ใช้ในมินิโฮม/รายชื่อของคุณ',
+    nickTheyCallYouHint: 'ถ้าอีกฝ่ายเสนอมาแล้ว แก้หรือคงไว้ก็ได้',
+    confirmAccept: 'ยืนยันเป็นเพื่อน',
+    incomingTitle: 'คำขอที่ได้รับ',
+    outgoingTitle: 'คำขอที่ส่งไป',
+    friendsTitle: 'เพื่อนของฉัน',
+    incomingEmpty: 'ยังไม่มีคำขอ',
+    outgoingEmpty: 'ไม่มีคำขอที่รออยู่',
+    friendsEmpty: 'ยังไม่มีเพื่อน — ลองขอจากมินิโฮม',
+    youCallThemLabel: 'ชื่อที่ฉันเรียก',
+    proposedFromThem: 'ชื่อที่คนขออยากเรียกคุณ (ข้อเสนอ)',
+    errorGeneric: 'ไม่สำเร็จชั่วคราว ลองอีกครั้ง',
+    errorPendingExists: 'มีคำขอค้างอยู่แล้ว',
+    errorAlreadyIlchon: 'เป็นเพื่อนกันแล้ว',
+    errorNotAuth: 'ต้องล็อกอิน',
+    errorSelf: 'ส่งหาตัวเองไม่ได้',
   },
   weather: { city: 'กรุงเทพฯ', condition: 'แจ่มใส' },
   seo: {

@@ -2262,3 +2262,189 @@ a:hover {
   height: 18px;
   accent-color: var(--tj-link);
 }
+
+/* -------------------------------------------------------------------------- */
+/* 일촌 (/ilchon) + 미니홈 일촌 신청 모달 */
+/* -------------------------------------------------------------------------- */
+
+.ilchon-page-wrap {
+  max-width: 640px;
+}
+
+.ilchon-page__title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.ilchon-page__lead {
+  margin: 0 0 20px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--tj-muted);
+}
+
+.ilchon-page__section {
+  margin-bottom: 28px;
+}
+
+.ilchon-page__h2 {
+  margin: 0 0 10px;
+  font-size: 1.02rem;
+}
+
+.ilchon-page__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ilchon-page__item {
+  padding: 14px 16px;
+}
+
+.ilchon-page__item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.ilchon-page__msg {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.ilchon-page__hint,
+.ilchon-page__nick {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: var(--tj-muted);
+}
+
+.ilchon-page__muted {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--tj-muted);
+}
+
+.ilchon-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ilchon-page__toast {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #9f1239;
+  font-size: 0.86rem;
+  margin: 0 0 16px;
+}
+
+.ilchon-page__gate {
+  padding: 20px;
+}
+
+.ilchon-page__gate p {
+  margin: 0 0 14px;
+}
+
+a.ilchon-btn {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+}
+
+.ilchon-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--tj-link);
+  color: #fff;
+}
+
+.ilchon-btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.ilchon-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ilchon-btn--ghost {
+  background: transparent;
+  color: var(--tj-link);
+  box-shadow: inset 0 0 0 1px var(--tj-link);
+}
+
+.minihome-ilchon-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(35, 28, 48, 0.45);
+}
+
+.minihome-ilchon-modal__card {
+  width: 100%;
+  max-width: 380px;
+  padding: 18px 18px 16px;
+}
+
+.minihome-ilchon-modal__title {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+.minihome-ilchon-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+  color: var(--tj-muted);
+}
+
+.minihome-ilchon-modal__field input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--tj-border, #e5e7eb);
+  font-size: 0.92rem;
+}
+
+.minihome-ilchon-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.minihome-room__ilchon {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(124, 58, 237, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.minihome-room__ilchon-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--tj-muted);
+}

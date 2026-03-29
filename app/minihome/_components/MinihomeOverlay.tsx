@@ -104,6 +104,7 @@ function MinihomeOverlayPortal() {
           <MinihomeRoomView
             data={data}
             labels={d.minihome}
+            ilchon={d.ilchon}
             navCommunity={d.nav.community}
             variant="overlay"
             onClose={close}

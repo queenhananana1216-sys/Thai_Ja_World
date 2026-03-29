@@ -1,5 +1,15 @@
 import Link from 'next/link';
 import { getKstDayRangeISO } from '@/lib/admin/kstDayRange';
+import {
+  knowledgePublishModeEnvRaw,
+  knowledgePublishPipelineHint,
+  knowledgeInsertAsPublished,
+} from '@/lib/knowledge/knowledgePublishMode';
+import {
+  newsInsertAsPublished,
+  newsPublishModeEnvRaw,
+  newsPublishPipelineHint,
+} from '@/lib/news/newsPublishMode';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 export default async function AdminDashboardPage() {
@@ -10,6 +20,8 @@ export default async function AdminDashboardPage() {
   let signupsToday = 0;
   let recentActive = 0;
   let draftNews: number | null = null;
+  let publishedNews: number | null = null;
+  let draftKnowledge: number | null = null;
   let dbNote: string | null = null;
 
   try {
@@ -52,6 +64,22 @@ export default async function AdminDashboardPage() {
     } else {
       draftNews = c3 ?? 0;
     }
+
+    const { count: cPub, error: ePub } = await admin
+      .from('processed_news')
+      .select('*', { count: 'exact', head: true })
+      .eq('published', true);
+    if (!ePub) {
+      publishedNews = cPub ?? 0;
+    }
+
+    const { count: cK, error: eK } = await admin
+      .from('processed_knowledge')
+      .select('*', { count: 'exact', head: true })
+      .eq('published', false);
+    if (!eK) {
+      draftKnowledge = cK ?? 0;
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     dbNote = msg.includes('SUPABASE_SERVICE_ROLE_KEY') || msg.includes('Invalid API key')
@@ -68,6 +96,28 @@ export default async function AdminDashboardPage() {
       </p>
 
       {dbNote && <div className="admin-dash__alert">{dbNote}</div>}
+
+      <section className="admin-dash__pipeline" aria-label="게시 파이프라인">
+        <h2>뉴스·지식이 «승인 대기»에 안 보일 때</h2>
+        <div className="admin-dash__pipeline-grid">
+          <div className="admin-dash__pipeline-block">
+            <strong>뉴스 (RSS → 요약)</strong>
+            <code>
+              NEWS_PUBLISH_MODE={newsPublishModeEnvRaw()} → 실제 동작:{' '}
+              {newsInsertAsPublished() ? 'auto(즉시 공개)' : 'manual(초안만)'}
+            </code>
+            <p style={{ margin: '8px 0 0', fontSize: 12 }}>{newsPublishPipelineHint()}</p>
+          </div>
+          <div className="admin-dash__pipeline-block">
+            <strong>지식 (별도 크론·파이프라인)</strong>
+            <code>
+              KNOWLEDGE_PUBLISH_MODE={knowledgePublishModeEnvRaw()} → 실제 동작:{' '}
+              {knowledgeInsertAsPublished() ? 'auto(즉시 공개)' : 'manual(초안만)'}
+            </code>
+            <p style={{ margin: '8px 0 0', fontSize: 12 }}>{knowledgePublishPipelineHint()}</p>
+          </div>
+        </div>
+      </section>
 
       <div className="admin-dash__grid">
         <StatCard
@@ -88,7 +138,17 @@ export default async function AdminDashboardPage() {
         <StatCard
           title="뉴스 초안(미게시)"
           value={draftNews === null ? '—' : String(draftNews)}
-          hint="NEWS_PUBLISH_MODE=manual 일 때 승인 대기 건수"
+          hint="manual 모드에서만 쌓임. auto면 0이 정상"
+        />
+        <StatCard
+          title="뉴스 공개(처리분)"
+          value={publishedNews === null ? '—' : String(publishedNews)}
+          hint="processed_news 중 published=true — 홈·뉴스에 노출되는 건"
+        />
+        <StatCard
+          title="지식 초안(미게시)"
+          value={draftKnowledge === null ? '—' : String(draftKnowledge)}
+          hint="KNOWLEDGE_PUBLISH_MODE=manual(기본)일 때 /admin/knowledge 큐"
         />
       </div>
 

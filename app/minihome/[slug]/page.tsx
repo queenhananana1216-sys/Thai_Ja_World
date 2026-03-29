@@ -39,6 +39,7 @@ export default async function MinihomePublicPage({
       <MinihomeRoomView
         data={row}
         labels={d.minihome}
+        ilchon={d.ilchon}
         navCommunity={d.nav.community}
         variant="page"
       />

@@ -21,6 +21,7 @@ type GbRow = {
 type Props = {
   data: MinihomePublicRow;
   labels: Dictionary['minihome'];
+  ilchon: Dictionary['ilchon'];
   navCommunity: string;
   variant: 'page' | 'overlay';
   onClose?: () => void;
@@ -64,9 +65,21 @@ function CyWindow({
   );
 }
 
+type IlchonMode = 'loading' | 'hidden' | 'anon' | 'linked' | 'out' | 'in' | 'ask';
+
+function mapIlchonRpc(raw: string, L: Dictionary['ilchon']): string {
+  const m = raw.toLowerCase();
+  if (m.includes('pending_request_exists')) return L.errorPendingExists;
+  if (m.includes('already_ilchon')) return L.errorAlreadyIlchon;
+  if (m.includes('not_authenticated')) return L.errorNotAuth;
+  if (m.includes('cannot_request_self')) return L.errorSelf;
+  return L.errorGeneric;
+}
+
 export default function MinihomeRoomView({
   data,
   labels,
+  ilchon,
   navCommunity,
   variant,
   onClose,
@@ -82,6 +95,13 @@ export default function MinihomeRoomView({
   const [gbRows, setGbRows] = useState<GbRow[] | null>(null);
   const [names, setNames] = useState<Record<string, string>>({});
   const [gbLoading, setGbLoading] = useState(false);
+
+  const [ilchonMode, setIlchonMode] = useState<IlchonMode>('loading');
+  const [ilchonToast, setIlchonToast] = useState<string | null>(null);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [reqMessage, setReqMessage] = useState('');
+  const [reqNick, setReqNick] = useState('');
+  const [reqBusy, setReqBusy] = useState(false);
 
   const loadGuestbook = useCallback(async () => {
     if (!data.owner_id) return;
@@ -124,6 +144,67 @@ export default function MinihomeRoomView({
     void loadGuestbook();
   }, [winGuest, winVisitor, loadGuestbook]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!data.owner_id) {
+        setIlchonMode('hidden');
+        return;
+      }
+      setIlchonMode('loading');
+      const sb = createBrowserClient();
+      const {
+        data: { user },
+      } = await sb.auth.getUser();
+      if (cancelled) return;
+      if (!user) {
+        setIlchonMode('anon');
+        return;
+      }
+      if (user.id === data.owner_id) {
+        setIlchonMode('hidden');
+        return;
+      }
+      const [link, outReq] = await Promise.all([
+        sb
+          .from('ilchon_links')
+          .select('peer_id')
+          .eq('user_id', user.id)
+          .eq('peer_id', data.owner_id)
+          .maybeSingle(),
+        sb
+          .from('ilchon_requests')
+          .select('id')
+          .eq('from_user_id', user.id)
+          .eq('to_user_id', data.owner_id)
+          .eq('status', 'pending')
+          .maybeSingle(),
+      ]);
+      if (cancelled) return;
+      if (link.data) {
+        setIlchonMode('linked');
+        return;
+      }
+      if (outReq.data) {
+        setIlchonMode('out');
+        return;
+      }
+      const { data: inReq } = await sb
+        .from('ilchon_requests')
+        .select('id')
+        .eq('from_user_id', data.owner_id)
+        .eq('to_user_id', user.id)
+        .eq('status', 'pending')
+        .maybeSingle();
+      if (cancelled) return;
+      if (inReq) setIlchonMode('in');
+      else setIlchonMode('ask');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [data.owner_id]);
+
   const visitorOrder = useMemo(() => {
     if (!gbRows?.length) return [];
     return [...gbRows].reverse();
@@ -146,6 +227,31 @@ export default function MinihomeRoomView({
 
   function toggle(setter: (v: boolean) => void, cur: boolean) {
     setter(!cur);
+  }
+
+  const loginNext = `/auth/login?next=${encodeURIComponent(`/minihome/${data.public_slug}`)}`;
+
+  async function submitIlchonRequest() {
+    if (!data.owner_id || reqBusy) return;
+    setReqBusy(true);
+    setIlchonToast(null);
+    const sb = createBrowserClient();
+    const msg = reqMessage.trim();
+    const nick = reqNick.trim();
+    const { error } = await sb.rpc('ilchon_send_request', {
+      p_to_user_id: data.owner_id,
+      p_message: msg.length ? msg : null,
+      p_proposed_nickname: nick.length ? nick : null,
+    });
+    setReqBusy(false);
+    if (error) {
+      setIlchonToast(mapIlchonRpc(error.message ?? '', ilchon));
+      return;
+    }
+    setRequestOpen(false);
+    setReqMessage('');
+    setReqNick('');
+    setIlchonMode('out');
   }
 
   return (
@@ -244,6 +350,44 @@ export default function MinihomeRoomView({
             <p className="minihome-cy-stage__hint">{labels.cyIntroEmpty}</p>
           )}
 
+          {ilchonMode !== 'loading' && ilchonMode !== 'hidden' ? (
+            <div className="minihome-room__ilchon">
+              {ilchonToast ? <p className="minihome-room__ilchon-note">{ilchonToast}</p> : null}
+              {ilchonMode === 'anon' ? (
+                <>
+                  <p className="minihome-room__ilchon-note">{ilchon.needLogin}</p>
+                  <Link className="ilchon-btn" href={loginNext}>
+                    {ilchon.goLogin}
+                  </Link>
+                </>
+              ) : null}
+              {ilchonMode === 'linked' ? (
+                <p className="minihome-room__ilchon-note">{ilchon.alreadyIlchon}</p>
+              ) : null}
+              {ilchonMode === 'out' ? (
+                <>
+                  <p className="minihome-room__ilchon-note">{ilchon.pendingOutbound}</p>
+                  <Link className="ilchon-btn ilchon-btn--ghost" href="/ilchon">
+                    {ilchon.openInbox}
+                  </Link>
+                </>
+              ) : null}
+              {ilchonMode === 'in' ? (
+                <>
+                  <p className="minihome-room__ilchon-note">{ilchon.pendingInbound}</p>
+                  <Link className="ilchon-btn" href="/ilchon">
+                    {ilchon.openInbox}
+                  </Link>
+                </>
+              ) : null}
+              {ilchonMode === 'ask' ? (
+                <button type="button" className="ilchon-btn" onClick={() => setRequestOpen(true)}>
+                  {ilchon.requestButton}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
           {variant === 'page' ? (
             <footer className="minihome-room__footer">
               <Link href="/community/boards">{navCommunity}</Link>
@@ -323,6 +467,59 @@ export default function MinihomeRoomView({
           <p className="minihome-cy-win__muted">{labels.albumLocked}</p>
         </CyWindow>
       </div>
+
+      {requestOpen ? (
+        <div
+          className="minihome-ilchon-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="minihome-ilchon-req-title"
+        >
+          <div className="minihome-ilchon-modal__card card">
+            <h3 id="minihome-ilchon-req-title" className="minihome-ilchon-modal__title">
+              {ilchon.requestTitle}
+            </h3>
+            <label className="minihome-ilchon-modal__field">
+              <span>{ilchon.messageLabel}</span>
+              <input
+                type="text"
+                maxLength={500}
+                value={reqMessage}
+                onChange={(e) => setReqMessage(e.target.value)}
+                placeholder={ilchon.messagePlaceholder}
+              />
+            </label>
+            <label className="minihome-ilchon-modal__field">
+              <span>{ilchon.proposedNickLabel}</span>
+              <input
+                type="text"
+                maxLength={40}
+                value={reqNick}
+                onChange={(e) => setReqNick(e.target.value)}
+                placeholder={ilchon.proposedNickHint}
+              />
+            </label>
+            <div className="minihome-ilchon-modal__actions">
+              <button
+                type="button"
+                className="ilchon-btn"
+                disabled={reqBusy}
+                onClick={() => void submitIlchonRequest()}
+              >
+                {reqBusy ? ilchon.sending : ilchon.sendRequest}
+              </button>
+              <button
+                type="button"
+                className="ilchon-btn ilchon-btn--ghost"
+                disabled={reqBusy}
+                onClick={() => setRequestOpen(false)}
+              >
+                {ilchon.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

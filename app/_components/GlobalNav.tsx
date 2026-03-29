@@ -10,7 +10,7 @@ import AuthBar from './AuthBar';
 import { BrandPhrase } from './BrandPhrase';
 import LanguageSwitch from './LanguageSwitch';
 
-const HREFS = ['/', '/local', '/community/boards'] as const;
+const HREFS = ['/', '/local', '/community/boards', '/ilchon'] as const;
 
 type Props = {
   dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board'>;
@@ -20,7 +20,7 @@ type Props = {
 
 export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
   const pathname = usePathname();
-  const labels = [dict.nav.home, dict.nav.local, dict.nav.community];
+  const labels = [dict.nav.home, dict.nav.local, dict.nav.community, dict.nav.ilchon];
 
   return (
     <header className="global-header">
@@ -36,7 +36,9 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
                 ? pathname === '/'
                 : href === '/community/boards'
                   ? pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade')
-                  : pathname.startsWith(href);
+                  : href === '/ilchon'
+                    ? pathname.startsWith('/ilchon')
+                    : pathname.startsWith(href);
             return (
               <Link
                 key={href}

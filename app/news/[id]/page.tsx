@@ -207,7 +207,23 @@ export default async function NewsStoryPage({ params }: PageProps) {
           </div>
         )}
 
-        {detail.summary && (
+        {!user ? (
+          <div
+            className="news-story__lock-banner card"
+            style={{
+              marginTop: 20,
+              padding: '14px 16px',
+              background: 'linear-gradient(135deg, #faf5ff 0%, #fdf2f8 100%)',
+              border: '1px solid #e9d5ff',
+            }}
+          >
+            <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.6, color: 'var(--tj-ink)' }}>
+              {h.newsDetailLockedLead}
+            </p>
+          </div>
+        ) : null}
+
+        {user && detail.summary ? (
           <div style={{ marginTop: 20 }}>
             <p
               style={{
@@ -231,16 +247,16 @@ export default async function NewsStoryPage({ params }: PageProps) {
               {detail.summary}
             </div>
           </div>
-        )}
+        ) : null}
 
-        {detail.editorNote && (
+        {user && detail.editorNote ? (
           <div className="news-story__editor" style={{ marginTop: 22 }}>
             <p className="news-story__editor-label">{h.newsDetailEditorLabel}</p>
             <p className="news-story__editor-body">{detail.editorNote}</p>
           </div>
-        )}
+        ) : null}
 
-        {detail.sourceUrl && (
+        {user && detail.sourceUrl ? (
           <p style={{ marginTop: 28 }}>
             <a
               href={detail.sourceUrl}
@@ -266,7 +282,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
               {h.newsDetailExternalHint}
             </span>
           </p>
-        )}
+        ) : null}
       </article>
 
       {!user ? (

@@ -120,6 +120,8 @@ export type Dictionary = {
     guestHomeLoginCta: string;
     /** 기사 하단 — 비회원에게만 (댓글·참여 불가 안내) */
     newsDetailGuestNote: string;
+    /** 비회원 — 본문(요약·편집 노트·원문) 잠금 안내 */
+    newsDetailLockedLead: string;
   };
   board: {
     pageTitle: string;
@@ -362,10 +364,17 @@ export type Dictionary = {
   search: {
     ariaLabel: string;
     heroTitle: string;
+    /** 홈 포털형 검색 부제 */
+    portalLead: string;
     placeholder: string;
     hint: string;
     noResults: string;
     quickHeading: string;
+    sectionPages: string;
+    sectionNews: string;
+    badgeMember: string;
+    badgePublic: string;
+    searching: string;
   };
   weather: { city: string; condition: string };
   /** 기본·홈 메타 (locale별) */
@@ -492,7 +501,7 @@ const ko: Dictionary = {
     tipEnvHint: '운영 쪽에서 링크를 넣어 두면 이 카드에서 바로 열려요.',
     newsTitle: '태국 살이 참고 스냅샷',
     newsSub:
-      '밖에서 나온 기사를 짧게만 정리해 둔 코너예요. “왜 이런 일이 생기지?” 이해하는 데 도움이 되게요. 제목을 누르면 원문이 열려요.',
+      '밖에서 나온 기사를 짧게만 정리해 둔 코너예요. 한 줄 훅은 누구나 볼 수 있고, 정리·원문 링크·댓글은 로그인 후에 열려요.',
     newsLoading: '스냅샷 불러오는 중…',
     newsCountLine: '총 {n}건 · 여기선 5건만 미리 보기',
     newsEmpty: '아직 이야기가 없어요. 잠시 후에 다시 들러 주세요.',
@@ -504,14 +513,17 @@ const ko: Dictionary = {
     newsDetailExternalCta: '원문 기사 열기',
     newsDetailExternalHint: '출처 언론·매체 사이트로 이동해요.',
     newsDetailMissing: '찾으시는 소식이 없거나 기간이 지났어요. 홈으로 돌아가 주세요.',
-    guestHomePublicLabel: '읽기 (비회원 OK)',
-    guestHomePublicBody: '홈의 한 줄 제보, 태자 기사 본문·요약 — 로그인 없이 볼 수 있어요.',
+    guestHomePublicLabel: '검색·안내 (비회원 OK)',
+    guestHomePublicBody:
+      '홈에서 메뉴·뉴스 제목 검색, 한 줄 스냅샷 미리보기는 가능해요. 기사 전체 요약·편집 노트·원문 링크·댓글은 로그인 후예요.',
     guestHomeMemberLabel: '참여·이용 (회원)',
     guestHomeMemberBody:
       '날씨·로컬 가게·광장·중고·알바·미니홈, 기사 댓글 등 — 로그인(또는 가입) 후에만 가능해요.',
     guestHomeLoginCta: '로그인 또는 가입하고 전체 열기',
     newsDetailGuestNote:
-      '댓글·광장·거래 등 커뮤니티 참여는 회원만 가능해요. 아래에서 로그인하거나 가입해 주세요.',
+      '요약·편집 노트·원문 링크·댓글은 로그인(또는 가입) 후에 이용할 수 있어요. 광장·거래·미니홈 등도 회원 전용이에요.',
+    newsDetailLockedLead:
+      '아래부터는 회원에게만 보이는 정리·출처·댓글입니다. 로그인하면 이어서 읽고 참여할 수 있어요.',
   },
   board: {
     pageTitle: '광장 게시판',
@@ -762,12 +774,19 @@ const ko: Dictionary = {
     errorSelf: '자기 자신에게는 보낼 수 없어요.',
   },
   search: {
-    ariaLabel: '페이지·게시판 경로 검색',
-    heroTitle: '가고 싶은 곳을 바로 찾기',
-    placeholder: '검색… (예: ㅂㅈ, 비자, /local)',
-    hint: '한글 초성만으로도 찾을 수 있어요. 예: ㅂㅈ → 비자·정보 게시판 · 태국어·경로도 OK',
-    noResults: '맞는 메뉴가 없어요. 다른 단어로 해보세요.',
+    ariaLabel: '태자 월드 안에서 메뉴·뉴스 검색',
+    heroTitle: '무엇을 찾고 계신가요?',
+    portalLead:
+      '메뉴 경로와 공개 뉴스 제목을 실시간으로 찾아요. 요약·댓글·광장·거래 등 본격적인 읽기와 참여는 로그인 후에만 열려요.',
+    placeholder: '검색… (예: 비자, 맛집, 방콕, /local)',
+    hint: '한글 초성·태국어·주소 일부도 됩니다. 결과에서 «어디가 맞았는지»를 함께 보여 드려요.',
+    noResults: '맞는 메뉴나 뉴스 제목이 없어요. 다른 단어로 해보세요.',
     quickHeading: '자주 가는 곳',
+    sectionPages: '사이트 메뉴·페이지',
+    sectionNews: '참고 뉴스(제목·정리 문구)',
+    badgeMember: '로그인 후 열람·참여',
+    badgePublic: '바로 이동',
+    searching: '검색 중…',
   },
   weather: { city: '방콕', condition: '맑음' },
   seo: {
@@ -899,7 +918,7 @@ const th: Dictionary = {
     tipEnvHint: 'ฝั่งผู้ดูแลใส่ลิงก์ไว้ การ์ดนี้จะเปิดให้ทันที',
     newsTitle: 'สรุปอ้างอิงชีวิตที่ไทย',
     newsSub:
-      'สรุปจากข่าวภายนอกสั้นๆ เพื่อให้เข้าใจว่า “ทำไมถึงเป็นแบบนี้” กดหัวข้อแล้วไปต้นฉบับ',
+      'สรุปจากข่าวภายนอกสั้นๆ บรรทัดเดียวอ่านได้ทุกคน สรุปเต็ม·ลิงก์ต้นทาง·ความคิดเห็น — หลังเข้าสู่ระบบ',
     newsLoading: 'กำลังโหลด…',
     newsCountLine: 'ทั้งหมด {n} รายการ — แสดง 5 รายการที่นี่',
     newsEmpty: 'ยังไม่มีเรื่องในช่องนี้ แวะใหม่ภายหลังนะ',
@@ -911,14 +930,17 @@ const th: Dictionary = {
     newsDetailExternalCta: 'เปิดบทความต้นทาง',
     newsDetailExternalHint: 'จะไปเว็บสื่อต้นทาง',
     newsDetailMissing: 'หาเรื่องนี้ไม่เจอหรือหมดอายุแล้ว กลับหน้าแรกได้เลย',
-    guestHomePublicLabel: 'อ่าน (ไม่ต้องสมัคร)',
-    guestHomePublicBody: 'บรรทัดเดียวในหน้าแรก บทความ Thai Ja ฉบับเต็มและสรุป — ไม่ต้องล็อกอิน',
+    guestHomePublicLabel: 'ค้นหา·ดูตัวอย่าง (ไม่ต้องสมัคร)',
+    guestHomePublicBody:
+      'ค้นหาเมนู·หัวข้อข่าว และดูตัวอย่างบรรทัดเดียวในหน้าแรกได้ สรุปเต็ม·โน้ตบรรณาธิการ·ลิงก์ต้นทาง·ความคิดเห็น — หลังเข้าสู่ระบบ',
     guestHomeMemberLabel: 'มีส่วนร่วม (สมาชิก)',
     guestHomeMemberBody:
       'สภาพอากาศ·ร้านท้องถิ่น·บอร์ด·มือสอง·งานพาร์ทไทม์·มินิโฮม ความคิดเห็นข่าว — ต้องเข้าสู่ระบบหรือสมัครสมาชิก',
     guestHomeLoginCta: 'เข้าสู่ระบบหรือสมัครเพื่อเปิดทั้งหมด',
     newsDetailGuestNote:
-      'ความคิดเห็น·บอร์ด·ซื้อขาย ใช้ได้เฉพาะสมาชิก กรุณาเข้าสู่ระบบหรือสมัครด้านล่าง',
+      'สรุปเต็ม·ลิงก์ต้นทาง·ความคิดเห็น — ใช้ได้หลังเข้าสู่ระบบหรือสมัคร บอร์ด·ซื้อขาย·มินิโฮมก็เฉพาะสมาชิก',
+    newsDetailLockedLead:
+      'ด้านล่างนี้เป็นสรุป·แหล่งที่มา·ความคิดเห็นสำหรับสมาชิก — เข้าสู่ระบบเพื่ออ่านต่อและร่วมพูดคุย',
   },
   board: {
     pageTitle: 'บอร์ดลานชุมชน',
@@ -1166,12 +1188,19 @@ const th: Dictionary = {
     errorSelf: 'ส่งหาตัวเองไม่ได้',
   },
   search: {
-    ariaLabel: 'ค้นหาเส้นทาง·บอร์ด',
-    heroTitle: 'ค้นหาหน้าที่ต้องการ',
-    placeholder: 'ค้นหา… (เช่น วีซ่า, /local, งาน)',
-    hint: 'พิมพ์คีย์เวิร์ดไทยหรือพาธได้ · ตัวอย่าง: วีซ่า → บอร์ดข้อมูล',
-    noResults: 'ไม่พบเมนูที่ตรง — ลองคำอื่น',
+    ariaLabel: 'ค้นหาเมนูและข่าวใน Thai Ja World',
+    heroTitle: 'กำลังมองหาอะไรอยู่?',
+    portalLead:
+      'ค้นหาเมนูและหัวข้อข่าวที่เปิดเผยแบบเรียลไทม์ การอ่านเต็ม·สรุป·ลิงก์ต้นทาง·ความคิดเห็น — ต้องเข้าสู่ระบบหลังเข้าร่วม',
+    placeholder: 'ค้นหา… (เช่น วีซ่า, ร้านอาหาร, กรุงเทพ, /local)',
+    hint: 'พิมพ์ไทย·เกาหลี หรือส่วนพาธได้ · แสดงว่าตรงกับส่วนไหน',
+    noResults: 'ไม่พบเมนูหรือข่าว — ลองคำอื่น',
     quickHeading: 'ทางลัด',
+    sectionPages: 'เมนู·หน้าเว็บ',
+    sectionNews: 'ข่าวอ้างอิง (หัวข้อ·สรุป)',
+    badgeMember: 'เข้าสู่ระบบเพื่ออ่าน·แสดงความคิดเห็น',
+    badgePublic: 'ไปทันที',
+    searching: 'กำลังค้นหา…',
   },
   weather: { city: 'กรุงเทพฯ', condition: 'แจ่มใส' },
   seo: {

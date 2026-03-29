@@ -1,14 +1,17 @@
 'use client';
 
 /**
- * 글로벌 헤더·홈 히어로 — 사이트 경로·게시판 검색 (한글 초성 / 한·태 / 경로)
+ * 글로벌 헤더·홈 포털 검색 — /api/public/site-search 로 메뉴+뉴스 실시간 조회,
+ * 경로·매칭 설명·회원 전용 뱃지 표시. (본문 열람·댓글 정책은 각 페이지·미들웨어)
  */
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
+import { describeSearchMatch } from '@/lib/search/describeSearchMatch';
 import { matchSiteSearch } from '@/lib/search/matchSiteSearch';
 import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
+import { sitePathRequiresMemberContent } from '@/lib/search/sitePathAccess';
 
 const QUICK_HREFS = [
   '/',
@@ -20,7 +23,27 @@ const QUICK_HREFS = [
   '/minihome',
 ] as const;
 
-export type SiteSearchVariant = 'header' | 'hero';
+type ApiPageHit = {
+  kind: 'page';
+  href: string;
+  title: string;
+  pathLabel: string;
+  matchDetail: string;
+  requiresLogin: boolean;
+  score: number;
+};
+
+type ApiNewsHit = {
+  kind: 'news';
+  href: string;
+  title: string;
+  pathLabel: string;
+  matchDetail: string;
+  requiresLogin: boolean;
+  score: number;
+};
+
+export type SiteSearchVariant = 'header' | 'hero' | 'portal';
 
 type SiteSearchProps = {
   variant?: SiteSearchVariant;
@@ -34,10 +57,15 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
   const inputId = `tj-search-${variant}-${uid}`;
   const panelId = `tj-search-panel-${variant}-${uid}`;
   const wrapRef = useRef<HTMLDivElement>(null);
-  const isHero = variant === 'hero';
+  const isPortal = variant === 'portal';
+  const isHeroLike = variant === 'hero' || isPortal;
 
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
+  const [apiPages, setApiPages] = useState<ApiPageHit[]>([]);
+  const [apiNews, setApiNews] = useState<ApiNewsHit[]>([]);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiTried, setApiTried] = useState(false);
 
   const quickList = useMemo(() => {
     return QUICK_HREFS.map((h) => SITE_SEARCH_ENTRIES.find((e) => e.href === h)).filter(
@@ -45,15 +73,11 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
     );
   }, []);
 
-  const hits = useMemo(() => {
+  const fallbackHits = useMemo(() => {
     const t = q.trim();
-    if (!t) return [];
-    return matchSiteSearch(SITE_SEARCH_ENTRIES, t, locale, 10);
+    if (t.length < 2) return [];
+    return matchSiteSearch(SITE_SEARCH_ENTRIES, t, locale, 12);
   }, [q, locale]);
-
-  const showQuick = open && !q.trim();
-  const showHits = open && q.trim().length > 0;
-  const showEmpty = open && q.trim().length > 0 && hits.length === 0;
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -72,6 +96,43 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
     };
   }, [close]);
 
+  useEffect(() => {
+    const t = q.trim();
+    if (t.length < 2) {
+      setApiPages([]);
+      setApiNews([]);
+      setApiLoading(false);
+      setApiTried(false);
+      return;
+    }
+
+    setApiLoading(true);
+    setApiTried(false);
+    setApiPages([]);
+    setApiNews([]);
+    const tid = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const res = await fetch(
+            `/api/public/site-search?q=${encodeURIComponent(t)}&locale=${locale}`,
+            { cache: 'no-store' },
+          );
+          const j = (await res.json()) as { pages?: ApiPageHit[]; news?: ApiNewsHit[] };
+          setApiPages(Array.isArray(j.pages) ? j.pages : []);
+          setApiNews(Array.isArray(j.news) ? j.news : []);
+        } catch {
+          setApiPages([]);
+          setApiNews([]);
+        } finally {
+          setApiLoading(false);
+          setApiTried(true);
+        }
+      })();
+    }, 280);
+
+    return () => window.clearTimeout(tid);
+  }, [q, locale]);
+
   function go(href: string) {
     close();
     setQ('');
@@ -84,11 +145,55 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
     locale === 'th' ? e.thHint ?? e.href : e.koHint ?? e.href;
 
   const rootClass =
-    'global-header__search' + (isHero ? ' site-search--hero' : ' site-search--header');
+    'global-header__search' +
+    (isPortal ? ' site-search--hero site-search--portal' : variant === 'hero' ? ' site-search--hero' : ' site-search--header');
+
+  const qTrim = q.trim();
+  const showQuick = open && !qTrim;
+  const showHits = open && qTrim.length > 0;
+  const useApi = qTrim.length >= 2;
+  const showEmpty =
+    showHits &&
+    useApi &&
+    apiTried &&
+    !apiLoading &&
+    apiPages.length === 0 &&
+    apiNews.length === 0 &&
+    fallbackHits.length === 0;
+
+  function renderApiRow(
+    key: string,
+    href: string,
+    title: string,
+    pathLabel: string,
+    matchDetail: string,
+    requiresLogin: boolean,
+  ) {
+    return (
+      <li key={key} role="option">
+        <button type="button" className="global-header__search-hit" onClick={() => go(href)}>
+          <span className="global-header__search-hit-title">
+            {title}
+            <span
+              className={
+                'tj-search-badge ' +
+                (requiresLogin ? 'tj-search-badge--member' : 'tj-search-badge--public')
+              }
+            >
+              {requiresLogin ? s.badgeMember : s.badgePublic}
+            </span>
+          </span>
+          <span className="global-header__search-hit-path">{pathLabel}</span>
+          <span className="tj-search-hit-meta">{matchDetail}</span>
+        </button>
+      </li>
+    );
+  }
 
   return (
     <div ref={wrapRef} className={rootClass}>
-      {isHero && <p className="site-search__hero-title">{s.heroTitle}</p>}
+      {isHeroLike && <p className="site-search__hero-title">{s.heroTitle}</p>}
+      {isPortal && <p className="site-search__portal-lead">{s.portalLead}</p>}
       <label className="tj-visually-hidden" htmlFor={inputId}>
         {s.ariaLabel}
       </label>
@@ -130,7 +235,19 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
                       className="global-header__search-hit"
                       onClick={() => go(e.href)}
                     >
-                      <span className="global-header__search-hit-title">{titleFor(e)}</span>
+                      <span className="global-header__search-hit-title">
+                        {titleFor(e)}
+                        <span
+                          className={
+                            'tj-search-badge ' +
+                            (sitePathRequiresMemberContent(e.href)
+                              ? 'tj-search-badge--member'
+                              : 'tj-search-badge--public')
+                          }
+                        >
+                          {sitePathRequiresMemberContent(e.href) ? s.badgeMember : s.badgePublic}
+                        </span>
+                      </span>
                       <span className="global-header__search-hit-path">{hintFor(e)}</span>
                     </button>
                   </li>
@@ -139,26 +256,77 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
             </>
           )}
 
-          {showHits && (
+          {showHits && useApi && apiLoading && (
+            <p className="global-header__search-loading" role="status">
+              {s.searching}
+            </p>
+          )}
+
+          {showHits && useApi && !apiLoading && (apiPages.length > 0 || apiNews.length > 0) && (
+            <>
+              {apiPages.length > 0 && (
+                <>
+                  <div className="global-header__search-section" role="presentation">
+                    {s.sectionPages}
+                  </div>
+                  <ul className="global-header__search-ul">
+                    {apiPages.map((p) =>
+                      renderApiRow(`p-${p.href}`, p.href, p.title, p.pathLabel, p.matchDetail, p.requiresLogin),
+                    )}
+                  </ul>
+                </>
+              )}
+              {apiNews.length > 0 && (
+                <>
+                  <div className="global-header__search-section" role="presentation">
+                    {s.sectionNews}
+                  </div>
+                  <ul className="global-header__search-ul">
+                    {apiNews.map((n) =>
+                      renderApiRow(`n-${n.href}`, n.href, n.title, n.pathLabel, n.matchDetail, true),
+                    )}
+                  </ul>
+                </>
+              )}
+            </>
+          )}
+
+          {showHits && useApi && apiTried && !apiLoading && apiPages.length === 0 && apiNews.length === 0 && (
             <ul className="global-header__search-ul">
-              {hits.map((e) => (
-                <li key={e.href} role="option">
-                  <button
-                    type="button"
-                    className="global-header__search-hit"
-                    onClick={() => go(e.href)}
-                  >
-                    <span className="global-header__search-hit-title">{titleFor(e)}</span>
-                    <span className="global-header__search-hit-path">{hintFor(e)}</span>
-                  </button>
-                </li>
-              ))}
+              {fallbackHits.map((h) =>
+                renderApiRow(
+                  `f-${h.href}`,
+                  h.href,
+                  locale === 'th' ? h.thTitle : h.koTitle,
+                  h.href,
+                  describeSearchMatch(h, qTrim, locale),
+                  sitePathRequiresMemberContent(h.href),
+                ),
+              )}
+            </ul>
+          )}
+
+          {showHits && !useApi && qTrim.length === 1 && (
+            <ul className="global-header__search-ul">
+              {matchSiteSearch(SITE_SEARCH_ENTRIES, qTrim, locale, 10).map((h) =>
+                renderApiRow(
+                  `1-${h.href}`,
+                  h.href,
+                  locale === 'th' ? h.thTitle : h.koTitle,
+                  h.href,
+                  describeSearchMatch(h, qTrim, locale),
+                  sitePathRequiresMemberContent(h.href),
+                ),
+              )}
             </ul>
           )}
 
           {showEmpty && <p className="global-header__search-empty">{s.noResults}</p>}
 
           <div className="global-header__search-footer">
+            <Link href="/auth/login" className="global-header__search-footer-link" onClick={close}>
+              {locale === 'th' ? 'เข้าสู่ระบบเพื่ออ่านและแสดงความคิดเห็น' : '로그인하고 글·댓글 열기'}
+            </Link>
             <Link href="/community/boards" className="global-header__search-footer-link" onClick={close}>
               {locale === 'th' ? 'ดูบอร์ดทั้งหมด' : '광장 전체 보기'}
             </Link>

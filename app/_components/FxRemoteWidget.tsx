@@ -17,8 +17,8 @@ const LEGACY_KEY = 'tj_fx_remote_v2';
 const PANEL_W = 142;
 const PANEL_H = 158;
 const FAB = 40;
-/** 글로벌 헤더 아래 첫 진입 기본 위치 (sticky 헤더 높이 대략값) */
-const DEFAULT_TOP = 60;
+/** 글로벌 헤더·홈 히어로 검색 아래로 살짝 (sticky 헤더 + 한 줄 여유) */
+const DEFAULT_TOP = 100;
 
 type StoredPos = { x: number; y: number; minimized?: boolean };
 

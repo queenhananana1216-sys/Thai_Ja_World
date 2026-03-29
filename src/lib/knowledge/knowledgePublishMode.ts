@@ -1,25 +1,21 @@
 /**
- * knowledgePublishMode.ts
- *
  * KNOWLEDGE_PUBLISH_MODE:
- *   manual (권장) — LLM 저장 직후 published=false 초안만 저장 → /admin/knowledge 에서 승인 후 공개
- *   auto           — published=true 로 즉시 공개
+ *   manual (기본·미설정) — published=false 초안만 → /admin/knowledge 에서 승인 후 posts 게시
+ *   auto — 가공 직후 published=true 가능(승인 큐 우회). 운영에서는 비권장.
+ *
+ * 뉴스(NEWS_PUBLISH_MODE)와 동일하게, 오직 명시적 `auto` 만 즉시 공개 경로로 씁니다.
  */
 export function knowledgeInsertAsPublished(): boolean {
-  const m = process.env.KNOWLEDGE_PUBLISH_MODE?.trim().toLowerCase();
-  if (m === 'manual' || m === 'review' || m === 'draft') return false;
-  // auto 또는 미설정: 기본이 false(안전) — 명시적으로 'auto'여야 true
-  if (m === 'auto') return true;
-  return false; // 미설정은 manual과 동일하게 안전하게 false
+  return process.env.KNOWLEDGE_PUBLISH_MODE?.trim().toLowerCase() === 'auto';
 }
 
 export function knowledgePublishModeEnvRaw(): string {
   const v = process.env.KNOWLEDGE_PUBLISH_MODE?.trim();
-  return v && v.length > 0 ? v : '(미설정 → manual 동작)';
+  return v && v.length > 0 ? v : '(미설정 → manual)';
 }
 
 export function knowledgePublishPipelineHint(): string {
   return knowledgeInsertAsPublished()
-    ? 'KNOWLEDGE_PUBLISH_MODE=auto 입니다. 지식 글은 가공 직후 공개될 수 있어 초안 큐가 비어 있을 수 있습니다.'
-    : 'manual(또는 미설정)입니다. 지식 초안은 «지식 큐»에서 승인 후 게시됩니다.';
+    ? 'KNOWLEDGE_PUBLISH_MODE=auto 입니다. 일부 파이프라인은 초안을 건너뛸 수 있습니다. 승인만 쓰려면 auto 를 제거하세요.'
+    : 'manual(또는 미설정)입니다. 지식 초안은 «지식 큐»에서 승인하면 광장 게시글로 올라갑니다.';
 }

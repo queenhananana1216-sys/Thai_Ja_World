@@ -7,6 +7,7 @@
  *   delete  — raw_knowledge 삭제 (cascade: processed_knowledge, knowledge_summaries 함께 삭제)
  */
 
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
@@ -159,6 +160,7 @@ export async function POST(req: Request) {
     if (delErr) {
       return NextResponse.json({ error: delErr.message }, { status: 500 });
     }
+    revalidatePath('/community/boards', 'layout');
     return NextResponse.json({ ok: true, deleted: true });
   }
 
@@ -194,6 +196,8 @@ export async function POST(req: Request) {
 
   const postTitle = llm?.ko?.title?.trim() || (body.ko_title ?? '').trim() || '(제목 없음)';
   const postContent = llm ? buildPostContent(llm, rawExternalUrl) : (body.ko_summary?.trim() ?? '').trim() || '';
+
+  let boardPostIdForRevalidate: string | null = row.post_id ? String(row.post_id) : null;
 
   if (willPublish || row.post_id) {
     let nextPostId: string | null = row.post_id ? String(row.post_id) : null;
@@ -240,6 +244,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: pkErr.message }, { status: 500 });
       }
     }
+    boardPostIdForRevalidate = nextPostId;
   }
 
   // knowledge_summaries 동기화
@@ -256,6 +261,11 @@ export async function POST(req: Request) {
       .update({ summary_text: body.th_summary.trim() })
       .eq('processed_knowledge_id', id)
       .eq('model', 'th');
+  }
+
+  revalidatePath('/community/boards', 'layout');
+  if (boardPostIdForRevalidate) {
+    revalidatePath(`/community/boards/${boardPostIdForRevalidate}`);
   }
 
   return NextResponse.json({ ok: true, published: action === 'publish' });

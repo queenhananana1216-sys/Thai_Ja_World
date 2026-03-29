@@ -1609,6 +1609,7 @@ a:hover {
  * 나만의 커스텀: .fx-mini-layer[data-tj-remote-root] 의 --tj-fx-* 만 덮어쓰면 됨.
  * 예: body[data-tj-style-skin="lavender"] .fx-mini-layer { --tj-fx-panel-w: 158px; --tj-fx-fab-size: 44px; }
  */
+/* 플로팅 FAB 첫 세로 위치: FxRemoteWidget.tsx 의 DEFAULT_TOP 과 같이 맞추면 배치가 겹치지 않아요 */
 .fx-mini-layer {
   position: fixed;
   inset: 0;

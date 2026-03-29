@@ -1,23 +1,25 @@
 /**
  * NEWS_PUBLISH_MODE:
- *   auto (기본) — LLM 저장 직후 홈에 노출
- *   manual — published=false 로만 저장, /admin/news 에서 승인 후 공개
+ *   manual (기본·미설정) — published=false 로만 저장, /admin/news 에서 «홈에 게시» 후 공개
+ *   auto — LLM 저장 직후 홈·뉴스에 노출 (승인 큐 사용 안 함)
+ *
+ * 즉시 공개가 필요하면 환경변수 NEWS_PUBLISH_MODE=auto 만 설정합니다.
  */
 export function newsInsertAsPublished(): boolean {
   const m = process.env.NEWS_PUBLISH_MODE?.trim().toLowerCase();
-  if (m === 'manual' || m === 'review' || m === 'draft') return false;
-  return true;
+  if (m === 'auto') return true;
+  return false;
 }
 
 /** Vercel/로컬 환경변수 그대로(빈 값이면 표시용 문구) */
 export function newsPublishModeEnvRaw(): string {
   const v = process.env.NEWS_PUBLISH_MODE?.trim();
-  return v && v.length > 0 ? v : '(미설정)';
+  return v && v.length > 0 ? v : '(미설정 → manual)';
 }
 
 /** 관리자 안내 한 줄 */
 export function newsPublishPipelineHint(): string {
   return newsInsertAsPublished()
-    ? '지금은 auto입니다. 긁어온 뉴스는 요약 저장과 동시에 공개되므로 «초안(미게시)» 카드가 0인 것이 정상입니다. 승인 후 올리려면 Vercel 환경변수에 NEWS_PUBLISH_MODE=manual 을 넣고 재배포하세요.'
-    : 'manual 모드입니다. 미게시 건은 아래 «뉴스 초안 큐»에서 승인하면 홈·뉴스에 올라갑니다.';
+    ? 'NEWS_PUBLISH_MODE=auto 입니다. 요약 저장과 동시에 공개되므로 초안 큐가 비어 있을 수 있습니다. 승인 후 올리려면 이 변수를 제거하거나 manual 로 두세요.'
+    : 'manual(또는 미설정)입니다. 새로 쌓이는 기사는 여기 초안에만 보이며, «홈에 게시»를 눌러야 방문자에게 노출됩니다.';
 }

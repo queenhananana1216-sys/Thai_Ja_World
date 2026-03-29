@@ -37,6 +37,7 @@ function tipEnv() {
 async function fetchNewsBrowser(): Promise<NewsItem[]> {
   const sb = createBrowserClient();
   try {
+    /** 승인된 processed_news 만 — raw_news 폴백 없음(미승인 원문 노출 방지) */
     const { data: processed } = await sb
       .from('processed_news')
       .select(
@@ -46,53 +47,36 @@ async function fetchNewsBrowser(): Promise<NewsItem[]> {
       .order('created_at', { ascending: false })
       .limit(15);
 
-    if (processed && processed.length > 0) {
-      return processed.map((pn) => {
-        const rn = (pn.raw_news as unknown) as {
-          title: string;
-          external_url: string;
-          published_at: string | null;
-        } | null;
-        const sums = (pn.summaries as unknown) as
-          | { summary_text: string; model: string | null }[]
-          | null;
-        const localeSource = {
-          clean_body: (pn.clean_body as string | null) ?? null,
-          raw_title: rn?.title ?? null,
-          summaries: sums ?? null,
-        };
-        const { title, summary_text } = titleAndSummaryFromProcessed(
-          localeSource.clean_body,
-          localeSource.raw_title,
-          localeSource.summaries,
-          'ko',
-        );
-        return {
-          id: String(pn.id),
-          title,
-          external_url: rn?.external_url ?? '#',
-          published_at: rn?.published_at ?? null,
-          summary_text,
-          internalNewsId: String(pn.id),
-          localeSource,
-        };
-      });
-    }
-
-    const { data: raw } = await sb
-      .from('raw_news')
-      .select('id, title, external_url, published_at')
-      .order('fetched_at', { ascending: false })
-      .limit(15);
-
-    return (raw ?? []).map((r) => ({
-      id: String(r.id),
-      title: String(r.title),
-      external_url: String(r.external_url),
-      published_at: r.published_at as string | null,
-      summary_text: null,
-      internalNewsId: null,
-    }));
+    return (processed ?? []).map((pn) => {
+      const rn = (pn.raw_news as unknown) as {
+        title: string;
+        external_url: string;
+        published_at: string | null;
+      } | null;
+      const sums = (pn.summaries as unknown) as
+        | { summary_text: string; model: string | null }[]
+        | null;
+      const localeSource = {
+        clean_body: (pn.clean_body as string | null) ?? null,
+        raw_title: rn?.title ?? null,
+        summaries: sums ?? null,
+      };
+      const { title, summary_text } = titleAndSummaryFromProcessed(
+        localeSource.clean_body,
+        localeSource.raw_title,
+        localeSource.summaries,
+        'ko',
+      );
+      return {
+        id: String(pn.id),
+        title,
+        external_url: rn?.external_url ?? '#',
+        published_at: rn?.published_at ?? null,
+        summary_text,
+        internalNewsId: String(pn.id),
+        localeSource,
+      };
+    });
   } catch {
     return [];
   }

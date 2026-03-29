@@ -53,6 +53,7 @@ export function HomeHeroCopyForm({
     try {
       const res = await fetch('/api/admin/site-copy', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           entries: [
@@ -91,7 +92,7 @@ export function HomeHeroCopyForm({
         setErr(data.error ?? '저장에 실패했습니다.');
         return;
       }
-      setMsg('저장했습니다. 홈에 반영하려면 페이지를 새로고침하세요.');
+      setMsg('저장했습니다. 레이아웃 캐시를 갱신했어요 — 홈(/)을 새로고침하면 히어로·안내 문구가 바뀐 걸 볼 수 있어요.');
       router.refresh();
     } catch {
       setErr('네트워크 오류입니다.');

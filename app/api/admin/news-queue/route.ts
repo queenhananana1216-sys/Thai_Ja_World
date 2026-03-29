@@ -3,6 +3,7 @@
  *
  * action: publish | draft | delete — delete 는 미게시(published=false) 만, raw_news 삭제로 요약·댓글 cascade
  */
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
 import { mergeBilingualCleanBody } from '@/lib/news/mergeCleanBody';
@@ -76,6 +77,9 @@ export async function POST(req: Request) {
     if (delErr) {
       return NextResponse.json({ error: delErr.message }, { status: 500 });
     }
+    revalidatePath('/', 'layout');
+    revalidatePath('/news');
+    revalidatePath(`/news/${id}`);
     return NextResponse.json({ ok: true, deleted: true });
   }
 
@@ -106,6 +110,10 @@ export async function POST(req: Request) {
   if (body.th_summary?.trim()) {
     await admin.from('summaries').update({ summary_text: body.th_summary.trim() }).eq('processed_news_id', id).eq('model', 'th');
   }
+
+  revalidatePath('/', 'layout');
+  revalidatePath('/news');
+  revalidatePath(`/news/${id}`);
 
   return NextResponse.json({ ok: true, published: action === 'publish' });
 }

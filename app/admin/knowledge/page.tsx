@@ -78,15 +78,16 @@ export default async function AdminKnowledgeQueuePage() {
     <div style={{ padding: '20px 24px', maxWidth: 960, margin: '0 auto' }}>
       <h1 style={{ fontSize: 18, margin: '0 0 8px', fontWeight: 700 }}>지식 초안 큐</h1>
       <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.55 }}>
-        <strong>기본(미설정)</strong>은 manual과 같아 초안에 쌓입니다. <code>KNOWLEDGE_PUBLISH_MODE=auto</code>이면 가공
-        직후 공개될 수 있어 이 큐가 비어 있을 수 있어요.
+        <strong>기본(미설정)</strong>은 뉴스와 같이 초안만 쌓입니다. <code>KNOWLEDGE_PUBLISH_MODE=auto</code>를 넣은
+        경우에만 가공 직후 공개 경로를 탈 수 있어요(운영에서는 비권장).
         <br />
         <br />
-        승인 시 <strong>공개 게시판(posts)</strong>에 올라갑니다. 비어 있고 봇 기록에는 성공만 보이면{' '}
+        <strong>공개 보드에 게시</strong>를 누르면 광장 <code>posts</code>로 올라가고, 숨김·초안 저장 시 노출만
+        끕니다. 비어 있으면{' '}
         <Link href="/admin/bot-actions" style={{ color: '#2563eb' }}>
           봇 기록
         </Link>
-        에서 지식 크론·LLM 오류를 확인해 보세요.
+        ·지식 크론·LLM 키를 확인해 보세요.
       </p>
 
       <KnowledgeQueueClient items={items} />

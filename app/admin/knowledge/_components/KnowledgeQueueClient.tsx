@@ -124,8 +124,12 @@ export default function KnowledgeQueueClient({ items }: { items: KnowledgeQueueI
   if (items.length === 0) {
     return (
       <p style={{ color: '#6b7280', marginTop: 16 }}>
-        대기 중인 초안이 없습니다.{' '}
-        <code>KNOWLEDGE_PUBLISH_MODE=manual</code> 이고 LLM 처리가 완료되면 여기에 쌓입니다.
+        대기 중인 초안이 없습니다. 지식 크론·LLM이 돌면 여기에 쌓입니다. (
+        <code>KNOWLEDGE_PUBLISH_MODE=auto</code>이면 초안 없이 바로 공개될 수 있어요.){' '}
+        <a href="/admin/bot-actions" style={{ color: '#2563eb' }}>
+          봇 기록
+        </a>
+        을 확인해 보세요.
       </p>
     );
   }

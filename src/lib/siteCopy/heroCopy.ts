@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { unstable_noStore as noStore } from 'next/cache';
 import {
   getMergedDefaultsFromI18n,
   SITE_COPY_HOME_KEYS,
@@ -17,6 +18,7 @@ export { HERO_SITE_COPY_KEYS, MAIN_HOME_SITE_COPY_KEYS, SITE_COPY_HOME_KEYS } fr
 
 /** 레이아웃 SSR용 — 테이블·네트워크 오류 시 i18n 기본값 */
 export async function fetchMergedHeroSiteCopy(): Promise<MergedHeroSiteCopy> {
+  noStore();
   const defaults = getMergedDefaultsFromI18n();
   try {
     const sb = createServerClient();

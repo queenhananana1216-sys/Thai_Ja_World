@@ -1,6 +1,7 @@
 /**
  * 홈 히어로 공개 문구 저장 — 세션 + ADMIN_ALLOWED_EMAILS (관리자 레이아웃과 동일)
  */
+import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
 import { SITE_COPY_HOME_KEYS, type SiteCopyHomeKey } from '@/lib/siteCopy/heroCopyDefaults';
@@ -114,5 +115,6 @@ export async function POST(req: Request) {
     }
   }
 
+  revalidatePath('/', 'layout');
   return NextResponse.json({ ok: true });
 }

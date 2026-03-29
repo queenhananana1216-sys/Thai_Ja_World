@@ -50,9 +50,10 @@ export function categoryOptionsForPosting(locale: Locale) {
   );
 }
 
+/** 목록 URL ?cat= — 사이트 검색·말머리와 동일하게 전 카테고리 허용 */
 export function parseBoardListCategoryParam(raw: string | undefined): PostCategorySlug | null {
-  if (raw === 'flea' || raw === 'job') return raw;
-  return null;
+  if (!raw) return null;
+  return POST_CATEGORY_SLUGS.includes(raw as PostCategorySlug) ? (raw as PostCategorySlug) : null;
 }
 
 /** /community/boards/new?cat=… 쿼리 (허용된 말머리만) */

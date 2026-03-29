@@ -57,10 +57,9 @@ export default async function BoardsListPage({
   const catFilter = parseBoardListCategoryParam(
     typeof sp.cat === 'string' ? sp.cat : undefined,
   );
-  const newPostHref =
-    catFilter === 'flea' || catFilter === 'job'
-      ? `/community/boards/new?cat=${catFilter}`
-      : '/community/boards/new';
+  const newPostHref = catFilter
+    ? `/community/boards/new?cat=${catFilter}`
+    : '/community/boards/new';
 
   const supabase = await createServerSupabaseAuthClient();
   const {

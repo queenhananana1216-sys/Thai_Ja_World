@@ -9,6 +9,7 @@ import Providers from './_components/Providers';
 import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
+import { fetchMergedHeroSiteCopy } from '@/lib/siteCopy/heroCopy';
 import { FX_SNAPSHOT_FALLBACK } from '@/lib/fx/fetchUsdFx';
 import './globals.css';
 
@@ -54,11 +55,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const locale = await getLocale();
   const d = getDictionary(locale);
   const adminSession = await resolveAdminAccess();
+  const heroSiteCopy = await fetchMergedHeroSiteCopy();
 
   return (
     <html lang={locale} className={`${notoSansKr.variable} ${notoSansThai.variable}`}>
       <body>
-        <Providers>
+        <Providers heroSiteCopy={heroSiteCopy}>
           <GlobalNav
             showAdminConsole={!!adminSession}
             dict={{

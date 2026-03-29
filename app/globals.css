@@ -906,6 +906,76 @@ a:hover {
   color: var(--tj-link-hover);
 }
 
+/* 제보함 타일 — 채널 로고 버튼 */
+.hub-tile__sub--tip-icons {
+  display: block;
+  margin-top: 4px;
+}
+
+.hub-tip-social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hub-tip-social__item {
+  margin: 0;
+  padding: 0;
+}
+
+.hub-tile .hub-tip-social__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: #fff;
+  box-shadow: 0 3px 12px rgba(107, 90, 138, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hub-tile .hub-tip-social__btn:hover {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 6px 18px rgba(107, 90, 138, 0.28);
+  color: #fff;
+}
+
+.hub-tile .hub-tip-social__btn:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 2px;
+}
+
+.hub-tip-social__btn--wa {
+  background: linear-gradient(145deg, #25d366 0%, #1da851 100%);
+}
+
+.hub-tip-social__btn--fb {
+  background: linear-gradient(145deg, #1877f2 0%, #0e5fcc 100%);
+}
+
+.hub-tip-social__btn--tt {
+  background: linear-gradient(135deg, #121212 0%, #2d2640 100%);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+}
+
+.hub-tip-social__btn--tt:hover {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.hub-tip-social__btn--tg {
+  background: linear-gradient(145deg, #2aabee 0%, #229ed9 100%);
+}
+
+.hub-tip-social__btn--line {
+  background: linear-gradient(145deg, #06c755 0%, #00b900 100%);
+}
+
 .hot-strip {
   background: var(--tj-surface);
   border: 1px solid var(--tj-line);

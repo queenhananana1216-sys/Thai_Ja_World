@@ -172,15 +172,24 @@ export default async function AdminDashboardPage() {
           </Link>
         </li>
         <li>
+          <Link href="/admin/knowledge">
+            지식 큐
+            <span>RSS·지식 파이프라인 초안 승인</span>
+          </Link>
+        </li>
+        <li>
           <Link href="/admin/bot-actions">
             봇 기록
-            <span>수집·요약 로그</span>
+            <span>수집·가공 로그 · 7일 후 자동 삭제(cron)</span>
           </Link>
         </li>
         <li>
           <Link href="/admin/local-spots">
             로컬 가게 · 맛집
-            <span>사진·설명·LINE — DB 직결</span>
+            <span>
+              사진·설명·LINE·오너 이메일·미니홈 슬러그 — <code>local_spots</code> /{' '}
+              <code>/shop/…</code>·<code>/my-local-shop</code>
+            </span>
           </Link>
         </li>
         <li>

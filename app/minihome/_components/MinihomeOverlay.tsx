@@ -60,7 +60,9 @@ function MinihomeOverlayPortal() {
       const sb = createBrowserClient();
       const { data: row, error } = await sb
         .from('user_minihomes')
-        .select('public_slug, title, tagline, intro_body, theme, layout_modules, is_public')
+        .select(
+          'owner_id, public_slug, title, tagline, intro_body, theme, layout_modules, is_public',
+        )
         .eq('public_slug', openSlug)
         .maybeSingle();
 

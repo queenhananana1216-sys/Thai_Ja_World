@@ -15,6 +15,7 @@ import {
   runKnowledgeProcessLoop,
   type RunKnowledgeProcessOptions,
 } from '@/bots/orchestrator/runKnowledgeProcessLoop';
+import { isCronAuthorized } from '@/lib/cronAuth';
 
 export const runtime = 'nodejs';
 
@@ -46,6 +47,10 @@ function validateBody(raw: unknown): { options: RunKnowledgeProcessOptions; erro
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (!isCronAuthorized(req.headers.get('authorization'))) {
+    return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
+  }
+
   let rawBody: unknown = {};
   try {
     const text = await req.text();

@@ -15,6 +15,7 @@ import {
   runKnowledgeCollectLoop,
   type RunKnowledgeCollectOptions,
 } from '@/bots/orchestrator/runKnowledgeCollectLoop';
+import { isCronAuthorized } from '@/lib/cronAuth';
 
 export const runtime = 'nodejs';
 
@@ -47,6 +48,10 @@ function validateBody(raw: unknown): { options: RunKnowledgeCollectOptions; erro
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (!isCronAuthorized(req.headers.get('authorization'))) {
+    return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
+  }
+
   let rawBody: unknown = {};
   try {
     const text = await req.text();

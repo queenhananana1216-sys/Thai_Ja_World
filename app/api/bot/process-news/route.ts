@@ -16,6 +16,7 @@ import {
   runProcessNewsLoop,
   type RunProcessNewsOptions,
 } from '@/bots/orchestrator/runProcessNewsLoop';
+import { isCronAuthorized } from '@/lib/cronAuth';
 
 export const runtime = 'nodejs';
 
@@ -56,6 +57,10 @@ function validateBody(raw: unknown): { options: RunProcessNewsOptions; error?: n
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (!isCronAuthorized(req.headers.get('authorization'))) {
+    return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
+  }
+
   let rawBody: unknown = {};
   try {
     const text = await req.text();

@@ -28,6 +28,7 @@ import {
   handleIncident,
   createMockIncident,
 } from '@/bots/actions/selfHeal';
+import { isCronAuthorized } from '@/lib/cronAuth';
 import type { IncidentSignal, IncidentType } from '@/bots/types/botTypes';
 
 export const runtime = 'nodejs';
@@ -40,6 +41,10 @@ const VALID_TYPES: IncidentType[] = [
 const VALID_SEVERITIES = new Set([1, 2, 3]);
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (!isCronAuthorized(req.headers.get('authorization'))) {
+    return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
+  }
+
   let rawBody: unknown = {};
   try {
     const text = await req.text();

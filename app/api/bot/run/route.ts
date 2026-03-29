@@ -29,6 +29,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { runLoop, type RunLoopOptions } from '@/bots/orchestrator/runLoop';
+import { isCronAuthorized } from '@/lib/cronAuth';
 
 export const runtime = 'nodejs';
 
@@ -78,6 +79,10 @@ function validateBody(raw: unknown): { options: RunLoopOptions; error?: never } 
 // ── POST 핸들러 ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (!isCronAuthorized(req.headers.get('authorization'))) {
+    return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
+  }
+
   // Body 파싱 (비어있어도 허용)
   let rawBody: unknown = {};
   try {

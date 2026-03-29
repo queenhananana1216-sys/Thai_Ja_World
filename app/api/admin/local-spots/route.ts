@@ -13,7 +13,7 @@ import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies
 export const runtime = 'nodejs';
 
 type Body = {
-  action?: 'create' | 'update' | 'delete';
+  action?: 'create' | 'update' | 'delete' | 'publish' | 'unpublish';
   id?: string;
   name?: string;
   slug?: string | null;
@@ -36,7 +36,7 @@ type Body = {
   minihome_extra_json?: string | null;
 };
 
-const CATEGORIES = ['restaurant', 'cafe', 'night_market', 'service', 'shopping', 'other'] as const;
+const CATEGORIES = ['restaurant', 'cafe', 'night_market', 'service', 'shopping', 'other', 'massage'] as const;
 
 function allowedActor(email: string | undefined): boolean {
   const e = email?.trim().toLowerCase();
@@ -130,11 +130,34 @@ export async function POST(req: Request) {
   }
 
   const action = body.action;
-  if (action !== 'create' && action !== 'update' && action !== 'delete') {
-    return NextResponse.json({ error: 'action 은 create | update | delete' }, { status: 400 });
+  if (
+    action !== 'create' &&
+    action !== 'update' &&
+    action !== 'delete' &&
+    action !== 'publish' &&
+    action !== 'unpublish'
+  ) {
+    return NextResponse.json(
+      { error: 'action 은 create | update | delete | publish | unpublish' },
+      { status: 400 },
+    );
   }
 
   const admin = createServiceRoleClient();
+
+  if (action === 'publish' || action === 'unpublish') {
+    const id = typeof body.id === 'string' ? body.id.trim() : '';
+    if (!id) return NextResponse.json({ error: 'id 필요' }, { status: 400 });
+    const { error } = await admin
+      .from('local_spots')
+      .update({ is_published: action === 'publish' })
+      .eq('id', id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    revalidatePath('/admin/local-spots');
+    revalidatePath('/local');
+    revalidatePath('/shop', 'layout');
+    return NextResponse.json({ ok: true });
+  }
 
   if (action === 'delete') {
     const id = typeof body.id === 'string' ? body.id.trim() : '';

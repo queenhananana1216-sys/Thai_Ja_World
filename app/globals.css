@@ -336,116 +336,111 @@ a:hover {
   text-decoration: underline;
 }
 
-/* 홈 히어로: 복사 + 오른쪽 검색 */
-.home-hero__top {
-  display: grid;
-  gap: 20px;
-  align-items: start;
+/* 홈 히어로: 소개 → 아래로 긴 포털형 검색창 */
+.home-hero__intro {
   position: relative;
   z-index: 1;
 }
 
-.home-hero__copy {
-  min-width: 0;
-}
-
-.home-hero__search-col {
-  min-width: 0;
+.home-hero__search-row {
   position: relative;
-  z-index: 2;
+  z-index: 4;
+  width: 100%;
+  max-width: none;
+  margin: 18px 0 6px;
+  padding: 0;
 }
 
-@media (min-width: 900px) {
-  .home-hero__top {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, min(520px, 42vw));
-    gap: 28px;
-    align-items: start;
+@media (min-width: 640px) {
+  .home-hero__search-row {
+    margin-top: 26px;
+    margin-bottom: 10px;
   }
 }
 
 .site-search__hero-title {
-  margin: 0 0 14px;
-  font-size: clamp(1.12rem, 2.8vw, 1.35rem);
+  margin: 0 0 12px;
+  font-size: clamp(1.05rem, 2.5vw, 1.28rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.25;
   color: #2d2640;
+  text-align: center;
 }
 
 .site-search--hero.global-header__search {
   flex: none;
   width: 100%;
-  max-width: 560px;
+  max-width: none;
   margin: 0 auto;
-  padding: 18px 20px 20px;
+  padding: 0;
   box-sizing: border-box;
-  background: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(250, 245, 255, 0.9) 50%,
-    rgba(255, 255, 255, 0.88) 100%
-  );
-  border-radius: 20px;
-  border: 1px solid rgba(139, 122, 173, 0.42);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.85) inset,
-    0 10px 40px rgba(88, 71, 120, 0.14),
-    0 4px 16px rgba(124, 111, 163, 0.1);
-}
-
-@media (min-width: 900px) {
-  .site-search--hero.global-header__search {
-    margin-left: auto;
-    margin-right: 0;
-    max-width: none;
-  }
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .site-search--hero .global-header__search-field::before {
-  left: 18px;
+  left: 22px;
   width: 22px;
   height: 22px;
-  opacity: 0.65;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' fill='none' viewBox='0 0 24 24' stroke='%235c4d7a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.25' d='M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z'/%3E%3C/svg%3E")
+  opacity: 0.55;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' fill='none' viewBox='0 0 24 24' stroke='%235f6368'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.25' d='M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z'/%3E%3C/svg%3E")
     center / contain no-repeat;
 }
 
+/* 구글/네이버 느낌: 가로로 긴 알약형 + 그림자 */
 .site-search--hero .global-header__search-input {
   width: 100%;
   box-sizing: border-box;
-  min-height: 54px;
-  padding: 14px 20px 14px 54px;
+  min-height: 56px;
+  padding: 16px 24px 16px 58px;
   border-radius: 999px;
-  border: 2px solid rgba(124, 111, 163, 0.38);
+  border: 1px solid rgba(60, 64, 67, 0.14);
   background: #fff;
-  color: #2d2640;
-  font-size: clamp(1.02rem, 2.4vw, 1.14rem);
-  font-weight: 500;
+  color: #202124;
+  font-size: clamp(1.05rem, 2.5vw, 1.18rem);
+  font-weight: 400;
   line-height: 1.35;
-  box-shadow: 0 2px 14px rgba(74, 66, 88, 0.08);
+  box-shadow:
+    0 1px 6px rgba(32, 33, 36, 0.14),
+    0 2px 16px rgba(32, 33, 36, 0.06);
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
 }
 
 .site-search--hero .global-header__search-input::placeholder {
-  color: rgba(45, 38, 64, 0.42);
-  font-weight: 450;
+  color: rgba(95, 99, 104, 0.85);
+  font-weight: 400;
+}
+
+.site-search--hero .global-header__search-input:hover {
+  box-shadow:
+    0 2px 10px rgba(32, 33, 36, 0.18),
+    0 4px 20px rgba(32, 33, 36, 0.08);
 }
 
 .site-search--hero .global-header__search-input:focus {
-  border-color: rgba(109, 40, 217, 0.55);
+  border-color: rgba(109, 40, 217, 0.45);
   background: #fff;
+  outline: none;
   box-shadow:
-    0 0 0 4px rgba(167, 139, 250, 0.28),
-    0 4px 20px rgba(88, 71, 120, 0.12);
+    0 2px 12px rgba(32, 33, 36, 0.2),
+    0 0 0 3px rgba(167, 139, 250, 0.35);
 }
 
 .site-search--hero .global-header__search-hint {
   display: block;
   margin-top: 10px;
-  margin-left: 4px;
-  font-size: 0.78rem;
-  line-height: 1.45;
+  margin-left: 0;
+  padding: 0 8px;
+  font-size: 0.8rem;
+  line-height: 1.5;
   color: #5c4d7a;
   max-width: none;
+  text-align: center;
 }
 
 .site-search--hero .global-header__search-panel {

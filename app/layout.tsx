@@ -57,9 +57,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const adminSession = await resolveAdminAccess();
   const heroSiteCopy = await fetchMergedHeroSiteCopy();
 
+  /** Vercel 빌드 시 커밋 SHA — 페이지 소스에서 배포가 최신인지 확인용 */
+  const deploySha = process.env.VERCEL_GIT_COMMIT_SHA ?? '';
+
   return (
     <html lang={locale} className={`${notoSansKr.variable} ${notoSansThai.variable}`}>
-      <body>
+      <body data-tj-deploy-sha={deploySha || undefined}>
         <Providers heroSiteCopy={heroSiteCopy}>
           <GlobalNav
             showAdminConsole={!!adminSession}

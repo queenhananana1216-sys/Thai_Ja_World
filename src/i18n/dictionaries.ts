@@ -153,6 +153,16 @@ export type Dictionary = {
     sendComment: string;
     loginForComment: string;
     views: string;
+    /** 작성자 전용 글 관리 */
+    postOwnerMenu: string;
+    postDelete: string;
+    postMakePrivate: string;
+    postMakePublic: string;
+    postDeleteConfirm: string;
+    postBusy: string;
+    postActionError: string;
+    /** 목록에서 비공개 글 배지 */
+    postPrivateBadge: string;
     /** 중고·알바 허브 상단 안내 */
     gatedBanner: string;
     /** 게이트 구역에서 글쓰기 버튼 대체 */
@@ -561,6 +571,14 @@ const ko: Dictionary = {
     sendComment: '댓글 남기기',
     loginForComment: '로그인하고 댓글 남기기',
     views: '조회',
+    postOwnerMenu: '내 글 관리',
+    postDelete: '삭제',
+    postMakePrivate: '비공개로 전환',
+    postMakePublic: '다시 공개',
+    postDeleteConfirm: '이 글을 삭제할까요? 댓글도 함께 지워져요.',
+    postBusy: '처리 중…',
+    postActionError: '잠시 후 다시 시도해 주세요.',
+    postPrivateBadge: '비공개',
     gatedBanner:
       '정식 오픈 전이라 새 글 작성만 잠시 닫아 둔 구역이에요. 목록 보기와 예전 글 읽기는 그대로예요.',
     newPostDisabled: '곧 글쓰기가 열려요',
@@ -984,6 +1002,14 @@ const th: Dictionary = {
     sendComment: 'ส่งความคิดเห็น',
     loginForComment: 'ล็อกอินแล้วแสดงความคิดเห็น',
     views: 'ดู',
+    postOwnerMenu: 'จัดการโพสต์ของฉัน',
+    postDelete: 'ลบ',
+    postMakePrivate: 'ทำเป็นส่วนตัว',
+    postMakePublic: 'เปิดเป็นสาธารณะอีกครั้ง',
+    postDeleteConfirm: 'ลบโพสต์นี้? ความคิดเห็นจะถูกลบด้วย',
+    postBusy: 'กำลังดำเนินการ…',
+    postActionError: 'ลองอีกครั้งในอีกสักครู่',
+    postPrivateBadge: 'ส่วนตัว',
     gatedBanner:
       'ก่อนเปิดตัวจริง — โพสต์ใหม่ปิดชั่วคราว ดูรายการและโพสต์เดิมได้ตามปกติ',
     newPostDisabled: 'จะเปิดให้โพสต์เร็วๆ นี้',

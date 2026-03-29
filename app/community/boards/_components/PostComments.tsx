@@ -19,11 +19,14 @@ export default function PostComments({
   initial,
   labels,
   loginNextPath,
+  showLoginHint = true,
 }: {
   postId: string;
   initial: CommentRow[];
   labels: Dictionary['board'];
   loginNextPath: string;
+  /** 로그인 상태면 안내 문구 숨김 */
+  showLoginHint?: boolean;
 }) {
   const router = useRouter();
   const [body, setBody] = useState('');
@@ -108,9 +111,11 @@ export default function PostComments({
           {loading ? '…' : labels.sendComment}
         </button>
       </form>
-      <p style={{ fontSize: '0.75rem', color: 'var(--tj-muted)', marginTop: 8 }}>
-        {labels.loginForComment}
-      </p>
+      {showLoginHint ? (
+        <p style={{ fontSize: '0.75rem', color: 'var(--tj-muted)', marginTop: 8 }}>
+          {labels.loginForComment}
+        </p>
+      ) : null}
     </section>
   );
 }

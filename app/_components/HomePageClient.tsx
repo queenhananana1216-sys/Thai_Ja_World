@@ -340,8 +340,8 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
             {h.dreamOutro}
           </p>
         </div>
-        <div className="home-hero__search-row">
-          <SiteSearch variant="hero" />
+        <div className="home-hero__search-row home-hero__search-portal">
+          <SiteSearch variant="portal" />
         </div>
         <div className="hub-tiles">
           <Link

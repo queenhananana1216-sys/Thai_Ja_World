@@ -322,6 +322,10 @@ a:hover {
 }
 
 .global-header__search-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
   border-top: 1px solid rgba(196, 181, 253, 0.2);
   padding: 8px 14px 4px;
 }
@@ -487,6 +491,81 @@ a:hover {
 
 .site-search--hero .global-header__search-footer-link {
   color: #6d28d9;
+}
+
+.home-hero__search-portal {
+  max-width: 680px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.site-search__portal-lead {
+  margin: 0 auto 16px;
+  padding: 0 12px;
+  max-width: 52ch;
+  font-size: clamp(0.78rem, 2vw, 0.88rem);
+  line-height: 1.55;
+  color: #5c4d7a;
+  text-align: center;
+}
+
+.site-search--portal.site-search--hero .global-header__search-input {
+  min-height: 58px;
+  font-size: 1.05rem;
+}
+
+.global-header__search-hit-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tj-search-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.tj-search-badge--member {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tj-search-badge--public {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.tj-search-hit-meta {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.site-search--hero .tj-search-hit-meta {
+  color: #7c6a9e;
+}
+
+.site-search--header .tj-search-hit-meta {
+  color: rgba(196, 181, 253, 0.88);
+}
+
+.global-header__search-loading {
+  margin: 0;
+  padding: 12px 16px;
+  font-size: 0.8rem;
+  color: rgba(245, 241, 248, 0.88);
+}
+
+.site-search--hero .global-header__search-loading {
+  color: #6d5f8f;
 }
 
 .global-header__nav {

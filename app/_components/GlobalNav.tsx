@@ -9,6 +9,7 @@ import type { Dictionary } from '@/i18n/dictionaries';
 import AuthBar from './AuthBar';
 import { BrandPhrase } from './BrandPhrase';
 import LanguageSwitch from './LanguageSwitch';
+import SiteSearch from './SiteSearch';
 
 const HREFS = ['/', '/local', '/community/boards', '/ilchon'] as const;
 
@@ -29,6 +30,7 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
           <BrandPhrase variant="dark" />
           <span className="global-header__logo-suffix">{dict.brandSuffix}</span>
         </Link>
+        {pathname !== '/' && <SiteSearch />}
         <div className="global-header__nav">
           {HREFS.map((href, i) => {
             const isActive =

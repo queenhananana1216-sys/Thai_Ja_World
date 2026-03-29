@@ -30,7 +30,7 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
           <BrandPhrase variant="dark" />
           <span className="global-header__logo-suffix">{dict.brandSuffix}</span>
         </Link>
-        {pathname !== '/' && <SiteSearch />}
+        <SiteSearch />
         <div className="global-header__nav">
           {HREFS.map((href, i) => {
             const isActive =

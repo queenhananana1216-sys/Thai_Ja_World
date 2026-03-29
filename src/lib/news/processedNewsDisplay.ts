@@ -41,6 +41,50 @@ function blurbFallbackFromSummary(summary: string | null): string | null {
   return cut;
 }
 
+/** LLM/초안이 프롬프트 문구를 제목으로 복사한 경우 등 — 사용자에게는 자연스러운 제목으로 */
+function looksRoboticOrInternalNewsTitle(t: string): boolean {
+  const s = t.trim();
+  if (!s) return false;
+  if (s.includes('메타데이터')) return true;
+  if (/뉴스\s*기사\s*메타/i.test(s)) return true;
+  if (/기사\s*메타/i.test(s)) return true;
+  if (/metadata/i.test(s) && /news|article|기사/i.test(s)) return true;
+  return false;
+}
+
+function clampTitle(s: string, max: number): string {
+  const t = s.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1).trim()}…`;
+}
+
+function titleFromSummaryFirstLine(summary: string | null, max: number): string | null {
+  if (!summary?.trim()) return null;
+  const line = summary
+    .trim()
+    .split(/\n/)
+    .map((x) => x.trim())
+    .find((x) => x.length >= 12);
+  if (!line) return null;
+  const cleaned = line.replace(/^[\s\-—·]+/, '').replace(/\s+/g, ' ');
+  if (looksRoboticOrInternalNewsTitle(cleaned)) return null;
+  return clampTitle(cleaned, max);
+}
+
+function humanizeNewsTitle(
+  title: string,
+  summary: string | null,
+  rawTitle: string | null | undefined,
+  locale: Locale,
+): string {
+  if (!looksRoboticOrInternalNewsTitle(title)) return title;
+  const rt = rawTitle?.trim();
+  if (rt && !looksRoboticOrInternalNewsTitle(rt)) return clampTitle(rt, 200);
+  const fromSum = titleFromSummaryFirstLine(summary, 200);
+  if (fromSum) return fromSum;
+  return locale === 'th' ? 'สรุปข่าวล่าสุด' : '태국·동남아 소식 한 줄';
+}
+
 export function titleAndSummaryFromProcessed(
   cleanBody: string | null | undefined,
   rawTitle: string | null | undefined,
@@ -73,7 +117,9 @@ export function titleAndSummaryFromProcessed(
   const summary_text =
     fromClean || summaryFromTable || anyFirst || null;
 
-  return { title, summary_text };
+  const titleDisplay = humanizeNewsTitle(title, summary_text, rawTitle, locale);
+
+  return { title: titleDisplay, summary_text };
 }
 
 export type NewsDetailParts = {

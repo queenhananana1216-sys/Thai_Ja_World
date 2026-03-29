@@ -1945,6 +1945,244 @@ a:hover {
   font-size: 0.85rem;
 }
 
+/* 싸이 스타일: 좌측 메뉴 + 메인룸 + 플로팅 창 */
+.minihome-cy-layout {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.minihome-room--overlay.minihome-cy-layout {
+  max-width: min(100%, 720px);
+}
+
+.minihome-room--overlay .minihome-room__overlay-bar {
+  max-width: min(100%, 720px);
+}
+
+.minihome-cy-menu {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 92px;
+}
+
+.minihome-cy-menu__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  border: 2px solid rgba(196, 181, 253, 0.5);
+  background: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--tj-ink);
+  line-height: 1.2;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+
+.minihome-cy-menu__btn:hover {
+  border-color: var(--mh-accent, #7c3aed);
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.12);
+}
+
+.minihome-cy-menu__btn--active {
+  border-color: var(--mh-accent, #7c3aed);
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(124, 58, 237, 0.18);
+}
+
+.minihome-cy-menu__emoji {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.minihome-cy-menu__txt {
+  text-align: center;
+  word-break: keep-all;
+}
+
+.minihome-cy-stage {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.minihome-cy-stage__paper {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+
+.minihome-cy-stage__hint {
+  margin: 12px 0 0;
+  font-size: 0.82rem;
+  color: var(--tj-muted);
+  line-height: 1.5;
+}
+
+.minihome-cy-win {
+  position: absolute;
+  z-index: 8;
+  width: min(100%, 300px);
+  max-height: min(52vh, 380px);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #fffef9 0%, #fff 100%);
+  border: 2px solid var(--mh-accent, #a78bfa);
+  border-radius: 12px;
+  box-shadow: 0 10px 32px rgba(45, 35, 66, 0.2);
+  overflow: hidden;
+}
+
+.minihome-cy-win--in-overlay {
+  max-height: min(45vh, 320px);
+  width: min(100%, 280px);
+}
+
+.minihome-cy-win--guest {
+  top: 0;
+  right: 0;
+}
+
+.minihome-cy-win--visitor {
+  top: 28px;
+  right: 18px;
+  z-index: 9;
+}
+
+.minihome-cy-win--photos {
+  top: 56px;
+  right: 4px;
+  z-index: 10;
+}
+
+.minihome-cy-win__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(196, 181, 253, 0.45);
+}
+
+.minihome-cy-win__title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--tj-ink);
+}
+
+.minihome-cy-win__x {
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--tj-muted);
+}
+
+.minihome-cy-win__x:hover {
+  color: var(--tj-ink);
+  background: #fff;
+}
+
+.minihome-cy-win__body {
+  padding: 10px 12px 12px;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.minihome-cy-win__muted {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--tj-muted);
+  line-height: 1.5;
+}
+
+.minihome-cy-win__soon {
+  margin: 10px 0 0;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.minihome-cy-win__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.minihome-cy-win__item {
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(228, 220, 232, 0.9);
+}
+
+.minihome-cy-win__item:last-child {
+  border-bottom: none;
+}
+
+.minihome-cy-win__meta {
+  font-size: 0.68rem;
+  color: var(--tj-muted);
+  margin-bottom: 4px;
+}
+
+.minihome-cy-win__text {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: var(--tj-ink);
+}
+
+@media (max-width: 540px) {
+  .minihome-cy-layout {
+    flex-direction: column;
+    max-width: 100%;
+  }
+
+  .minihome-cy-menu {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .minihome-cy-menu__btn {
+    flex: 1 1 calc(25% - 6px);
+    min-width: 72px;
+  }
+
+  .minihome-cy-win {
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    position: relative;
+    top: auto;
+    margin-top: 10px;
+    max-height: 280px;
+  }
+
+  .minihome-cy-win--visitor,
+  .minihome-cy-win--photos {
+    top: auto;
+    right: auto;
+  }
+}
+
 .minihome-overlay {
   margin: 0;
   border: none;

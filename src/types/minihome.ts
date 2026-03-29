@@ -4,6 +4,7 @@ export type MinihomeTheme = {
 };
 
 export type MinihomePublicRow = {
+  owner_id: string;
   public_slug: string;
   title: string | null;
   tagline: string | null;

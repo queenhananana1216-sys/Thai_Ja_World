@@ -223,11 +223,10 @@ export default function MinihomeMe() {
         </button>
       </form>
 
-      <div className="card" style={{ padding: 18, marginTop: 22, opacity: 0.78 }}>
-        <p style={{ margin: 0, fontWeight: 600 }}>{labels.guestbookLocked}</p>
-      </div>
-      <div className="card" style={{ padding: 18, marginTop: 12, opacity: 0.78 }}>
-        <p style={{ margin: 0, fontWeight: 600 }}>{labels.albumLocked}</p>
+      <div className="card" style={{ padding: 18, marginTop: 22 }}>
+        <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.55, color: 'var(--tj-muted)' }}>
+          {labels.previewPanelsHint}
+        </p>
       </div>
     </div>
   );

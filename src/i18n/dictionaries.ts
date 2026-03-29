@@ -297,6 +297,22 @@ export type Dictionary = {
     needsLogin: string;
     notProvisioned: string;
     privateOrMissing: string;
+    /** 싸이 스타일 좌측 메뉴·플로팅 창 */
+    cyMenuMain: string;
+    cyMenuGuestbook: string;
+    cyMenuVisitor: string;
+    cyMenuPhotos: string;
+    cyWindowClose: string;
+    cyGuestbookTitle: string;
+    cyVisitorTitle: string;
+    cyPhotosTitle: string;
+    cyGuestbookEmpty: string;
+    cyVisitorEmpty: string;
+    cyGuestbookWriteSoon: string;
+    cyVisitorWriteSoon: string;
+    cyIntroEmpty: string;
+    /** 내 미니홈 설정 화면 안내 */
+    previewPanelsHint: string;
   };
   weather: { city: string; condition: string };
   /** 기본·홈 메타 (locale별) */
@@ -633,6 +649,21 @@ const ko: Dictionary = {
     notProvisioned:
       '미니홈을 불러오지 못했어요. 아직 준비 중이거나 일시적인 문제일 수 있어요. 새로고침 후에도 같다면 운영에 문의해 주세요.',
     privateOrMissing: '비공개로 설정됐거나, 없는 주소예요.',
+    cyMenuMain: '메인룸',
+    cyMenuGuestbook: '일촌평',
+    cyMenuVisitor: '방명록',
+    cyMenuPhotos: '사진첩',
+    cyWindowClose: '닫기',
+    cyGuestbookTitle: '일촌평',
+    cyVisitorTitle: '방명록',
+    cyPhotosTitle: '사진첩',
+    cyGuestbookEmpty: '아직 일촌 글이 없어요.',
+    cyVisitorEmpty: '아직 방명이 없어요.',
+    cyGuestbookWriteSoon: '일촌 글 남기기는 곧 열려요.',
+    cyVisitorWriteSoon: '방명 남기기는 곧 열려요.',
+    cyIntroEmpty: '메인룸 소개 글이 아직 없어요.',
+    previewPanelsHint:
+      '미리보기·공개 페이지에서 왼쪽 메뉴로 일촌평·방명록·사진첩 창을 열고 닫을 수 있어요. (싸이 스타일 플로팅 창)',
   },
   weather: { city: '방콕', condition: '맑음' },
   seo: {
@@ -971,6 +1002,21 @@ const th: Dictionary = {
     notProvisioned:
       'โหลดมินิโฮมยังไม่สำเร็จ อาจยังไม่พร้อมหรือขัดข้องชั่วคราว รีเฟรชแล้วลองใหม่ หรือติดต่อผู้ดูแล',
     privateOrMissing: 'ตั้งเป็นส่วนตัว หรือไม่มีลิงก์นี้',
+    cyMenuMain: 'ห้องหลัก',
+    cyMenuGuestbook: 'ทักทาย',
+    cyMenuVisitor: 'สมุดเยี่ยม',
+    cyMenuPhotos: 'อัลบั้ม',
+    cyWindowClose: 'ปิด',
+    cyGuestbookTitle: 'ทักทาย',
+    cyVisitorTitle: 'สมุดเยี่ยม',
+    cyPhotosTitle: 'อัลบั้ม',
+    cyGuestbookEmpty: 'ยังไม่มีข้อความทักทาย',
+    cyVisitorEmpty: 'ยังไม่มีชื่อผู้เยี่ยม',
+    cyGuestbookWriteSoon: 'โพสต์ทักทายจะเปิดเร็วๆ นี้',
+    cyVisitorWriteSoon: 'ลงชื่อเยี่ยมจะเปิดเร็วๆ นี้',
+    cyIntroEmpty: 'ยังไม่มีข้อความแนะนำในห้องหลัก',
+    previewPanelsHint:
+      'ตัวอย่าง/หน้าสาธารณะ — เปิด-ปิด ทักทาย·สมุดเยี่ยม·อัลบั้ม จากเมนูซ้าย (สไตล์หน้าต่างลอยแบบไซเวิลด์)',
   },
   weather: { city: 'กรุงเทพฯ', condition: 'แจ่มใส' },
   seo: {

@@ -1,7 +1,8 @@
 /**
  * persistRawKnowledge.ts — collectKnowledge 결과를 raw_knowledge 에 upsert
  *
- * external_url unique 제약 기준으로 upsert (중복 스킵).
+ * external_url unique 제약 기준 upsert.
+ * KNOWLEDGE_UPSERT_IGNORE_DUPLICATES 가 false 가 아니면(기본) 이미 있는 URL 은 갱신 없이 건너뜀.
  * raw_body 길이 제한은 collectKnowledge 에서 이미 적용됨.
  */
 
@@ -24,6 +25,10 @@ function isValidHttpUrl(s: string): boolean {
   }
 }
 
+function upsertIgnoreDuplicates(): boolean {
+  return process.env.KNOWLEDGE_UPSERT_IGNORE_DUPLICATES !== 'false';
+}
+
 export async function persistCollectedKnowledgeToDb(
   items: CollectedKnowledgeItem[],
 ): Promise<PersistRawKnowledgeResult> {
@@ -33,8 +38,8 @@ export async function persistCollectedKnowledgeToDb(
   }
 
   const client = getServerSupabaseClient();
+  const ignoreDuplicates = upsertIgnoreDuplicates();
 
-  // external_url unique 제약 기준 upsert — 중복 URL은 fetched_at 만 갱신
   const rows = valid.map((i) => ({
     source_id: i.source_id,
     external_url: i.external_url,
@@ -45,10 +50,10 @@ export async function persistCollectedKnowledgeToDb(
     content_hash: i.content_hash ?? null,
   }));
 
-  const { error, count } = await client
+  const { data, error } = await client
     .from('raw_knowledge')
-    .upsert(rows, { onConflict: 'external_url', ignoreDuplicates: false })
-    .select();
+    .upsert(rows, { onConflict: 'external_url', ignoreDuplicates })
+    .select('id');
 
   if (error) {
     return {
@@ -59,6 +64,10 @@ export async function persistCollectedKnowledgeToDb(
     };
   }
 
-  const upserted = count ?? valid.length;
-  return { attempted: valid.length, upserted, skipped: Math.max(0, valid.length - upserted) };
+  const upserted = data?.length ?? 0;
+  return {
+    attempted: valid.length,
+    upserted,
+    skipped: Math.max(0, valid.length - upserted),
+  };
 }

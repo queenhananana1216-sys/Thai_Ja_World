@@ -25,6 +25,15 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thBlob: 'หน้าแรก โฮม ฟีด แดชบอร์ด ไทยจา',
   },
   {
+    href: '/my-local-shop',
+    koTitle: '내 로컬 가게 미니홈 (오너)',
+    thTitle: 'ร้านของฉัน (เจ้าของ)',
+    koHint: '/my-local-shop',
+    thHint: '/my-local-shop',
+    koBlob: '내 로컬 가게 미니홈 오너 가게 수정 BGM 메뉴 스킨 로컬식당',
+    thBlob: 'ร้านของฉัน มินิโฮม เจ้าของ แก้ไข เมนู',
+  },
+  {
     href: '/local',
     koTitle: '로컬 맛집 · 배달',
     thTitle: 'ร้านท้องถิ่น · เดลิเวอรี่',

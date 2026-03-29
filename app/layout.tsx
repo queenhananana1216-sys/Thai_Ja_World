@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/next';
 import FxRemoteWidget from './_components/FxRemoteWidget';
 import VercelSpeedInsights from './_components/VercelSpeedInsights';
 import GlobalNav from './_components/GlobalNav';
+import PremiumTopBanner from './_components/PremiumTopBanner';
 import Providers from './_components/Providers';
 import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import { getDictionary } from '@/i18n/dictionaries';
@@ -74,6 +75,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               board: d.board,
             }}
           />
+          <PremiumTopBanner />
           {children}
           <FxRemoteWidget
             locale={locale}

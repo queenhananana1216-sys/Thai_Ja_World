@@ -11,9 +11,14 @@
  *   KNOWLEDGE_MAX_RAW_BODY_LEN — raw_body 최대 저장 길이 (기본 2000)
  *   KNOWLEDGE_FRESHNESS_DAYS   — 발행일 기준 몇 일 이내만 수집 (기본 90, 0=제한없음)
  *   KNOWLEDGE_RELEVANCE_KEYWORDS — 추가 관련성 키워드 (쉼표 구분)
+ *   KNOWLEDGE_TRUST_MODE       — strict(기본)=신뢰 도메인만, loose=차단 목록만
+ *   KNOWLEDGE_TRUSTED_HOST_SUFFIXES / KNOWLEDGE_BLOCKED_HOST_SUFFIXES — 쉼표 구분 접미 목록
+ *   KNOWLEDGE_RELEVANCE_MODE   — strict(기본)=비자·생활·사건/안전 위주, loose=키워드 넓게
+ *   (맛집·음식·여행 키워드는 앵커에 포함 — knowledge_sources 로 소스 추가 시 DB 기반 확장)
  */
 
 import { getServerSupabaseClient } from '../adapters/supabaseClient';
+import { isKnowledgeUrlAccepted, trustedUrlRank } from '../lib/knowledgeTrust';
 import { parseFeedXml } from '../lib/parseFeedXml';
 import type { ActionResult } from '../types/botTypes';
 
@@ -24,12 +29,70 @@ const MAX_ITEMS_PER_SOURCE = 20;
 const DEFAULT_MAX_BODY_LEN = 2000;
 const FETCH_TIMEOUT_MS = 20_000;
 
-/** 1차 관련성 필터 키워드 (태국/비자/생활 관련) */
-const BUILTIN_KEYWORDS = [
-  '태국', 'thailand', 'thai', '비자', 'visa', '서류', 'document',
-  '장기체류', '체류', '꿀팁', '생활', '교민', '입국', '출국',
-  '여행', '거주', '이민', '이주', '보험', '세금', '운전',
+/**
+ * strict: 앵커 키워드 1개 이상, 또는 (태국·지명 + 생활/사건 맥락 키워드) 조합
+ * loose : 아래 넓은 목록 중 하나만 있어도 통과
+ */
+const ANCHOR_KEYWORDS = [
+  '비자', 'visa', '장기체류', '체류', '입국', '출국', '연장', '서류', 'document',
+  'immigration', 'overstay', 'extension', 'work permit', 'tm30', '90-day', '90 day',
+  'arrival card', 'tdac', 'digital arrival', 'border', 'embassy', 'consulate',
+  '꿀팁', '생활', '교민', '거주', '보험', '운전', '면허', '환전', '은행', '병원',
+  'rental', 'apartment', 'housing', 'school', 'health', 'insurance',
+  '사건', '사고', '안전', '실종', '범죄', '교통', '화재',
+  'scam', 'fraud', 'warn', 'warning', 'arrest', 'police', 'accident', 'crash',
+  'killed', 'injured', 'missing', 'theft', 'robbery', 'sentence', 'jailed', 'prison',
+  'fire', 'flood', 'storm', 'dengue', 'outbreak',
+  'air quality', 'pollution', 'pm2.5', 'smog', 'haze', 'dust',
+  'airport', 'flight', 'airline', 'airfare', 'baggage', 'cancelled flights',
+  'tourist', 'tourism', 'foreigner', 'expat', 'travel advisory',
+  'fuel', 'diesel', 'petrol', 'gasoline', 'exchange rate',
+  '맛집', '먹거리', '카페', '레스토랑', '미슐랭', '길거리', '야시장', '배달',
+  'restaurant', 'dining', 'food', 'brunch', 'buffet', 'michelin', 'street food',
+  'night market', 'cafe', 'coffee', 'dessert', 'chef', 'menu', 'bakery', 'bistro',
+  'eatery', 'hawker', 'foodie', 'recipe', 'cuisine', 'grab food', 'delivery',
 ];
+
+const WEAK_REGION_KEYWORDS = [
+  'thailand', 'thai', 'bangkok', 'phuket', 'pattaya', 'chiang mai', 'krabi', 'hua hin',
+  '태국',
+];
+
+/** 태국/지명만 나오는 기사는 반드시 함께 쓰일 맥락 (생활·사건·이동·치안 등) */
+const REGION_CONTEXT_KEYWORDS = [
+  'tourist', 'foreigner', 'expat', 'police', 'accident', 'scam', 'warn', 'airport', 'flight',
+  'visa', 'immigration', 'border', 'hospital', 'killed', 'injured', 'fire', 'flood',
+  'crime', 'arrest', 'theft', 'pollution', 'dust', 'health', 'beach', 'resort', 'hotel',
+  'dengue', 'pm2.5', 'smog', 'diesel', 'petrol', 'fuel', 'airfare', 'exchange',
+  'restaurant', 'food', 'cafe', 'hotel', 'dining', 'market', 'street food', 'chef',
+];
+
+const LOOSE_KEYWORDS = [
+  ...ANCHOR_KEYWORDS,
+  '태국', 'thailand', 'thai', '여행', '이민', '이주', '세금', '보험',
+];
+
+/** 정부·정치 일반 기사 헤드라인 (비자·외국인·입국 등 훅이 없으면 제외) */
+const POLITICAL_HEADLINE_RES: RegExp[] = [
+  /^poll:/i,
+  /^pm\b/i,
+  /^prime minister/i,
+  /^cabinet /i,
+  /^parliament /i,
+  /^ruling /i,
+  /^opposition /i,
+  /^senate /i,
+  /^army denies/i,
+  /^navy /i,
+  /^government /i,
+  /^govt /i,
+  /^state audit/i,
+  /^deputy pm/i,
+  /^minister of (defence|defense|interior|energy|finance|agriculture)\b/i,
+];
+
+const POLITICAL_EXEMPT_HOOK_RE =
+  /\b(visa|immigration|foreign|foreigner|tourist|expat|embassy|consulate|비자|입국|체류|arrival|border|airport|scam|warn|tdac|overstay|extension)\b/i;
 
 // ── 타입 ──────────────────────────────────────────────────────────────────
 
@@ -83,20 +146,40 @@ function freshnessDays(): number {
   return n;
 }
 
-function relevanceKeywords(): string[] {
+function relevanceExtraKeywords(): string[] {
   const extra = process.env.KNOWLEDGE_RELEVANCE_KEYWORDS?.trim();
-  const extras = extra
+  return extra
     ? extra.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
     : [];
-  return [...BUILTIN_KEYWORDS.map((k) => k.toLowerCase()), ...extras];
 }
 
-/** 1차 관련성 필터: 제목에 키워드 1개 이상 포함이면 관련 있음 */
+function relevanceMode(): 'strict' | 'loose' {
+  return process.env.KNOWLEDGE_RELEVANCE_MODE?.trim().toLowerCase() === 'loose' ? 'loose' : 'strict';
+}
+
+function isPoliticalChaffTitle(title: string): boolean {
+  if (POLITICAL_EXEMPT_HOOK_RE.test(title)) return false;
+  const t = title.trim();
+  return POLITICAL_HEADLINE_RES.some((re) => re.test(t));
+}
+
+/** 비자·생활·사건/안전 위주 (strict 기본). 정치·정부 일반 헤드라인은 훅 없으면 제외 */
 function isRelevant(title: string): boolean {
   if (!title) return false;
+  if (isPoliticalChaffTitle(title)) return false;
   const lower = title.toLowerCase();
-  const kws = relevanceKeywords();
-  return kws.some((k) => lower.includes(k));
+  const extras = relevanceExtraKeywords();
+
+  if (relevanceMode() === 'loose') {
+    const kws = [...LOOSE_KEYWORDS.map((k) => k.toLowerCase()), ...extras];
+    return kws.some((k) => lower.includes(k));
+  }
+
+  const anchors = [...ANCHOR_KEYWORDS.map((k) => k.toLowerCase()), ...extras];
+  if (anchors.some((k) => lower.includes(k))) return true;
+  const hasRegion = WEAK_REGION_KEYWORDS.some((k) => lower.includes(k.toLowerCase()));
+  const hasContext = REGION_CONTEXT_KEYWORDS.some((k) => lower.includes(k.toLowerCase()));
+  return hasRegion && hasContext;
 }
 
 /** 너무 오래된 항목 필터 (freshness) */
@@ -150,6 +233,44 @@ function truncateBody(body: string): string {
   const max = maxRawBodyLen();
   if (body.length <= max) return body;
   return body.slice(0, max - 1).trimEnd() + '…';
+}
+
+/** 배치 내·제목 유사 중복 제거용 정규화 키 */
+function normalizeTitleKey(title: string): string {
+  const t = title.trim().toLowerCase();
+  if (!t) return '';
+  return t
+    .normalize('NFKC')
+    .replace(/[\s\u00a0]+/g, ' ')
+    .replace(/[^\p{L}\p{N}\s가-힣一-龠ぁ-ゖァ-ヺ]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * 같은 실행에서 URL 중복 제거 → 신뢰 도메인 우선 정렬 → 정규화 제목 중복은 첫 항목만 유지
+ */
+function finalizeCollectedItems(items: CollectedKnowledgeItem[]): CollectedKnowledgeItem[] {
+  const seenUrl = new Set<string>();
+  const urlDeduped = items.filter((i) => {
+    if (seenUrl.has(i.external_url)) return false;
+    seenUrl.add(i.external_url);
+    return true;
+  });
+  const sorted = [...urlDeduped].sort(
+    (a, b) => trustedUrlRank(a.external_url) - trustedUrlRank(b.external_url),
+  );
+  const seenTitle = new Set<string>();
+  const out: CollectedKnowledgeItem[] = [];
+  for (const it of sorted) {
+    const tk = normalizeTitleKey(it.title_original);
+    if (tk) {
+      if (seenTitle.has(tk)) continue;
+      seenTitle.add(tk);
+    }
+    out.push(it);
+  }
+  return out;
 }
 
 function buildGoogleNewsRssUrl(query: string): string {
@@ -274,6 +395,7 @@ export async function collectKnowledge(
   }
 
   const allItems: CollectedKnowledgeItem[] = [];
+  const batchUrlSeen = new Set<string>();
   const sourcesAttempted: string[] = [];
   const sourcesSucceeded: string[] = [];
   const sourcesFailed: CollectKnowledgeOutput['sources_failed'] = [];
@@ -306,6 +428,8 @@ export async function collectKnowledge(
         if (!isRelevant(fi.title)) continue;
         if (!isFresh(fi.published_at)) continue;
         const canonical = canonicalizeUrl(fi.link);
+        if (batchUrlSeen.has(canonical) || !isKnowledgeUrlAccepted(canonical)) continue;
+        batchUrlSeen.add(canonical);
         allItems.push({
           source_id: src.id,
           external_url: canonical,
@@ -345,11 +469,13 @@ export async function collectKnowledge(
         const url = entry.url?.trim();
         if (!url || !isValidHttpUrl(url)) continue;
         const canonical = canonicalizeUrl(url);
+        if (batchUrlSeen.has(canonical) || !isKnowledgeUrlAccepted(canonical)) continue;
 
         const { title, snippet } = await fetchPageMeta(canonical);
         if (!title && !snippet) continue;
         if (!isRelevant(title || entry.label || '')) continue;
 
+        batchUrlSeen.add(canonical);
         const body = snippet ? truncateBody(snippet) : null;
         allItems.push({
           source_id: src.id,
@@ -367,10 +493,12 @@ export async function collectKnowledge(
     }
   }
 
+  const finalized = finalizeCollectedItems(allItems);
+
   return {
     success: true,
     output: {
-      items: allItems,
+      items: finalized,
       sources_attempted: sourcesAttempted,
       sources_succeeded: sourcesSucceeded,
       sources_failed: sourcesFailed,

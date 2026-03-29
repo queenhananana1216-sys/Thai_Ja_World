@@ -7,6 +7,7 @@
  *
  * 실행 (프로젝트 루트):
  *   npm run bot:knowledge:daemon
+ *   (Next 미기동 시 ECONNREFUSED → `npm run bot:knowledge:daemon:direct` 로 HTTP 없이 동일 파이프라인)
  *
  * 환경 변수:
  *   BOT_CRON_BASE_URL      — 필수에 가깝 (기본 http://127.0.0.1:3000)
@@ -15,9 +16,11 @@
  *   BOT_KNOWLEDGE_IDEMPOTENCY — hour(권장) | day | none
  *   BOT_KNOWLEDGE_ITEMS_PER_SOURCE, BOT_KNOWLEDGE_PROCESS_LIMIT — 선택 (쿼리로 전달)
  *   BOT_CRON_NEWS_INTERVAL_MS — 설정 시 /api/cron/news 도 같은 간격으로 호출 (최소 5분)
+ *   BOT_CRON_FETCH_TIMEOUT_MS — 수집+가공 API 가 오래 걸릴 때 fetch 헤더/본문 타임아웃(ms). 기본 600000(10분)
  */
 
 import { createRequire } from 'node:module';
+import { Agent, fetch as undiciFetch } from 'undici';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -44,6 +47,17 @@ const newsEvery = process.env.BOT_CRON_NEWS_INTERVAL_MS
   ? Math.max(300_000, Number(process.env.BOT_CRON_NEWS_INTERVAL_MS))
   : 0;
 
+/** Node 기본 fetch 는 응답 헤더 대기 시간이 짧아 LLM 가공 포함 크론이 끊길 수 있음 */
+const fetchTimeoutMs = Math.max(
+  60_000,
+  Number(process.env.BOT_CRON_FETCH_TIMEOUT_MS) || 600_000,
+);
+const httpAgent = new Agent({
+  connectTimeout: 60_000,
+  headersTimeout: fetchTimeoutMs,
+  bodyTimeout: fetchTimeoutMs,
+});
+
 function knowledgeUrl() {
   const q = new URLSearchParams({ idempotencyScope: scope });
   const ips = process.env.BOT_KNOWLEDGE_ITEMS_PER_SOURCE?.trim();
@@ -60,17 +74,30 @@ function headers() {
 }
 
 async function ping(name, url) {
-  const res = await fetch(url, { headers: headers() });
+  const res = await undiciFetch(url, { headers: headers(), dispatcher: httpAgent });
   const text = await res.text();
   const preview = text.length > 800 ? `${text.slice(0, 800)}…` : text;
   console.log(`[${name}] ${new Date().toISOString()} ${res.status} ${preview}`);
+}
+
+function explainFetchError(label, e) {
+  const cause = e?.cause;
+  if (cause?.code === 'ECONNREFUSED' || cause?.errno === -4078) {
+    console.error(
+      `[${label}] 연결 거부(ECONNREFUSED): ${BASE} 에 Next.js 가 없습니다.\n` +
+        '  → 다른 터미널에서 `npm run dev` 로 서버를 켜거나,\n' +
+        '  → 지식만 Next 없이: `npm run bot:knowledge:daemon:direct`',
+    );
+    return;
+  }
+  console.error(`[${label}] error`, e);
 }
 
 async function tickKnowledge() {
   try {
     await ping('knowledge', knowledgeUrl());
   } catch (e) {
-    console.error('[knowledge] error', e);
+    explainFetchError('knowledge', e);
   }
 }
 
@@ -78,12 +105,12 @@ async function tickNews() {
   try {
     await ping('news', `${BASE}/api/cron/news`);
   } catch (e) {
-    console.error('[news] error', e);
+    explainFetchError('news', e);
   }
 }
 
 console.log(
-  `[bot-daemon] base=${BASE} every=${Math.round(intervalMs / 1000)}s idempotencyScope=${scope}` +
+  `[bot-daemon] base=${BASE} every=${Math.round(intervalMs / 1000)}s idempotencyScope=${scope} fetchTimeoutMs=${fetchTimeoutMs}` +
     (newsEvery ? ` + news every ${Math.round(newsEvery / 1000)}s` : ''),
 );
 

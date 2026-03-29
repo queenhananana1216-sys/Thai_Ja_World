@@ -8,6 +8,7 @@ import { isDuplicate, logFail, logSkip, logStart, logSuccess } from '../logging/
 import {
   processAndPersistKnowledgeBatch,
   isKnowledgeLlmConfigured,
+  stubKnowledgeOnLlmFailure,
 } from '../actions/processAndPersistKnowledge';
 
 export interface RunKnowledgeProcessOptions {
@@ -65,8 +66,8 @@ export async function runKnowledgeProcessLoop(
     return { run_id, skipped: false, success: false, error: 'DB logStart failed' };
   }
 
-  if (!isKnowledgeLlmConfigured()) {
-    await logSkip(rowId, 'LLM 미설정 — OPENAI_API_KEY / GEMINI_API_KEY / LOCAL_LLM_BASE_URL 중 하나 필요');
+  if (!isKnowledgeLlmConfigured() && !stubKnowledgeOnLlmFailure()) {
+    await logSkip(rowId, 'LLM 미설정 — 키/URL 없음. 스텁을 쓰려면 KNOWLEDGE_LLM_FALLBACK_STUB=1 이거나 KNOWLEDGE_PUBLISH_MODE 를 auto 가 아닌 값(또는 미설정)으로 두세요.');
     return {
       run_id,
       skipped: false,

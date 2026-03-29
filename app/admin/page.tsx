@@ -177,6 +177,18 @@ export default async function AdminDashboardPage() {
             <span>수집·요약 로그</span>
           </Link>
         </li>
+        <li>
+          <Link href="/admin/local-spots">
+            로컬 가게 · 맛집
+            <span>사진·설명·LINE — DB 직결</span>
+          </Link>
+        </li>
+        <li>
+          <Link href="/admin/premium-banners">
+            프리미엄 배너
+            <span>상단 바·홈 스트립 등 전역 프로모</span>
+          </Link>
+        </li>
       </ul>
     </main>
   );

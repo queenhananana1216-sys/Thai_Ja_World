@@ -12,6 +12,8 @@
  *
  * 환경 변수: NEWS_SUMMARY_PROVIDER / OPENAI_API_KEY / GEMINI_API_KEY / LOCAL_LLM_BASE_URL
  *            KNOWLEDGE_PUBLISH_MODE = manual(기본) | auto
+ *            KNOWLEDGE_LLM_FALLBACK_STUB — LLM 없음/행별 실패 시 원문 스텁 초안(published=false) 저장.
+ *              1|true 켜기, 0|false 끔. 미설정 시 manual(또는 미설정)이면 켜짐, auto 면 끔(뉴스 NEWS_SUMMARY_FALLBACK_STUB 과 동일 패턴).
  */
 
 import { getServerSupabaseClient } from '../adapters/supabaseClient';
@@ -87,6 +89,17 @@ export function isKnowledgeLlmConfigured(): boolean {
     Boolean(process.env.GEMINI_API_KEY?.trim()) ||
     Boolean(process.env.LOCAL_LLM_BASE_URL?.trim())
   );
+}
+
+/**
+ * LLM 미동작·행별 오류 시에도 승인 큐용 스텁을 넣을지.
+ * 기본: 수동 승인 모드에서만 true (Vercel에 키 없을 때 지식 큐가 비지 않게).
+ */
+export function stubKnowledgeOnLlmFailure(): boolean {
+  const raw = process.env.KNOWLEDGE_LLM_FALLBACK_STUB?.trim().toLowerCase();
+  if (raw === '0' || raw === 'false' || raw === 'no' || raw === 'off') return false;
+  if (raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on') return true;
+  return !knowledgeInsertAsPublished();
 }
 
 // ── HTTP LLM 호출 ─────────────────────────────────────────────────────────
@@ -409,19 +422,21 @@ async function callKnowledgeLlm(
 export async function processAndPersistKnowledgeBatch(
   limit: number,
 ): Promise<KnowledgeProcessBatchResult> {
-  if (!isKnowledgeLlmConfigured()) {
-    return { results: [], llmConfigured: false };
-  }
-
   const client = getServerSupabaseClient();
   const cap = Math.min(Math.max(limit, 1), 30);
+  const llmReady = isKnowledgeLlmConfigured();
+  const allowStub = stubKnowledgeOnLlmFailure();
+  const pipelineReady = llmReady || allowStub;
 
-  // processed_knowledge 가 없는 raw_knowledge 선택
   const { data: processedRows, error: pe } = await client
     .from('processed_knowledge')
     .select('raw_knowledge_id');
   if (pe) {
-    return { results: [], llmConfigured: true, dbError: `[processed_knowledge select] ${pe.message}` };
+    return {
+      results: [],
+      llmConfigured: pipelineReady,
+      dbError: `[processed_knowledge select] ${pe.message}`,
+    };
   }
 
   const done = new Set((processedRows ?? []).map((r) => r.raw_knowledge_id as string));
@@ -432,11 +447,15 @@ export async function processAndPersistKnowledgeBatch(
     .order('fetched_at', { ascending: false })
     .limit(200);
   if (re) {
-    return { results: [], llmConfigured: true, dbError: `[raw_knowledge select] ${re.message}` };
+    return {
+      results: [],
+      llmConfigured: pipelineReady,
+      dbError: `[raw_knowledge select] ${re.message}`,
+    };
   }
 
   if (!rawRows?.length) {
-    return { results: [], llmConfigured: true };
+    return { results: [], llmConfigured: pipelineReady };
   }
 
   const todo = rawRows.filter((r) => !done.has(r.id as string)).slice(0, cap);
@@ -448,6 +467,20 @@ export async function processAndPersistKnowledgeBatch(
     const url = (row.external_url as string) ?? '';
     const body = row.raw_body as string | null;
     const fetchedAt = (row.fetched_at as string) ?? new Date().toISOString();
+
+    if (!llmReady) {
+      const stubRes = await ensureKnowledgeDraftFromRawKnowledgeId(rawId);
+      if (stubRes.ok) {
+        results.push({ raw_knowledge_id: rawId, ok: true, board_target: 'board_board' });
+      } else {
+        results.push({
+          raw_knowledge_id: rawId,
+          ok: false,
+          error: stubRes.error ?? '스텁 초안 실패',
+        });
+      }
+      continue;
+    }
 
     try {
       const llm = await callKnowledgeLlm(title, body, url, fetchedAt);
@@ -467,20 +500,22 @@ export async function processAndPersistKnowledgeBatch(
         .single();
 
       if (insP || !proc?.id) {
-        results.push({ raw_knowledge_id: rawId, ok: false, error: insP?.message ?? 'processed_knowledge insert 실패' });
+        results.push({
+          raw_knowledge_id: rawId,
+          ok: false,
+          error: insP?.message ?? 'processed_knowledge insert 실패',
+        });
         continue;
       }
 
       const pid = proc.id as string;
 
-      // knowledge_summaries: ko
       await client.from('knowledge_summaries').insert({
         processed_knowledge_id: pid,
         summary_text: llm.ko.summary,
         model: 'ko',
       });
 
-      // knowledge_summaries: th
       await client.from('knowledge_summaries').insert({
         processed_knowledge_id: pid,
         summary_text: llm.th.summary,
@@ -490,11 +525,24 @@ export async function processAndPersistKnowledgeBatch(
       results.push({ raw_knowledge_id: rawId, ok: true, board_target: llm.board_target });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      if (allowStub) {
+        const stubRes = await ensureKnowledgeDraftFromRawKnowledgeId(rawId);
+        if (stubRes.ok) {
+          results.push({ raw_knowledge_id: rawId, ok: true, board_target: 'board_board' });
+          continue;
+        }
+        results.push({
+          raw_knowledge_id: rawId,
+          ok: false,
+          error: stubRes.error ?? msg,
+        });
+        continue;
+      }
       results.push({ raw_knowledge_id: rawId, ok: false, error: msg });
     }
   }
 
-  return { results, llmConfigured: true };
+  return { results, llmConfigured: pipelineReady };
 }
 
 function clampKnowledgePlain(s: string, max: number): string {

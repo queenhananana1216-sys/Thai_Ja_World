@@ -30,6 +30,8 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         <a href="/admin/bot-actions">봇 기록</a>
         <a href="/admin/news">뉴스 승인</a>
         <a href="/admin/knowledge">지식 큐</a>
+        <a href="/admin/local-spots">로컬 가게</a>
+        <a href="/admin/premium-banners">프리미엄 배너</a>
         <a href="/admin/home-hero">홈 메인 문구</a>
         <span className="admin-shell__nav-hint">운영 데이터 — 인가된 접근만 허용</span>
       </nav>

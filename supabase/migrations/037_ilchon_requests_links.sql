@@ -45,6 +45,7 @@ create index if not exists ilchon_links_peer on public.ilchon_links (peer_id);
 comment on table public.ilchon_requests is '일촌 신청. 수락/거절/취소는 RPC만.';
 comment on table public.ilchon_links is '일촌 관계(방향별 1행). my_nickname_for_peer = 내가 상대를 부르는 일촌명.';
 
+drop trigger if exists trg_ilchon_requests_updated_at on public.ilchon_requests;
 create trigger trg_ilchon_requests_updated_at
   before update on public.ilchon_requests
   for each row execute function public.set_updated_at();

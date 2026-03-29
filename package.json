@@ -11,8 +11,10 @@
     "type-check": "tsc --noEmit",
     "lint": "next lint",
     "news:ingest": "tsx scripts/run-news-ingest-once.ts",
+    "knowledge:ingest": "tsx scripts/run-knowledge-ingest-once.ts",
     "news:backfill-editor-notes": "tsx scripts/run-backfill-editor-notes-once.ts",
-    "bot:knowledge:daemon": "node scripts/run-knowledge-cron-daemon.mjs"
+    "bot:knowledge:daemon": "node scripts/run-knowledge-cron-daemon.mjs",
+    "bot:knowledge:daemon:direct": "tsx scripts/run-knowledge-daemon-direct.ts"
   },
   "dependencies": {
     "@github/copilot-sdk": "^0.2.0",
@@ -25,6 +27,7 @@
     "react-dom": "^19.0.0",
     "server-only": "^0.0.1",
     "tsx": "^4.21.0",
+    "undici": "^7.22.0",
     "web-push": "^3.6.7",
     "workflow": "^4.2.0-beta.72"
   },

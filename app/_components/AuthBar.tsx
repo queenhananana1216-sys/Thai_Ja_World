@@ -80,10 +80,10 @@ export default function AuthBar({
 
   return (
     <div className="auth-bar-cluster">
+      <Link href="/minihome" className="auth-bar__minihome-btn">
+        {memberNav.minihome}
+      </Link>
       <nav className="member-quick-nav" aria-label={memberNav.ariaLabel}>
-        <Link href="/minihome" className="member-quick-nav__link">
-          {memberNav.minihome}
-        </Link>
         <Link href="/ilchon#ilchon-received" className="member-quick-nav__link">
           {memberNav.notesInbox}
         </Link>

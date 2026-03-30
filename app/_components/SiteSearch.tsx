@@ -190,10 +190,15 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
     );
   }
 
+  const showHeaderBarLabel = variant === 'header' && !isHeroLike;
+
   return (
     <div ref={wrapRef} className={rootClass}>
       {isHeroLike && <p className="site-search__hero-title">{s.heroTitle}</p>}
       {isPortal && <p className="site-search__portal-lead">{s.portalLead}</p>}
+      {showHeaderBarLabel ? (
+        <span className="global-header__search-visible-label">{s.headerBarLabel}</span>
+      ) : null}
       <label className="tj-visually-hidden" htmlFor={inputId}>
         {s.ariaLabel}
       </label>

@@ -145,6 +145,10 @@ export default async function AdminKnowledgeQueuePage() {
         초안만 저장하면 숨김 처리만 됩니다.
         <br />
         <br />
+        <strong>일괄 재가공:</strong> 목록 상단 보라색 칸에서 미게시 초안을 제미나이(현재 서버 키)로 한꺼번에 다시 만들 수 있어요.{' '}
+        <strong>뉴스 승인 큐(/admin/news)</strong>는 여기와 별도입니다.
+        <br />
+        <br />
         <strong>가공 파이프라인:</strong> RSS로는 본문이 비는 경우가 많아, 가공(크론) 시{' '}
         <strong>출처 URL에서 본문을 자동으로 긁은 뒤</strong> LLM이 한·태 초안을 채웁니다. 이미 쌓인 스텁 초안은 카드의{' '}
         <strong>「원문 다시 불러와 LLM 재가공」</strong>으로 같은 방식으로 다시 만들 수 있어요(배포에 LLM 키 필요).

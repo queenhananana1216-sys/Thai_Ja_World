@@ -617,6 +617,66 @@ export async function reprocessKnowledgeDraftWithLlm(
   return { ok: true, board_target: rowResult.board_target };
 }
 
+/** 미게시 초안 일괄 재가공 — 각 건만큼 원문 fetch + LLM(현재 프롬프트·제미나이 등 설정 적용) */
+export type BulkReprocessKnowledgeDraftsResult = {
+  attempted: number;
+  succeeded: number;
+  failed: number;
+  /** 이번 배치 직후 DB에 남은 published=false 건수 */
+  remaining_unpublished: number;
+  details: Array<{ old_processed_id: string; ok: boolean; error?: string }>;
+};
+
+export async function reprocessUnpublishedKnowledgeDraftsBatch(
+  maxItems: number,
+): Promise<BulkReprocessKnowledgeDraftsResult> {
+  const client = getServerSupabaseClient();
+  const cap = Math.min(Math.max(Math.floor(maxItems), 1), 10);
+
+  const { data: rows, error: selErr } = await client
+    .from('processed_knowledge')
+    .select('id')
+    .eq('published', false)
+    .order('created_at', { ascending: true })
+    .limit(cap);
+
+  if (selErr) {
+    return {
+      attempted: 0,
+      succeeded: 0,
+      failed: 1,
+      remaining_unpublished: 0,
+      details: [{ old_processed_id: '', ok: false, error: selErr.message }],
+    };
+  }
+
+  const details: BulkReprocessKnowledgeDraftsResult['details'] = [];
+  let succeeded = 0;
+  let failed = 0;
+
+  for (const row of rows ?? []) {
+    const oldId = String(row.id);
+    await new Promise((r) => setTimeout(r, 450));
+    const one = await reprocessKnowledgeDraftWithLlm(oldId);
+    details.push({ old_processed_id: oldId, ok: one.ok, error: one.error });
+    if (one.ok) succeeded += 1;
+    else failed += 1;
+  }
+
+  const { count: rem } = await client
+    .from('processed_knowledge')
+    .select('id', { count: 'exact', head: true })
+    .eq('published', false);
+
+  return {
+    attempted: details.length,
+    succeeded,
+    failed,
+    remaining_unpublished: rem ?? 0,
+    details,
+  };
+}
+
 // ── 메인 배치 처리 ────────────────────────────────────────────────────────
 
 export async function processAndPersistKnowledgeBatch(

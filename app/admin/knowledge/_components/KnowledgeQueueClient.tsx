@@ -119,6 +119,7 @@ export default function KnowledgeQueueClient({
   const [ensureBusyRawId, setEnsureBusyRawId] = useState<string | null>(null);
   const [ensureBulkBusy, setEnsureBulkBusy] = useState(false);
   const [reprocessBusyId, setReprocessBusyId] = useState<string | null>(null);
+  const [bulkReprocessRunning, setBulkReprocessRunning] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function submit(
@@ -222,6 +223,76 @@ export default function KnowledgeQueueClient({
       router.refresh();
     } finally {
       setReprocessBusyId(null);
+    }
+  }
+
+  /** 미게시 초안만, 5건씩 API 반복 — 제미나이·태자 편집 프롬프트 적용 (게시 완료 글 제외) */
+  async function runBulkReprocessAll() {
+    if (
+      !window.confirm(
+        '승인 대기 중인 지식 초안(published=false)을 전부, 원문 URL 재수집 + LLM으로 다시 만듭니다.\n\n' +
+          '· 적용: 지금 서버에 넣은 제미나이 키 + 최신 태자 편집팀 프롬프트(한·태·editorial_note)\n' +
+          '· 제외: 이미 광장에 게시된 항목은 건드리지 않습니다\n' +
+          '· 범위: 지식 큐만 (/admin/news 뉴스 승인 큐는 별도)\n' +
+          '· 실패 시 해당 건은 초안이 사라질 수 있으니(기존 단건 재가공과 동일) 봇 기록을 확인하세요\n\n' +
+          '계속할까요?',
+      )
+    ) {
+      return;
+    }
+    setBulkReprocessRunning(true);
+    setMsg(null);
+    let round = 0;
+    let totalOk = 0;
+    let totalFail = 0;
+    try {
+      for (;;) {
+        round += 1;
+        const res = await fetch('/api/admin/knowledge-reprocess-bulk', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ max_items: 5 }),
+        });
+        const j = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          attempted?: number;
+          succeeded?: number;
+          failed?: number;
+          remaining_unpublished?: number;
+          details?: Array<{ old_processed_id: string; ok: boolean; error?: string }>;
+        };
+        if (!res.ok) {
+          setMsg(j.error ?? `오류 (${res.status})`);
+          break;
+        }
+        totalOk += j.succeeded ?? 0;
+        totalFail += j.failed ?? 0;
+        const rem = j.remaining_unpublished ?? 0;
+        setMsg(
+          `[일괄 재가공] 라운드 ${round} — 방금: 성공 ${j.succeeded ?? 0} · 실패 ${j.failed ?? 0} · 누적 성공 ${totalOk} · 미게시 남음 ${rem}건`,
+        );
+        await router.refresh();
+        if (rem === 0) {
+          setMsg(
+            `전체 완료. 누적 성공 ${totalOk} · 누적 실패 ${totalFail}. 한·태·편집 메모를 확인한 뒤 승인·게시하세요.`,
+          );
+          break;
+        }
+        if ((j.attempted ?? 0) === 0) {
+          setMsg(`처리할 미게시 초안이 없습니다. (남음 ${rem}건 표기는 참고)`);
+          break;
+        }
+        if ((j.succeeded ?? 0) === 0 && (j.failed ?? 0) > 0) {
+          const firstErr = j.details?.find((d) => d.error)?.error;
+          setMsg(
+            `라운드 ${round}에서 전부 실패했습니다. 제미나이 쿼터·환경 변수·네트워크를 확인하세요.${firstErr ? ` (${firstErr})` : ''}`,
+          );
+          break;
+        }
+      }
+    } finally {
+      setBulkReprocessRunning(false);
     }
   }
 
@@ -336,10 +407,53 @@ export default function KnowledgeQueueClient({
       </div>
     ) : null;
 
+  const showBulkReprocess = items.length > 0 || (diagnostics?.draftCount ?? 0) > 0;
+
+  const bulkReprocessBanner = showBulkReprocess ? (
+    <div
+      style={{
+        marginBottom: 16,
+        padding: 14,
+        background: '#f5f3ff',
+        border: '1px solid #c4b5fd',
+        borderRadius: 10,
+      }}
+    >
+      <strong style={{ display: 'block', marginBottom: 6, fontSize: 14, color: '#5b21b6' }}>
+        미게시 초안 일괄 재가공 (제미나이 + 태자 편집 프롬프트)
+      </strong>
+      <p style={{ margin: '0 0 10px', fontSize: 12, color: '#4c1d95', lineHeight: 1.55 }}>
+        예전에 쌓인 스텁·옛 LLM 초안을 전부 다시 만듭니다. 한 번에 최대 5건씩 자동 반복하고,{' '}
+        <strong>이미 게시된 글은 제외</strong>됩니다. 끝나면 목록에서 오타만 보고 승인하시면 됩니다.
+      </p>
+      <button
+        type="button"
+        disabled={
+          bulkReprocessRunning || ensureBulkBusy || Boolean(busyId) || Boolean(reprocessBusyId)
+        }
+        onClick={() => void runBulkReprocessAll()}
+        style={{
+          padding: '10px 16px',
+          background: '#6d28d9',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 8,
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: bulkReprocessRunning ? 'wait' : 'pointer',
+        }}
+      >
+        {bulkReprocessRunning ? '일괄 재가공 진행 중…' : '미게시 초안 전부 재가공 시작'}
+      </button>
+    </div>
+  ) : null;
+
   if (items.length === 0) {
     return (
       <div style={{ marginTop: 16 }}>
+        {bulkReprocessBanner}
         {orphanPanel}
+        {msg ? <p style={{ color: '#059669', fontSize: 13, marginBottom: 12 }}>{msg}</p> : null}
         <p style={{ color: '#6b7280', margin: '0 0 12px' }}>
           대기 중인 초안이 없습니다. 가공 파이프라인이 <code>processed_knowledge</code>를{' '}
           <code>published=false</code>로 넣으면 여기에 보입니다. 위 노란 칸에서 원문만 있는 항목을 큐에 올릴 수 있어요.
@@ -401,6 +515,7 @@ export default function KnowledgeQueueClient({
 
   return (
     <div style={{ marginTop: 12 }}>
+      {bulkReprocessBanner}
       {orphanPanel}
       {msg ? <p style={{ color: '#059669', fontSize: 13, marginBottom: 12 }}>{msg}</p> : null}
       {boardOrder.map((board) => {

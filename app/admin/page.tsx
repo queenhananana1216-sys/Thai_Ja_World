@@ -134,6 +134,11 @@ export default async function AdminDashboardPage() {
           때는 <code>POST /api/bot/…</code> 요청에 <code>Authorization: Bearer {'<CRON_SECRET>'}</code> 를 붙이세요
           (로컬에서 시크릿 미설정이면 검증 생략).
         </p>
+        <p style={{ margin: '12px 0 0', fontSize: 12, color: '#64748b', lineHeight: 1.55 }}>
+          <strong>관리자 계정 추가:</strong> Supabase 대시보드가 아니라 <strong>Vercel(배포) 환경 변수</strong>{' '}
+          <code>ADMIN_ALLOWED_EMAILS</code>에 이메일을 쉼표·세미콜론·공백으로 구분해 넣으세요. 그 이메일로{' '}
+          <strong>Supabase Auth에 가입·로그인</strong>된 사용자만 /admin 과 관리자 API를 쓸 수 있습니다.
+        </p>
       </section>
 
       <div className="admin-dash__grid">

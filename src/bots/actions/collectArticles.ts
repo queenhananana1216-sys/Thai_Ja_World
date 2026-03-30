@@ -4,9 +4,9 @@
  * 환경 변수:
  *   NEWS_RSS_URLS       — 쉼표로 구분된 피드 URL 목록 (필수)
  *   NEWS_GOOGLE_RSS_QUERIES — NEWS_RSS_URLS가 비어있을 때 사용할 Google News RSS 검색 쿼리 목록(쉼표 구분)
- *                           예: "태국 한국인 범죄,필리핀 한국인 사고"
+ *                           예: "태국 살이 꿀팁,방콕 생활 정보"
  *   NEWS_GOOGLE_RSS_HL  — Google News 검색 언어 (기본: ko)
- *   NEWS_GOOGLE_RSS_GL  — Google News 검색 국가 (기본: KR)
+ *   NEWS_GOOGLE_RSS_GL  — Google News 검색 국가 (기본: TH — 태국 대국·생활 정보 위주)
  *   NEWS_ITEMS_PER_FEED — 피드당 가져올 최대 항목 수 (기본 8, 상한 50)
  */
 
@@ -51,16 +51,20 @@ function parseFeedUrlsFromEnv(): string[] {
 
   // 2) 없으면 Google News RSS 검색 쿼리로 피드를 생성
   const queriesRaw = process.env.NEWS_GOOGLE_RSS_QUERIES?.trim() ?? '';
+  /** 기본: 태국 대국 생활·정보·꿀팁 (수집 후 manual 모드면 /admin/news 에서 승인) */
   const defaultQueries = [
-    // 기본: 태국/동남아 내 한국인/태국인 사건사고 중심
-    '태국 한국인 범죄',
-    '태국 한국인 마약',
-    '태국 한국인 사기',
-    '태국 한국인 사건 사고',
-    '동남아 한국인 범죄',
-    '동남아 한국인 마약',
-    '동남아 한국인 사건 사고',
-    '태국 관광객 사건 사고',
+    '태국 살이 생활 정보',
+    '태국 한국인 꿀팁',
+    '방콕 생활 정착',
+    '태국 비자 한국인',
+    '태국 장기체류 한국인',
+    '치앙마이 살이 한국인',
+    '파타야 생활 정보',
+    '태국 병원 의료 한국인',
+    '태국 은행 계좌 외국인',
+    '태국 교통 대중교통',
+    '태국 맛집 추천',
+    '태국 부동산 월세',
   ];
 
   const queries = (queriesRaw ? queriesRaw : defaultQueries.join(','))
@@ -69,7 +73,7 @@ function parseFeedUrlsFromEnv(): string[] {
     .filter(Boolean);
 
   const hl = (process.env.NEWS_GOOGLE_RSS_HL?.trim() || 'ko').toLowerCase();
-  const gl = (process.env.NEWS_GOOGLE_RSS_GL?.trim() || 'KR').toUpperCase();
+  const gl = (process.env.NEWS_GOOGLE_RSS_GL?.trim() || 'TH').toUpperCase();
 
   // ceid 예시: KR:ko
   return queries.map((q) => {

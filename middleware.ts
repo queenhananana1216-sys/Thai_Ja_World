@@ -3,12 +3,14 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { LOCALE_COOKIE, isLocale } from '@/i18n/types';
 
-/** /news/[id]·/minihome/[slug](공개)·/shop/[slug] 는 비회원 열람. /minihome(내 편집)·커뮤니티·로컬·관리자는 로그인 필요 */
+/** /news/[id]·/minihome/[slug](공개)·/shop/[slug] 는 비회원 열람. /minihome(내 편집)·/my-local-shop·커뮤니티·로컬·관리자는 로그인 필요 */
 const PROTECTED_PREFIXES = ['/community', '/local', '/admin'] as const;
 
 function pathRequiresAuth(pathname: string): boolean {
   if (pathname === '/minihome' || pathname === '/minihome/') return true;
   if (pathname.startsWith('/minihome/')) return false;
+
+  if (pathname === '/my-local-shop' || pathname.startsWith('/my-local-shop/')) return true;
 
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }

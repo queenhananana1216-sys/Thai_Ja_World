@@ -61,6 +61,9 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
 
   const photos = useMemo(() => photoList(spot.photo_urls), [spot.photo_urls]);
   const menu = useMemo(() => menuItems(spot.minihome_menu), [spot.minihome_menu]);
+  const extra = useMemo(() => asStringRecord(spot.minihome_extra), [spot.minihome_extra]);
+  const openingHoursText =
+    typeof extra.opening_hours_text === 'string' ? extra.opening_hours_text.trim() : '';
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [bgmOn, setBgmOn] = useState(false);
 
@@ -141,6 +144,15 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
             </p>
           ) : null}
         </Section>
+
+        {openingHoursText ? (
+          <p style={{ marginTop: 16, lineHeight: 1.55, opacity: 0.92, whiteSpace: 'pre-wrap' }}>
+            <span style={{ display: 'block', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', marginBottom: 6 }}>
+              영업시간
+            </span>
+            {openingHoursText}
+          </p>
+        ) : null}
 
         <Section id="menu">
           {menu.length > 0 ? (

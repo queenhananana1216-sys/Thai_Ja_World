@@ -71,7 +71,7 @@ a:hover {
   box-shadow: 0 2px 16px rgba(58, 48, 78, 0.15);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 220;
 }
 
 .global-header__inner {
@@ -99,10 +99,16 @@ a:hover {
   width: 100%;
   min-width: 0;
   margin-top: 2px;
-  padding-top: 6px;
-  padding-bottom: 4px;
+  padding-top: 8px;
+  padding-bottom: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(0, 0, 0, 0.14);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.global-header__inner > .global-header__row--search:first-child {
+  margin-top: 0;
+  border-top: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .global-header__row--search .global-header__search {
@@ -110,6 +116,44 @@ a:hover {
   max-width: none;
   min-width: 0;
   margin: 0;
+}
+
+/* 헤더 검색: 라벨 + 입력 한 덩어리로 보이게 */
+.site-search--header.global-header__search {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+@media (min-width: 520px) {
+  .site-search--header.global-header__search {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+.global-header__search-visible-label {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  padding: 4px 0;
+}
+
+@media (min-width: 520px) {
+  .global-header__search-visible-label {
+    padding: 0;
+    min-width: 4.5em;
+  }
+}
+
+.site-search--header.global-header__search .global-header__search-field {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* 헤더 통합 검색: 밝은 필 — 모바일·저대비 화면에서도 입력창이 분명히 보이게 */
@@ -121,14 +165,16 @@ a:hover {
 }
 
 .site-search--header.global-header__search .global-header__search-input {
-  min-height: 44px;
-  padding: 10px 14px 10px 38px;
+  min-height: 48px;
+  padding: 12px 14px 12px 40px;
   font-size: 16px;
   line-height: 1.25;
   background: #ffffff;
   color: #1a1625;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .site-search--header.global-header__search .global-header__search-input::placeholder {
@@ -310,7 +356,7 @@ a:hover {
   background: #2f283c;
   border: 1px solid rgba(196, 181, 253, 0.35);
   box-shadow: 0 12px 40px rgba(30, 22, 48, 0.45);
-  z-index: 200;
+  z-index: 400;
   padding: 8px 0;
 }
 
@@ -623,6 +669,31 @@ a:hover {
   justify-content: flex-end;
   gap: 8px;
   margin-left: auto;
+}
+
+/* 로그인 시 미니홈 — 텍스트 링크가 아니라 메인 메뉴와 같은 느낌의 버튼 */
+.auth-bar__minihome-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  color: #4c3d62;
+  background: linear-gradient(135deg, #fce7f3, #e9d5ff);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 2px 10px rgba(30, 22, 48, 0.18);
+  white-space: nowrap;
+}
+
+.auth-bar__minihome-btn:hover {
+  text-decoration: none;
+  filter: brightness(1.03);
+  box-shadow: 0 3px 14px rgba(30, 22, 48, 0.22);
 }
 
 .member-quick-nav {

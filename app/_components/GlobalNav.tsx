@@ -26,6 +26,10 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
   return (
     <header className="global-header">
       <nav className="site-container global-header__inner">
+        {/* 검색을 맨 위에 두어 스크롤·줄바꿈에 가리지 않게 함 */}
+        <div className="global-header__row global-header__row--search">
+          <SiteSearch />
+        </div>
         <div className="global-header__row global-header__row--top">
           <Link href="/" className="global-header__logo" aria-label={dict.logoAria}>
             <BrandPhrase variant="dark" />
@@ -79,9 +83,6 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
               {dict.nav.botConsole}
             </Link>
           )}
-        </div>
-        <div className="global-header__row global-header__row--search">
-          <SiteSearch />
         </div>
       </nav>
     </header>

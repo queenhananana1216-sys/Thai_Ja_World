@@ -382,6 +382,8 @@ export type Dictionary = {
   /** 글로벌·히어로 경로 검색 */
   search: {
     ariaLabel: string;
+    /** 헤더 검색 옆 짧은 눈에 띄는 라벨 */
+    headerBarLabel: string;
     heroTitle: string;
     /** 홈 포털형 검색 부제 */
     portalLead: string;
@@ -433,7 +435,7 @@ const ko: Dictionary = {
     community: '광장',
     ilchon: '일촌',
     botConsole: '관리자',
-    memberMinihome: '미니홈',
+    memberMinihome: '내 미니홈',
     memberNotesInbox: '받은 신청·쪽지',
     memberFriends: '내 일촌',
     memberQuickNavAria: '회원 빠른 메뉴',
@@ -808,6 +810,7 @@ const ko: Dictionary = {
   },
   search: {
     ariaLabel: '태자 월드 안에서 메뉴·뉴스 검색',
+    headerBarLabel: '통합 검색',
     heroTitle: '무엇을 찾고 계신가요?',
     portalLead:
       '메뉴 경로와 공개 뉴스 제목을 실시간으로 찾아요. 요약·댓글·광장·거래 등 본격적인 읽기와 참여는 로그인 후에만 열려요.',
@@ -864,7 +867,7 @@ const th: Dictionary = {
     community: 'ลานชุมชน',
     ilchon: 'เพื่อน (อิลชอน)',
     botConsole: 'ผู้ดูแล',
-    memberMinihome: 'มินิโฮม',
+    memberMinihome: 'มินิโฮมของฉัน',
     memberNotesInbox: 'คำขอ·ข้อความ',
     memberFriends: 'เพื่อนของฉัน',
     memberQuickNavAria: 'เมนูด่วนสมาชิก',
@@ -1236,6 +1239,7 @@ const th: Dictionary = {
   },
   search: {
     ariaLabel: 'ค้นหาเมนูและข่าวใน Thai Ja World',
+    headerBarLabel: 'ค้นหา',
     heroTitle: 'กำลังมองหาอะไรอยู่?',
     portalLead:
       'ค้นหาเมนูและหัวข้อข่าวที่เปิดเผยแบบเรียลไทม์ การอ่านเต็ม·สรุป·ลิงก์ต้นทาง·ความคิดเห็น — ต้องเข้าสู่ระบบหลังเข้าร่วม',

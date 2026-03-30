@@ -88,6 +88,13 @@ export function htmlToArticlePlainText(html: string): string {
   return text;
 }
 
+function knowledgeFetchUserAgent(): string {
+  const custom = process.env.KNOWLEDGE_FETCH_USER_AGENT?.trim();
+  if (custom) return custom;
+  // หลายสำนักข่าวบล็อกชื่อ bot ชัดเจน — ใช้ UA แบบเบราว์เซอร์เพื่อดึงบทความสาธารณะ (อ่านอย่างเดียว)
+  return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+}
+
 export async function fetchKnowledgeArticlePlainText(urlStr: string): Promise<string | null> {
   if (!isSafeUrlForServerFetch(urlStr)) return null;
 
@@ -100,9 +107,9 @@ export async function fetchKnowledgeArticlePlainText(urlStr: string): Promise<st
       redirect: 'follow',
       signal: ctrl.signal,
       headers: {
-        'User-Agent': 'TaiJaWorld-KnowledgeBot/1.0 (+https://thaijaworld.com)',
-        Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9,ko;q=0.8',
+        'User-Agent': knowledgeFetchUserAgent(),
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'th-TH,th;q=0.95,ko-KR,ko;q=0.9,en-US,en;q=0.85',
       },
     });
     if (!res.ok) return null;

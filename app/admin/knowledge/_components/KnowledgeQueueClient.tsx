@@ -539,7 +539,7 @@ function DraftCard({
       />
 
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
-        태자 편집팀·이용자 안내 <span style={{ fontWeight: 400, color: '#6b7280' }}>(선택, 스텁 요약일 때 권장)</span>
+        태자 편집팀·이용자 안내 <span style={{ fontWeight: 400, color: '#6b7280' }}>(선택 — LLM이 editorial_note로 미리 채울 수 있음, 스텁일 때 필수)</span>
       </label>
       {stubLike ? (
         <p

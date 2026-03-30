@@ -135,7 +135,8 @@ export default async function AdminKnowledgeQueuePage() {
         경우에만 가공 직후 공개 경로를 탈 수 있어요(운영에서는 비권장).
         <br />
         <br />
-        <strong>보드에 게시</strong>는 <strong>최종 승인</strong>이에요. LLM 요약이 스텁(원문 비음)이면{' '}
+        <strong>보드에 게시</strong>는 <strong>최종 승인</strong>이에요. LLM이 정상 가공되면 한국어·태국어 요약·체크리스트가 함께 채워지고, 태자
+        편집톤(<code>editorial_note</code>)까지 넣도록 프롬프트되어 있어요 — 관리자는 오타·톤만 보시면 됩니다. LLM 요약이 스텁(원문 비음)이면{' '}
         <strong>「태자 편집팀·이용자 안내」</strong>에 25자 이상만 적어도 승인할 수 있어요. 즉시 광장 정보 말머리에 올라가고, 비회원용{' '}
         <Link href="/tips" style={{ color: '#2563eb' }}>
           /tips

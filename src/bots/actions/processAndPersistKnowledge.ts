@@ -207,12 +207,18 @@ function shouldFallback(err: unknown): boolean {
 
 // ── 시스템 프롬프트 ───────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are a pragmatic knowledge curator for "Thai Ja World" (Thailand–Korea community).
-Your job: given a Thai/Korea-related web article (title + excerpt + URL), output a structured JSON with practical information.
+const SYSTEM_PROMPT = `You are the editorial desk for "Thai Ja World" (태자 월드) — a Thailand–Korea life community.
+Your job: turn a collected article (title + body excerpt + URL) into publish-ready JSON so a human admin only fixes typos and approves.
+
+BILINGUAL + EDITORIAL (mandatory):
+- Korean (ko.*) and Thai (th.*) must EACH be standalone: a reader who only reads Thai gets full value; never write "see Korean" or paste Korean into Thai fields.
+- Mirror the same facts, tone, and cautions in both languages (natural translation/adaptation, not literal word-for-word if awkward).
+- ko.editorial_note / th.editorial_note: optional but recommended — 1–2 short sentences in the voice of the Thai Ja team ("we think / here's what matters for readers in Thailand"). If the source is thin or uncertain, use these fields to say so clearly in each language.
+- If the excerpt is empty or very short, infer carefully from the title + URL domain + any snippet; set confidence_level=low, explain gaps in cautions and editorial_note, but STILL fill complete ko and th title+summary+checklist+cautions (no placeholders like "TBD").
 
 CRITICAL SAFETY RULES — violating these is unacceptable:
 1. NEVER include PII: phone numbers, physical addresses, personal contact info, account numbers, real names of private individuals, personal identifiers. If present in source, OMIT or generalize.
-2. ALWAYS add legal/official disclaimer in cautions for visa, immigration, or legal topics: "법률 자문이 아닙니다. 실제 비자 신청 전 반드시 대사관·공식 기관에서 확인하세요."
+2. ALWAYS add legal/official disclaimer in cautions for visa, immigration, or legal topics: Korean: "법률 자문이 아닙니다. 실제 비자 신청 전 반드시 대사관·공식 기관에서 확인하세요." Thai: include the equivalent ข้อมูลนี้ไม่ใช่คำแนะนำทางกฎหมาย — โปรดยืนยันกับสถานทูตหรือหน่วยงานทางการเสมอ
 3. NEVER use expressions like "100% 가능", "보장", "확정" for uncertain facts. Use confidence_level=low and strengthen cautions instead.
 4. No exaggeration, no sensationalism, no political bias.
 5. Output ONLY valid JSON — no markdown fences, no extra text outside the JSON.
@@ -234,16 +240,18 @@ OUTPUT STRUCTURE (strict JSON):
   "ko": {
     "title": "클릭을 부르는 호기심 제목(질문·구체 숫자·상황) 가능. 단, 과장·거짓·선정 금지. 출처 사실 범위만. 120자 이내 권장.",
     "summary": "① 맨 앞 1~2문장(총 120~200자): 비회원 피드·꿀팁 허브에 노출되는 '궁금증 훅'. ② 줄바꿈 후 본 요약(실용·체크리스트 보조). 총 300~700자. 불확실하면 '보도에 따르면/공식 확인 필요'.",
+    "editorial_note": "선택. 태자 편집팀이 독자에게 직접 건네는 한두 문장(왜 중요한지·무엇을 챙기면 좋은지). 출처 밖 추측은 쓰지 말 것.",
     "checklist": ["실행 가능한 스텝/체크리스트. PII 금지"],
     "cautions": ["공식확인권장/법률자문아님/불확실성 명시. 비자·법률 관련은 반드시 포함"],
     "tags": ["키워드5~8개. PII 금지"]
   },
   "th": {
-    "title": "자연스러운 태국어 제목",
-    "summary": "태국어 요약 300~600자",
-    "checklist": ["태국어 체크리스트"],
-    "cautions": ["태국어 주의사항. 비자·법률이면 'ข้อมูลนี้ไม่ใช่คำแนะนำทางกฎหมาย' 포함"],
-    "tags": ["태국어 키워드"]
+    "title": "ภาษาไทยธรรมชาติ สั้นกระชับ สะท้อนเนื้อหาเดียวกับหัวข้อภาษาเกาหลี",
+    "summary": "สรุปภาษาไทย 300~700 ตัวอักษร โครงสร้างเดียวกับภาษาเกาหลี (hook แล้วตามด้วยรายละเอียด)",
+    "editorial_note": "optional — 1–2 ประโยค น้ำเสียงทีมบรรณาธิการ Thai Ja ถึงผู้อ่าน",
+    "checklist": ["ภาษาไทย — คู่ขนานกับภาษาเกาหลี"],
+    "cautions": ["ภาษาไทย — คู่ขนานกับภาษาเกาหลี. หัวข้อกฎหมาย/วีซ่า ต้องมีข้อความปฏิเสธคำแนะนำทางกฎหมาย"],
+    "tags": ["แท็กภาษาไทยหรือคีย์เวิร์ด"]
   },
   "board_copy": {
     "category_badge_text": "tips_board면 '꿀팁 한 스푼' 계열, board_board면 '비자·가이드 게시판' 계열",
@@ -253,11 +261,16 @@ OUTPUT STRUCTURE (strict JSON):
 }`;
 
 function buildUserBlock(title: string, body: string | null, sourceUrl: string, retrievedAt: string): string {
+  const excerpt = body?.trim() ?? '';
+  const thin = excerpt.length < 200;
   return [
     `원문 제목: ${title || '(없음)'}`,
-    `원문 발췌(없으면 빈 값): ${body?.trim() || '(없음)'}`,
+    `원문 발췌(없으면 빈 값): ${excerpt || '(없음)'}`,
     `출처 URL: ${sourceUrl}`,
     `수집 시각: ${retrievedAt}`,
+    thin
+      ? '\n[중요] 발췌가 매우 짧거나 없습니다. 제목·URL·도메인·남은 단서만으로 합리적으로 작성하되, 추측은 cautions·editorial_meta.reasons·editorial_note에 분명히 적으세요. 그래도 ko와 th의 title·summary·checklist·cautions는 각각 완전히 채우세요(태국어 필드에 한국어/영어만 복사 금지).'
+      : '',
     '',
     '위 내용을 기반으로 앞서 지시한 JSON 스키마를 정확히 따라 출력하세요.',
     '반드시 JSON 객체만 출력하고 다른 텍스트는 출력하지 마세요.',
@@ -479,18 +492,20 @@ async function insertProcessedKnowledgeFromLlm(
 
   const pid = proc.id as string;
 
+  const koSummaryForStore = [llm.ko.summary, llm.ko.editorial_note].filter(Boolean).join('\n\n').trim();
   const { error: sKo } = await client.from('knowledge_summaries').insert({
     processed_knowledge_id: pid,
-    summary_text: llm.ko.summary,
+    summary_text: koSummaryForStore || llm.ko.summary,
     model: 'ko',
   });
   if (sKo) {
     return { ok: false, raw_knowledge_id: rawId, error: sKo.message };
   }
 
+  const thSummaryForStore = [llm.th.summary, llm.th.editorial_note].filter(Boolean).join('\n\n').trim();
   const { error: sTh } = await client.from('knowledge_summaries').insert({
     processed_knowledge_id: pid,
-    summary_text: llm.th.summary,
+    summary_text: thSummaryForStore || llm.th.summary,
     model: 'th',
   });
   if (sTh) {
@@ -697,8 +712,18 @@ function buildKnowledgeStubLlmOutput(
       title: clampKnowledgePlain(head, 200),
       summary:
         excerpt.length > 0
-          ? '(อัตโนมัติ) มีเนื้อหาต้นฉบับบางส่วนในสรุปภาษาเกาหลี — โปรดเขียนสรุปภาษาไทยก่อนเผยแพร่'
-          : '(อัตโนมัติ) ยังไม่มีเนื้อหาเพียงพอ',
+          ? [
+              'ร่างอัตโนมัติ — เนื้อหาด้านล่างดึงจากต้นฉบับ (อาจเป็นภาษาอังกฤษ) แนะนำให้ในหน้าแอดมินกดปุ่มดึงต้นฉบับแล้วประมวลผลด้วย LLM อีกครั้ง เพื่อให้ได้สรุปภาษาไทยเต็มรูปแบบ',
+              '',
+              clampKnowledgePlain(excerpt, 1000),
+            ].join('\n')
+          : [
+              'ดึงเนื้อหาต้นฉบับไม่สำเร็จหรือบทความสั้นเกินไป',
+              'โปรดเปิดลิงก์แหล่งข้อมูลแล้วตรวจสอบก่อนเผยแพร่',
+              sourceUrl,
+              '',
+              'แนะนำ: ในหน้าแอดมิน ให้กดปุ่มดึงต้นฉบับแล้วประมวลผลด้วย LLM อีกครั้ง หรือตั้งค่า LLM แล้วรัน knowledge cron',
+            ].join('\n'),
       checklist: ['ตรวจสอบจากแหล่งข้อมูลทางการ', visaTh],
       cautions: [visaTh, 'ร่างอัตโนมัติ — ต้องตรวจทานก่อนเผยแพร่'],
       tags: ['Thailand', 'draft'],

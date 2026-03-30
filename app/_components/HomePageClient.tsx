@@ -16,8 +16,23 @@ import type { NewsItem, LocalBusiness } from '@/types/taeworld';
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate, extractHostname } from '@/lib/utils/formatDate';
+import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
 
 const HOME_FETCH_BUDGET_MS = 12_000;
+
+const PORTAL_QUICK_HREFS = [
+  '/',
+  '/tips',
+  '/local',
+  '/community/boards',
+  '/community/boards?cat=info',
+  '/community/trade',
+  '/ilchon',
+  '/minihome',
+] as const;
+
+type PortalQuickHref = (typeof PORTAL_QUICK_HREFS)[number];
+type PortalQuickLink = { href: string; label: string; key: PortalQuickHref };
 
 function loginNextHref(path: string): string {
   return `/auth/login?next=${encodeURIComponent(path)}`;
@@ -216,6 +231,11 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   const guestMemLab = locale === 'th' ? heroSite.guestMemberLabelTh : heroSite.guestMemberLabelKo;
   const guestMemBody = locale === 'th' ? heroSite.guestMemberBodyTh : heroSite.guestMemberBodyKo;
   const guestCta = locale === 'th' ? heroSite.guestLoginCtaTh : heroSite.guestLoginCtaKo;
+  const dreamIntro = locale === 'th' ? heroSite.dreamIntroTh : heroSite.dreamIntroKo;
+  const dreamMinihome = locale === 'th' ? heroSite.dreamMinihomeTh : heroSite.dreamMinihomeKo;
+  const dreamMid = locale === 'th' ? heroSite.dreamMidTh : heroSite.dreamMidKo;
+  const dreamPersonal = locale === 'th' ? heroSite.dreamPersonalTh : heroSite.dreamPersonalKo;
+  const dreamOutro = locale === 'th' ? heroSite.dreamOutroTh : heroSite.dreamOutroKo;
   const tips = useMemo(() => tipEnv(), []);
   const hasTip = Boolean(tips.tg || tips.wa || tips.line || tips.fb || tips.tt);
 
@@ -236,6 +256,17 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
 
   const hotNewsItems = newsLocalized.slice(0, 5);
   const newsShow = newsLocalized.slice(0, 5);
+
+  const portalQuickLinks = useMemo(() => {
+    return PORTAL_QUICK_HREFS.map((href) => {
+      const e = SITE_SEARCH_ENTRIES.find((x) => x.href === href);
+      if (!e) return null;
+      const label = locale === 'th' ? e.thTitle : e.koTitle;
+      const target =
+        href === '/' || href === '/tips' ? href : isLoggedIn ? href : loginNextHref(href);
+      return { href: target, label, key: href };
+    }).filter((x): x is PortalQuickLink => x !== null);
+  }, [isLoggedIn, locale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -316,6 +347,21 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
 
   return (
     <div className="page-body">
+      <section className="home-portal-mast" aria-label={h.portalMastTitle}>
+        <h2 className="home-portal-mast__title">{h.portalMastTitle}</h2>
+        <p className="home-portal-mast__sub">{h.portalMastSub}</p>
+        <div className="home-portal-mast__search">
+          <SiteSearch variant="nate" />
+        </div>
+        <nav className="home-portal-mast__quick" aria-label={h.portalMastQuickAria}>
+          {portalQuickLinks.map((item) => (
+            <Link key={item.key} href={item.href}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </section>
+
       <section className="home-hero" aria-labelledby="home-hero-title">
         <div className="home-hero__intro">
           <p className="home-hero__tag">{heroTag}</p>
@@ -330,18 +376,26 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
             <strong className="home-hero__accent">{heroLeadLine}</strong>
           </p>
           <p className="home-hero__sub">{heroSubBlock}</p>
-          <p id="home-mini-teaser" className="home-hero__dream">
-            {h.dreamIntro}
-            <strong className="home-hero__accent">
-              <Link href={isLoggedIn ? '/minihome' : loginNextHref('/minihome')}>{h.dreamMinihome}</Link>
-            </strong>
-            {h.dreamMid}
-            <strong className="home-hero__accent">{h.dreamPersonal}</strong>
-            {h.dreamOutro}
-          </p>
-        </div>
-        <div className="home-hero__search-row home-hero__search-portal">
-          <SiteSearch variant="portal" />
+          <div className="home-hero__dream-wrap">
+            <p id="home-mini-teaser" className="home-hero__dream">
+              {dreamIntro}
+              {isLoggedIn ? (
+                <strong className="home-hero__dream-inline-label">{dreamMinihome}</strong>
+              ) : (
+                <strong className="home-hero__accent">
+                  <Link href={loginNextHref('/minihome')}>{dreamMinihome}</Link>
+                </strong>
+              )}
+              {dreamMid}
+              <strong className="home-hero__accent">{dreamPersonal}</strong>
+              {dreamOutro}
+            </p>
+            {isLoggedIn ? (
+              <Link href="/minihome" className="home-hero__dream-minihome-btn">
+                {d.nav.memberMinihome}
+              </Link>
+            ) : null}
+          </div>
         </div>
         <div className="hub-tiles">
           <Link

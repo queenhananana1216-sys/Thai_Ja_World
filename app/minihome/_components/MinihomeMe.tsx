@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { mapStyleRpcError } from '@/lib/minihome/styleRpcMessages';
 import { parseTheme, safeAccent } from '@/types/minihome';
 import { useMinihomeOverlay } from './MinihomeOverlay';
 
@@ -23,6 +24,11 @@ type Row = {
   is_public: boolean;
 };
 
+type ProfileRow = {
+  style_score_total: number;
+  signup_greeting_done: boolean;
+};
+
 export default function MinihomeMe() {
   const { d } = useClientLocaleDictionary();
   const labels = d.minihome;
@@ -30,6 +36,7 @@ export default function MinihomeMe() {
   const { open: openOverlay } = useMinihomeOverlay();
   const [loading, setLoading] = useState(true);
   const [row, setRow] = useState<Row | null>(null);
+  const [prof, setProf] = useState<ProfileRow | null>(null);
   const [title, setTitle] = useState('');
   const [tagline, setTagline] = useState('');
   const [intro, setIntro] = useState('');
@@ -38,6 +45,10 @@ export default function MinihomeMe() {
   const [isPublic, setIsPublic] = useState(true);
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [greetBody, setGreetBody] = useState('');
+  const [greetBusy, setGreetBusy] = useState(false);
+  const [greetErr, setGreetErr] = useState<string | null>(null);
+  const [greetJustDone, setGreetJustDone] = useState(false);
 
   const loadRow = useCallback(async () => {
     const sb = createBrowserClient();
@@ -48,26 +59,57 @@ export default function MinihomeMe() {
       router.replace(`/auth/login?next=${encodeURIComponent('/minihome')}`);
       return null;
     }
-    const { data, error } = await sb
-      .from('user_minihomes')
-      .select('owner_id, public_slug, title, tagline, intro_body, theme, is_public')
-      .eq('owner_id', user.id)
-      .maybeSingle();
-    if (error || !data) return null;
+    const q = () =>
+      sb
+        .from('user_minihomes')
+        .select('owner_id, public_slug, title, tagline, intro_body, theme, is_public')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+
+    let { data, error } = await q();
+    if (error) return null;
+
+    if (!data) {
+      const { error: rpcErr } = await sb.rpc('ensure_my_minihome');
+      if (rpcErr) return null;
+      ({ data, error } = await q());
+      if (error || !data) return null;
+    }
+
     return data as Row;
   }, [router]);
+
+  const loadProfile = useCallback(async () => {
+    const sb = createBrowserClient();
+    const {
+      data: { user },
+    } = await sb.auth.getUser();
+    if (!user) return null;
+    const { data, error } = await sb
+      .from('profiles')
+      .select('style_score_total, signup_greeting_done')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (error || !data) return null;
+    return {
+      style_score_total: typeof data.style_score_total === 'number' ? data.style_score_total : 0,
+      signup_greeting_done: Boolean(data.signup_greeting_done),
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const data = await loadRow();
+      const [data, p] = await Promise.all([loadRow(), loadProfile()]);
       if (cancelled) return;
       if (!data) {
         setRow(null);
+        setProf(null);
         setLoading(false);
         return;
       }
       setRow(data);
+      setProf(p);
       setTitle(data.title ?? '');
       setTagline(data.tagline ?? '');
       setIntro(data.intro_body ?? '');
@@ -80,7 +122,7 @@ export default function MinihomeMe() {
     return () => {
       cancelled = true;
     };
-  }, [loadRow]);
+  }, [loadRow, loadProfile]);
 
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
@@ -95,11 +137,16 @@ export default function MinihomeMe() {
       setSaveBusy(false);
       return;
     }
+    const { data: fresh } = await sb.from('user_minihomes').select('theme').eq('owner_id', user.id).maybeSingle();
+    const prev = parseTheme(fresh?.theme);
     const nextTheme: Record<string, string> = {
       accent: safeAccent(accent, DEFAULT_ACCENT),
     };
     if (wallpaperUrl.trim()) {
       nextTheme.wallpaper = wallpaperUrl.trim();
+    }
+    if (prev.minimi) {
+      nextTheme.minimi = prev.minimi;
     }
     const { error } = await sb
       .from('user_minihomes')
@@ -121,10 +168,29 @@ export default function MinihomeMe() {
     if (next) setRow(next);
   }
 
+  async function onGreetSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setGreetErr(null);
+    setGreetBusy(true);
+    const sb = createBrowserClient();
+    const { error } = await sb.rpc('style_complete_signup_greeting', { p_body: greetBody });
+    setGreetBusy(false);
+    if (error) {
+      setGreetErr(mapStyleRpcError(error.message, labels));
+      return;
+    }
+    setGreetJustDone(true);
+    setGreetBody('');
+    const p = await loadProfile();
+    setProf(p);
+    const next = await loadRow();
+    if (next) setRow(next);
+  }
+
   if (loading) {
     return (
       <div className="page-body board-page">
-        <p style={{ margin: 0, color: 'var(--tj-muted)' }}>…</p>
+        <p style={{ margin: 0, color: 'var(--tj-muted)' }}>{labels.loadingMark}</p>
       </div>
     );
   }
@@ -140,11 +206,22 @@ export default function MinihomeMe() {
     );
   }
 
+  const score = prof?.style_score_total ?? null;
+  const showGreet = prof && !prof.signup_greeting_done;
+
   return (
     <div className="page-body board-page">
       <div className="board-toolbar">
         <h1 className="board-title">{labels.pageTitle}</h1>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          {score !== null ? (
+            <span className="minihome-style-score-pill" style={{ fontSize: '0.82rem', fontWeight: 700 }}>
+              {labels.styleScoreLabel} {score}
+            </span>
+          ) : null}
+          <Link href="/minihome/shop" className="board-form__submit" style={{ textAlign: 'center' }}>
+            {labels.styleShopNav}
+          </Link>
           <button
             type="button"
             className="board-form__submit"
@@ -165,6 +242,39 @@ export default function MinihomeMe() {
       <p style={{ margin: '0 0 18px', lineHeight: 1.55, color: 'var(--tj-muted)', fontSize: '0.9rem' }}>
         {labels.yourSpace}
       </p>
+
+      {showGreet ? (
+        <div className="card minihome-greet-card" style={{ padding: 18, marginBottom: 22 }}>
+          <h2 className="minihome-edit-form__h" style={{ marginTop: 0 }}>
+            {labels.greetCardTitle}
+          </h2>
+          <p style={{ margin: '0 0 12px', fontSize: '0.88rem', lineHeight: 1.55, color: 'var(--tj-muted)' }}>
+            {labels.greetCardLead}
+          </p>
+          <form className="board-form" onSubmit={(e) => void onGreetSubmit(e)} style={{ gap: 10 }}>
+            <textarea
+              value={greetBody}
+              onChange={(e) => setGreetBody(e.target.value)}
+              rows={3}
+              maxLength={2000}
+              placeholder={labels.greetPlaceholder}
+            />
+            {greetErr ? <p className="auth-inline-error">{greetErr}</p> : null}
+            <button type="submit" className="board-form__submit" disabled={greetBusy}>
+              {greetBusy ? labels.greetSubmitting : labels.greetSubmit}
+            </button>
+          </form>
+        </div>
+      ) : greetJustDone ? (
+        <div className="card" style={{ padding: 14, marginBottom: 22, background: 'rgba(237, 233, 254, 0.45)' }}>
+          <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.5 }}>
+            <strong>{labels.greetDone}</strong> {labels.greetThanks}
+          </p>
+          <Link href="/minihome/shop" style={{ display: 'inline-block', marginTop: 10, color: 'var(--tj-link)' }}>
+            {labels.styleShopNav} →
+          </Link>
+        </div>
+      ) : null}
 
       <form className="board-form minihome-edit-form" onSubmit={(e) => void onSave(e)}>
         <h2 className="minihome-edit-form__h">{labels.editSectionTitle}</h2>

@@ -1,6 +1,8 @@
 export type MinihomeTheme = {
   accent?: string;
   wallpaper?: string;
+  /** 스타일 상점 미니미(이모지 등) */
+  minimi?: string;
 };
 
 export type MinihomePublicRow = {
@@ -27,9 +29,11 @@ export function parseTheme(raw: unknown): MinihomeTheme {
   const o = raw as Record<string, unknown>;
   const accent = o.accent;
   const wallpaper = o.wallpaper;
+  const minimi = o.minimi;
   return {
     accent: typeof accent === 'string' ? accent : undefined,
     wallpaper: typeof wallpaper === 'string' ? wallpaper : undefined,
+    minimi: typeof minimi === 'string' && minimi.trim() ? minimi.trim().slice(0, 32) : undefined,
   };
 }
 

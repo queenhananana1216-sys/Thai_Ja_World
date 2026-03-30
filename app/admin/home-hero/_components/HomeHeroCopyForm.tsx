@@ -41,6 +41,16 @@ export function HomeHeroCopyForm({
   const [hotLabTh, setHotLabTh] = useState(initial['home_hot_label:th'] ?? '');
   const [hotFootKo, setHotFootKo] = useState(initial['home_hot_footnote:ko'] ?? '');
   const [hotFootTh, setHotFootTh] = useState(initial['home_hot_footnote:th'] ?? '');
+  const [dreamIntroKo, setDreamIntroKo] = useState(initial['home_dream_intro:ko'] ?? '');
+  const [dreamIntroTh, setDreamIntroTh] = useState(initial['home_dream_intro:th'] ?? '');
+  const [dreamMiniKo, setDreamMiniKo] = useState(initial['home_dream_minihome:ko'] ?? '');
+  const [dreamMiniTh, setDreamMiniTh] = useState(initial['home_dream_minihome:th'] ?? '');
+  const [dreamMidKo, setDreamMidKo] = useState(initial['home_dream_mid:ko'] ?? '');
+  const [dreamMidTh, setDreamMidTh] = useState(initial['home_dream_mid:th'] ?? '');
+  const [dreamPersKo, setDreamPersKo] = useState(initial['home_dream_personal:ko'] ?? '');
+  const [dreamPersTh, setDreamPersTh] = useState(initial['home_dream_personal:th'] ?? '');
+  const [dreamOutKo, setDreamOutKo] = useState(initial['home_dream_outro:ko'] ?? '');
+  const [dreamOutTh, setDreamOutTh] = useState(initial['home_dream_outro:th'] ?? '');
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -84,6 +94,16 @@ export function HomeHeroCopyForm({
             { key: 'home_hot_label', locale: 'th', value: hotLabTh },
             { key: 'home_hot_footnote', locale: 'ko', value: hotFootKo },
             { key: 'home_hot_footnote', locale: 'th', value: hotFootTh },
+            { key: 'home_dream_intro', locale: 'ko', value: dreamIntroKo },
+            { key: 'home_dream_intro', locale: 'th', value: dreamIntroTh },
+            { key: 'home_dream_minihome', locale: 'ko', value: dreamMiniKo },
+            { key: 'home_dream_minihome', locale: 'th', value: dreamMiniTh },
+            { key: 'home_dream_mid', locale: 'ko', value: dreamMidKo },
+            { key: 'home_dream_mid', locale: 'th', value: dreamMidTh },
+            { key: 'home_dream_personal', locale: 'ko', value: dreamPersKo },
+            { key: 'home_dream_personal', locale: 'th', value: dreamPersTh },
+            { key: 'home_dream_outro', locale: 'ko', value: dreamOutKo },
+            { key: 'home_dream_outro', locale: 'th', value: dreamOutTh },
           ],
         }),
       });
@@ -192,6 +212,106 @@ export function HomeHeroCopyForm({
             className="admin-home-hero-form__textarea"
           />
         </label>
+      </fieldset>
+
+      <fieldset className="admin-home-hero-form__fieldset">
+        <legend>히어로 — 미니홈 티저(연한 박스 한 줄)</legend>
+        <p className="admin-home-hero-form__hint" style={{ marginTop: 0 }}>
+          문장을 여러 칸으로 나눠 두었어요. «미니홈» 구간은 비로그인 시 로그인으로 이어지는 링크, 로그인 시에는 옆에 버튼이
+          따로 보입니다.
+        </p>
+        <label>
+          앞부분 · 한국어
+          <textarea
+            value={dreamIntroKo}
+            onChange={(e) => setDreamIntroKo(e.target.value)}
+            maxLength={1200}
+            rows={2}
+            className="admin-home-hero-form__textarea"
+          />
+        </label>
+        <label>
+          ส่วนต้น · ไทย
+          <textarea
+            value={dreamIntroTh}
+            onChange={(e) => setDreamIntroTh(e.target.value)}
+            maxLength={1200}
+            rows={2}
+            className="admin-home-hero-form__textarea"
+          />
+        </label>
+        <label>
+          미니홈 링크 문구 · 한국어
+          <input value={dreamMiniKo} onChange={(e) => setDreamMiniKo(e.target.value)} maxLength={1200} />
+        </label>
+        <label>
+          ข้อความลิงก์มินิโฮม · ไทย
+          <input value={dreamMiniTh} onChange={(e) => setDreamMiniTh(e.target.value)} maxLength={1200} />
+        </label>
+        <label>
+          중간 · 한국어
+          <textarea
+            value={dreamMidKo}
+            onChange={(e) => setDreamMidKo(e.target.value)}
+            maxLength={1200}
+            rows={2}
+            className="admin-home-hero-form__textarea"
+          />
+        </label>
+        <label>
+          กลาง · ไทย
+          <textarea
+            value={dreamMidTh}
+            onChange={(e) => setDreamMidTh(e.target.value)}
+            maxLength={1200}
+            rows={2}
+            className="admin-home-hero-form__textarea"
+          />
+        </label>
+        <label>
+          강조 한 줄 · 한국어
+          <textarea
+            value={dreamPersKo}
+            onChange={(e) => setDreamPersKo(e.target.value)}
+            maxLength={1200}
+            rows={2}
+            className="admin-home-hero-form__textarea"
+          />
+        </label>
+        <label>
+          บรรทัดเน้น · ไทย
+          <textarea
+            value={dreamPersTh}
+            onChange={(e) => setDreamPersTh(e.target.value)}
+            maxLength={1200}
+            rows={2}
+            className="admin-home-hero-form__textarea"
+          />
+        </label>
+        <label>
+          마무리 · 한국어
+          <textarea
+            value={dreamOutKo}
+            onChange={(e) => setDreamOutKo(e.target.value)}
+            maxLength={1200}
+            rows={2}
+            className="admin-home-hero-form__textarea"
+          />
+        </label>
+        <label>
+          ท้าย · ไทย
+          <textarea
+            value={dreamOutTh}
+            onChange={(e) => setDreamOutTh(e.target.value)}
+            maxLength={1200}
+            rows={2}
+            className="admin-home-hero-form__textarea"
+          />
+        </label>
+        <p className="admin-home-hero-form__hint">
+          기본 한국어 순서: «{defaultsHint.dreamIntroKo}» + 링크 «{defaultsHint.dreamMinihomeKo}» + «
+          {defaultsHint.dreamMidKo}» + 강조 «{defaultsHint.dreamPersonalKo}» + «{defaultsHint.dreamOutroKo}»
+        </p>
       </fieldset>
 
       <fieldset className="admin-home-hero-form__fieldset">

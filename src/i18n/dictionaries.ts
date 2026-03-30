@@ -6,6 +6,8 @@ import type { Locale } from './types';
 export type Dictionary = {
   nav: {
     home: string;
+    /** 공개 꿀팁 허브 (/tips) */
+    tips: string;
     local: string;
     community: string;
     /** 일촌 받은함 */
@@ -18,6 +20,8 @@ export type Dictionary = {
     /** 맺은 일촌 목록 */
     memberFriends: string;
     memberQuickNavAria: string;
+    /** 글로벌 헤더 하단 주요 링크 줄 */
+    mainNavAria: string;
   };
   brandSuffix: string;
   logoAria: string;
@@ -34,6 +38,10 @@ export type Dictionary = {
     heroLead: string;
     /** 히어로 서브 설명 — 줄바꿈은 \\n */
     heroSub: string;
+    /** 홈 최상단 포털형 검색 띠 제목 */
+    portalMastTitle: string;
+    portalMastSub: string;
+    portalMastQuickAria: string;
     dreamIntro: string;
     dreamMinihome: string;
     dreamMid: string;
@@ -131,6 +139,19 @@ export type Dictionary = {
     newsDetailGuestNote: string;
     /** 비회원 — 본문(요약·편집 노트·원문) 잠금 안내 */
     newsDetailLockedLead: string;
+  };
+  /** 비회원 공개 꿀팁 허브 — 본문·출처는 로그인 후 광장 */
+  tips: {
+    pageTitle: string;
+    pageLead: string;
+    openCard: string;
+    detailLockedLead: string;
+    loginForFull: string;
+    signupForFull: string;
+    goLogin: string;
+    goSignup: string;
+    empty: string;
+    backToList: string;
   };
   board: {
     pageTitle: string;
@@ -336,6 +357,42 @@ export type Dictionary = {
     cyIntroEmpty: string;
     /** 내 미니홈 설정 화면 안내 */
     previewPanelsHint: string;
+    /** 스타일 점수·가입 인사·상점 */
+    styleScoreLabel: string;
+    styleShopNav: string;
+    greetCardTitle: string;
+    greetCardLead: string;
+    greetPlaceholder: string;
+    greetSubmit: string;
+    greetSubmitting: string;
+    greetDone: string;
+    greetThanks: string;
+    styleShopTitle: string;
+    styleShopLead: string;
+    styleShopBalance: string;
+    styleShopCatSkin: string;
+    styleShopCatMinimi: string;
+    styleShopBuy: string;
+    styleShopEquip: string;
+    styleShopOwned: string;
+    styleShopNeedPoints: string;
+    styleShopPurchased: string;
+    styleShopEquipped: string;
+    styleShopLoadError: string;
+    styleShopEmpty: string;
+    styleRpcNotAuth: string;
+    styleRpcGreetingDone: string;
+    styleRpcGreetingShort: string;
+    styleRpcGreetingLong: string;
+    styleRpcNoItem: string;
+    styleRpcOwned: string;
+    styleRpcPoor: string;
+    styleRpcNotOwned: string;
+    styleRpcGeneric: string;
+    /** 로딩 자리 표시(한·태 동일 문자 권장) */
+    loadingMark: string;
+    /** 숫자 없음·대기(한·태 동일 문자 권장) */
+    emDash: string;
   };
   /** 싸이 스타일 일촌 신청·수락·목록 */
   ilchon: {
@@ -431,6 +488,7 @@ export type Dictionary = {
 const ko: Dictionary = {
   nav: {
     home: '홈',
+    tips: '꿀팁',
     local: '로컬',
     community: '광장',
     ilchon: '일촌',
@@ -439,6 +497,7 @@ const ko: Dictionary = {
     memberNotesInbox: '받은 신청·쪽지',
     memberFriends: '내 일촌',
     memberQuickNavAria: '회원 빠른 메뉴',
+    mainNavAria: '주요 메뉴',
   },
   brandSuffix: '월드',
   logoAria: '태국에 살자 월드 홈',
@@ -454,6 +513,9 @@ const ko: Dictionary = {
     heroLead: '막히면 여기서부터',
     heroSub:
       '집·비자·병원비처럼 막히는 일, 겪은 걸 나누면 다음 사람한테 닿아요.\n홍보보다 팁·주의·정리를 먼저 — 가볍게 올려도 돼요.\n필요할 때만 들러도 괜찮아요.',
+    portalMastTitle: '태자 월드 통합 검색',
+    portalMastSub: '메뉴·뉴스·경로를 한 번에 — 로컬 포털처럼 쓰는 홈',
+    portalMastQuickAria: '자주 찾는 메뉴',
     dreamIntro: '지금 쓸 수 있어요 · ',
     dreamMinihome: '미니홈으로 ',
     dreamMid: '내 방, 내 규칙. ',
@@ -551,6 +613,20 @@ const ko: Dictionary = {
       '요약·편집 노트·원문 링크·댓글은 로그인(또는 가입) 후에 이용할 수 있어요. 광장·거래·미니홈 등도 회원 전용이에요.',
     newsDetailLockedLead:
       '아래부터는 회원에게만 보이는 정리·출처·댓글입니다. 로그인하면 이어서 읽고 참여할 수 있어요.',
+  },
+  tips: {
+    pageTitle: '태국 생활 꿀팁',
+    pageLead:
+      '짧은 훅만 미리 보여 드려요. 체크리스트·주의사항·출처 링크는 로그인(또는 가입) 후 광장에서 전체로 열립니다.',
+    openCard: '자세히',
+    detailLockedLead:
+      '요약·체크리스트·원문 출처는 회원에게만 공개돼요. 가입하면 광장 정보 게시판에서 같은 글을 끝까지 볼 수 있어요.',
+    loginForFull: '로그인하고 전체·출처 보기',
+    signupForFull: '가입하고 전체·출처 보기',
+    goLogin: '로그인',
+    goSignup: '회원가입',
+    empty: '아직 올라온 꿀팁이 없어요. 곧 채워질 거예요.',
+    backToList: '꿀팁 목록',
   },
   board: {
     pageTitle: '광장 게시판',
@@ -765,6 +841,40 @@ const ko: Dictionary = {
     cyIntroEmpty: '메인룸 소개 글이 아직 없어요.',
     previewPanelsHint:
       '미리보기·공개 페이지에서 왼쪽 메뉴로 일촌평·방명록·사진첩 창을 열고 닫을 수 있어요. (싸이 스타일 플로팅 창)',
+    styleScoreLabel: '스타일 점수',
+    styleShopNav: '스타일 상점',
+    greetCardTitle: '가입 인사 한 줄',
+    greetCardLead:
+      '내 미니홈 방명록에 첫 인사를 남기면 스타일 점수를 드려요. 그 점수로 스킨·미니미를 살 수 있어요.',
+    greetPlaceholder: '예: 태국에서 잘 지낼게요. 반가워요!',
+    greetSubmit: '인사 남기고 점수 받기',
+    greetSubmitting: '처리 중…',
+    greetDone: '가입 인사를 완료했어요.',
+    greetThanks: '스타일 점수가 지급됐어요. 아래 상점에서 꾸밈 아이템을 사 보세요.',
+    styleShopTitle: '미니홈 스타일 상점',
+    styleShopLead: '스타일 점수로 방 분위기(포인트 색)와 미니미를 살 수 있어요. 구매 즉시 내 미니홈에 적용돼요.',
+    styleShopBalance: '보유 점수',
+    styleShopCatSkin: '룸 스킨',
+    styleShopCatMinimi: '미니미',
+    styleShopBuy: '구매',
+    styleShopEquip: '장착',
+    styleShopOwned: '보유 중',
+    styleShopNeedPoints: '점수가 부족해요.',
+    styleShopPurchased: '구매했어요. 미니홈에서 확인해 보세요.',
+    styleShopEquipped: '장착했어요.',
+    styleShopLoadError: '상점 목록을 불러오지 못했어요.',
+    styleShopEmpty: '이 카테고리에 상품이 아직 없어요.',
+    styleRpcNotAuth: '로그인이 필요해요.',
+    styleRpcGreetingDone: '이미 가입 인사 보상을 받았어요.',
+    styleRpcGreetingShort: '인사말을 조금만 더 길게 써 주세요.',
+    styleRpcGreetingLong: '인사말이 너무 길어요.',
+    styleRpcNoItem: '없는 상품이에요.',
+    styleRpcOwned: '이미 구매한 아이템이에요.',
+    styleRpcPoor: '스타일 점수가 부족해요.',
+    styleRpcNotOwned: '아직 사지 않은 아이템이에요.',
+    styleRpcGeneric: '처리 중 문제가 났어요. 잠시 후 다시 시도해 주세요.',
+    loadingMark: '…',
+    emDash: '—',
   },
   ilchon: {
     pageTitle: '일촌',
@@ -863,6 +973,7 @@ const ko: Dictionary = {
 const th: Dictionary = {
   nav: {
     home: 'หน้าแรก',
+    tips: 'ทิปส์',
     local: 'ร้านท้องถิ่น',
     community: 'ลานชุมชน',
     ilchon: 'เพื่อน (อิลชอน)',
@@ -871,6 +982,7 @@ const th: Dictionary = {
     memberNotesInbox: 'คำขอ·ข้อความ',
     memberFriends: 'เพื่อนของฉัน',
     memberQuickNavAria: 'เมนูด่วนสมาชิก',
+    mainNavAria: 'เมนูหลัก',
   },
   brandSuffix: 'เวิลด์',
   logoAria: 'Thai Ja World — หน้าแรก',
@@ -886,6 +998,9 @@ const th: Dictionary = {
     heroLead: 'ติดขัดตรงไหน — เริ่มที่นี่',
     heroSub:
       'บ้าน·วีซ่า·ค่ารพ ที่ติดขัด แชร์ประสบการณ์แล้วคนถัดไปได้ประโยชน์\nเน้นช่วยเหลือ·ข้อควรระวัง·สรุป มากกว่าโฆษณา — โพสต์สั้นๆ ก็ได้\nอยากเข้ามาตอนไหนก็ได้',
+    portalMastTitle: 'ค้นหา Thai Ja World',
+    portalMastSub: 'เมนู·ข่าว·พาธในที่เดียว — หน้าแรกแบบพอร์ทัล',
+    portalMastQuickAria: 'ทางลัดเมนูยอดนิยม',
     dreamIntro: 'ใช้ได้แล้วตอนนี้ · ',
     dreamMinihome: 'ไปมินิโฮม ',
     dreamMid: 'ห้องของฉัน กฎของฉัน ',
@@ -983,6 +1098,20 @@ const th: Dictionary = {
       'สรุปเต็ม·ลิงก์ต้นทาง·ความคิดเห็น — ใช้ได้หลังเข้าสู่ระบบหรือสมัคร บอร์ด·ซื้อขาย·มินิโฮมก็เฉพาะสมาชิก',
     newsDetailLockedLead:
       'ด้านล่างนี้เป็นสรุป·แหล่งที่มา·ความคิดเห็นสำหรับสมาชิก — เข้าสู่ระบบเพื่ออ่านต่อและร่วมพูดคุย',
+  },
+  tips: {
+    pageTitle: 'ทิปส์ชีวิตในไทย',
+    pageLead:
+      'แสดงเฉพาะหัวข้อกับคำโปรยสั้นๆ รายการเช็ก·ข้อควรระวัง·ลิงก์แหล่งข่าว — ดูเต็มได้หลังเข้าสู่ระบบหรือสมัครที่บอร์ดข้อมูลในลานชุมชน',
+    openCard: 'ดูต่อ',
+    detailLockedLead:
+      'สรุปเต็ม·เช็กลิสต์·ลิงก์ต้นทาง — สำหรับสมาชิกเท่านั้น สมัครแล้วเปิดโพสต์เดิมในบอร์ดได้ครบ',
+    loginForFull: 'เข้าสู่ระบบเพื่ออ่านเต็ม·ลิงก์',
+    signupForFull: 'สมัครเพื่ออ่านเต็ม·ลิงก์',
+    goLogin: 'เข้าสู่ระบบ',
+    goSignup: 'สมัครสมาชิก',
+    empty: 'ยังไม่มีทิปส์ — เร็วๆ นี้จะเพิ่ม',
+    backToList: 'กลับรายการทิปส์',
   },
   board: {
     pageTitle: 'บอร์ดลานชุมชน',
@@ -1194,6 +1323,40 @@ const th: Dictionary = {
     cyIntroEmpty: 'ยังไม่มีข้อความแนะนำในห้องหลัก',
     previewPanelsHint:
       'ตัวอย่าง/หน้าสาธารณะ — เปิด-ปิด ทักทาย·สมุดเยี่ยม·อัลบั้ม จากเมนูซ้าย (สไตล์หน้าต่างลอยแบบไซเวิลด์)',
+    styleScoreLabel: 'สไตล์พอยต์',
+    styleShopNav: 'ร้านสไตล์',
+    greetCardTitle: 'ทักทายครั้งแรก',
+    greetCardLead:
+      'ทิ้งข้อความทักทายในสมุดเยี่ยมมินิโฮมของคุณ รับสไตล์พอยต์ — ใช้ซื้อสกินห้องหรือมินิมีได้',
+    greetPlaceholder: 'เช่น สวัสดีค่ะ/ครับ ยินดีที่ได้รู้จัก',
+    greetSubmit: 'ส่งทักทายและรับพอยต์',
+    greetSubmitting: 'กำลังดำเนินการ…',
+    greetDone: 'ทักทายต้อนรับเสร็จแล้ว',
+    greetThanks: 'ได้รับสไตล์พอยต์แล้ว ลองซื้อไอเท็มแต่งมินิโฮมได้ด้านล่าง',
+    styleShopTitle: 'ร้านสไตล์มินิโฮม',
+    styleShopLead: 'ใช้พอยต์ซื้อโทนสีห้องและมินิมี — ซื้อแล้วใช้กับมินิโฮมทันที',
+    styleShopBalance: 'พอยต์คงเหลือ',
+    styleShopCatSkin: 'สกินห้อง',
+    styleShopCatMinimi: 'มินิมี',
+    styleShopBuy: 'ซื้อ',
+    styleShopEquip: 'สวมใส่',
+    styleShopOwned: 'มีแล้ว',
+    styleShopNeedPoints: 'พอยต์ไม่พอ',
+    styleShopPurchased: 'ซื้อแล้ว — ดูที่มินิโฮมได้เลย',
+    styleShopEquipped: 'สวมใส่แล้ว',
+    styleShopLoadError: 'โหลดร้านไม่สำเร็จ',
+    styleShopEmpty: 'ยังไม่มีสินค้าในหมวดนี้',
+    styleRpcNotAuth: 'ต้องล็อกอินก่อน',
+    styleRpcGreetingDone: 'รับรางวัลทักทายไปแล้ว',
+    styleRpcGreetingShort: 'พิมพ์ข้อความให้ยาวขึ้นอีกนิด',
+    styleRpcGreetingLong: 'ข้อความยาวเกินไป',
+    styleRpcNoItem: 'ไม่มีสินค้านี้',
+    styleRpcOwned: 'ซื้อไปแล้ว',
+    styleRpcPoor: 'พอยต์ไม่พอ',
+    styleRpcNotOwned: 'ยังไม่ได้ซื้อสินค้านี้',
+    styleRpcGeneric: 'มีข้อผิดพลาด ลองใหม่ภายหลัง',
+    loadingMark: '…',
+    emDash: '—',
   },
   ilchon: {
     pageTitle: 'เพื่อน (อิลชอน)',

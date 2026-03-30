@@ -88,6 +88,7 @@ export default function MinihomeRoomView({
   const accent = safeAccent(theme.accent, FALLBACK_ACCENT);
   const modules = parseLayoutModules(data.layout_modules);
   const wallpaper = theme.wallpaper?.trim();
+  const minimi = theme.minimi?.trim();
 
   const [winGuest, setWinGuest] = useState(false);
   const [winVisitor, setWinVisitor] = useState(false);
@@ -339,6 +340,11 @@ export default function MinihomeRoomView({
               {data.title ?? data.public_slug}
             </h1>
             {data.tagline ? <p className="minihome-room__tagline">{data.tagline}</p> : null}
+            {minimi ? (
+              <div className="minihome-room__minimi" aria-hidden>
+                {minimi}
+              </div>
+            ) : null}
           </header>
 
           {showIntro ? (
@@ -405,7 +411,7 @@ export default function MinihomeRoomView({
           closeLabel={labels.cyWindowClose}
         >
           {gbLoading ? (
-            <p className="minihome-cy-win__muted">…</p>
+            <p className="minihome-cy-win__muted">{labels.loadingMark}</p>
           ) : !gbRows?.length ? (
             <>
               <p className="minihome-cy-win__muted">{labels.cyGuestbookEmpty}</p>
@@ -435,7 +441,7 @@ export default function MinihomeRoomView({
           closeLabel={labels.cyWindowClose}
         >
           {gbLoading ? (
-            <p className="minihome-cy-win__muted">…</p>
+            <p className="minihome-cy-win__muted">{labels.loadingMark}</p>
           ) : !visitorOrder.length ? (
             <>
               <p className="minihome-cy-win__muted">{labels.cyVisitorEmpty}</p>

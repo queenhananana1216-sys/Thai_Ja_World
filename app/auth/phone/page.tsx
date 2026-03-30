@@ -44,9 +44,12 @@ function PhoneAuthForm() {
   const [hp, setHp] = useState('');
   const [turnstileKey, setTurnstileKey] = useState(0);
   const turnstileTokenRef = useRef<string | null>(null);
+  const smsInFlightRef = useRef(false);
+  const resendInFlightRef = useRef(false);
 
   async function sendSms(e: FormEvent) {
     e.preventDefault();
+    if (smsInFlightRef.current) return;
     setError(null);
 
     if (hp.trim() !== '') {
@@ -80,35 +83,41 @@ function PhoneAuthForm() {
       return;
     }
 
+    smsInFlightRef.current = true;
     setLoading(true);
-    const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
-    const { error: err } = await sb.auth.signInWithOtp({
-      phone: normalized.e164,
-      options: {
-        shouldCreateUser: true,
-        data: {
-          display_name: displayName.trim() || undefined,
+    try {
+      const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
+      const { error: err } = await sb.auth.signInWithOtp({
+        phone: normalized.e164,
+        options: {
+          shouldCreateUser: true,
+          data: {
+            display_name: displayName.trim() || undefined,
+          },
+          ...captchaOpts,
         },
-        ...captchaOpts,
-      },
-    });
-    setLoading(false);
+      });
 
-    if (err) {
-      const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
-      if (remountTurnstile) {
-        turnstileTokenRef.current = null;
-        setTurnstileKey((k) => k + 1);
+      if (err) {
+        const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
+        if (remountTurnstile) {
+          turnstileTokenRef.current = null;
+          setTurnstileKey((k) => k + 1);
+        }
+        setError(message);
+        return;
       }
-      setError(message);
-      return;
+      setE164(normalized.e164);
+      setStep('otp');
+    } finally {
+      smsInFlightRef.current = false;
+      setLoading(false);
     }
-    setE164(normalized.e164);
-    setStep('otp');
   }
 
   async function verifyCode(e: FormEvent) {
     e.preventDefault();
+    if (smsInFlightRef.current) return;
     setError(null);
 
     const code = otp.replace(/\D/g, '');
@@ -123,23 +132,29 @@ function PhoneAuthForm() {
       return;
     }
 
+    smsInFlightRef.current = true;
     setLoading(true);
-    const { error: err } = await sb.auth.verifyOtp({
-      phone: e164,
-      token: code,
-      type: 'sms',
-    });
-    setLoading(false);
+    try {
+      const { error: err } = await sb.auth.verifyOtp({
+        phone: e164,
+        token: code,
+        type: 'sms',
+      });
 
-    if (err) {
-      setError(err.message);
-      return;
+      if (err) {
+        setError(err.message);
+        return;
+      }
+      router.push(safeNext);
+      router.refresh();
+    } finally {
+      smsInFlightRef.current = false;
+      setLoading(false);
     }
-    router.push(safeNext);
-    router.refresh();
   }
 
   async function resendSms() {
+    if (resendInFlightRef.current || loading) return;
     setError(null);
     const captcha = await verifyTurnstileOnSubmit(HAS_TURNSTILE_UI, turnstileTokenRef.current);
     if (!captcha.ok) {
@@ -156,20 +171,25 @@ function PhoneAuthForm() {
       setError(a.phoneAuthNoSupabase);
       return;
     }
+    resendInFlightRef.current = true;
     setLoading(true);
-    const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
-    const { error: err } = await sb.auth.signInWithOtp({
-      phone: e164,
-      options: { shouldCreateUser: true, ...captchaOpts },
-    });
-    setLoading(false);
-    if (err) {
-      const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
-      if (remountTurnstile) {
-        turnstileTokenRef.current = null;
-        setTurnstileKey((k) => k + 1);
+    try {
+      const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
+      const { error: err } = await sb.auth.signInWithOtp({
+        phone: e164,
+        options: { shouldCreateUser: true, ...captchaOpts },
+      });
+      if (err) {
+        const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
+        if (remountTurnstile) {
+          turnstileTokenRef.current = null;
+          setTurnstileKey((k) => k + 1);
+        }
+        setError(message);
       }
-      setError(message);
+    } finally {
+      resendInFlightRef.current = false;
+      setLoading(false);
     }
   }
 

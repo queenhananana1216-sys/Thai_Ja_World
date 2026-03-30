@@ -112,11 +112,15 @@ export default async function AdminKnowledgeQueuePage() {
       raw_title: rawTitle,
       ko_title: ko?.title?.trim() || rawTitle,
       ko_summary: ko?.summary?.trim() || '',
+      ko_editorial_note:
+        typeof ko?.editorial_note === 'string' ? ko.editorial_note.trim() : '',
       ko_checklist: Array.isArray(ko?.checklist) ? ko!.checklist.map((x) => String(x)) : [],
       ko_cautions: Array.isArray(ko?.cautions) ? ko!.cautions.map((x) => String(x)) : [],
       ko_tags: Array.isArray(ko?.tags) ? ko!.tags.map((x) => String(x)).slice(0, 8) : [],
       th_title: th?.title?.trim() || '',
       th_summary: th?.summary?.trim() || '',
+      th_editorial_note:
+        typeof th?.editorial_note === 'string' ? th.editorial_note.trim() : '',
       confidence_level: llm?.editorial_meta?.confidence_level ?? 'medium',
       novelty_score: llm?.editorial_meta?.novelty_score ?? 50,
       usefulness_score: llm?.editorial_meta?.usefulness_score ?? 50,
@@ -131,8 +135,19 @@ export default async function AdminKnowledgeQueuePage() {
         경우에만 가공 직후 공개 경로를 탈 수 있어요(운영에서는 비권장).
         <br />
         <br />
-        <strong>공개 보드에 게시</strong>를 누르면 광장 <code>posts</code>로 올라가고, 숨김·초안 저장 시 노출만
-        끕니다. 비어 있으면{' '}
+        <strong>보드에 게시</strong>는 <strong>최종 승인</strong>이에요. LLM 요약이 스텁(원문 비음)이면{' '}
+        <strong>「태자 편집팀·이용자 안내」</strong>에 25자 이상만 적어도 승인할 수 있어요. 즉시 광장 정보 말머리에 올라가고, 비회원용{' '}
+        <Link href="/tips" style={{ color: '#2563eb' }}>
+          /tips
+        </Link>{' '}
+        꿀팁 허브에도 제목·짧은 요약(훅)이 노출됩니다. 전체 본문·체크리스트·출처 링크는 로그인 후 같은 글에서 열립니다.
+        초안만 저장하면 숨김 처리만 됩니다.
+        <br />
+        <br />
+        <strong>가공 파이프라인:</strong> RSS로는 본문이 비는 경우가 많아, 가공(크론) 시{' '}
+        <strong>출처 URL에서 본문을 자동으로 긁은 뒤</strong> LLM이 한·태 초안을 채웁니다. 이미 쌓인 스텁 초안은 카드의{' '}
+        <strong>「원문 다시 불러와 LLM 재가공」</strong>으로 같은 방식으로 다시 만들 수 있어요(배포에 LLM 키 필요).
+        비어 있으면{' '}
         <Link href="/admin/bot-actions" style={{ color: '#2563eb' }}>
           봇 기록
         </Link>

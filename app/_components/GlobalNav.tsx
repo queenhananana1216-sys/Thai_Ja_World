@@ -2,6 +2,7 @@
 
 /**
  * app/_components/GlobalNav.tsx — 글로벌 상단 네비 + 언어 전환
+ * (네이트형: 상단 얇은 툴바 → 흰 띠에 로고·대형 검색·로그인 패널 → 주요 메뉴 줄)
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -11,7 +12,7 @@ import { BrandPhrase } from './BrandPhrase';
 import LanguageSwitch from './LanguageSwitch';
 import SiteSearch from './SiteSearch';
 
-const HREFS = ['/', '/local', '/community/boards', '/ilchon'] as const;
+const HREFS = ['/', '/tips', '/local', '/community/boards', '/ilchon'] as const;
 
 type Props = {
   dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board'>;
@@ -21,56 +22,26 @@ type Props = {
 
 export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
   const pathname = usePathname();
-  const labels = [dict.nav.home, dict.nav.local, dict.nav.community, dict.nav.ilchon];
+  const labels = [dict.nav.home, dict.nav.tips, dict.nav.local, dict.nav.community, dict.nav.ilchon];
+
+  const authProps = {
+    memberNav: {
+      minihome: dict.nav.memberMinihome,
+      notesInbox: dict.nav.memberNotesInbox,
+      friends: dict.nav.memberFriends,
+      ariaLabel: dict.nav.memberQuickNavAria,
+    },
+    labels: {
+      login: dict.board.login,
+      signup: dict.board.signup,
+      logout: dict.board.logout,
+    },
+  };
 
   return (
     <header className="global-header">
-      <nav className="site-container global-header__inner">
-        {/* 검색을 맨 위에 두어 스크롤·줄바꿈에 가리지 않게 함 */}
-        <div className="global-header__row global-header__row--search">
-          <SiteSearch />
-        </div>
-        <div className="global-header__row global-header__row--top">
-          <Link href="/" className="global-header__logo" aria-label={dict.logoAria}>
-            <BrandPhrase variant="dark" />
-            <span className="global-header__logo-suffix">{dict.brandSuffix}</span>
-          </Link>
-          <div className="global-header__nav">
-            {HREFS.map((href, i) => {
-              const isActive =
-                href === '/'
-                  ? pathname === '/'
-                  : href === '/community/boards'
-                    ? pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade')
-                    : href === '/ilchon'
-                      ? pathname.startsWith('/ilchon')
-                      : pathname.startsWith(href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={
-                    'global-header__link' + (isActive ? ' global-header__link--active' : '')
-                  }
-                >
-                  {labels[i]}
-                </Link>
-              );
-            })}
-          </div>
-          <AuthBar
-            memberNav={{
-              minihome: dict.nav.memberMinihome,
-              notesInbox: dict.nav.memberNotesInbox,
-              friends: dict.nav.memberFriends,
-              ariaLabel: dict.nav.memberQuickNavAria,
-            }}
-            labels={{
-              login: dict.board.login,
-              signup: dict.board.signup,
-              logout: dict.board.logout,
-            }}
-          />
+      <div className="global-header__toolbar">
+        <div className="site-container global-header__toolbar-inner">
           <LanguageSwitch labels={dict.lang} />
           {showAdminConsole && (
             <Link
@@ -83,6 +54,49 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
               {dict.nav.botConsole}
             </Link>
           )}
+        </div>
+      </div>
+
+      <div className="global-header__nate-band">
+        <div className="site-container global-header__nate-band-inner">
+          <Link href="/" className="global-header__logo-nate" aria-label={dict.logoAria}>
+            <BrandPhrase variant="light" />
+            <span className="global-header__logo-suffix-nate">{dict.brandSuffix}</span>
+          </Link>
+          <div className="global-header__nate-search">
+            <SiteSearch variant="headerNate" />
+          </div>
+          <aside className="global-header__nate-user">
+            <AuthBar variant="natePanel" {...authProps} />
+          </aside>
+        </div>
+      </div>
+
+      <nav className="site-container global-header__main-nav" aria-label={dict.nav.mainNavAria}>
+        <div className="global-header__nav">
+          {HREFS.map((href, i) => {
+            const isActive =
+              href === '/'
+                ? pathname === '/'
+                : href === '/tips'
+                  ? pathname === '/tips' || pathname.startsWith('/tips/')
+                  : href === '/community/boards'
+                    ? pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade')
+                    : href === '/ilchon'
+                      ? pathname.startsWith('/ilchon')
+                      : pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={
+                  'global-header__link' + (isActive ? ' global-header__link--active' : '')
+                }
+              >
+                {labels[i]}
+              </Link>
+            );
+          })}
         </div>
       </nav>
     </header>

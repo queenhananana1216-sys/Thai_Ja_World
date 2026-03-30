@@ -9,12 +9,18 @@ import {
 import { createServerClient } from '@/lib/supabase/server';
 
 export type {
+  DreamHomeSiteCopyKey,
   HeroSiteCopyKey,
   MainHomeSiteCopyKey,
   MergedHeroSiteCopy,
   SiteCopyHomeKey,
 } from '@/lib/siteCopy/heroCopyDefaults';
-export { HERO_SITE_COPY_KEYS, MAIN_HOME_SITE_COPY_KEYS, SITE_COPY_HOME_KEYS } from '@/lib/siteCopy/heroCopyDefaults';
+export {
+  DREAM_HOME_SITE_COPY_KEYS,
+  HERO_SITE_COPY_KEYS,
+  MAIN_HOME_SITE_COPY_KEYS,
+  SITE_COPY_HOME_KEYS,
+} from '@/lib/siteCopy/heroCopyDefaults';
 
 /** 레이아웃 SSR용 — 테이블·네트워크 오류 시 i18n 기본값 */
 export async function fetchMergedHeroSiteCopy(): Promise<MergedHeroSiteCopy> {
@@ -62,6 +68,16 @@ export async function fetchMergedHeroSiteCopy(): Promise<MergedHeroSiteCopy> {
       hotLabelTh: row('home_hot_label', 'th') || defaults.hotLabelTh,
       hotFootnoteKo: row('home_hot_footnote', 'ko') || defaults.hotFootnoteKo,
       hotFootnoteTh: row('home_hot_footnote', 'th') || defaults.hotFootnoteTh,
+      dreamIntroKo: row('home_dream_intro', 'ko') || defaults.dreamIntroKo,
+      dreamIntroTh: row('home_dream_intro', 'th') || defaults.dreamIntroTh,
+      dreamMinihomeKo: row('home_dream_minihome', 'ko') || defaults.dreamMinihomeKo,
+      dreamMinihomeTh: row('home_dream_minihome', 'th') || defaults.dreamMinihomeTh,
+      dreamMidKo: row('home_dream_mid', 'ko') || defaults.dreamMidKo,
+      dreamMidTh: row('home_dream_mid', 'th') || defaults.dreamMidTh,
+      dreamPersonalKo: row('home_dream_personal', 'ko') || defaults.dreamPersonalKo,
+      dreamPersonalTh: row('home_dream_personal', 'th') || defaults.dreamPersonalTh,
+      dreamOutroKo: row('home_dream_outro', 'ko') || defaults.dreamOutroKo,
+      dreamOutroTh: row('home_dream_outro', 'th') || defaults.dreamOutroTh,
     };
   } catch {
     return defaults;

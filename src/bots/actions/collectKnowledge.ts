@@ -434,7 +434,7 @@ export async function collectKnowledge(
           source_id: src.id,
           external_url: canonical,
           title_original: fi.title,
-          raw_body: null, // RSS는 요약 없으므로 null (process 단계에서 URL fetch 가능)
+          raw_body: null, // RSS 본문 없음 — 지식 가공(process) 시 external_url에서 본문 fetch 후 LLM에 전달
           published_at: fi.published_at ?? null,
           content_hash: simpleHash(fi.title + canonical),
         });

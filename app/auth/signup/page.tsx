@@ -57,9 +57,11 @@ function SignupForm() {
   const [hp, setHp] = useState('');
   const [turnstileKey, setTurnstileKey] = useState(0);
   const turnstileTokenRef = useRef<string | null>(null);
+  const authInFlightRef = useRef(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (authInFlightRef.current) return;
     setError(null);
 
     if (hp.trim() !== '') {
@@ -85,45 +87,50 @@ function SignupForm() {
       return;
     }
 
+    authInFlightRef.current = true;
     setLoading(true);
-    const sb = createBrowserClient();
-    const origin = getAuthSiteOrigin();
-    const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
-    const { data, error: err } = await sb.auth.signUp({
-      email: email.trim(),
-      password,
-      options: {
-        data: { display_name: displayName.trim() || email.split('@')[0] },
-        emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
-        ...captchaOpts,
-      },
-    });
-    setLoading(false);
-    if (err) {
-      const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
-      if (remountTurnstile) {
-        turnstileTokenRef.current = null;
-        setTurnstileKey((k) => k + 1);
+    try {
+      const sb = createBrowserClient();
+      const origin = getAuthSiteOrigin();
+      const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
+      const { data, error: err } = await sb.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: { display_name: displayName.trim() || email.split('@')[0] },
+          emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
+          ...captchaOpts,
+        },
+      });
+      if (err) {
+        const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
+        if (remountTurnstile) {
+          turnstileTokenRef.current = null;
+          setTurnstileKey((k) => k + 1);
+        }
+        setError(message);
+        return;
       }
-      setError(message);
-      return;
-    }
-    if (data.session) {
+      if (data.session) {
+        try {
+          sessionStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
+        } catch {
+          /* ignore */
+        }
+        router.push(safeNext);
+        router.refresh();
+        return;
+      }
       try {
-        sessionStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
+        sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, email.trim());
       } catch {
         /* ignore */
       }
-      router.push(safeNext);
-      router.refresh();
-      return;
+      router.push(`/auth/check-email?next=${encodeURIComponent(safeNext)}`);
+    } finally {
+      authInFlightRef.current = false;
+      setLoading(false);
     }
-    try {
-      sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, email.trim());
-    } catch {
-      /* ignore */
-    }
-    router.push(`/auth/check-email?next=${encodeURIComponent(safeNext)}`);
   }
 
   return (

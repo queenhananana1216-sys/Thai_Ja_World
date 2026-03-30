@@ -39,9 +39,12 @@ function LoginForm() {
   const [hp, setHp] = useState('');
   const [turnstileKey, setTurnstileKey] = useState(0);
   const turnstileTokenRef = useRef<string | null>(null);
+  /** Turnstile 토큰은 1회용 — 연타 시 두 번째 요청이 timeout-or-duplicate 로 실패함 */
+  const authInFlightRef = useRef(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (authInFlightRef.current) return;
     setError(null);
 
     if (hp.trim() !== '') {
@@ -61,26 +64,31 @@ function LoginForm() {
       return;
     }
 
+    authInFlightRef.current = true;
     setLoading(true);
-    const sb = createBrowserClient();
-    const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
-    const { error: err } = await sb.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-      ...(captchaOpts ? { options: captchaOpts } : {}),
-    });
-    setLoading(false);
-    if (err) {
-      const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
-      if (remountTurnstile) {
-        turnstileTokenRef.current = null;
-        setTurnstileKey((k) => k + 1);
+    try {
+      const sb = createBrowserClient();
+      const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
+      const { error: err } = await sb.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+        ...(captchaOpts ? { options: captchaOpts } : {}),
+      });
+      if (err) {
+        const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
+        if (remountTurnstile) {
+          turnstileTokenRef.current = null;
+          setTurnstileKey((k) => k + 1);
+        }
+        setError(message);
+        return;
       }
-      setError(message);
-      return;
+      router.push(safeNext);
+      router.refresh();
+    } finally {
+      authInFlightRef.current = false;
+      setLoading(false);
     }
-    router.push(safeNext);
-    router.refresh();
   }
 
   return (

@@ -15,6 +15,8 @@ declare global {
           callback: (token: string) => void;
           'error-callback'?: () => void;
           'expired-callback'?: () => void;
+          /** 만료 직전 자동 재발급 — 방치 후 로그인 시 timeout-or-duplicate 완화 */
+          'refresh-expired'?: 'auto' | 'manual' | 'never';
         },
       ) => string;
       reset: (id: string) => void;
@@ -62,6 +64,7 @@ export default function TurnstileField({ tokenRef, loadingLabel }: Props) {
         if (cancelled || !window.turnstile || !hostRef.current) return;
         const id = window.turnstile.render(hostRef.current, {
           sitekey: SITE_KEY,
+          'refresh-expired': 'auto',
           callback: (t) => {
             tokenRef.current = t;
           },

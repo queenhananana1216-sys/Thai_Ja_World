@@ -11,7 +11,7 @@ import TurnstileField from '../_components/TurnstileField';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { supabaseAuthCaptchaOptions, verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
 import { createBrowserClient } from '@/lib/supabase/client';
-import { getTurnstileErrorHint } from '@/lib/auth/getTurnstileErrorHint';
+import { getTurnstileErrorHint, userFacingCaptchaAuthError } from '@/lib/auth/getTurnstileErrorHint';
 
 const HAS_TURNSTILE_UI = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim());
 
@@ -37,6 +37,7 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hp, setHp] = useState('');
+  const [turnstileKey, setTurnstileKey] = useState(0);
   const turnstileTokenRef = useRef<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
@@ -70,7 +71,12 @@ function LoginForm() {
     });
     setLoading(false);
     if (err) {
-      setError(err.message);
+      const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
+      if (remountTurnstile) {
+        turnstileTokenRef.current = null;
+        setTurnstileKey((k) => k + 1);
+      }
+      setError(message);
       return;
     }
     router.push(safeNext);
@@ -115,7 +121,7 @@ function LoginForm() {
           showLabel={a.passwordShow}
           hideLabel={a.passwordHide}
         />
-        <TurnstileField tokenRef={turnstileTokenRef} loadingLabel={a.turnstileLoading} />
+        <TurnstileField key={turnstileKey} tokenRef={turnstileTokenRef} loadingLabel={a.turnstileLoading} />
         {error ? <p className="auth-inline-error">{error}</p> : null}
         <button type="submit" className="board-form__submit" disabled={loading}>
           {loading ? a.ellipsis : a.submitLogin}

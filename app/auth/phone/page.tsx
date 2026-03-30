@@ -13,7 +13,7 @@ import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { normalizePhoneToE164 } from '@/lib/auth/normalizePhoneE164';
 import { supabaseAuthCaptchaOptions, verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
 import { tryCreateBrowserClient } from '@/lib/supabase/client';
-import { getTurnstileErrorHint } from '@/lib/auth/getTurnstileErrorHint';
+import { getTurnstileErrorHint, userFacingCaptchaAuthError } from '@/lib/auth/getTurnstileErrorHint';
 
 const HAS_TURNSTILE_UI = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim());
 
@@ -42,6 +42,7 @@ function PhoneAuthForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hp, setHp] = useState('');
+  const [turnstileKey, setTurnstileKey] = useState(0);
   const turnstileTokenRef = useRef<string | null>(null);
 
   async function sendSms(e: FormEvent) {
@@ -94,7 +95,12 @@ function PhoneAuthForm() {
     setLoading(false);
 
     if (err) {
-      setError(err.message);
+      const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
+      if (remountTurnstile) {
+        turnstileTokenRef.current = null;
+        setTurnstileKey((k) => k + 1);
+      }
+      setError(message);
       return;
     }
     setE164(normalized.e164);
@@ -157,7 +163,14 @@ function PhoneAuthForm() {
       options: { shouldCreateUser: true, ...captchaOpts },
     });
     setLoading(false);
-    if (err) setError(err.message);
+    if (err) {
+      const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
+      if (remountTurnstile) {
+        turnstileTokenRef.current = null;
+        setTurnstileKey((k) => k + 1);
+      }
+      setError(message);
+    }
   }
 
   return (
@@ -203,7 +216,7 @@ function PhoneAuthForm() {
             required
           />
           <p className="auth-field-hint">{a.phoneAuthPhoneHint}</p>
-          <TurnstileField tokenRef={turnstileTokenRef} loadingLabel={a.turnstileLoading} />
+          <TurnstileField key={turnstileKey} tokenRef={turnstileTokenRef} loadingLabel={a.turnstileLoading} />
           {error ? <p className="auth-inline-error">{error}</p> : null}
           <button type="submit" className="board-form__submit" disabled={loading}>
             {loading ? a.phoneAuthSendSmsLoading : a.phoneAuthSendSms}
@@ -229,7 +242,7 @@ function PhoneAuthForm() {
           />
           <p className="auth-field-hint">{a.phoneAuthOtpHint}</p>
           {HAS_TURNSTILE_UI ? (
-            <TurnstileField tokenRef={turnstileTokenRef} loadingLabel={a.turnstileLoading} />
+            <TurnstileField key={turnstileKey} tokenRef={turnstileTokenRef} loadingLabel={a.turnstileLoading} />
           ) : null}
           {error ? <p className="auth-inline-error">{error}</p> : null}
           <button type="submit" className="board-form__submit" disabled={loading}>

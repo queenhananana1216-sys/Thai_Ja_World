@@ -14,7 +14,7 @@ import { PENDING_VERIFICATION_EMAIL_KEY } from '@/lib/auth/pendingVerification';
 import { supabaseAuthCaptchaOptions, verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { getAuthSiteOrigin } from '@/lib/auth/getAuthSiteOrigin';
-import { getTurnstileErrorHint } from '@/lib/auth/getTurnstileErrorHint';
+import { getTurnstileErrorHint, userFacingCaptchaAuthError } from '@/lib/auth/getTurnstileErrorHint';
 
 const HAS_TURNSTILE_UI = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim());
 
@@ -55,6 +55,7 @@ function SignupForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hp, setHp] = useState('');
+  const [turnstileKey, setTurnstileKey] = useState(0);
   const turnstileTokenRef = useRef<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
@@ -99,7 +100,12 @@ function SignupForm() {
     });
     setLoading(false);
     if (err) {
-      setError(err.message);
+      const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
+      if (remountTurnstile) {
+        turnstileTokenRef.current = null;
+        setTurnstileKey((k) => k + 1);
+      }
+      setError(message);
       return;
     }
     if (data.session) {
@@ -170,7 +176,7 @@ function SignupForm() {
           hideLabel={a.passwordHide}
         />
         <p className="auth-field-hint">{a.passwordHint}</p>
-        <TurnstileField tokenRef={turnstileTokenRef} loadingLabel={a.turnstileLoading} />
+        <TurnstileField key={turnstileKey} tokenRef={turnstileTokenRef} loadingLabel={a.turnstileLoading} />
         {error ? <p className="auth-inline-error">{error}</p> : null}
         <button type="submit" className="board-form__submit" disabled={loading}>
           {loading ? a.signupSubmitLoading : a.signupSubmit}

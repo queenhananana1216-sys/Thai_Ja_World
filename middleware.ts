@@ -7,7 +7,11 @@ import { LOCALE_COOKIE, isLocale } from '@/i18n/types';
 const PROTECTED_PREFIXES = ['/community', '/local', '/admin'] as const;
 
 function pathRequiresAuth(pathname: string): boolean {
+  /** 비회원 꿀팁 허브 — 본문은 로그인 후 광장 */
+  if (pathname === '/tips' || pathname === '/tips/' || pathname.startsWith('/tips/')) return false;
+
   if (pathname === '/minihome' || pathname === '/minihome/') return true;
+  if (pathname === '/minihome/shop' || pathname.startsWith('/minihome/shop/')) return true;
   if (pathname.startsWith('/minihome/')) return false;
 
   if (pathname === '/my-local-shop' || pathname.startsWith('/my-local-shop/')) return true;

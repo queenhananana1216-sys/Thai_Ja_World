@@ -43,7 +43,7 @@ type ApiNewsHit = {
   score: number;
 };
 
-export type SiteSearchVariant = 'header' | 'hero' | 'portal';
+export type SiteSearchVariant = 'header' | 'hero' | 'portal' | 'nate' | 'headerNate';
 
 type SiteSearchProps = {
   variant?: SiteSearchVariant;
@@ -57,7 +57,9 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
   const inputId = `tj-search-${variant}-${uid}`;
   const panelId = `tj-search-panel-${variant}-${uid}`;
   const wrapRef = useRef<HTMLDivElement>(null);
-  const isPortal = variant === 'portal';
+  const isHeaderNate = variant === 'headerNate';
+  const isNate = variant === 'nate';
+  const isPortal = variant === 'portal' || isNate;
   const isHeroLike = variant === 'hero' || isPortal;
 
   const [q, setQ] = useState('');
@@ -146,7 +148,15 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
 
   const rootClass =
     'global-header__search' +
-    (isPortal ? ' site-search--hero site-search--portal' : variant === 'hero' ? ' site-search--hero' : ' site-search--header');
+    (isHeaderNate
+      ? ' site-search--header site-search--header-nate'
+      : isNate
+        ? ' site-search--hero site-search--portal site-search--nate'
+        : isPortal
+          ? ' site-search--hero site-search--portal'
+          : variant === 'hero'
+            ? ' site-search--hero'
+            : ' site-search--header');
 
   const qTrim = q.trim();
   const showQuick = open && !qTrim;
@@ -221,9 +231,11 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
           onFocus={() => setOpen(true)}
         />
       </div>
-      <p className="global-header__search-hint" aria-hidden="true">
-        {s.hint}
-      </p>
+      {!isHeaderNate ? (
+        <p className="global-header__search-hint" aria-hidden="true">
+          {s.hint}
+        </p>
+      ) : null}
 
       {open && (
         <div id={panelId} className="global-header__search-panel" role="listbox">

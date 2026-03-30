@@ -17,9 +17,13 @@
  */
 
 import { getServerSupabaseClient } from '../adapters/supabaseClient';
+import { resolveKnowledgeRawBodyForProcessing } from '@/lib/knowledge/fetchKnowledgeArticleText';
+import { KNOWLEDGE_STUB_SUMMARY_SNIPPET } from '@/lib/knowledge/knowledgeStubConstants';
 import { knowledgeInsertAsPublished } from '@/lib/knowledge/knowledgePublishMode';
 
 // ── 타입 ──────────────────────────────────────────────────────────────────
+
+export { KNOWLEDGE_STUB_SUMMARY_SNIPPET } from '@/lib/knowledge/knowledgeStubConstants';
 
 export interface KnowledgeProcessRowResult {
   raw_knowledge_id: string;
@@ -34,6 +38,14 @@ export interface KnowledgeProcessBatchResult {
   dbError?: string;
 }
 
+export type EnsureKnowledgeDraftResult = {
+  ok: boolean;
+  raw_knowledge_id: string;
+  processed_knowledge_id?: string;
+  error?: string;
+  already_existed?: boolean;
+};
+
 export interface KnowledgeLlmOutput {
   board_target: 'tips_board' | 'board_board';
   editorial_meta: {
@@ -45,6 +57,8 @@ export interface KnowledgeLlmOutput {
   ko: {
     title: string;
     summary: string;
+    /** 승인 큐에서 편집팀이 덧붙이는 이용자용 풀어쓰기(LLM 요약이 짧을 때) */
+    editorial_note?: string;
     checklist: string[];
     cautions: string[];
     tags: string[];
@@ -52,6 +66,7 @@ export interface KnowledgeLlmOutput {
   th: {
     title: string;
     summary: string;
+    editorial_note?: string;
     checklist: string[];
     cautions: string[];
     tags: string[];
@@ -217,8 +232,8 @@ OUTPUT STRUCTURE (strict JSON):
     "reasons": ["string"]
   },
   "ko": {
-    "title": "요즘 톤이되 자극/과장 금지. 300자 이내",
-    "summary": "300~600자. 실용적. 불확실한 내용은 '보도에 따르면/확인 필요' 표현 사용.",
+    "title": "클릭을 부르는 호기심 제목(질문·구체 숫자·상황) 가능. 단, 과장·거짓·선정 금지. 출처 사실 범위만. 120자 이내 권장.",
+    "summary": "① 맨 앞 1~2문장(총 120~200자): 비회원 피드·꿀팁 허브에 노출되는 '궁금증 훅'. ② 줄바꿈 후 본 요약(실용·체크리스트 보조). 총 300~700자. 불확실하면 '보도에 따르면/공식 확인 필요'.",
     "checklist": ["실행 가능한 스텝/체크리스트. PII 금지"],
     "cautions": ["공식확인권장/법률자문아님/불확실성 명시. 비자·법률 관련은 반드시 포함"],
     "tags": ["키워드5~8개. PII 금지"]
@@ -289,6 +304,10 @@ function parseKnowledgeLlmOutput(raw: unknown): KnowledgeLlmOutput | null {
     ko: {
       title: String(ko.title).trim(),
       summary: String(ko.summary).trim(),
+      editorial_note:
+        typeof ko.editorial_note === 'string' && ko.editorial_note.trim()
+          ? String(ko.editorial_note).trim()
+          : undefined,
       checklist: isStringArray(ko.checklist) ? ko.checklist : [],
       cautions: isStringArray(ko.cautions) ? ko.cautions : [],
       tags: isStringArray(ko.tags) ? ko.tags.slice(0, 8) : [],
@@ -296,6 +315,10 @@ function parseKnowledgeLlmOutput(raw: unknown): KnowledgeLlmOutput | null {
     th: {
       title: String(th.title).trim(),
       summary: String(th.summary).trim(),
+      editorial_note:
+        typeof th.editorial_note === 'string' && th.editorial_note.trim()
+          ? String(th.editorial_note).trim()
+          : undefined,
       checklist: isStringArray(th.checklist) ? th.checklist : [],
       cautions: isStringArray(th.cautions) ? th.cautions : [],
       tags: isStringArray(th.tags) ? th.tags.slice(0, 8) : [],
@@ -417,6 +440,168 @@ async function callKnowledgeLlm(
   throw new Error('LLM 미설정 — OPENAI_API_KEY, GEMINI_API_KEY, LOCAL_LLM_BASE_URL 중 하나 필요');
 }
 
+// ── DB 적재 공통 (스텁·LLM 공용) ───────────────────────────────────────────
+
+type RawKnowledgeRow = {
+  id: string;
+  title_original: string | null;
+  raw_body: string | null;
+  external_url: string | null;
+  fetched_at: string | null;
+};
+
+async function insertProcessedKnowledgeFromLlm(
+  client: ReturnType<typeof getServerSupabaseClient>,
+  rawId: string,
+  llm: KnowledgeLlmOutput,
+  published: boolean,
+): Promise<EnsureKnowledgeDraftResult> {
+  const cleanBody = JSON.stringify(llm);
+  const { data: proc, error: insP } = await client
+    .from('processed_knowledge')
+    .insert({
+      raw_knowledge_id: rawId,
+      clean_body: cleanBody,
+      language_default: 'ko',
+      board_target: llm.board_target,
+      published,
+    })
+    .select('id')
+    .single();
+
+  if (insP || !proc?.id) {
+    return {
+      ok: false,
+      raw_knowledge_id: rawId,
+      error: insP?.message ?? 'processed_knowledge insert 실패',
+    };
+  }
+
+  const pid = proc.id as string;
+
+  const { error: sKo } = await client.from('knowledge_summaries').insert({
+    processed_knowledge_id: pid,
+    summary_text: llm.ko.summary,
+    model: 'ko',
+  });
+  if (sKo) {
+    return { ok: false, raw_knowledge_id: rawId, error: sKo.message };
+  }
+
+  const { error: sTh } = await client.from('knowledge_summaries').insert({
+    processed_knowledge_id: pid,
+    summary_text: llm.th.summary,
+    model: 'th',
+  });
+  if (sTh) {
+    return { ok: false, raw_knowledge_id: rawId, error: sTh.message };
+  }
+
+  return { ok: true, raw_knowledge_id: rawId, processed_knowledge_id: pid };
+}
+
+/**
+ * raw 본문이 짧으면 URL fetch 후 LLM(또는 스텁)으로 processed_knowledge 생성.
+ * 호출 전 해당 raw에 대한 processed 행이 없어야 합니다.
+ */
+export async function processKnowledgeFromResolvedRaw(
+  client: ReturnType<typeof getServerSupabaseClient>,
+  row: RawKnowledgeRow,
+): Promise<KnowledgeProcessRowResult> {
+  const rawId = String(row.id);
+  const title = (row.title_original ?? '').trim() || '(제목 없음)';
+  const url = (row.external_url ?? '').trim();
+  const fetchedAt = (row.fetched_at ?? new Date().toISOString()).trim();
+
+  const resolved = await resolveKnowledgeRawBodyForProcessing(url, row.raw_body);
+  if (resolved.updatedRawBodyForDb) {
+    await client.from('raw_knowledge').update({ raw_body: resolved.updatedRawBodyForDb }).eq('id', rawId);
+  }
+
+  const bodyForLlm = resolved.llmText;
+  const llmReady = isKnowledgeLlmConfigured();
+  const allowStub = stubKnowledgeOnLlmFailure();
+
+  if (!llmReady) {
+    const stubLlm = buildKnowledgeStubLlmOutput(title, bodyForLlm, url, fetchedAt);
+    const r = await insertProcessedKnowledgeFromLlm(client, rawId, stubLlm, false);
+    return r.ok
+      ? { raw_knowledge_id: rawId, ok: true, board_target: stubLlm.board_target }
+      : { raw_knowledge_id: rawId, ok: false, error: r.error };
+  }
+
+  try {
+    const llm = await callKnowledgeLlm(title, bodyForLlm, url, fetchedAt);
+    const r = await insertProcessedKnowledgeFromLlm(client, rawId, llm, knowledgeInsertAsPublished());
+    return r.ok
+      ? { raw_knowledge_id: rawId, ok: true, board_target: llm.board_target }
+      : { raw_knowledge_id: rawId, ok: false, error: r.error };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (allowStub) {
+      const stubLlm = buildKnowledgeStubLlmOutput(title, bodyForLlm, url, fetchedAt);
+      const r = await insertProcessedKnowledgeFromLlm(client, rawId, stubLlm, false);
+      return r.ok
+        ? { raw_knowledge_id: rawId, ok: true, board_target: stubLlm.board_target }
+        : { raw_knowledge_id: rawId, ok: false, error: r.error ?? msg };
+    }
+    return { raw_knowledge_id: rawId, ok: false, error: msg };
+  }
+}
+
+/** 승인 대기 초안만: 삭제 후 원문 URL에서 본문을 다시 긁고 LLM으로 초안 재생성 */
+export async function reprocessKnowledgeDraftWithLlm(
+  processedKnowledgeId: string,
+): Promise<{ ok: boolean; error?: string; board_target?: string }> {
+  const client = getServerSupabaseClient();
+  const pid = processedKnowledgeId.trim();
+  if (!pid) {
+    return { ok: false, error: 'processed_knowledge_id 가 비었습니다.' };
+  }
+
+  const { data: proc, error: pErr } = await client
+    .from('processed_knowledge')
+    .select('id, raw_knowledge_id, published')
+    .eq('id', pid)
+    .maybeSingle();
+
+  if (pErr || !proc) {
+    return { ok: false, error: pErr?.message ?? '초안을 찾을 수 없습니다.' };
+  }
+  if (proc.published === true) {
+    return { ok: false, error: '이미 게시된 항목은 재가공할 수 없습니다.' };
+  }
+
+  const rawId = String(proc.raw_knowledge_id);
+  const { error: delErr } = await client.from('processed_knowledge').delete().eq('id', pid);
+  if (delErr) {
+    return { ok: false, error: delErr.message };
+  }
+
+  const { data: raw, error: rErr } = await client
+    .from('raw_knowledge')
+    .select('id, title_original, raw_body, external_url, fetched_at')
+    .eq('id', rawId)
+    .maybeSingle();
+
+  if (rErr || !raw) {
+    return { ok: false, error: rErr?.message ?? '원문(raw_knowledge)을 찾을 수 없습니다.' };
+  }
+
+  if (!isKnowledgeLlmConfigured()) {
+    return {
+      ok: false,
+      error: 'LLM 키가 설정되어 있지 않습니다. OPENAI_API_KEY 또는 GEMINI_API_KEY 등을 설정한 뒤 다시 시도하세요.',
+    };
+  }
+
+  const rowResult = await processKnowledgeFromResolvedRaw(client, raw as RawKnowledgeRow);
+  if (!rowResult.ok) {
+    return { ok: false, error: rowResult.error ?? '재가공 실패' };
+  }
+  return { ok: true, board_target: rowResult.board_target };
+}
+
 // ── 메인 배치 처리 ────────────────────────────────────────────────────────
 
 export async function processAndPersistKnowledgeBatch(
@@ -462,84 +647,8 @@ export async function processAndPersistKnowledgeBatch(
   const results: KnowledgeProcessRowResult[] = [];
 
   for (const row of todo) {
-    const rawId = row.id as string;
-    const title = (row.title_original as string)?.trim() || '(제목 없음)';
-    const url = (row.external_url as string) ?? '';
-    const body = row.raw_body as string | null;
-    const fetchedAt = (row.fetched_at as string) ?? new Date().toISOString();
-
-    if (!llmReady) {
-      const stubRes = await ensureKnowledgeDraftFromRawKnowledgeId(rawId);
-      if (stubRes.ok) {
-        results.push({ raw_knowledge_id: rawId, ok: true, board_target: 'board_board' });
-      } else {
-        results.push({
-          raw_knowledge_id: rawId,
-          ok: false,
-          error: stubRes.error ?? '스텁 초안 실패',
-        });
-      }
-      continue;
-    }
-
-    try {
-      const llm = await callKnowledgeLlm(title, body, url, fetchedAt);
-
-      const cleanBody = JSON.stringify(llm);
-
-      const { data: proc, error: insP } = await client
-        .from('processed_knowledge')
-        .insert({
-          raw_knowledge_id: rawId,
-          clean_body: cleanBody,
-          language_default: 'ko',
-          board_target: llm.board_target,
-          published: knowledgeInsertAsPublished(),
-        })
-        .select('id')
-        .single();
-
-      if (insP || !proc?.id) {
-        results.push({
-          raw_knowledge_id: rawId,
-          ok: false,
-          error: insP?.message ?? 'processed_knowledge insert 실패',
-        });
-        continue;
-      }
-
-      const pid = proc.id as string;
-
-      await client.from('knowledge_summaries').insert({
-        processed_knowledge_id: pid,
-        summary_text: llm.ko.summary,
-        model: 'ko',
-      });
-
-      await client.from('knowledge_summaries').insert({
-        processed_knowledge_id: pid,
-        summary_text: llm.th.summary,
-        model: 'th',
-      });
-
-      results.push({ raw_knowledge_id: rawId, ok: true, board_target: llm.board_target });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (allowStub) {
-        const stubRes = await ensureKnowledgeDraftFromRawKnowledgeId(rawId);
-        if (stubRes.ok) {
-          results.push({ raw_knowledge_id: rawId, ok: true, board_target: 'board_board' });
-          continue;
-        }
-        results.push({
-          raw_knowledge_id: rawId,
-          ok: false,
-          error: stubRes.error ?? msg,
-        });
-        continue;
-      }
-      results.push({ raw_knowledge_id: rawId, ok: false, error: msg });
-    }
+    const rowResult = await processKnowledgeFromResolvedRaw(client, row as RawKnowledgeRow);
+    results.push(rowResult);
   }
 
   return { results, llmConfigured: pipelineReady };
@@ -567,7 +676,7 @@ function buildKnowledgeStubLlmOutput(
     'ข้อมูลนี้ไม่ใช่คำแนะนำทางกฎหมาย — โปรดยืนยันกับสถานทูตหรือหน่วยงานทางการเสมอ';
   const koSummary = excerpt
     ? `${excerpt}\n\n—\n(자동 초안: 원문 발췌. LLM 가공 전입니다. 승인 전에 다듬어 주세요.)`
-    : `원문 본문이 비어 있거나 매우 짧습니다. 출처를 확인한 뒤 편집해 주세요.\n${sourceUrl}`;
+    : `${KNOWLEDGE_STUB_SUMMARY_SNIPPET}. 출처를 확인한 뒤 편집해 주세요.\n${sourceUrl}`;
 
   return {
     board_target: 'board_board',
@@ -607,14 +716,6 @@ function buildKnowledgeStubLlmOutput(
     ],
   };
 }
-
-export type EnsureKnowledgeDraftResult = {
-  ok: boolean;
-  raw_knowledge_id: string;
-  processed_knowledge_id?: string;
-  error?: string;
-  already_existed?: boolean;
-};
 
 /**
  * `processed_knowledge` 가 없는 `raw_knowledge` 에 스텁 JSON을 넣습니다. 항상 `published=false`.
@@ -659,50 +760,13 @@ export async function ensureKnowledgeDraftFromRawKnowledgeId(
 
   const title = (raw.title_original as string)?.trim() || '(제목 없음)';
   const url = (raw.external_url as string) ?? '';
-  const body = raw.raw_body as string | null;
   const fetchedAt = (raw.fetched_at as string) ?? new Date().toISOString();
-  const llm = buildKnowledgeStubLlmOutput(title, body, url, fetchedAt);
-  const cleanBody = JSON.stringify(llm);
 
-  const { data: proc, error: insP } = await client
-    .from('processed_knowledge')
-    .insert({
-      raw_knowledge_id: id,
-      clean_body: cleanBody,
-      language_default: 'ko',
-      board_target: llm.board_target,
-      published: false,
-    })
-    .select('id')
-    .single();
-
-  if (insP || !proc?.id) {
-    return {
-      ok: false,
-      raw_knowledge_id: id,
-      error: insP?.message ?? 'processed_knowledge insert 실패',
-    };
+  const resolved = await resolveKnowledgeRawBodyForProcessing(url, raw.raw_body as string | null);
+  if (resolved.updatedRawBodyForDb) {
+    await client.from('raw_knowledge').update({ raw_body: resolved.updatedRawBodyForDb }).eq('id', id);
   }
 
-  const pid = proc.id as string;
-
-  const { error: sKo } = await client.from('knowledge_summaries').insert({
-    processed_knowledge_id: pid,
-    summary_text: llm.ko.summary,
-    model: 'ko',
-  });
-  if (sKo) {
-    return { ok: false, raw_knowledge_id: id, error: sKo.message };
-  }
-
-  const { error: sTh } = await client.from('knowledge_summaries').insert({
-    processed_knowledge_id: pid,
-    summary_text: llm.th.summary,
-    model: 'th',
-  });
-  if (sTh) {
-    return { ok: false, raw_knowledge_id: id, error: sTh.message };
-  }
-
-  return { ok: true, raw_knowledge_id: id, processed_knowledge_id: pid };
+  const stubLlm = buildKnowledgeStubLlmOutput(title, resolved.llmText, url, fetchedAt);
+  return insertProcessedKnowledgeFromLlm(client, id, stubLlm, false);
 }

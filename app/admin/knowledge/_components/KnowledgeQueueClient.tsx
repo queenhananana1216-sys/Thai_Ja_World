@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { KnowledgeLlmOutput } from '@/bots/actions/processAndPersistKnowledge';
+import { KNOWLEDGE_STUB_SUMMARY_SNIPPET } from '@/lib/knowledge/knowledgeStubConstants';
 
 export type KnowledgeQueueItem = {
   id: string;
@@ -12,15 +13,22 @@ export type KnowledgeQueueItem = {
   raw_title: string;
   ko_title: string;
   ko_summary: string;
+  /** 편집팀·이용자 안내(LLM 요약이 스텁일 때 게시에 사용) */
+  ko_editorial_note: string;
   ko_checklist: string[];
   ko_cautions: string[];
   ko_tags: string[];
   th_title: string;
   th_summary: string;
+  th_editorial_note: string;
   confidence_level: 'high' | 'medium' | 'low';
   novelty_score: number;
   usefulness_score: number;
 };
+
+function isStubKoSummary(s: string): boolean {
+  return s.trim().includes(KNOWLEDGE_STUB_SUMMARY_SNIPPET);
+}
 
 export type KnowledgeQueueDiagnostics = {
   draftCount: number;
@@ -44,11 +52,15 @@ function parseLlmFields(cleanBody: unknown, rawTitle: string): Partial<Knowledge
       board_target: llm.board_target ?? 'board_board',
       ko_title: llm.ko?.title?.trim() || rawTitle,
       ko_summary: llm.ko?.summary?.trim() || '',
+      ko_editorial_note:
+        typeof llm.ko?.editorial_note === 'string' ? llm.ko.editorial_note.trim() : '',
       ko_checklist: llm.ko?.checklist ?? [],
       ko_cautions: llm.ko?.cautions ?? [],
       ko_tags: llm.ko?.tags ?? [],
       th_title: llm.th?.title?.trim() || '',
       th_summary: llm.th?.summary?.trim() || '',
+      th_editorial_note:
+        typeof llm.th?.editorial_note === 'string' ? llm.th.editorial_note.trim() : '',
       confidence_level: llm.editorial_meta?.confidence_level ?? 'medium',
       novelty_score: llm.editorial_meta?.novelty_score ?? 50,
       usefulness_score: llm.editorial_meta?.usefulness_score ?? 50,
@@ -58,11 +70,13 @@ function parseLlmFields(cleanBody: unknown, rawTitle: string): Partial<Knowledge
       board_target: 'board_board',
       ko_title: rawTitle,
       ko_summary: '',
+      ko_editorial_note: '',
       ko_checklist: [],
       ko_cautions: [],
       ko_tags: [],
       th_title: '',
       th_summary: '',
+      th_editorial_note: '',
       confidence_level: 'low',
       novelty_score: 0,
       usefulness_score: 0,
@@ -104,12 +118,21 @@ export default function KnowledgeQueueClient({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [ensureBusyRawId, setEnsureBusyRawId] = useState<string | null>(null);
   const [ensureBulkBusy, setEnsureBulkBusy] = useState(false);
+  const [reprocessBusyId, setReprocessBusyId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function submit(
     id: string,
     action: 'publish' | 'draft' | 'delete',
-    fields: Pick<KnowledgeQueueItem, 'ko_title' | 'ko_summary' | 'th_title' | 'th_summary'>,
+    fields: Pick<
+      KnowledgeQueueItem,
+      | 'ko_title'
+      | 'ko_summary'
+      | 'ko_editorial_note'
+      | 'th_title'
+      | 'th_summary'
+      | 'th_editorial_note'
+    >,
   ) {
     setMsg(null);
     setBusyId(id);
@@ -121,12 +144,16 @@ export default function KnowledgeQueueClient({
         body: JSON.stringify({
           processed_knowledge_id: id,
           action,
-          ...(action === 'delete' ? {} : {
-            ko_title: fields.ko_title,
-            ko_summary: fields.ko_summary,
-            th_title: fields.th_title,
-            th_summary: fields.th_summary,
-          }),
+          ...(action === 'delete'
+            ? {}
+            : {
+                ko_title: fields.ko_title,
+                ko_summary: fields.ko_summary,
+                ko_editorial_note: fields.ko_editorial_note,
+                th_title: fields.th_title,
+                th_summary: fields.th_summary,
+                th_editorial_note: fields.th_editorial_note,
+              }),
         }),
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string };
@@ -137,7 +164,11 @@ export default function KnowledgeQueueClient({
       if (action === 'delete') {
         setMsg('삭제했습니다. (원문·요약·관련 데이터가 DB에서 함께 제거됩니다)');
       } else {
-        setMsg(action === 'publish' ? '공개 보드에 게시했습니다.' : '초안 저장했습니다.');
+        setMsg(
+          action === 'publish'
+            ? '최종 승인: 광장(정보) + 비회원 /tips 허브에 반영했습니다.'
+            : '초안 저장했습니다.',
+        );
       }
       router.refresh();
     } finally {
@@ -167,6 +198,30 @@ export default function KnowledgeQueueClient({
       router.refresh();
     } finally {
       setEnsureBusyRawId(null);
+    }
+  }
+
+  async function reprocessWithLlm(processedKnowledgeId: string) {
+    setMsg(null);
+    setReprocessBusyId(processedKnowledgeId);
+    try {
+      const res = await fetch('/api/admin/knowledge-reprocess-llm', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ processed_knowledge_id: processedKnowledgeId }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setMsg(j.error ?? `오류 (${res.status})`);
+        return;
+      }
+      setMsg(
+        '원문 URL에서 본문을 다시 가져와 LLM으로 초안을 다시 만들었습니다. 한·태 제목·요약을 확인한 뒤 게시하세요.',
+      );
+      router.refresh();
+    } finally {
+      setReprocessBusyId(null);
     }
   }
 
@@ -361,7 +416,14 @@ export default function KnowledgeQueueClient({
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {list.map((it) => (
-                <DraftCard key={it.id} item={it} busy={busyId === it.id} onSubmit={submit} />
+                <DraftCard
+                  key={it.id}
+                  item={it}
+                  busy={busyId === it.id}
+                  reprocessBusy={reprocessBusyId === it.id}
+                  onSubmit={submit}
+                  onReprocessLlm={() => void reprocessWithLlm(it.id)}
+                />
               ))}
             </div>
           </section>
@@ -376,23 +438,61 @@ export default function KnowledgeQueueClient({
 function DraftCard({
   item,
   busy,
+  reprocessBusy,
   onSubmit,
+  onReprocessLlm,
 }: {
   item: KnowledgeQueueItem;
   busy: boolean;
+  reprocessBusy: boolean;
   onSubmit: (
     id: string,
     action: 'publish' | 'draft' | 'delete',
-    fields: Pick<KnowledgeQueueItem, 'ko_title' | 'ko_summary' | 'th_title' | 'th_summary'>,
+    fields: Pick<
+      KnowledgeQueueItem,
+      | 'ko_title'
+      | 'ko_summary'
+      | 'ko_editorial_note'
+      | 'th_title'
+      | 'th_summary'
+      | 'th_editorial_note'
+    >,
   ) => Promise<void>;
+  onReprocessLlm: () => void;
 }) {
   const [koTitle, setKoTitle] = useState(item.ko_title);
   const [koSummary, setKoSummary] = useState(item.ko_summary);
+  const [koEditorialNote, setKoEditorialNote] = useState(item.ko_editorial_note);
   const [thTitle, setThTitle] = useState(item.th_title);
   const [thSummary, setThSummary] = useState(item.th_summary);
+  const [thEditorialNote, setThEditorialNote] = useState(item.th_editorial_note);
   const [showDetail, setShowDetail] = useState(false);
 
-  const fields = () => ({ ko_title: koTitle, ko_summary: koSummary, th_title: thTitle, th_summary: thSummary });
+  const stubLike = isStubKoSummary(koSummary);
+
+  const fields = () => ({
+    ko_title: koTitle,
+    ko_summary: koSummary,
+    ko_editorial_note: koEditorialNote,
+    th_title: thTitle,
+    th_summary: thSummary,
+    th_editorial_note: thEditorialNote,
+  });
+
+  function tryPublish() {
+    const f = fields();
+    if (isStubKoSummary(f.ko_summary) && f.ko_editorial_note.trim().length < 25) {
+      window.alert(
+        '원문 요약이 비어 있는 스텁일 때는 「태자 편집팀·이용자 안내」에 25자 이상 적어 주세요. 그 내용으로 광장·/tips 훅에도 쓰입니다.',
+      );
+      return;
+    }
+    if (!isStubKoSummary(f.ko_summary) && f.ko_summary.trim().length < 10) {
+      window.alert('한국어 요약을 10자 이상 작성해 주세요.');
+      return;
+    }
+    void onSubmit(item.id, 'publish', f);
+  }
 
   return (
     <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 16, background: '#fafafa' }}>
@@ -427,10 +527,47 @@ function DraftCard({
         style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13, border: '1px solid #d1d5db', borderRadius: 6, boxSizing: 'border-box' }}
       />
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>한국어 요약</label>
+      <p style={{ margin: '0 0 6px', fontSize: 11, color: '#6b7280', lineHeight: 1.45 }}>
+        앞부분은 비회원 /tips 에 보이는 <strong>클릭 유도 훅</strong>으로 쓰입니다. 과장·거짓은 피하고, 출처 범위 안에서
+        궁금증이 나게 다듬은 뒤 게시하세요.
+      </p>
       <textarea
         value={koSummary}
         onChange={(e) => setKoSummary(e.target.value)}
         rows={4}
+        style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13, border: '1px solid #d1d5db', borderRadius: 6, boxSizing: 'border-box' }}
+      />
+
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+        태자 편집팀·이용자 안내 <span style={{ fontWeight: 400, color: '#6b7280' }}>(선택, 스텁 요약일 때 권장)</span>
+      </label>
+      {stubLike ? (
+        <p
+          style={{
+            margin: '0 0 6px',
+            padding: '8px 10px',
+            fontSize: 12,
+            lineHeight: 1.5,
+            background: '#fffbeb',
+            border: '1px solid #fcd34d',
+            borderRadius: 6,
+            color: '#92400e',
+          }}
+        >
+          위 한국어 요약이 «원문이 비었다»는 스텁이면, <strong>여기에 편집팀 생각·이용자가 이해하기 쉬운 풀어쓰기</strong>를
+          25자 이상 적으면 그대로 최종 승인·게시할 수 있어요. /tips 짧은 훅도 이 안내를 우선 씁니다.
+        </p>
+      ) : (
+        <p style={{ margin: '0 0 6px', fontSize: 11, color: '#6b7280', lineHeight: 1.45 }}>
+          LLM 요약이 짧거나 부족할 때 덧붙이는 설명입니다. 적으면 광장 글 본문에 「태자 편집팀·이용자 안내」로 붙고, 요약과 함께
+          훅 문구에도 반영됩니다.
+        </p>
+      )}
+      <textarea
+        value={koEditorialNote}
+        onChange={(e) => setKoEditorialNote(e.target.value)}
+        rows={5}
+        placeholder="예: 이 기사는 ○○ 사기 경고입니다. 태국 체류 중 ○○에 해당하면 …"
         style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13, border: '1px solid #d1d5db', borderRadius: 6, boxSizing: 'border-box' }}
       />
 
@@ -456,6 +593,15 @@ function DraftCard({
             value={thSummary}
             onChange={(e) => setThSummary(e.target.value)}
             rows={4}
+            style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13, border: '1px solid #d1d5db', borderRadius: 6, boxSizing: 'border-box' }}
+          />
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+            หมายเหตุทีมบรรณาธิการ <span style={{ fontWeight: 400, color: '#6b7280' }}>(ไม่บังคับ)</span>
+          </label>
+          <textarea
+            value={thEditorialNote}
+            onChange={(e) => setThEditorialNote(e.target.value)}
+            rows={3}
             style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13, border: '1px solid #d1d5db', borderRadius: 6, boxSizing: 'border-box' }}
           />
 
@@ -486,14 +632,40 @@ function DraftCard({
       )}
 
       {/* 버튼 */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button
+          type="button"
+          disabled={busy || reprocessBusy}
+          onClick={() => {
+            if (
+              !window.confirm(
+                '이 초안을 삭제한 뒤, 원문 URL에서 본문을 다시 가져와 LLM으로 처음부터 다시 만듭니다. 편집 중이던 내용은 사라집니다. 계속할까요?',
+              )
+            ) {
+              return;
+            }
+            onReprocessLlm();
+          }}
+          style={{
+            padding: '8px 14px',
+            background: '#eef2ff',
+            color: '#4338ca',
+            border: '1px solid #a5b4fc',
+            borderRadius: 6,
+            cursor: busy || reprocessBusy ? 'wait' : 'pointer',
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          {reprocessBusy ? '재가공 중…' : '원문 다시 불러와 LLM 재가공'}
+        </button>
         <button
           type="button"
           disabled={busy}
-          onClick={() => void onSubmit(item.id, 'publish', fields())}
+          onClick={() => tryPublish()}
           style={{ padding: '8px 14px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: busy ? 'wait' : 'pointer', fontSize: 13 }}
         >
-          보드에 게시
+          최종 승인 · 게시
         </button>
         <button
           type="button"

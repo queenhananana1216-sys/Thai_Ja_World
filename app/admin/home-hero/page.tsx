@@ -31,7 +31,8 @@ export default async function AdminHomeHeroPage() {
     <main className="admin-page">
       <h1 className="admin-dash__title">홈 메인 문구</h1>
       <p className="admin-dash__lead">
-        메인 웹 페이지(홈)에 보이는 문구를 한국어·태국어 UI 각각 수정할 수 있습니다. 위쪽은 히어로(태그·브랜드·제목·본문),
+        메인 웹 페이지(홈)에 보이는 문구를 한국어·태국어 UI 각각 수정할 수 있습니다. 위쪽은 히어로(태그·브랜드·제목·본문·미니홈
+        티저 박스),
         아래는 비회원 안내 카드와 «한 줄 제보» 띠 제목·각주입니다. 비우고 저장하면 코드 기본값(i18n)으로 돌아갑니다.
         저장은 <code>public.site_copy</code> 테이블에 반영됩니다(마이그레이션 <code>035_site_copy_public_strings</code>).
         저장 직후 서버 캐시를 무효화하므로, 홈을 새로고침하면 바로 보여야 합니다.

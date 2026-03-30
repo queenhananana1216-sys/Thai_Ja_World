@@ -23,6 +23,7 @@ function maxLenForKey(key: string): number {
   if (key === 'home_hero_sub') return MAX_LEN_SUB;
   if (key === 'home_hot_footnote') return MAX_LEN_HOT_NOTE;
   if (key === 'home_guest_public_body' || key === 'home_guest_member_body') return MAX_LEN_BODY;
+  if (key.startsWith('home_dream_')) return MAX_LEN_BODY;
   return MAX_LEN_SHORT;
 }
 
@@ -48,7 +49,12 @@ function isAllowedKey(key: string, locale: string): key is SiteCopyHomeKey {
     key === 'home_guest_member_body' ||
     key === 'home_guest_login_cta' ||
     key === 'home_hot_label' ||
-    key === 'home_hot_footnote'
+    key === 'home_hot_footnote' ||
+    key === 'home_dream_intro' ||
+    key === 'home_dream_minihome' ||
+    key === 'home_dream_mid' ||
+    key === 'home_dream_personal' ||
+    key === 'home_dream_outro'
   ) {
     return locale === 'ko' || locale === 'th';
   }

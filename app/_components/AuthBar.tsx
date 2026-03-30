@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 type Labels = { login: string; signup: string; logout: string };
@@ -17,17 +18,26 @@ type MemberNavLabels = {
 export default function AuthBar({
   labels,
   memberNav,
+  variant = 'inline',
 }: {
   labels: Labels;
   memberNav: MemberNavLabels;
+  variant?: 'inline' | 'natePanel';
 }) {
   const router = useRouter();
   const pathname = usePathname() || '/';
-  const authNext = encodeURIComponent(
-    pathname.startsWith('/auth') ? '/' : pathname,
-  );
+  const { locale } = useClientLocaleDictionary();
+  const authNext = encodeURIComponent(pathname.startsWith('/auth') ? '/' : pathname);
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const displayLocal = useMemo(() => {
+    if (!email) return '';
+    const local = email.split('@')[0] ?? email;
+    return local.length > 14 ? `${local.slice(0, 12)}…` : local;
+  }, [email]);
+
+  const greetingSuffix = locale === 'ko' ? '님' : '';
 
   useEffect(() => {
     const sb = createBrowserClient();
@@ -62,10 +72,38 @@ export default function AuthBar({
   }
 
   if (loading) {
+    if (variant === 'natePanel') {
+      return (
+        <div className="nate-user-panel nate-user-panel--loading" aria-busy="true">
+          <div className="nate-user-panel__skeleton-line" />
+          <div className="nate-user-panel__skeleton-line nate-user-panel__skeleton-line--short" />
+        </div>
+      );
+    }
     return <span className="auth-bar auth-bar--muted">…</span>;
   }
 
   if (!email) {
+    if (variant === 'natePanel') {
+      return (
+        <div className="nate-user-panel nate-user-panel--guest">
+          <div className="nate-user-panel__guest-actions">
+            <Link
+              href={`/auth/login?next=${authNext}`}
+              className="nate-user-panel__btn nate-user-panel__btn--primary"
+            >
+              {labels.login}
+            </Link>
+            <Link
+              href={`/auth/signup?next=${authNext}`}
+              className="nate-user-panel__btn nate-user-panel__btn--outline"
+            >
+              {labels.signup}
+            </Link>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="auth-bar">
         <Link href={`/auth/login?next=${authNext}`} className="auth-bar__link">
@@ -74,6 +112,33 @@ export default function AuthBar({
         <Link href={`/auth/signup?next=${authNext}`} className="auth-bar__link auth-bar__link--emph">
           {labels.signup}
         </Link>
+      </div>
+    );
+  }
+
+  if (variant === 'natePanel') {
+    return (
+      <div className="nate-user-panel">
+        <div className="nate-user-panel__head">
+          <span className="nate-user-panel__name" title={email}>
+            <strong>{displayLocal}</strong>
+            {greetingSuffix ? <span className="nate-user-panel__suffix">{greetingSuffix}</span> : null}
+          </span>
+          <button type="button" className="nate-user-panel__logout" onClick={() => void logout()}>
+            {labels.logout}
+          </button>
+        </div>
+        <Link href="/minihome" className="nate-user-panel__minihome">
+          {memberNav.minihome}
+        </Link>
+        <nav className="nate-user-panel__subnav" aria-label={memberNav.ariaLabel}>
+          <Link href="/ilchon#ilchon-received" className="nate-user-panel__subnav-link">
+            {memberNav.notesInbox}
+          </Link>
+          <Link href="/ilchon#ilchon-friends" className="nate-user-panel__subnav-link">
+            {memberNav.friends}
+          </Link>
+        </nav>
       </div>
     );
   }

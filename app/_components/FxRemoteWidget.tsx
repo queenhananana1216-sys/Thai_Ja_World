@@ -14,9 +14,9 @@ type Labels = Dictionary['home']['fxRemote'];
 const STORAGE_KEY = 'tj_fx_remote_v4';
 const LEGACY_KEY = 'tj_fx_remote_v2';
 /** 펼침 패널(키패드 제외) — clamp/저장용 (실제 너비는 globals.css --tj-fx-panel-w 와 맞출 것) */
-const PANEL_W = 142;
-const PANEL_H = 158;
-const FAB = 40;
+const PANEL_W = 188;
+const PANEL_H = 228;
+const FAB = 52;
 /** 글로벌 헤더·홈 히어로 검색 아래로 살짝 (sticky 헤더 + 한 줄 여유) */
 const DEFAULT_TOP = 100;
 

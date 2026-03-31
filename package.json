@@ -12,6 +12,7 @@
     "lint": "next lint",
     "news:ingest": "tsx scripts/run-news-ingest-once.ts",
     "knowledge:ingest": "tsx scripts/run-knowledge-ingest-once.ts",
+    "knowledge:reprocess-drafts": "tsx scripts/run-knowledge-reprocess-all-drafts.ts",
     "news:backfill-editor-notes": "tsx scripts/run-backfill-editor-notes-once.ts",
     "bot:knowledge:daemon": "node scripts/run-knowledge-cron-daemon.mjs",
     "bot:knowledge:daemon:direct": "tsx scripts/run-knowledge-daemon-direct.ts"

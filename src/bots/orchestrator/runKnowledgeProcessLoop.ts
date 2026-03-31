@@ -35,7 +35,7 @@ export async function runKnowledgeProcessLoop(
 ): Promise<RunKnowledgeProcessResult> {
   const { idempotencyKey, limit: limitOpt } = options;
   const envBatch = Number(process.env.KNOWLEDGE_PROCESS_BATCH_SIZE);
-  const defaultLimit = Number.isFinite(envBatch) && envBatch >= 1 ? Math.min(envBatch, 30) : 5;
+  const defaultLimit = Number.isFinite(envBatch) && envBatch >= 1 ? Math.min(envBatch, 30) : 15;
   const limit = limitOpt ?? defaultLimit;
   const run_id = randomUUID();
 

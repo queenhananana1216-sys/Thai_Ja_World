@@ -145,6 +145,9 @@ export default async function AdminKnowledgeQueuePage() {
         초안만 저장하면 숨김 처리만 됩니다.
         <br />
         <br />
+        <strong>신규 수집 가공:</strong> 배포 후 크론은 한 번에 더 많이 LLM 가공하고(기본 25~30건), 가공 단계는 매번 돌아가 백로그가 덜 쌓이게 바뀌었습니다. 예전에 «LLM 가공 전» 스텁만 온 건 제미나이 미설정·JSON 파싱 실패·하루 5건만 처리되던 제한 때문일 수 있어요.
+        <br />
+        <br />
         <strong>일괄 재가공:</strong> 목록 상단 보라색 칸에서 미게시 초안을 제미나이(현재 서버 키)로 한꺼번에 다시 만들 수 있어요.{' '}
         <strong>뉴스 승인 큐(/admin/news)</strong>는 여기와 별도입니다.
         <br />

@@ -17,7 +17,10 @@
  */
 
 import { getServerSupabaseClient } from '../adapters/supabaseClient';
-import { resolveKnowledgeRawBodyForProcessing } from '@/lib/knowledge/fetchKnowledgeArticleText';
+import {
+  resolveKnowledgeRawBodyForProcessing,
+  sanitizeArticlePlainTextForLlm,
+} from '@/lib/knowledge/fetchKnowledgeArticleText';
 import { KNOWLEDGE_STUB_SUMMARY_SNIPPET } from '@/lib/knowledge/knowledgeStubConstants';
 import { knowledgeInsertAsPublished } from '@/lib/knowledge/knowledgePublishMode';
 
@@ -211,6 +214,7 @@ const SYSTEM_PROMPT = `You are the editorial desk for "Thai Ja World" (태자 �
 Your job: turn a collected article (title + body excerpt + URL) into publish-ready JSON so a human admin only fixes typos and approves.
 
 BILINGUAL + EDITORIAL (mandatory):
+- ko.title and ko.summary MUST be written primarily in Korean (Hangul). Translate the source headline and body; keep unavoidable proper nouns/abbreviations in Latin if needed. Do NOT leave the English headline as ko.title.
 - Korean (ko.*) and Thai (th.*) must EACH be standalone: a reader who only reads Thai gets full value; never write "see Korean" or paste Korean into Thai fields.
 - Mirror the same facts, tone, and cautions in both languages (natural translation/adaptation, not literal word-for-word if awkward).
 - ko.editorial_note / th.editorial_note: optional but recommended — 1–2 short sentences in the voice of the Thai Ja team ("we think / here's what matters for readers in Thailand"). If the source is thin or uncertain, use these fields to say so clearly in each language.
@@ -420,7 +424,24 @@ async function callKnowledgeLlm(
 
   const runGemini = async (): Promise<KnowledgeLlmOutput> => {
     if (!geminiKey) throw new Error('GEMINI_API_KEY 미설정');
-    const content = await callLlm({ baseUrl: geminiBase, model: geminiModel, apiKey: geminiKey, messages, jsonObjectMode: false });
+    let content: string;
+    try {
+      content = await callLlm({
+        baseUrl: geminiBase,
+        model: geminiModel,
+        apiKey: geminiKey,
+        messages,
+        jsonObjectMode: true,
+      });
+    } catch {
+      content = await callLlm({
+        baseUrl: geminiBase,
+        model: geminiModel,
+        apiKey: geminiKey,
+        messages,
+        jsonObjectMode: false,
+      });
+    }
     const result = extractJsonFromContent(content);
     if (!result) throw new Error(`Gemini JSON 파싱 실패: ${content.slice(0, 300)}`);
     return result;
@@ -533,7 +554,14 @@ export async function processKnowledgeFromResolvedRaw(
     await client.from('raw_knowledge').update({ raw_body: resolved.updatedRawBodyForDb }).eq('id', rawId);
   }
 
-  const bodyForLlm = resolved.llmText;
+  let bodyForLlm = resolved.llmText;
+  if (bodyForLlm?.trim()) {
+    const cleaned = sanitizeArticlePlainTextForLlm(bodyForLlm);
+    if (cleaned.length >= 40 || cleaned.length >= bodyForLlm.trim().length * 0.5) {
+      bodyForLlm = cleaned || bodyForLlm;
+    }
+  }
+
   const llmReady = isKnowledgeLlmConfigured();
   const allowStub = stubKnowledgeOnLlmFailure();
 
@@ -545,23 +573,31 @@ export async function processKnowledgeFromResolvedRaw(
       : { raw_knowledge_id: rawId, ok: false, error: r.error };
   }
 
-  try {
-    const llm = await callKnowledgeLlm(title, bodyForLlm, url, fetchedAt);
-    const r = await insertProcessedKnowledgeFromLlm(client, rawId, llm, knowledgeInsertAsPublished());
-    return r.ok
-      ? { raw_knowledge_id: rawId, ok: true, board_target: llm.board_target }
-      : { raw_knowledge_id: rawId, ok: false, error: r.error };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (allowStub) {
-      const stubLlm = buildKnowledgeStubLlmOutput(title, bodyForLlm, url, fetchedAt);
-      const r = await insertProcessedKnowledgeFromLlm(client, rawId, stubLlm, false);
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, 2800));
+      }
+      const llm = await callKnowledgeLlm(title, bodyForLlm, url, fetchedAt);
+      const r = await insertProcessedKnowledgeFromLlm(client, rawId, llm, knowledgeInsertAsPublished());
       return r.ok
-        ? { raw_knowledge_id: rawId, ok: true, board_target: stubLlm.board_target }
-        : { raw_knowledge_id: rawId, ok: false, error: r.error ?? msg };
+        ? { raw_knowledge_id: rawId, ok: true, board_target: llm.board_target }
+        : { raw_knowledge_id: rawId, ok: false, error: r.error };
+    } catch (err) {
+      lastErr = err;
     }
-    return { raw_knowledge_id: rawId, ok: false, error: msg };
   }
+
+  const msg = lastErr instanceof Error ? lastErr.message : String(lastErr);
+  if (allowStub) {
+    const stubLlm = buildKnowledgeStubLlmOutput(title, bodyForLlm, url, fetchedAt);
+    const r = await insertProcessedKnowledgeFromLlm(client, rawId, stubLlm, false);
+    return r.ok
+      ? { raw_knowledge_id: rawId, ok: true, board_target: stubLlm.board_target }
+      : { raw_knowledge_id: rawId, ok: false, error: r.error ?? msg };
+  }
+  return { raw_knowledge_id: rawId, ok: false, error: msg };
 }
 
 /** 승인 대기 초안만: 삭제 후 원문 URL에서 본문을 다시 긁고 LLM으로 초안 재생성 */

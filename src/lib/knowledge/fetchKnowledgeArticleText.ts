@@ -88,6 +88,37 @@ export function htmlToArticlePlainText(html: string): string {
   return text;
 }
 
+/**
+ * 뉴스 사이트 HTML→텍스트에 남는 메타 줄(WRITER, PUBLISHED 등) 제거 — LLM이 한글 제목·요약을 쓰기 쉽게.
+ */
+export function sanitizeArticlePlainTextForLlm(text: string): string {
+  const raw = text.trim();
+  if (!raw) return '';
+
+  const dropLine = (line: string): boolean => {
+    const t = line.trim();
+    if (!t) return false;
+    if (
+      /^(NEWSPAPER\s+SECTION|SECTION|WRITER|PUBLISHED|PHOTO(BY)?|PHOTOGRAPHER|SOURCE|EDITOR|COPYRIGHT)\s*:/i.test(t)
+    ) {
+      return true;
+    }
+    if (/^BY\s+[A-Za-z][A-Za-z\s.'-]{2,80}$/i.test(t) && t.length < 90) return true;
+    if (/^©\s*/.test(t) && t.length < 120) return true;
+    return false;
+  };
+
+  const kept = raw
+    .split('\n')
+    .map((l) => l.trimEnd())
+    .filter((l) => !dropLine(l));
+
+  return kept
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function knowledgeFetchUserAgent(): string {
   const custom = process.env.KNOWLEDGE_FETCH_USER_AGENT?.trim();
   if (custom) return custom;

@@ -172,10 +172,15 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+# 프로덕션(호스팅)은 Dashboard → Authentication → Providers → Email → Password 에서도 최소 길이·문자 조합을 맞추세요.
+minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
-password_requirements = ""
+# 앱 클라이언트 검증(passwordPolicy.ts: 글자+숫자, 최소 8자)과 동일 계열
+password_requirements = "letters_digits"
+
+# 유출 비밀번호 차단(HaveIBeenPwned)은 호스팅 프로젝트에서만 Dashboard 로 켭니다(Pro 이상).
+# 로컬 config 로는 켤 수 없습니다 → https://supabase.com/docs/guides/auth/password-security
 
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.

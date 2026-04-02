@@ -5,12 +5,14 @@
  */
 import Link from 'next/link';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
+import AdminKnowledgeImportClient from './_components/AdminKnowledgeImportClient';
 import KnowledgeQueueClient, {
   type KnowledgeQueueDiagnostics,
   type KnowledgeQueueItem,
 } from './_components/KnowledgeQueueClient';
-import type { KnowledgeLlmOutput } from '@/bots/actions/processAndPersistKnowledge';
+import type { KnowledgeLlmOutput } from '@/lib/knowledge/knowledgeLlmTypes';
 import { knowledgeInsertAsPublished } from '@/lib/knowledge/knowledgePublishMode';
+import { getKnowledgeLlmAdminStatus } from '@/bots/actions/processAndPersistKnowledge';
 
 function parseKnowledgeCleanBody(existing: unknown): KnowledgeLlmOutput | null {
   try {
@@ -26,6 +28,8 @@ export default async function AdminKnowledgeQueuePage() {
   const admin = createServiceRoleClient();
   const since14d = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
 
+  const llmAdmin = getKnowledgeLlmAdminStatus();
+
   let diagnostics: KnowledgeQueueDiagnostics | null = null;
   try {
     const [dDraft, dPub, dRaw] = await Promise.all([
@@ -38,9 +42,18 @@ export default async function AdminKnowledgeQueuePage() {
       publishedCount: dPub.count ?? 0,
       rawRecentCount: dRaw.count ?? 0,
       knowledgeModeAuto: knowledgeInsertAsPublished(),
+      knowledgeLlmConfigured: llmAdmin.configured,
+      knowledgeLlmProviderSetting: llmAdmin.providerSetting,
     };
   } catch {
-    diagnostics = null;
+    diagnostics = {
+      draftCount: 0,
+      publishedCount: 0,
+      rawRecentCount: 0,
+      knowledgeModeAuto: knowledgeInsertAsPublished(),
+      knowledgeLlmConfigured: llmAdmin.configured,
+      knowledgeLlmProviderSetting: llmAdmin.providerSetting,
+    };
   }
 
   let orphanRawKnowledge: Array<{
@@ -130,6 +143,11 @@ export default async function AdminKnowledgeQueuePage() {
   return (
     <div style={{ padding: '20px 24px', maxWidth: 960, margin: '0 auto' }}>
       <h1 style={{ fontSize: 18, margin: '0 0 8px', fontWeight: 700 }}>지식 초안 큐</h1>
+      <p style={{ margin: '0 0 12px', fontSize: 12 }}>
+        <Link href="/admin/publish" style={{ color: '#2563eb', fontWeight: 600 }}>
+          최종 승인·태자 편집 팁(한 페이지 요약) →
+        </Link>
+      </p>
       <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.55 }}>
         <strong>기본(미설정)</strong>은 뉴스와 같이 초안만 쌓입니다. <code>KNOWLEDGE_PUBLISH_MODE=auto</code>를 넣은
         경우에만 가공 직후 공개 경로를 탈 수 있어요(운영에서는 비권장).
@@ -145,9 +163,11 @@ export default async function AdminKnowledgeQueuePage() {
         <br />
         <br />
         <strong>가공 파이프라인:</strong> RSS로는 본문이 비는 경우가 많아, 가공(크론) 시{' '}
-        <strong>출처 URL에서 본문을 자동으로 긁은 뒤</strong> LLM이 한·태 초안을 채웁니다. 이미 쌓인 스텁 초안은 카드의{' '}
-        <strong>「원문 다시 불러와 LLM 재가공」</strong>으로 같은 방식으로 다시 만들 수 있어요(배포에 LLM 키 필요).
-        비어 있으면{' '}
+        <strong>출처 URL에서 본문을 자동으로 긁은 뒤</strong> LLM이 한·태 초안을 채웁니다.{' '}
+        <strong>스텁(«LLM 가공 전»)</strong>만 모아 재가공하는 크론(<code>/api/cron/knowledge-stubs</code>)도 돌도록
+        설정해 두었습니다 — 예전에는 processed 행이 있으면 일반 가공 크론이 <strong>영원히 건너뛰는 구조</strong>였습니다.
+        급하면 카드의 <strong>「원문 다시 불러와 LLM 재가공」</strong> 또는 목록 위 <strong>스텁 일괄 LLM</strong>을 눌러 주세요(배포에
+        LLM 키 필요). 비어 있으면{' '}
         <Link href="/admin/bot-actions" style={{ color: '#2563eb' }}>
           봇 기록
         </Link>
@@ -155,9 +175,16 @@ export default async function AdminKnowledgeQueuePage() {
         <br />
         <br />
         <strong>SQL만 돌렸는데 비어 있나요?</strong> 이 목록은 <code>processed_knowledge</code> 중{' '}
-        <code>published=false</code> 만 보여 줍니다. 원문만 <code>raw_knowledge</code>에 있으면 지식 가공 크론이{' '}
+        <code>published=false</code> 만 보여 줍니다.         원문만 <code>raw_knowledge</code>에 있으면 지식 가공 크론이{' '}
         <code>processed_knowledge</code> 행을 만들어야 합니다. 원문만 있으면 «승인 큐에 올리기»로 스텁 초안을 만들 수 있습니다.
+        <br />
+        <br />
+        <strong>오늘 제미나이·편집본을 한꺼번에 올릴 때:</strong> 아래 초록 칸에 JSON을 붙여 «초안으로 넣기» → 같은 페이지의{' '}
+        <strong>«꿀팁 한 스푼 초안 일괄 승인»</strong> 한 번이면 <code>/tips</code>·광장(정보)까지 반영됩니다(검증 실패 건은 목록에 남고
+        건너뜁니다).
       </p>
+
+      <AdminKnowledgeImportClient />
 
       <KnowledgeQueueClient items={items} diagnostics={diagnostics} orphanRawKnowledge={orphanRawKnowledge} />
     </div>

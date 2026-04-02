@@ -34,6 +34,8 @@ export default function NewPostForm({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [files, setFiles] = useState<FileList | null>(null);
+  const [ownerPassword, setOwnerPassword] = useState('');
+  const [ownerPassword2, setOwnerPassword2] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -50,6 +52,21 @@ export default function NewPostForm({
       setLoading(false);
       router.push('/auth/login?next=/community/boards/new');
       return;
+    }
+
+    const op = ownerPassword.trim();
+    const op2 = ownerPassword2.trim();
+    if (op || op2) {
+      if (op.length < 4 || op.length > 128) {
+        setError('글 비밀번호는 4자 이상 128자 이하로 정해 주세요.');
+        setLoading(false);
+        return;
+      }
+      if (op !== op2) {
+        setError(board.postOwnerPasswordMismatch);
+        setLoading(false);
+        return;
+      }
     }
 
     const uploadUrls: string[] = [];
@@ -94,6 +111,7 @@ export default function NewPostForm({
         title: title.trim(),
         content: content.trim(),
         image_urls: uploadUrls,
+        ...(op ? { owner_password: op } : {}),
       }),
     });
 
@@ -160,6 +178,28 @@ export default function NewPostForm({
         accept="image/jpeg,image/png,image/webp,image/gif"
         multiple
         onChange={(e) => setFiles(e.target.files)}
+      />
+
+      <p style={{ margin: '10px 0 4px', fontSize: '0.78rem', color: 'var(--tj-muted)' }}>
+        {board.postOwnerPasswordOptional}
+      </p>
+      <label htmlFor="popw">{board.postOwnerPasswordPlaceholder}</label>
+      <input
+        id="popw"
+        type="password"
+        autoComplete="new-password"
+        value={ownerPassword}
+        onChange={(e) => setOwnerPassword(e.target.value)}
+        maxLength={128}
+      />
+      <label htmlFor="popw2">{board.postOwnerPasswordRepeat}</label>
+      <input
+        id="popw2"
+        type="password"
+        autoComplete="new-password"
+        value={ownerPassword2}
+        onChange={(e) => setOwnerPassword2(e.target.value)}
+        maxLength={128}
       />
 
       {error && <p style={{ color: '#be185d', fontSize: '0.86rem' }}>{error}</p>}

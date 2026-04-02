@@ -1,0 +1,46 @@
+---
+description: taeja-world(Next+Supabase) 전용 — app·src·supabase 등 이 레포 코드를 건드릴 때만 적용.
+globs: package.json,middleware.ts,app/**,src/**,supabase/**,scripts/**
+alwaysApply: false
+---
+
+# taeja-world 핵심 맥락
+
+(`package.json`에 `"name": "taeja-world"`인 이 워크스페이스에서 위 glob 파일을 열었을 때)
+
+## 스택
+
+- Next.js 15 App Router, React 19, TypeScript, Vercel 배포 후보.
+- 데이터: Supabase(Postgres + Auth + RLS). 클라이언트는 `src/lib/supabase/`(`client`, `server`, `admin`, `userJwtClient`, `serverAuthCookies`).
+- 크론·봇: `app/api/bot/*`, `app/api/cron/*`, 오케스트레이션·액션은 `src/bots/`. 인증은 `src/lib/cronAuth.ts`(Bearer `CRON_SECRET` / `BOT_CRON_SECRET`, 미설정 시 로컬에서 검증 생략).
+
+## 기능 축(확장 시 먼저 읽을 위치)
+
+| 축 | UI·라우트 | API·백엔드 | 비고 |
+|----|-----------|------------|------|
+| 미니홈·일촌 | `app/minihome/`, `app/shop/[slug]/` | ilchon·게스트북 관련 마이그레이션·RPC | 공개 슬러그 vs 내 편집 경로 구분 |
+| 로컬 샵 | `app/my-local-shop/` | `app/api/admin/local-spots*` 등 | 소유자·게스트북 토글은 RLS와 맞춤 |
+| 커뮤니티·꿀팁 | `app/community/`, `app/tips` | `app/api/community/`, `src/lib/moderation/` | 미들웨어 `middleware.ts`의 보호 경로와 정합 |
+| 뉴스·지식 파이프라인 | `app/news/`, `app/admin/news`, `app/admin/knowledge` | `app/api/bot/*`, `app/api/admin/knowledge*` | 큐·발행 모드 상수는 `src/lib/knowledge/`, `src/lib/news/` |
+| 관리자 | `app/admin/` | `src/lib/admin/`, `resolveAdminAccess` | 이메일 허용 목록 등 |
+| SEO·색인 | 공개 `app/**/page.tsx` | `app/sitemap.ts`, `app/robots.ts` | `src/lib/seo/site.ts`, `JsonLd.tsx` — 상세는 룰 `taeja-seo`, 스킬 `taeja-seo-checklist` |
+
+## 보안·경계
+
+- 새 테이블/뷰: **RLS + 정책 + 필요 시 GRANT**를 마이그레이션에 포함. 서비스 롤은 `src/lib/supabase/admin.ts` 등에서만.
+- 공개 API 라우트는 익명 접근 시 데이터 노출 범위를 명시적으로 제한.
+
+## 변경 후 검증(최소)
+
+프로젝트 루트 `e:\02_Workspace`에서:
+
+```bash
+npm run type-check
+npm run lint
+```
+
+DB 스키마를 건드렸으면 로컬에서 `supabase db reset` 또는 대상 마이그레이션만 적용 후 API·RLS 스모크를 권장. 상세 체크리스트는 프로젝트 스킬 `taeja-validate-workflow` 참고.
+
+## i18n·미들웨어
+
+- 로케일 쿠키·`x-tj-locale` 헤더는 `middleware.ts`와 `src/i18n/`와 연동. 새 보호 라우트는 `pathRequiresAuth`와 동기화.

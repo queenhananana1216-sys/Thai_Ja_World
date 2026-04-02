@@ -28,64 +28,54 @@ export default async function AdminDashboardPage() {
   try {
     const admin = createServiceRoleClient();
 
-    const { count: c1, error: e1 } = await admin.from('profiles').select('*', { count: 'exact', head: true });
+    const [
+      { count: c1, error: e1 },
+      { count: cToday, error: eToday },
+      { count: c2, error: e2 },
+      { count: c3, error: e3 },
+      { count: cPub, error: ePub },
+      { count: cK, error: eK },
+      { count: cLs, error: eLs },
+    ] = await Promise.all([
+      admin.from('profiles').select('*', { count: 'exact', head: true }),
+      admin
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', kstToday.start)
+        .lt('created_at', kstToday.end),
+      admin.from('profiles').select('*', { count: 'exact', head: true }).gte('last_seen_at', fiveAgo),
+      admin.from('processed_news').select('*', { count: 'exact', head: true }).eq('published', false),
+      admin.from('processed_news').select('*', { count: 'exact', head: true }).eq('published', true),
+      admin.from('processed_knowledge').select('*', { count: 'exact', head: true }).eq('published', false),
+      admin.from('local_spots').select('*', { count: 'exact', head: true }).eq('is_published', false),
+    ]);
+
     if (e1) {
       dbNote = `프로필 수 집계 실패: ${e1.message}`;
     } else {
       totalUsers = c1 ?? 0;
     }
-
-    const { count: cToday, error: eToday } = await admin
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', kstToday.start)
-      .lt('created_at', kstToday.end);
     if (eToday) {
       if (!dbNote) dbNote = `오늘 가입 수 집계 실패: ${eToday.message}`;
     } else {
       signupsToday = cToday ?? 0;
     }
-
-    const { count: c2, error: e2 } = await admin
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .gte('last_seen_at', fiveAgo);
     if (e2) {
       if (!dbNote) dbNote = `활동 중 집계 불가(010 마이그레이션·last_seen_at 확인): ${e2.message}`;
     } else {
       recentActive = c2 ?? 0;
     }
-
-    const { count: c3, error: e3 } = await admin
-      .from('processed_news')
-      .select('*', { count: 'exact', head: true })
-      .eq('published', false);
     if (e3) {
       if (!dbNote) dbNote = `뉴스 초안 집계 생략(009 마이그레이션·키 확인): ${e3.message}`;
     } else {
       draftNews = c3 ?? 0;
     }
-
-    const { count: cPub, error: ePub } = await admin
-      .from('processed_news')
-      .select('*', { count: 'exact', head: true })
-      .eq('published', true);
     if (!ePub) {
       publishedNews = cPub ?? 0;
     }
-
-    const { count: cK, error: eK } = await admin
-      .from('processed_knowledge')
-      .select('*', { count: 'exact', head: true })
-      .eq('published', false);
     if (!eK) {
       draftKnowledge = cK ?? 0;
     }
-
-    const { count: cLs, error: eLs } = await admin
-      .from('local_spots')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_published', false);
     if (!eLs) {
       draftLocalSpots = cLs ?? 0;
     }
@@ -128,6 +118,7 @@ export default async function AdminDashboardPage() {
         </div>
         <p style={{ margin: '16px 0 0', fontSize: 13, color: '#64748b', lineHeight: 1.55 }}>
           <strong>아침 루틴:</strong> 크론이 돌면 뉴스·지식 초안이 쌓입니다.{' '}
+          <Link href="/admin/publish">최종 승인 허브</Link>에서 편집 팁을 보고,{' '}
           <Link href="/admin/news">뉴스 큐</Link>·<Link href="/admin/knowledge">지식 큐</Link>에서 승인하면 홈·광장에
           반영됩니다. 맛집·마사지 초안은{' '}
           <Link href="/admin/local-spots">로컬 가게</Link>에서 «승인·공개» 후 문구만 손보면 됩니다. 수동으로 봇을 돌릴
@@ -216,6 +207,14 @@ export default async function AdminDashboardPage() {
             <span>
               승인 대기 행은 «승인·공개» 한 번으로 노출 — 이후 수정. <code>local_spots</code> /{' '}
               <code>/shop/…</code>·<code>/my-local-shop</code>
+            </span>
+          </Link>
+        </li>
+        <li>
+          <Link href="/admin/community-posts">
+            광장 게시글 · 중고·알바
+            <span>
+              <code>posts</code> 최신 200건 — 운영 삭제. 작성자는 글 화면 «내 글 메뉴»에서도 삭제 가능
             </span>
           </Link>
         </li>

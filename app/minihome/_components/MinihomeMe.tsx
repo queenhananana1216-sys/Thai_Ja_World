@@ -239,6 +239,30 @@ export default function MinihomeMe() {
         </div>
       </div>
 
+      <div
+        className="card"
+        style={{
+          padding: 20,
+          marginBottom: 20,
+          border: `2px solid ${accent}`,
+          background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.07), rgba(236, 72, 153, 0.06))',
+        }}
+      >
+        <h2 className="minihome-edit-form__h" style={{ marginTop: 0, marginBottom: 8 }}>
+          {labels.roomEnterTitle}
+        </h2>
+        <p style={{ margin: '0 0 14px', fontSize: '0.88rem', lineHeight: 1.55, color: 'var(--tj-muted)' }}>
+          {labels.roomEnterLead}
+        </p>
+        <Link
+          href={`/minihome/${row.public_slug}`}
+          className="board-form__submit"
+          style={{ display: 'inline-block', textAlign: 'center' }}
+        >
+          {labels.roomEnterCta}
+        </Link>
+      </div>
+
       <p style={{ margin: '0 0 18px', lineHeight: 1.55, color: 'var(--tj-muted)', fontSize: '0.9rem' }}>
         {labels.yourSpace}
       </p>

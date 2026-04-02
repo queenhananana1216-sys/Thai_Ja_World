@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/knowledge",
       "schedule": "30 22 * * *"
+    },
+    {
+      "path": "/api/cron/knowledge-stubs",
+      "schedule": "20 */3 * * *"
     }
   ]
 }

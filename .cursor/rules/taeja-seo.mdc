@@ -1,0 +1,34 @@
+---
+description: 태자월드(thaijaworld) 공개 페이지 SEO — 메타·사이트맵·robots·절대 URL과 코드베이스 패턴 정합.
+globs: app/**/page.tsx,app/sitemap.ts,app/robots.ts,src/lib/seo/**,src/i18n/dictionaries.ts
+alwaysApply: false
+---
+
+# 태자월드 SEO (이 레포 패턴)
+
+## 절대 URL·본문
+
+- 베이스 URL은 **`getSiteBaseUrl()`** / 경로 조합은 **`absoluteUrl()`** (`src/lib/seo/site.ts`). 프로덕션은 **`NEXT_PUBLIC_SITE_URL`** 권장; 루트 `generateMetadata`의 **`metadataBase`** 와 어긋나지 않게 유지.
+- `description` 길이·공백 정리는 **`trimForMetaDescription()`** 재사용.
+
+## 공개 `page.tsx`
+
+- **`generateMetadata`**: `title`, `description`, **`alternates.canonical`**(공개 목록·상세), **`robots`**(의도적 `noindex`만 명시 — 가치 있는 UGC·뉴스를 실수로 막지 않기).
+- OG/Twitter: `app/community/boards/page.tsx`, `app/news/[id]/page.tsx`, `app/community/boards/[postId]/page.tsx` 패턴(이미지 URL은 **절대 경로**)을 새 허브·상세에도 맞출 것.
+
+## Discovery vs Control
+
+- **발견**: `app/sitemap.ts` — 정적 허브 순서·동적 URL(posts/news/minihome)이 **커뮤니티 우선** 전략. **새 공개 콘텐츠 타입**(예: 새 라우트 묶음)이면 여기 **엔트리 추가**와 `revalidate` 검토.
+- **통제**: `app/robots.ts` — `/admin`, `/api`, `/auth` 등 차단 유지. **색인 가치 낮은 양식·중복 URL**이 생기면 `disallow` 후보.
+
+## 구조화 데이터
+
+- 뉴스 등: **`JsonLd`** (`src/lib/seo/JsonLd.tsx`). 스키마 타입·필수 필드는 Google 리치 결과 가이드에 맞출 것.
+
+## i18n
+
+- 로케일은 쿠키 기반이라 URL이 언어별로 갈라지지 않음 (`sitemap.ts` 주석). **`/ko/…` 경로를 도입하면** `alternates.languages`·사이트맵 엔트리를 **같이** 설계.
+
+## 검색엔진 도구
+
+- 네이버 소유확인 등은 `app/layout.tsx` `verification` 등 **배포 설정과 실제 도메인** 일치 확인. 변경 시 중복·불일치 메타 없게.

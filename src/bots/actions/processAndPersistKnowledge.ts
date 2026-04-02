@@ -20,10 +20,12 @@ import { getServerSupabaseClient } from '../adapters/supabaseClient';
 import { resolveKnowledgeRawBodyForProcessing } from '@/lib/knowledge/fetchKnowledgeArticleText';
 import { KNOWLEDGE_STUB_SUMMARY_SNIPPET } from '@/lib/knowledge/knowledgeStubConstants';
 import { knowledgeInsertAsPublished } from '@/lib/knowledge/knowledgePublishMode';
+import type { KnowledgeLlmOutput } from '@/lib/knowledge/knowledgeLlmTypes';
 
 // ── 타입 ──────────────────────────────────────────────────────────────────
 
 export { KNOWLEDGE_STUB_SUMMARY_SNIPPET } from '@/lib/knowledge/knowledgeStubConstants';
+export type { KnowledgeLlmOutput } from '@/lib/knowledge/knowledgeLlmTypes';
 
 export interface KnowledgeProcessRowResult {
   raw_knowledge_id: string;
@@ -45,38 +47,6 @@ export type EnsureKnowledgeDraftResult = {
   error?: string;
   already_existed?: boolean;
 };
-
-export interface KnowledgeLlmOutput {
-  board_target: 'tips_board' | 'board_board';
-  editorial_meta: {
-    novelty_score: number;
-    usefulness_score: number;
-    confidence_level: 'high' | 'medium' | 'low';
-    reasons: string[];
-  };
-  ko: {
-    title: string;
-    summary: string;
-    /** 승인 큐에서 편집팀이 덧붙이는 이용자용 풀어쓰기(LLM 요약이 짧을 때) */
-    editorial_note?: string;
-    checklist: string[];
-    cautions: string[];
-    tags: string[];
-  };
-  th: {
-    title: string;
-    summary: string;
-    editorial_note?: string;
-    checklist: string[];
-    cautions: string[];
-    tags: string[];
-  };
-  board_copy: {
-    category_badge_text: string;
-    category_description: string;
-  };
-  sources: Array<{ external_url: string; source_name: string; retrieved_at: string }>;
-}
 
 // ── LLM 설정 ──────────────────────────────────────────────────────────────
 
@@ -104,6 +74,17 @@ export function isKnowledgeLlmConfigured(): boolean {
     Boolean(process.env.GEMINI_API_KEY?.trim()) ||
     Boolean(process.env.LOCAL_LLM_BASE_URL?.trim())
   );
+}
+
+/** 관리자 페이지용 — 비밀 값 없이 provider 설정만 노출 */
+export function getKnowledgeLlmAdminStatus(): {
+  configured: boolean;
+  providerSetting: 'openai' | 'gemini' | 'local' | 'auto';
+} {
+  return {
+    configured: isKnowledgeLlmConfigured(),
+    providerSetting: normalizeProvider(),
+  };
 }
 
 /**
@@ -210,6 +191,13 @@ function shouldFallback(err: unknown): boolean {
 const SYSTEM_PROMPT = `You are a pragmatic knowledge curator for "Thai Ja World" (Thailand–Korea community).
 Your job: given a Thai/Korea-related web article (title + excerpt + URL), output a structured JSON with practical information.
 
+LANGUAGE — HIGHEST PRIORITY (do not violate):
+- The entire "ko" object is for KOREAN readers: ko.title, ko.summary, ko.checklist[], ko.cautions[], ko.tags[] MUST be natural 한국어 written in Hangul. Translate and paraphrase from English/Thai sources; NEVER paste English article sentences into ko fields.
+- The entire "th" object is for THAI readers: all strings MUST be natural ภาษาไทย (Thai script). Do not leave English in th.title or th.summary.
+- Source text in English is INPUT only; output must localize per field as above.
+- Automated check: ko.title needs many Hangul syllables (가-힣), not Roman letters. ko.summary must be mostly Hangul paragraphs — if you output English here, the response will be rejected.
+- Same for th.*: must be mostly Thai Unicode letters (ก-๙), not English paragraphs in th.summary.
+
 CRITICAL SAFETY RULES — violating these is unacceptable:
 1. NEVER include PII: phone numbers, physical addresses, personal contact info, account numbers, real names of private individuals, personal identifiers. If present in source, OMIT or generalize.
 2. ALWAYS add legal/official disclaimer in cautions for visa, immigration, or legal topics: "법률 자문이 아닙니다. 실제 비자 신청 전 반드시 대사관·공식 기관에서 확인하세요."
@@ -260,8 +248,55 @@ function buildUserBlock(title: string, body: string | null, sourceUrl: string, r
     `수집 시각: ${retrievedAt}`,
     '',
     '위 내용을 기반으로 앞서 지시한 JSON 스키마를 정확히 따라 출력하세요.',
+    '원문이 영어/태국어여도 ko.* 는 전부 한국어(한글)로 번역·재작성하고, th.* 는 전부 태국어로 번역·재작성하세요. 영어 문단을 ko.summary에 그대로 넣지 마세요.',
     '반드시 JSON 객체만 출력하고 다른 텍스트는 출력하지 마세요.',
   ].join('\n');
+}
+
+const KNOWLEDGE_LLM_LOCALE_RETRY_USER = [
+  '이전 응답이 규칙을 만족하지 않았습니다. 같은 원문에 대해 JSON만 다시 출력하세요.',
+  '필수: ko.title·ko.summary·ko.checklist·ko.cautions·ko.tags 의 모든 문장은 한글(한국어)만 — 영어 원문 복붙 금지, 반드시 번역·요약.',
+  '필수: th.title·th.summary·th.checklist·th.cautions·th.tags 는 태국 문자(ภาษาไทย)만 사용.',
+  '숫자·고유명사(DTV, TM30 등)만 라틴 허용, 본문 설명은 각 언어로 작성.',
+].join('\n');
+
+const HANGUL_SYLLABLE_RE = /[\uAC00-\uD7AF]/g;
+const THAI_LETTER_RE = /[\u0E00-\u0E7F]/g;
+
+function countRegexMatches(s: string, re: RegExp): number {
+  const m = s.match(re);
+  return m ? m.length : 0;
+}
+
+/** LLM이 영어를 ko.* 에 넣는 경우 차단 — 재시도 유도 */
+function validateKnowledgeLlmOutputLocales(out: KnowledgeLlmOutput): string | null {
+  const koTitle = out.ko.title.trim();
+  const koSum = out.ko.summary.trim();
+  const hangulT = countRegexMatches(koTitle, HANGUL_SYLLABLE_RE);
+  const hangulS = countRegexMatches(koSum, HANGUL_SYLLABLE_RE);
+  if (hangulT < 4) {
+    return 'ko.title 에 한글 음절이 너무 적습니다. 영어 제목을 한국어로 번역하세요.';
+  }
+  if (hangulS < 28) {
+    return 'ko.summary 는 한글로 된 요약이어야 합니다. 영어 문단을 붙여 넣지 말고 한국어로 300자 내외로 다시 쓰세요.';
+  }
+
+  const thTitle = out.th.title.trim();
+  const thSum = out.th.summary.trim();
+  const thaiT = countRegexMatches(thTitle, THAI_LETTER_RE);
+  const thaiS = countRegexMatches(thSum, THAI_LETTER_RE);
+  if (thaiT < 4) {
+    return 'th.title 은 태국어 문자로 작성하세요.';
+  }
+  if (thaiS < 28) {
+    return 'th.summary 는 태국어로 작성하세요. 영어만 넣지 마세요.';
+  }
+  return null;
+}
+
+function knowledgeLlmErrorShouldRetryLocaleOrParse(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes('LOCALE:') || msg.includes('JSON 파싱 실패') || msg.includes('파싱 실패');
 }
 
 // ── JSON 파싱/검증 ────────────────────────────────────────────────────────
@@ -368,17 +403,21 @@ function extractJsonFromContent(content: string): KnowledgeLlmOutput | null {
 
 // ── LLM 라우터 ────────────────────────────────────────────────────────────
 
-async function callKnowledgeLlm(
-  title: string,
-  body: string | null,
-  sourceUrl: string,
-  retrievedAt: string,
-): Promise<KnowledgeLlmOutput> {
-  const messages = [
-    { role: 'system' as const, content: SYSTEM_PROMPT },
-    { role: 'user' as const, content: buildUserBlock(title, body, sourceUrl, retrievedAt) },
-  ];
+type KnowledgeChatMessage = { role: 'system' | 'user'; content: string };
 
+function finishKnowledgeLlmParse(content: string, label: string): KnowledgeLlmOutput {
+  const result = extractJsonFromContent(content);
+  if (!result) {
+    throw new Error(`${label} JSON 파싱 실패: ${content.slice(0, 300)}`);
+  }
+  const locErr = validateKnowledgeLlmOutputLocales(result);
+  if (locErr) {
+    throw new Error(`LOCALE: ${locErr}`);
+  }
+  return result;
+}
+
+async function routeKnowledgeLlmWithMessages(messages: KnowledgeChatMessage[]): Promise<KnowledgeLlmOutput> {
   const provider = normalizeProvider();
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
   const openaiModel = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
@@ -391,26 +430,38 @@ async function callKnowledgeLlm(
 
   const runLocal = async (): Promise<KnowledgeLlmOutput> => {
     if (!localBase) throw new Error('LOCAL_LLM_BASE_URL 미설정');
-    const content = await callLlm({ baseUrl: localBase, model: localModel, apiKey: localKey, messages, jsonObjectMode: false });
-    const result = extractJsonFromContent(content);
-    if (!result) throw new Error(`로컬 LLM JSON 파싱 실패: ${content.slice(0, 300)}`);
-    return result;
+    const content = await callLlm({
+      baseUrl: localBase,
+      model: localModel,
+      apiKey: localKey,
+      messages,
+      jsonObjectMode: false,
+    });
+    return finishKnowledgeLlmParse(content, '로컬 LLM');
   };
 
   const runOpenAi = async (): Promise<KnowledgeLlmOutput> => {
     if (!openaiKey) throw new Error('OPENAI_API_KEY 미설정');
-    const content = await callLlm({ baseUrl: 'https://api.openai.com/v1', model: openaiModel, apiKey: openaiKey, messages, jsonObjectMode: true });
-    const result = extractJsonFromContent(content);
-    if (!result) throw new Error(`OpenAI JSON 파싱 실패: ${content.slice(0, 300)}`);
-    return result;
+    const content = await callLlm({
+      baseUrl: 'https://api.openai.com/v1',
+      model: openaiModel,
+      apiKey: openaiKey,
+      messages,
+      jsonObjectMode: true,
+    });
+    return finishKnowledgeLlmParse(content, 'OpenAI');
   };
 
   const runGemini = async (): Promise<KnowledgeLlmOutput> => {
     if (!geminiKey) throw new Error('GEMINI_API_KEY 미설정');
-    const content = await callLlm({ baseUrl: geminiBase, model: geminiModel, apiKey: geminiKey, messages, jsonObjectMode: false });
-    const result = extractJsonFromContent(content);
-    if (!result) throw new Error(`Gemini JSON 파싱 실패: ${content.slice(0, 300)}`);
-    return result;
+    const content = await callLlm({
+      baseUrl: geminiBase,
+      model: geminiModel,
+      apiKey: geminiKey,
+      messages,
+      jsonObjectMode: false,
+    });
+    return finishKnowledgeLlmParse(content, 'Gemini');
   };
 
   if (provider === 'local') return runLocal();
@@ -419,13 +470,17 @@ async function callKnowledgeLlm(
 
   // auto: OpenAI → Gemini → Local 폴백
   if (openaiKey) {
-    try { return await runOpenAi(); }
-    catch (e) {
+    try {
+      return await runOpenAi();
+    } catch (e) {
       if (shouldFallback(e)) {
         if (geminiKey) {
-          try { return await runGemini(); }
-          catch (e2) {
-            if (localBase) { return runLocal(); }
+          try {
+            return await runGemini();
+          } catch (e2) {
+            if (localBase) {
+              return runLocal();
+            }
             throw e2;
           }
         }
@@ -438,6 +493,34 @@ async function callKnowledgeLlm(
   if (localBase) return runLocal();
 
   throw new Error('LLM 미설정 — OPENAI_API_KEY, GEMINI_API_KEY, LOCAL_LLM_BASE_URL 중 하나 필요');
+}
+
+async function callKnowledgeLlm(
+  title: string,
+  body: string | null,
+  sourceUrl: string,
+  retrievedAt: string,
+): Promise<KnowledgeLlmOutput> {
+  const baseMessages: KnowledgeChatMessage[] = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: buildUserBlock(title, body, sourceUrl, retrievedAt) },
+  ];
+
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const messages: KnowledgeChatMessage[] =
+      attempt === 0 ? baseMessages : [...baseMessages, { role: 'user', content: KNOWLEDGE_LLM_LOCALE_RETRY_USER }];
+    try {
+      return await routeKnowledgeLlmWithMessages(messages);
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 0 && knowledgeLlmErrorShouldRetryLocaleOrParse(e)) {
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
 // ── DB 적재 공통 (스텁·LLM 공용) ───────────────────────────────────────────

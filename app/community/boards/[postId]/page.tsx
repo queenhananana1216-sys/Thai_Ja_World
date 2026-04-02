@@ -73,7 +73,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const { data: post, error } = await supabase
     .from('posts')
     .select(
-      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden',
+      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set',
     )
     .eq('id', postId)
     .eq('moderation_status', 'safe')
@@ -160,6 +160,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
           <PostAuthorMenu
             postId={postId}
             authorHidden={authorHidden}
+            ownerGateSet={Boolean((post as { owner_edit_password_set?: boolean }).owner_edit_password_set)}
             labels={{
               postOwnerMenu: d.board.postOwnerMenu,
               postDelete: d.board.postDelete,
@@ -168,6 +169,13 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
               postDeleteConfirm: d.board.postDeleteConfirm,
               postBusy: d.board.postBusy,
               postActionError: d.board.postActionError,
+              postEdit: d.board.postEdit,
+              postOwnerPasswordPrompt: d.board.postOwnerPasswordPrompt,
+              postOwnerPasswordPlaceholder: d.board.postOwnerPasswordPlaceholder,
+              postOwnerPasswordSubmit: d.board.postOwnerPasswordSubmit,
+              postOwnerPasswordCancel: d.board.postOwnerPasswordCancel,
+              postOwnerPasswordRequired: d.board.postOwnerPasswordRequired,
+              postOwnerPasswordWrong: d.board.postOwnerPasswordWrong,
             }}
           />
         ) : null}

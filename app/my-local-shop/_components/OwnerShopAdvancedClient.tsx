@@ -2,6 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 type Row = {
@@ -11,6 +12,7 @@ type Row = {
   minihome_menu: unknown;
   minihome_layout_modules: unknown;
   minihome_extra: unknown;
+  minihome_guestbook_enabled?: boolean | null;
 };
 
 function stringifyJson(v: unknown, fallback: string): string {
@@ -24,6 +26,8 @@ function stringifyJson(v: unknown, fallback: string): string {
 export default function OwnerShopAdvancedClient() {
   const params = useParams();
   const id = typeof params.id === 'string' ? params.id : '';
+  const { d } = useClientLocaleDictionary();
+  const shopL = d.localShop;
 
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
@@ -35,6 +39,8 @@ export default function OwnerShopAdvancedClient() {
   const [menuJson, setMenuJson] = useState('[]');
   const [layoutJson, setLayoutJson] = useState('["intro","menu","line","photos"]');
   const [extraJson, setExtraJson] = useState('{}');
+  const [guestbookEnabled, setGuestbookEnabled] = useState(true);
+  const [guestbookInLayout, setGuestbookInLayout] = useState(true);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -50,7 +56,9 @@ export default function OwnerShopAdvancedClient() {
     }
     const { data, error } = await sb
       .from('local_spots')
-      .select('minihome_intro,minihome_theme,minihome_bgm_url,minihome_menu,minihome_layout_modules,minihome_extra')
+      .select(
+        'minihome_intro,minihome_theme,minihome_bgm_url,minihome_menu,minihome_layout_modules,minihome_extra,minihome_guestbook_enabled',
+      )
       .eq('id', id)
       .eq('owner_profile_id', user.id)
       .maybeSingle();
@@ -63,8 +71,12 @@ export default function OwnerShopAdvancedClient() {
       setThemeJson(stringifyJson(r.minihome_theme, '{}'));
       setBgmUrl(r.minihome_bgm_url ?? '');
       setMenuJson(stringifyJson(r.minihome_menu, '[]'));
+      const rawLayout = r.minihome_layout_modules;
+      const layoutArr = Array.isArray(rawLayout) ? rawLayout.filter((x): x is string => typeof x === 'string') : [];
+      setGuestbookInLayout(layoutArr.includes('guestbook'));
       setLayoutJson(stringifyJson(r.minihome_layout_modules, '["intro","menu","line","photos"]'));
       setExtraJson(stringifyJson(r.minihome_extra, '{}'));
+      setGuestbookEnabled(r.minihome_guestbook_enabled !== false);
     }
     setLoading(false);
   }, [id]);
@@ -108,6 +120,13 @@ export default function OwnerShopAdvancedClient() {
         setSaving(false);
         return;
       }
+      const layoutStr = minihome_layout_modules.map((x) => String(x));
+      const nextLayout = guestbookInLayout
+        ? layoutStr.includes('guestbook')
+          ? layoutStr
+          : [...layoutStr, 'guestbook']
+        : layoutStr.filter((x) => x !== 'guestbook');
+      minihome_layout_modules = nextLayout;
       try {
         minihome_extra = JSON.parse(extraJson) as Record<string, unknown>;
         if (!minihome_extra || typeof minihome_extra !== 'object' || Array.isArray(minihome_extra)) {
@@ -137,6 +156,7 @@ export default function OwnerShopAdvancedClient() {
           minihome_menu,
           minihome_layout_modules,
           minihome_extra,
+          minihome_guestbook_enabled: guestbookEnabled,
         })
         .eq('id', id)
         .eq('owner_profile_id', user.id);
@@ -160,6 +180,15 @@ export default function OwnerShopAdvancedClient() {
         소개·메뉴는 상단 «소개글 수정»·«메뉴 수정»에서 다루는 것을 권장합니다. 여기서는 테마·BGM·레이아웃·확장 JSON을 한 번에 맞출 수
         있습니다.
       </p>
+      <p style={{ margin: 0, fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>{shopL.ownerSettingsLead}</p>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+        <input type="checkbox" checked={guestbookEnabled} onChange={(e) => setGuestbookEnabled(e.target.checked)} />
+        <span style={{ fontSize: 14 }}>{shopL.guestbookReceive}</span>
+      </label>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+        <input type="checkbox" checked={guestbookInLayout} onChange={(e) => setGuestbookInLayout(e.target.checked)} />
+        <span style={{ fontSize: 14 }}>{shopL.guestbookShowSection}</span>
+      </label>
       {msg ? (
         <p style={{ fontSize: 14, color: msg === '저장했습니다.' ? '#059669' : '#dc2626' }}>{msg}</p>
       ) : null}

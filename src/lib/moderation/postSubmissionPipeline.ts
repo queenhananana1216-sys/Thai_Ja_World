@@ -10,6 +10,7 @@ import {
   isPostImageUrlAllowedForUser,
   runLocalPostChecks,
 } from '@/lib/moderation/promoAndSpam';
+import { hashPostOwnerPassword } from '@/lib/community/postOwnerPassword';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
@@ -61,6 +62,8 @@ export async function createModeratedPost(
     title: string;
     content: string;
     image_urls: string[];
+    /** 선택: 글 비밀번호(4~128자). 설정 시 삭제·수정·비공개 전환 시 필요 */
+    owner_password?: string;
   },
 ): Promise<PostPipelineResult> {
   const token = accessToken.trim();
@@ -117,6 +120,18 @@ export async function createModeratedPost(
   const title = typeof body.title === 'string' ? body.title.trim() : '';
   const content = typeof body.content === 'string' ? body.content.trim() : '';
   const image_urls = Array.isArray(body.image_urls) ? body.image_urls : [];
+  const ownerPassword =
+    typeof body.owner_password === 'string' ? body.owner_password.trim() : '';
+  if (ownerPassword) {
+    if (ownerPassword.length < 4 || ownerPassword.length > 128) {
+      return {
+        ok: false,
+        status: 400,
+        code: 'invalid',
+        message: '글 비밀번호는 4자 이상 128자 이하로 정해 주세요.',
+      };
+    }
+  }
 
   if (title.length < 1 || title.length > 200 || content.length < 2) {
     return { ok: false, status: 400, code: 'invalid' };
@@ -209,5 +224,38 @@ export async function createModeratedPost(
     };
   }
 
-  return { ok: true, postId: String(inserted.id) };
+  const newId = String(inserted.id);
+
+  if (ownerPassword) {
+    const hash = hashPostOwnerPassword(ownerPassword);
+    const { error: secErr } = await admin.from('post_edit_secrets').insert({
+      post_id: newId,
+      password_hash: hash,
+    });
+    if (secErr) {
+      await admin.from('posts').delete().eq('id', newId);
+      return {
+        ok: false,
+        status: 500,
+        code: 'server',
+        message: secErr.message ?? 'post_edit_secrets insert failed',
+      };
+    }
+    const { error: flagErr } = await admin
+      .from('posts')
+      .update({ owner_edit_password_set: true })
+      .eq('id', newId);
+    if (flagErr) {
+      await admin.from('post_edit_secrets').delete().eq('post_id', newId);
+      await admin.from('posts').delete().eq('id', newId);
+      return {
+        ok: false,
+        status: 500,
+        code: 'server',
+        message: flagErr.message ?? 'owner flag update failed',
+      };
+    }
+  }
+
+  return { ok: true, postId: newId };
 }

@@ -12,6 +12,8 @@ export type Dictionary = {
     community: string;
     /** 일촌 받은함 */
     ilchon: string;
+    /** 주 메뉴 줄 미니홈 (비로그인 시에도 노출 → /minihome 에서 로그인 유도) */
+    minihome: string;
     botConsole: string;
     /** 로그인 시 헤더 빠른 링크 */
     memberMinihome: string;
@@ -182,6 +184,19 @@ export type Dictionary = {
     postDeleteConfirm: string;
     postBusy: string;
     postActionError: string;
+    postEdit: string;
+    postEditTitle: string;
+    editSave: string;
+    editCancel: string;
+    postOwnerPasswordOptional: string;
+    postOwnerPasswordRepeat: string;
+    postOwnerPasswordMismatch: string;
+    postOwnerPasswordPrompt: string;
+    postOwnerPasswordPlaceholder: string;
+    postOwnerPasswordSubmit: string;
+    postOwnerPasswordCancel: string;
+    postOwnerPasswordRequired: string;
+    postOwnerPasswordWrong: string;
     /** 목록에서 비공개 글 배지 */
     postPrivateBadge: string;
     /** 중고·알바 허브 상단 안내 */
@@ -337,7 +352,8 @@ export type Dictionary = {
     sectionPhotos: string;
     layoutHint: string;
     guestbookLocked: string;
-    albumLocked: string;
+    /** 사진첩 — 방문자(비주인) 안내 */
+    cyPhotosVisitorHint: string;
     needsLogin: string;
     notProvisioned: string;
     privateOrMissing: string;
@@ -354,6 +370,35 @@ export type Dictionary = {
     cyVisitorEmpty: string;
     cyGuestbookWriteSoon: string;
     cyVisitorWriteSoon: string;
+    /** 일촌평 창 안내 (일촌만 작성) */
+    cyIlchonWriteHint: string;
+    /** 방명록 창 안내 (로그인 이용자) */
+    cyOpenWriteHint: string;
+    cyPostSubmit: string;
+    cyPostSubmitting: string;
+    cyModerationHide: string;
+    cyModerationUnhide: string;
+    cyModerationDelete: string;
+    cyHiddenBadge: string;
+    cyPhotosEmpty: string;
+    cyPhotosDefaultAlbum: string;
+    cyPhotosUpload: string;
+    cyPhotosUploading: string;
+    cyPhotosDelete: string;
+    /** 방명록 글 최소 길이 */
+    cyBodyMinLength: string;
+    /** 방명록·일촌평 삭제 확인 */
+    cyDeleteEntryConfirm: string;
+    cyDeletePhotoConfirm: string;
+    cyPhotosAlbumCreateError: string;
+    cyPhotosTypeError: string;
+    cyPhotosSizeError: string;
+    /** 주인 전용 — 방명록 창 하단 안내 */
+    cyOwnerVisitorHint: string;
+    /** 내 미니홈 설정 상단 — 싸이 방 입장 */
+    roomEnterTitle: string;
+    roomEnterLead: string;
+    roomEnterCta: string;
     cyIntroEmpty: string;
     /** 내 미니홈 설정 화면 안내 */
     previewPanelsHint: string;
@@ -436,6 +481,34 @@ export type Dictionary = {
     errorNotAuth: string;
     errorSelf: string;
   };
+  /** 로컬 가게 미니홈(/shop) 방명록·일촌평 */
+  localShop: {
+    sectionIlchon: string;
+    sectionOpen: string;
+    emptyIlchon: string;
+    emptyOpen: string;
+    hintIlchon: string;
+    hintOpen: string;
+    placeholderIlchon: string;
+    placeholderOpen: string;
+    submit: string;
+    submitting: string;
+    loginToPost: string;
+    ownerPaused: string;
+    ownerModerateHint: string;
+    ilchonOnlyHint: string;
+    noOwnerForIlchon: string;
+    hiddenBadge: string;
+    hide: string;
+    unhide: string;
+    delete: string;
+    confirmDelete: string;
+    bodyTooShort: string;
+    loading: string;
+    ownerSettingsLead: string;
+    guestbookReceive: string;
+    guestbookShowSection: string;
+  };
   /** 글로벌·히어로 경로 검색 */
   search: {
     ariaLabel: string;
@@ -492,6 +565,7 @@ const ko: Dictionary = {
     local: '로컬',
     community: '광장',
     ilchon: '일촌',
+    minihome: '미니홈',
     botConsole: '관리자',
     memberMinihome: '내 미니홈',
     memberNotesInbox: '받은 신청·쪽지',
@@ -656,6 +730,19 @@ const ko: Dictionary = {
     postDeleteConfirm: '이 글을 삭제할까요? 댓글도 함께 지워져요.',
     postBusy: '처리 중…',
     postActionError: '잠시 후 다시 시도해 주세요.',
+    postEdit: '수정',
+    postEditTitle: '글 수정',
+    editSave: '저장',
+    editCancel: '취소',
+    postOwnerPasswordOptional: '(선택) 이 글만의 비밀번호 — 삭제·수정·비공개 전환 시 필요',
+    postOwnerPasswordRepeat: '비밀번호 확인',
+    postOwnerPasswordMismatch: '비밀번호 확인이 일치하지 않습니다.',
+    postOwnerPasswordPrompt: '이 글에 설정한 비밀번호를 입력하세요.',
+    postOwnerPasswordPlaceholder: '글 비밀번호',
+    postOwnerPasswordSubmit: '확인',
+    postOwnerPasswordCancel: '취소',
+    postOwnerPasswordRequired: '글 비밀번호를 입력해 주세요.',
+    postOwnerPasswordWrong: '비밀번호가 맞지 않습니다.',
     postPrivateBadge: '비공개',
     gatedBanner:
       '정식 오픈 전이라 새 글 작성만 잠시 닫아 둔 구역이에요. 목록 보기와 예전 글 읽기는 그대로예요.',
@@ -821,7 +908,7 @@ const ko: Dictionary = {
     sectionPhotos: '사진첩',
     layoutHint: '화면을 맞추는 순서(메인룸 → 일촌평 → 사진첩)는 차례로 열어 갈 예정이에요.',
     guestbookLocked: '일촌평 — 준비 중이에요. 곧 만나요.',
-    albumLocked: '사진첩 — 준비 중이에요. 곧 만나요.',
+    cyPhotosVisitorHint: '사진은 미니홈 주인만 올릴 수 있어요. 갤러리는 그대로 볼 수 있어요.',
     needsLogin: '미니홈은 로그인 후 이용할 수 있어요.',
     notProvisioned:
       '미니홈을 불러오지 못했어요. 아직 준비 중이거나 일시적인 문제일 수 있어요. 새로고침 후에도 같다면 운영에 문의해 주세요.',
@@ -836,8 +923,31 @@ const ko: Dictionary = {
     cyPhotosTitle: '사진첩',
     cyGuestbookEmpty: '아직 일촌 글이 없어요.',
     cyVisitorEmpty: '아직 방명이 없어요.',
-    cyGuestbookWriteSoon: '일촌 글 남기기는 곧 열려요.',
-    cyVisitorWriteSoon: '방명 남기기는 곧 열려요.',
+    cyGuestbookWriteSoon: '일촌에게 남길 한마디를 적어 주세요.',
+    cyVisitorWriteSoon: '방명록에 남길 인사를 적어 주세요.',
+    cyIlchonWriteHint: '일촌을 맺은 친구만 일촌평을 남길 수 있어요.',
+    cyOpenWriteHint: '로그인한 분이라면 누구나 방명록을 남길 수 있어요.',
+    cyPostSubmit: '등록',
+    cyPostSubmitting: '등록 중…',
+    cyModerationHide: '숨기기',
+    cyModerationUnhide: '다시 보이기',
+    cyModerationDelete: '삭제',
+    cyHiddenBadge: '숨김',
+    cyPhotosEmpty: '올린 사진이 없어요.',
+    cyPhotosDefaultAlbum: '기본 앨범',
+    cyPhotosUpload: '사진 올리기',
+    cyPhotosUploading: '업로드 중…',
+    cyPhotosDelete: '삭제',
+    cyBodyMinLength: '2자 이상 입력해 주세요.',
+    cyDeleteEntryConfirm: '이 글을 삭제할까요?',
+    cyDeletePhotoConfirm: '이 사진을 삭제할까요?',
+    cyPhotosAlbumCreateError: '앨범을 만들 수 없습니다.',
+    cyPhotosTypeError: 'JPEG, PNG, WebP, GIF만 올릴 수 있어요.',
+    cyPhotosSizeError: '파일당 최대 5MB입니다.',
+    cyOwnerVisitorHint: '다른 분들이 남긴 방명록이에요. 숨기기·삭제는 이 창에서 할 수 있어요.',
+    roomEnterTitle: '미니홈 방',
+    roomEnterLead: '싸이월드 감성의 메인룸·일촌평·방명록·사진첩 창을 열고 닫으며 둘러보세요.',
+    roomEnterCta: '미니홈 방 입장',
     cyIntroEmpty: '메인룸 소개 글이 아직 없어요.',
     previewPanelsHint:
       '미리보기·공개 페이지에서 왼쪽 메뉴로 일촌평·방명록·사진첩 창을 열고 닫을 수 있어요. (싸이 스타일 플로팅 창)',
@@ -918,6 +1028,33 @@ const ko: Dictionary = {
     errorNotAuth: '로그인이 필요해요.',
     errorSelf: '자기 자신에게는 보낼 수 없어요.',
   },
+  localShop: {
+    sectionIlchon: '일촌평',
+    sectionOpen: '방명록',
+    emptyIlchon: '아직 일촌 글이 없어요.',
+    emptyOpen: '아직 방명이 없어요.',
+    hintIlchon: '가게 담당자와 일촌을 맺은 분만 일촌평을 남길 수 있어요.',
+    hintOpen: '로그인한 분이라면 누구나 방명록을 남길 수 있어요.',
+    placeholderIlchon: '일촌 한마디를 적어 주세요.',
+    placeholderOpen: '방명록에 인사를 남겨 주세요.',
+    submit: '등록',
+    submitting: '등록 중…',
+    loginToPost: '글을 남기려면 로그인해 주세요.',
+    ownerPaused: '지금은 방명록을 받지 않는 설정입니다. 방문자에게는 이 칸이 보이지 않아요.',
+    ownerModerateHint: '숨기기·삭제는 가게 담당 계정으로만 할 수 있어요.',
+    ilchonOnlyHint: '일촌을 맺으면 여기에 글을 남길 수 있어요.',
+    noOwnerForIlchon: '가게 담당 계정이 연결되면 일촌평을 쓸 수 있어요.',
+    hiddenBadge: '숨김',
+    hide: '숨기기',
+    unhide: '다시 보이기',
+    delete: '삭제',
+    confirmDelete: '이 글을 삭제할까요?',
+    bodyTooShort: '2자 이상 입력해 주세요.',
+    loading: '불러오는 중…',
+    ownerSettingsLead: '방명록·일촌평은 아래에서 켜고 끄고, 미니홈에 칸을 보일지도 정할 수 있어요.',
+    guestbookReceive: '방명록·일촌평 받기',
+    guestbookShowSection: '미니홈에 방명록 칸 표시',
+  },
   search: {
     ariaLabel: '태자 월드 안에서 메뉴·뉴스 검색',
     headerBarLabel: '통합 검색',
@@ -977,6 +1114,7 @@ const th: Dictionary = {
     local: 'ร้านท้องถิ่น',
     community: 'ลานชุมชน',
     ilchon: 'เพื่อน (อิลชอน)',
+    minihome: 'มินิโฮม',
     botConsole: 'ผู้ดูแล',
     memberMinihome: 'มินิโฮมของฉัน',
     memberNotesInbox: 'คำขอ·ข้อความ',
@@ -1141,6 +1279,19 @@ const th: Dictionary = {
     postDeleteConfirm: 'ลบโพสต์นี้? ความคิดเห็นจะถูกลบด้วย',
     postBusy: 'กำลังดำเนินการ…',
     postActionError: 'ลองอีกครั้งในอีกสักครู่',
+    postEdit: 'แก้ไข',
+    postEditTitle: 'แก้ไขโพสต์',
+    editSave: 'บันทึก',
+    editCancel: 'ยกเลิก',
+    postOwnerPasswordOptional: '(เลือกได้) รหัสเฉพาะโพสต์ — ต้องใส่เมื่อลบ·แก้ไข·ตั้งส่วนตัว',
+    postOwnerPasswordRepeat: 'ยืนยันรหัส',
+    postOwnerPasswordMismatch: 'รหัสยืนยันไม่ตรงกัน',
+    postOwnerPasswordPrompt: 'ใส่รหัสที่ตั้งไว้กับโพสต์นี้',
+    postOwnerPasswordPlaceholder: 'รหัสโพสต์',
+    postOwnerPasswordSubmit: 'ตกลง',
+    postOwnerPasswordCancel: 'ยกเลิก',
+    postOwnerPasswordRequired: 'กรุณาใส่รหัสโพสต์',
+    postOwnerPasswordWrong: 'รหัสไม่ถูกต้อง',
     postPrivateBadge: 'ส่วนตัว',
     gatedBanner:
       'ก่อนเปิดตัวจริง — โพสต์ใหม่ปิดชั่วคราว ดูรายการและโพสต์เดิมได้ตามปกติ',
@@ -1303,7 +1454,7 @@ const th: Dictionary = {
     sectionPhotos: 'อัลบั้ม',
     layoutHint: 'ลำดับการแสดง (ห้องหลัก → ทักทาย → อัลบั้ม) จะเปิดทีละส่วนในลำดับถัดไป',
     guestbookLocked: 'ทักทาย — กำลังเตรียม เร็วๆ นี้เจอกัน',
-    albumLocked: 'อัลบั้ม — กำลังเตรียม เร็วๆ นี้เจอกัน',
+    cyPhotosVisitorHint: 'เจ้าของมินิโฮมเท่านั้นที่อัปโหลดได้ ดูรูปได้ตามปกติ',
     needsLogin: 'ใช้มินิโฮมได้หลังล็อกอินเท่านั้นนะ',
     notProvisioned:
       'โหลดมินิโฮมยังไม่สำเร็จ อาจยังไม่พร้อมหรือขัดข้องชั่วคราว รีเฟรชแล้วลองใหม่ หรือติดต่อผู้ดูแล',
@@ -1318,8 +1469,31 @@ const th: Dictionary = {
     cyPhotosTitle: 'อัลบั้ม',
     cyGuestbookEmpty: 'ยังไม่มีข้อความทักทาย',
     cyVisitorEmpty: 'ยังไม่มีชื่อผู้เยี่ยม',
-    cyGuestbookWriteSoon: 'โพสต์ทักทายจะเปิดเร็วๆ นี้',
-    cyVisitorWriteSoon: 'ลงชื่อเยี่ยมจะเปิดเร็วๆ นี้',
+    cyGuestbookWriteSoon: 'พิมพ์ข้อความทักทายให้เพื่อนอิลชอน',
+    cyVisitorWriteSoon: 'พิมพ์ข้อความในสมุดเยี่ยม',
+    cyIlchonWriteHint: 'เฉพาะเพื่อนอิลชอนที่ผูกแล้วเท่านั้นที่โพสต์ได้',
+    cyOpenWriteHint: 'สมาชิกที่ล็อกอินแล้วสามารถเซ็นสมุดเยี่ยมได้',
+    cyPostSubmit: 'โพสต์',
+    cyPostSubmitting: 'กำลังโพสต์…',
+    cyModerationHide: 'ซ่อน',
+    cyModerationUnhide: 'แสดงอีกครั้ง',
+    cyModerationDelete: 'ลบ',
+    cyHiddenBadge: 'ซ่อนแล้ว',
+    cyPhotosEmpty: 'ยังไม่มีรูป',
+    cyPhotosDefaultAlbum: 'อัลบั้มหลัก',
+    cyPhotosUpload: 'อัปโหลดรูป',
+    cyPhotosUploading: 'กำลังอัปโหลด…',
+    cyPhotosDelete: 'ลบ',
+    cyBodyMinLength: 'พิมพ์อย่างน้อย 2 ตัวอักษร',
+    cyDeleteEntryConfirm: 'ลบข้อความนี้หรือไม่?',
+    cyDeletePhotoConfirm: 'ลบรูปนี้หรือไม่?',
+    cyPhotosAlbumCreateError: 'สร้างอัลบั้มไม่สำเร็จ',
+    cyPhotosTypeError: 'อัปโหลดได้เฉพาะ JPEG, PNG, WebP, GIF',
+    cyPhotosSizeError: 'ไฟล์ละสูงสุด 5MB',
+    cyOwnerVisitorHint: 'ข้อความจากผู้เยี่ยม คุณสามารถซ่อน/ลบได้ในหน้าต่างนี้',
+    roomEnterTitle: 'ห้องมินิโฮม',
+    roomEnterLead: 'เปิด·ปิดหน้าต่างหลัก·ทักทาย·สมุดเยี่ยม·อัลบั้มแบบไซเวิลด์',
+    roomEnterCta: 'เข้าห้องมินิโฮม',
     cyIntroEmpty: 'ยังไม่มีข้อความแนะนำในห้องหลัก',
     previewPanelsHint:
       'ตัวอย่าง/หน้าสาธารณะ — เปิด-ปิด ทักทาย·สมุดเยี่ยม·อัลบั้ม จากเมนูซ้าย (สไตล์หน้าต่างลอยแบบไซเวิลด์)',
@@ -1399,6 +1573,33 @@ const th: Dictionary = {
     errorAlreadyIlchon: 'เป็นเพื่อนกันแล้ว',
     errorNotAuth: 'ต้องล็อกอิน',
     errorSelf: 'ส่งหาตัวเองไม่ได้',
+  },
+  localShop: {
+    sectionIlchon: 'ทักทาย (อิลชอน)',
+    sectionOpen: 'สมุดเยี่ยม',
+    emptyIlchon: 'ยังไม่มีข้อความจากเพื่อน',
+    emptyOpen: 'ยังไม่มีลายเซ็น',
+    hintIlchon: 'เฉพาะผู้ที่เป็นอิลชอนกับเจ้าของร้านเท่านั้น',
+    hintOpen: 'สมาชิกที่ล็อกอินแล้วลงชื่อได้',
+    placeholderIlchon: 'ฝากข้อความถึงเพื่อนเจ้าของร้าน',
+    placeholderOpen: 'ฝากข้อความในสมุดเยี่ยม',
+    submit: 'โพสต์',
+    submitting: 'กำลังโพสต์…',
+    loginToPost: 'ล็อกอินเพื่อโพสต์',
+    ownerPaused: 'ปิดรับข้อความชั่วคราว — ผู้เยี่ยมจะไม่เห็นส่วนนี้',
+    ownerModerateHint: 'ซ่อน/ลบได้เฉพาะบัญชีเจ้าของร้าน',
+    ilchonOnlyHint: 'เป็นอิลชอนกับเจ้าของร้านแล้วค่อยโพสต์ได้',
+    noOwnerForIlchon: 'เมื่อผูกบัญชีเจ้าของร้านแล้ว จะมีทักทายแบบอิลชอน',
+    hiddenBadge: 'ซ่อน',
+    hide: 'ซ่อน',
+    unhide: 'แสดงอีกครั้ง',
+    delete: 'ลบ',
+    confirmDelete: 'ลบข้อความนี้หรือไม่?',
+    bodyTooShort: 'พิมพ์อย่างน้อย 2 ตัวอักษร',
+    loading: 'กำลังโหลด…',
+    ownerSettingsLead: 'เปิด/ปิดรับข้อความ และแสดงบล็อกในหน้ามินิโฮมได้ด้านล่าง',
+    guestbookReceive: 'รับสมุดเยี่ยม·ทักทายอิลชอน',
+    guestbookShowSection: 'แสดงบล็อกสมุดในหน้ามินิโฮม',
   },
   search: {
     ariaLabel: 'ค้นหาเมนูและข่าวใน Thai Ja World',

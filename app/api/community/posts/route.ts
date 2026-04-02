@@ -27,6 +27,7 @@ export async function POST(req: Request) {
     title: typeof b.title === 'string' ? b.title : '',
     content: typeof b.content === 'string' ? b.content : '',
     image_urls: Array.isArray(b.image_urls) ? b.image_urls.map((x) => String(x)) : [],
+    owner_password: typeof b.owner_password === 'string' ? b.owner_password : undefined,
   });
 
   if (result.ok) {

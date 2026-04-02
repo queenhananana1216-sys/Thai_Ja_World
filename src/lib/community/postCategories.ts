@@ -10,7 +10,10 @@ export const POST_CATEGORY_SLUGS: PostCategorySlug[] = [
   'job',
 ];
 
-/** 글쓰기에서 제외할 말머리(비우면 전부 허용) */
+/**
+ * 글쓰기에서 제외할 말머리(비우면 전부 허용).
+ * `flea`·`job` 은 번개장터·구인구직 — 비우면 로그인 이용자가 /community/boards/new 에서 바로 쓸 수 있음.
+ */
 export const POST_CATEGORY_POSTING_DISABLED = new Set<PostCategorySlug>();
 
 export function isPostingDisabledCategory(slug: string): boolean {

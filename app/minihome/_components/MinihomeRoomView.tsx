@@ -11,11 +11,23 @@ import { formatDate } from '@/lib/utils/formatDate';
 
 const FALLBACK_ACCENT = '#7c3aed';
 
+type EntryKind = 'open' | 'ilchon';
+
 type GbRow = {
   id: string;
   body: string;
   created_at: string;
   author_id: string;
+  entry_kind: EntryKind;
+  is_hidden: boolean;
+};
+
+type PhotoRow = {
+  id: string;
+  album_id: string;
+  storage_path: string;
+  caption: string | null;
+  sort_order: number;
 };
 
 type Props = {
@@ -76,6 +88,14 @@ function mapIlchonRpc(raw: string, L: Dictionary['ilchon']): string {
   return L.errorGeneric;
 }
 
+function extFromMime(ct: string): string {
+  if (ct === 'image/jpeg') return 'jpg';
+  if (ct === 'image/png') return 'png';
+  if (ct === 'image/webp') return 'webp';
+  if (ct === 'image/gif') return 'gif';
+  return 'bin';
+}
+
 export default function MinihomeRoomView({
   data,
   labels,
@@ -97,6 +117,17 @@ export default function MinihomeRoomView({
   const [names, setNames] = useState<Record<string, string>>({});
   const [gbLoading, setGbLoading] = useState(false);
 
+  const [viewerId, setViewerId] = useState<string | null>(null);
+  const [ilchonBody, setIlchonBody] = useState('');
+  const [openBody, setOpenBody] = useState('');
+  const [postBusy, setPostBusy] = useState<'ilchon' | 'open' | null>(null);
+  const [postErr, setPostErr] = useState<string | null>(null);
+  const [modBusy, setModBusy] = useState<string | null>(null);
+
+  const [photos, setPhotos] = useState<PhotoRow[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+  const [photoUploadBusy, setPhotoUploadBusy] = useState(false);
+
   const [ilchonMode, setIlchonMode] = useState<IlchonMode>('loading');
   const [ilchonToast, setIlchonToast] = useState<string | null>(null);
   const [requestOpen, setRequestOpen] = useState(false);
@@ -104,17 +135,25 @@ export default function MinihomeRoomView({
   const [reqNick, setReqNick] = useState('');
   const [reqBusy, setReqBusy] = useState(false);
 
+  const isOwner = viewerId !== null && viewerId === data.owner_id;
+
+  const ilchonRows = useMemo(
+    () => (gbRows ?? []).filter((r) => r.entry_kind === 'ilchon'),
+    [gbRows],
+  );
+  const openRows = useMemo(() => (gbRows ?? []).filter((r) => r.entry_kind === 'open'), [gbRows]);
+
   const loadGuestbook = useCallback(async () => {
     if (!data.owner_id) return;
     setGbLoading(true);
+    setPostErr(null);
     const sb = createBrowserClient();
     const { data: rows, error } = await sb
       .from('minihome_guestbook_entries')
-      .select('id, body, created_at, author_id')
+      .select('id, body, created_at, author_id, entry_kind, is_hidden')
       .eq('minihome_owner_id', data.owner_id)
-      .eq('is_hidden', false)
       .order('created_at', { ascending: false })
-      .limit(80);
+      .limit(100);
 
     if (error || !rows) {
       setGbRows([]);
@@ -123,7 +162,10 @@ export default function MinihomeRoomView({
       return;
     }
 
-    const list = rows as GbRow[];
+    const list = (rows as GbRow[]).map((r) => ({
+      ...r,
+      entry_kind: r.entry_kind === 'ilchon' ? 'ilchon' : 'open',
+    }));
     setGbRows(list);
     const ids = [...new Set(list.map((r) => r.author_id))];
     if (ids.length === 0) {
@@ -140,10 +182,56 @@ export default function MinihomeRoomView({
     setGbLoading(false);
   }, [data.owner_id]);
 
+  const loadPhotos = useCallback(async () => {
+    if (!data.owner_id) return;
+    setPhotosLoading(true);
+    const sb = createBrowserClient();
+    const { data: albums, error: aErr } = await sb
+      .from('minihome_photo_albums')
+      .select('id')
+      .eq('owner_id', data.owner_id)
+      .order('sort_order', { ascending: true });
+    if (aErr || !albums?.length) {
+      setPhotos([]);
+      setPhotosLoading(false);
+      return;
+    }
+    const ids = albums.map((a) => a.id as string);
+    const { data: ph, error: pErr } = await sb
+      .from('minihome_photos')
+      .select('id, album_id, storage_path, caption, sort_order')
+      .in('album_id', ids)
+      .order('sort_order', { ascending: true });
+    if (pErr || !ph) {
+      setPhotos([]);
+    } else {
+      setPhotos(ph as PhotoRow[]);
+    }
+    setPhotosLoading(false);
+  }, [data.owner_id]);
+
+  useEffect(() => {
+    const sb = createBrowserClient();
+    void sb.auth.getUser().then(({ data: { user } }) => {
+      setViewerId(user?.id ?? null);
+    });
+    const {
+      data: { subscription },
+    } = sb.auth.onAuthStateChange((_e, session) => {
+      setViewerId(session?.user.id ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   useEffect(() => {
     if (!winGuest && !winVisitor) return;
     void loadGuestbook();
   }, [winGuest, winVisitor, loadGuestbook]);
+
+  useEffect(() => {
+    if (!winPhotos) return;
+    void loadPhotos();
+  }, [winPhotos, loadPhotos]);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,11 +294,6 @@ export default function MinihomeRoomView({
     };
   }, [data.owner_id]);
 
-  const visitorOrder = useMemo(() => {
-    if (!gbRows?.length) return [];
-    return [...gbRows].reverse();
-  }, [gbRows]);
-
   const paperStyle: CSSProperties = {
     borderColor: accent,
     boxShadow: `0 0 0 1px ${accent}22, 0 12px 40px rgba(74, 66, 88, 0.12)`,
@@ -254,6 +337,199 @@ export default function MinihomeRoomView({
     setReqNick('');
     setIlchonMode('out');
   }
+
+  async function submitGuestbook(kind: EntryKind) {
+    const body = (kind === 'ilchon' ? ilchonBody : openBody).trim();
+    if (body.length < 2) {
+      setPostErr(labels.cyBodyMinLength);
+      return;
+    }
+    if (!data.owner_id || !viewerId) return;
+    setPostBusy(kind);
+    setPostErr(null);
+    const sb = createBrowserClient();
+    const { error } = await sb.from('minihome_guestbook_entries').insert({
+      minihome_owner_id: data.owner_id,
+      author_id: viewerId,
+      body,
+      entry_kind: kind,
+    });
+    setPostBusy(null);
+    if (error) {
+      setPostErr(error.message);
+      return;
+    }
+    if (kind === 'ilchon') setIlchonBody('');
+    else setOpenBody('');
+    await loadGuestbook();
+  }
+
+  async function toggleHidden(row: GbRow) {
+    if (!isOwner) return;
+    setModBusy(row.id);
+    setPostErr(null);
+    const sb = createBrowserClient();
+    const { error } = await sb
+      .from('minihome_guestbook_entries')
+      .update({ is_hidden: !row.is_hidden })
+      .eq('id', row.id)
+      .eq('minihome_owner_id', data.owner_id);
+    setModBusy(null);
+    if (error) setPostErr(error.message);
+    else await loadGuestbook();
+  }
+
+  async function deleteEntry(row: GbRow) {
+    if (!isOwner || !confirm(labels.cyDeleteEntryConfirm)) return;
+    setModBusy(row.id);
+    setPostErr(null);
+    const sb = createBrowserClient();
+    const { error } = await sb
+      .from('minihome_guestbook_entries')
+      .delete()
+      .eq('id', row.id)
+      .eq('minihome_owner_id', data.owner_id);
+    setModBusy(null);
+    if (error) setPostErr(error.message);
+    else await loadGuestbook();
+  }
+
+  async function ensureAlbumId(sb: ReturnType<typeof createBrowserClient>): Promise<string | null> {
+    const { data: rows } = await sb
+      .from('minihome_photo_albums')
+      .select('id')
+      .eq('owner_id', data.owner_id)
+      .order('sort_order', { ascending: true })
+      .limit(1);
+    const first = rows?.[0]?.id as string | undefined;
+    if (first) return first;
+    const { data: ins, error } = await sb
+      .from('minihome_photo_albums')
+      .insert({ owner_id: data.owner_id, title: labels.cyPhotosDefaultAlbum, sort_order: 0 })
+      .select('id')
+      .single();
+    if (error || !ins?.id) return null;
+    return ins.id as string;
+  }
+
+  async function onPickPhotos(files: FileList | null) {
+    if (!files?.length || !isOwner) return;
+    setPhotoUploadBusy(true);
+    setPostErr(null);
+    const sb = createBrowserClient();
+    const albumId = await ensureAlbumId(sb);
+    if (!albumId) {
+      setPostErr(labels.cyPhotosAlbumCreateError);
+      setPhotoUploadBusy(false);
+      return;
+    }
+    const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    for (let i = 0; i < files.length; i++) {
+      const file = files.item(i);
+      if (!file) continue;
+      const ct = file.type || '';
+      if (!allowed.has(ct)) {
+        setPostErr(labels.cyPhotosTypeError);
+        setPhotoUploadBusy(false);
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setPostErr(labels.cyPhotosSizeError);
+        setPhotoUploadBusy(false);
+        return;
+      }
+      const path = `${data.owner_id}/${crypto.randomUUID()}.${extFromMime(ct)}`;
+      const { error: upErr } = await sb.storage.from('minihome-photos').upload(path, file, {
+        contentType: ct,
+        upsert: false,
+      });
+      if (upErr) {
+        setPostErr(upErr.message);
+        setPhotoUploadBusy(false);
+        return;
+      }
+      const { error: insErr } = await sb.from('minihome_photos').insert({
+        album_id: albumId,
+        storage_path: path,
+        caption: null,
+        sort_order: Date.now() % 100000,
+      });
+      if (insErr) {
+        setPostErr(insErr.message);
+        setPhotoUploadBusy(false);
+        return;
+      }
+    }
+    setPhotoUploadBusy(false);
+    await loadPhotos();
+  }
+
+  async function deletePhoto(p: PhotoRow) {
+    if (!isOwner || !confirm(labels.cyDeletePhotoConfirm)) return;
+    setPostErr(null);
+    const sb = createBrowserClient();
+    const { error: rmErr } = await sb.storage.from('minihome-photos').remove([p.storage_path]);
+    if (rmErr) setPostErr(rmErr.message);
+    await sb.from('minihome_photos').delete().eq('id', p.id);
+    await loadPhotos();
+  }
+
+  function publicUrl(path: string): string {
+    const sb = createBrowserClient();
+    const { data } = sb.storage.from('minihome-photos').getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  function renderGbList(rows: GbRow[], chronological: boolean) {
+    const ordered = chronological ? rows : [...rows].reverse();
+    return (
+      <ul className="minihome-cy-win__list">
+        {ordered.map((r) => (
+          <li
+            key={r.id}
+            className="minihome-cy-win__item"
+            style={{ opacity: r.is_hidden ? 0.72 : 1 }}
+          >
+            <div className="minihome-cy-win__meta">
+              {names[r.author_id] ?? 'member'} · {formatDate(r.created_at)}
+              {r.is_hidden ? (
+                <span style={{ marginLeft: 8, fontSize: '0.72rem', fontWeight: 700, color: '#b45309' }}>
+                  [{labels.cyHiddenBadge}]
+                </span>
+              ) : null}
+            </div>
+            <div className="minihome-cy-win__text">{r.body}</div>
+            {isOwner ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="ilchon-btn ilchon-btn--ghost"
+                  style={{ fontSize: '0.72rem', padding: '4px 8px' }}
+                  disabled={modBusy === r.id}
+                  onClick={() => void toggleHidden(r)}
+                >
+                  {modBusy === r.id ? '…' : r.is_hidden ? labels.cyModerationUnhide : labels.cyModerationHide}
+                </button>
+                <button
+                  type="button"
+                  className="ilchon-btn ilchon-btn--ghost"
+                  style={{ fontSize: '0.72rem', padding: '4px 8px', color: '#b91c1c' }}
+                  disabled={modBusy === r.id}
+                  onClick={() => void deleteEntry(r)}
+                >
+                  {labels.cyModerationDelete}
+                </button>
+              </div>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  const showIlchonComposer =
+    viewerId && viewerId !== data.owner_id && ilchonMode === 'linked';
+  const showOpenComposer = viewerId && viewerId !== data.owner_id;
 
   return (
     <div
@@ -410,24 +686,53 @@ export default function MinihomeRoomView({
           winClass="minihome-cy-win--guest"
           closeLabel={labels.cyWindowClose}
         >
+          {postErr && winGuest ? (
+            <p className="minihome-cy-win__muted" style={{ color: '#b91c1c', marginBottom: 8 }}>
+              {postErr}
+            </p>
+          ) : null}
+          <p className="minihome-cy-win__muted" style={{ fontSize: '0.78rem', marginBottom: 10 }}>
+            {labels.cyIlchonWriteHint}
+          </p>
           {gbLoading ? (
             <p className="minihome-cy-win__muted">{labels.loadingMark}</p>
-          ) : !gbRows?.length ? (
-            <>
-              <p className="minihome-cy-win__muted">{labels.cyGuestbookEmpty}</p>
-              <p className="minihome-cy-win__soon">{labels.cyGuestbookWriteSoon}</p>
-            </>
+          ) : ilchonRows.length === 0 ? (
+            <p className="minihome-cy-win__muted">{labels.cyGuestbookEmpty}</p>
           ) : (
-            <ul className="minihome-cy-win__list">
-              {gbRows.map((r) => (
-                <li key={r.id} className="minihome-cy-win__item">
-                  <div className="minihome-cy-win__meta">
-                    {names[r.author_id] ?? 'member'} · {formatDate(r.created_at)}
-                  </div>
-                  <div className="minihome-cy-win__text">{r.body}</div>
-                </li>
-              ))}
-            </ul>
+            renderGbList(ilchonRows, true)
+          )}
+          {showIlchonComposer ? (
+            <div style={{ marginTop: 14, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 12 }}>
+              <textarea
+                value={ilchonBody}
+                onChange={(e) => setIlchonBody(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                placeholder={labels.cyGuestbookWriteSoon}
+                style={{ width: '100%', fontSize: '0.88rem', padding: 8, borderRadius: 6, border: '1px solid #ddd' }}
+              />
+              <button
+                type="button"
+                className="ilchon-btn"
+                style={{ marginTop: 8 }}
+                disabled={postBusy === 'ilchon'}
+                onClick={() => void submitGuestbook('ilchon')}
+              >
+                {postBusy === 'ilchon' ? labels.cyPostSubmitting : labels.cyPostSubmit}
+              </button>
+            </div>
+          ) : viewerId === null ? (
+            <p className="minihome-cy-win__soon" style={{ marginTop: 12 }}>
+              <Link href={loginNext}>{ilchon.goLogin}</Link>
+            </p>
+          ) : isOwner ? (
+            <p className="minihome-cy-win__muted" style={{ marginTop: 12, fontSize: '0.78rem' }}>
+              {labels.cyIlchonWriteHint}
+            </p>
+          ) : ilchonMode === 'linked' ? null : (
+            <p className="minihome-cy-win__soon" style={{ marginTop: 12 }}>
+              {labels.cyGuestbookWriteSoon}
+            </p>
           )}
         </CyWindow>
 
@@ -440,25 +745,50 @@ export default function MinihomeRoomView({
           winClass="minihome-cy-win--visitor"
           closeLabel={labels.cyWindowClose}
         >
+          {postErr && winVisitor ? (
+            <p className="minihome-cy-win__muted" style={{ color: '#b91c1c', marginBottom: 8 }}>
+              {postErr}
+            </p>
+          ) : null}
+          <p className="minihome-cy-win__muted" style={{ fontSize: '0.78rem', marginBottom: 10 }}>
+            {labels.cyOpenWriteHint}
+          </p>
           {gbLoading ? (
             <p className="minihome-cy-win__muted">{labels.loadingMark}</p>
-          ) : !visitorOrder.length ? (
-            <>
-              <p className="minihome-cy-win__muted">{labels.cyVisitorEmpty}</p>
-              <p className="minihome-cy-win__soon">{labels.cyVisitorWriteSoon}</p>
-            </>
+          ) : openRows.length === 0 ? (
+            <p className="minihome-cy-win__muted">{labels.cyVisitorEmpty}</p>
           ) : (
-            <ul className="minihome-cy-win__list">
-              {visitorOrder.map((r) => (
-                <li key={r.id} className="minihome-cy-win__item">
-                  <div className="minihome-cy-win__meta">
-                    {names[r.author_id] ?? 'member'} · {formatDate(r.created_at)}
-                  </div>
-                  <div className="minihome-cy-win__text">{r.body}</div>
-                </li>
-              ))}
-            </ul>
+            renderGbList(openRows, false)
           )}
+          {showOpenComposer ? (
+            <div style={{ marginTop: 14, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 12 }}>
+              <textarea
+                value={openBody}
+                onChange={(e) => setOpenBody(e.target.value)}
+                rows={3}
+                maxLength={2000}
+                placeholder={labels.cyVisitorWriteSoon}
+                style={{ width: '100%', fontSize: '0.88rem', padding: 8, borderRadius: 6, border: '1px solid #ddd' }}
+              />
+              <button
+                type="button"
+                className="ilchon-btn"
+                style={{ marginTop: 8 }}
+                disabled={postBusy === 'open'}
+                onClick={() => void submitGuestbook('open')}
+              >
+                {postBusy === 'open' ? labels.cyPostSubmitting : labels.cyPostSubmit}
+              </button>
+            </div>
+          ) : viewerId === null ? (
+            <p className="minihome-cy-win__soon" style={{ marginTop: 12 }}>
+              <Link href={loginNext}>{ilchon.goLogin}</Link>
+            </p>
+          ) : isOwner ? (
+            <p className="minihome-cy-win__muted" style={{ marginTop: 12, fontSize: '0.78rem' }}>
+              {labels.cyOwnerVisitorHint}
+            </p>
+          ) : null}
         </CyWindow>
 
         <CyWindow
@@ -470,7 +800,84 @@ export default function MinihomeRoomView({
           winClass="minihome-cy-win--photos"
           closeLabel={labels.cyWindowClose}
         >
-          <p className="minihome-cy-win__muted">{labels.albumLocked}</p>
+          {postErr && winPhotos ? (
+            <p className="minihome-cy-win__muted" style={{ color: '#b91c1c', marginBottom: 8 }}>
+              {postErr}
+            </p>
+          ) : null}
+          {photosLoading ? (
+            <p className="minihome-cy-win__muted">{labels.loadingMark}</p>
+          ) : photos.length === 0 ? (
+            <p className="minihome-cy-win__muted">{labels.cyPhotosEmpty}</p>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))',
+                gap: 8,
+              }}
+            >
+              {photos.map((p) => (
+                <div key={p.id} style={{ position: 'relative' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={publicUrl(p.storage_path)}
+                    alt=""
+                    style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6 }}
+                  />
+                  {isOwner ? (
+                    <button
+                      type="button"
+                      onClick={() => void deletePhoto(p)}
+                      style={{
+                        position: 'absolute',
+                        top: 4,
+                        right: 4,
+                        fontSize: 10,
+                        padding: '2px 6px',
+                        borderRadius: 4,
+                        border: 'none',
+                        background: 'rgba(0,0,0,0.55)',
+                        color: '#fff',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {labels.cyPhotosDelete}
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+          {isOwner ? (
+            <div style={{ marginTop: 14 }}>
+              <label
+                style={{
+                  display: 'inline-block',
+                  padding: '8px 12px',
+                  background: `${accent}22`,
+                  borderRadius: 8,
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: photoUploadBusy ? 'wait' : 'pointer',
+                }}
+              >
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  style={{ display: 'none' }}
+                  disabled={photoUploadBusy}
+                  onChange={(e) => void onPickPhotos(e.target.files)}
+                />
+                {photoUploadBusy ? labels.cyPhotosUploading : labels.cyPhotosUpload}
+              </label>
+            </div>
+          ) : (
+            <p className="minihome-cy-win__muted" style={{ marginTop: 12, fontSize: '0.78rem' }}>
+              {labels.cyPhotosVisitorHint}
+            </p>
+          )}
         </CyWindow>
       </div>
 

@@ -5,7 +5,7 @@ import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies
 import ShopMinihomeClient, { type ShopSpotPayload } from './ShopMinihomeClient';
 
 const SELECT =
-  'id,name,description,line_url,photo_urls,minihome_public_slug,minihome_intro,minihome_theme,minihome_bgm_url,minihome_menu,minihome_layout_modules,minihome_extra,is_published';
+  'id,name,description,line_url,photo_urls,owner_profile_id,minihome_public_slug,minihome_intro,minihome_theme,minihome_bgm_url,minihome_menu,minihome_layout_modules,minihome_extra,is_published,minihome_guestbook_enabled';
 
 async function loadSpot(slug: string): Promise<ShopSpotPayload | null> {
   const sb = await createServerSupabaseAuthClient();

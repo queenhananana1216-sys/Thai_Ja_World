@@ -17,6 +17,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { runKnowledgeCollectLoop } from '@/bots/orchestrator/runKnowledgeCollectLoop';
 import { runKnowledgeProcessLoop } from '@/bots/orchestrator/runKnowledgeProcessLoop';
+import { runKnowledgeStubRepairLoop } from '@/bots/orchestrator/runKnowledgeStubRepairLoop';
 import { isCronAuthorized } from '@/lib/cronAuth';
 
 export const runtime = 'nodejs';
@@ -74,6 +75,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     ...(processKey ? { idempotencyKey: processKey } : {}),
   });
 
+  /** 스텁 초안은 이미 processed 행이 있어 process 배치가 건너뜀 → 별도 재가공 */
+  const skipStub = searchParams.get('stubRepair') === '0' || searchParams.get('stubRepair') === 'false';
+  let stubRepairRun: Awaited<ReturnType<typeof runKnowledgeStubRepairLoop>> | { skipped: true; reason: string } | null =
+    null;
+  if (!skipStub) {
+    const sl = searchParams.get('stubLimit');
+    const n = sl ? Math.floor(Number(sl)) : 5;
+    const stubLimit = Number.isFinite(n) ? Math.min(Math.max(n, 1), 12) : 5;
+    stubRepairRun = await runKnowledgeStubRepairLoop({ limit: stubLimit });
+  } else {
+    stubRepairRun = { skipped: true, reason: 'stubRepair=0' };
+  }
+
   return NextResponse.json({
     status: 'ok',
     collect: {
@@ -88,5 +102,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       success: processRun.success,
       error: processRun.error,
     },
+    stub_repair: stubRepairRun,
   });
 }

@@ -70,7 +70,7 @@ export default async function BoardsListPage({
   let query = supabase
     .from('posts')
     .select(
-      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden',
+      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set',
     )
     .eq('moderation_status', 'safe')
     .order('created_at', { ascending: false })
@@ -169,6 +169,7 @@ export default async function BoardsListPage({
               <PostAuthorMenu
                 postId={pid}
                 authorHidden={authorHidden}
+                ownerGateSet={Boolean((p as { owner_edit_password_set?: boolean }).owner_edit_password_set)}
                 listLayout
                 labels={{
                   postOwnerMenu: d.board.postOwnerMenu,
@@ -178,6 +179,13 @@ export default async function BoardsListPage({
                   postDeleteConfirm: d.board.postDeleteConfirm,
                   postBusy: d.board.postBusy,
                   postActionError: d.board.postActionError,
+                  postEdit: d.board.postEdit,
+                  postOwnerPasswordPrompt: d.board.postOwnerPasswordPrompt,
+                  postOwnerPasswordPlaceholder: d.board.postOwnerPasswordPlaceholder,
+                  postOwnerPasswordSubmit: d.board.postOwnerPasswordSubmit,
+                  postOwnerPasswordCancel: d.board.postOwnerPasswordCancel,
+                  postOwnerPasswordRequired: d.board.postOwnerPasswordRequired,
+                  postOwnerPasswordWrong: d.board.postOwnerPasswordWrong,
                 }}
               />
             ) : null}

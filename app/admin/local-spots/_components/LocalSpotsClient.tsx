@@ -23,6 +23,7 @@ export type LocalSpotRow = {
   minihome_menu?: unknown;
   minihome_layout_modules?: unknown;
   minihome_extra?: unknown;
+  minihome_guestbook_enabled?: boolean | null;
   created_at: string;
   updated_at: string;
 };
@@ -105,6 +106,7 @@ type FormState = {
   minihome_menu_json: string;
   minihome_layout_json: string;
   minihome_extra_json: string;
+  minihome_guestbook_enabled: boolean;
 };
 
 function jsonPretty(v: unknown, fallback: string): string {
@@ -138,6 +140,7 @@ function rowToForm(row: LocalSpotRow): FormState {
     minihome_menu_json: jsonPretty(row.minihome_menu, '[]'),
     minihome_layout_json: jsonPretty(row.minihome_layout_modules, '["intro","menu","line","photos"]'),
     minihome_extra_json: jsonPretty(row.minihome_extra, '{}'),
+    minihome_guestbook_enabled: row.minihome_guestbook_enabled !== false,
   };
 }
 
@@ -162,6 +165,7 @@ const emptyForm: FormState = {
   minihome_menu_json: '[]',
   minihome_layout_json: '["intro","menu","line","photos"]',
   minihome_extra_json: '{}',
+  minihome_guestbook_enabled: true,
 };
 
 export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
@@ -198,6 +202,7 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
         minihome_menu_json: form.minihome_menu_json.trim() || null,
         minihome_layout_json: form.minihome_layout_json.trim() || null,
         minihome_extra_json: form.minihome_extra_json.trim() || null,
+        minihome_guestbook_enabled: form.minihome_guestbook_enabled,
       };
 
       if (form.mode === 'new') {
@@ -290,6 +295,27 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
     }
   }
 
+  async function publishAllPending() {
+    if (pendingCount === 0) return;
+    if (!confirm(`승인 대기 ${pendingCount}곳을 전부 공개할까요?`)) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/admin/local-spots-bulk-publish', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string; updated?: number; message?: string };
+      if (!res.ok) throw new Error(j.error || res.statusText);
+      setMsg(j.updated && j.updated > 0 ? `일괄 공개 완료: ${j.updated}곳` : j.message ?? '승인 대기 없음');
+      router.refresh();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const orderedSpots = [...spots].sort((a, b) => {
     if (a.is_published !== b.is_published) return a.is_published ? 1 : -1;
     return (a.sort_order ?? 0) - (b.sort_order ?? 0);
@@ -364,6 +390,13 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
         >
           승인 대기 {pendingCount}곳 — 내용 확인 후 «승인·공개» 또는 «수정»을 눌러 주세요.
         </p>
+      ) : null}
+      {pendingCount > 0 ? (
+        <div style={{ margin: '0 0 12px' }}>
+          <button type="button" disabled={busy} style={{ ...btnPrimary, opacity: busy ? 0.7 : 1 }} onClick={() => void publishAllPending()}>
+            승인 대기 전체 공개 ({pendingCount}곳)
+          </button>
+        </div>
       ) : null}
 
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
@@ -592,9 +625,20 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
                 value={form.minihome_layout_json}
                 onChange={(e) => setForm({ ...form, minihome_layout_json: e.target.value })}
                 rows={2}
-                placeholder='["intro","menu","line","photos"]'
+                placeholder='["intro","menu","line","photos","guestbook"]'
                 style={{ width: '100%', fontFamily: 'monospace', fontSize: 12, padding: 8, borderRadius: 8, border: '1px solid #cbd5e1' }}
               />
+            </label>
+
+            <label style={{ ...fieldStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={form.minihome_guestbook_enabled}
+                onChange={(e) => setForm({ ...form, minihome_guestbook_enabled: e.target.checked })}
+              />
+              <span style={{ fontSize: 13 }}>
+                방명록·일촌평 받기 (끄면 방문자는 글 목록·작성 불가, 오너는 /my-local-shop에서 관리 가능)
+              </span>
             </label>
 
             <label style={fieldStyle}>

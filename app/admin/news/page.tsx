@@ -1,6 +1,7 @@
 /**
  * 뉴스 초안 큐 — 기본(manual·미설정)은 LLM 결과를 초안만 저장, 승인 후 게시
  */
+import Link from 'next/link';
 import NewsQueueClient, { type NewsQueueDiagnostics, type QueueItem } from './_components/NewsQueueClient';
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { newsInsertAsPublished } from '@/lib/news/newsPublishMode';
@@ -103,12 +104,19 @@ export default async function AdminNewsQueuePage() {
       ko_summary: ko.summary_text ?? '',
       th_title: th.title,
       th_summary: th.summary_text ?? '',
+      clean_body: (r.clean_body as string | null) ?? null,
+      summaries: sums ?? null,
     });
   }
 
   return (
     <div style={{ padding: '20px 24px', maxWidth: 920 }}>
       <h1 style={{ fontSize: 18, margin: '0 0 8px' }}>뉴스 초안 큐</h1>
+      <p style={{ margin: '0 0 12px', fontSize: 12 }}>
+        <Link href="/admin/publish" style={{ color: '#2563eb', fontWeight: 600 }}>
+          최종 승인·태자 편집 팁(한 페이지 요약) →
+        </Link>
+      </p>
       <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.55 }}>
         <strong>기본:</strong> 봇이 수집·요약한 기사는 <strong>미게시 초안</strong>(<code>published=false</code>)으로만
         저장됩니다. 아래에서 한·태 제목·요약을 고친 뒤 <strong>홈에 게시</strong>를 누르면 홈·뉴스 상세에

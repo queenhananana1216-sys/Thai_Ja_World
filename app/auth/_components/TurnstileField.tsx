@@ -105,7 +105,7 @@ export default function TurnstileField({ tokenRef, loadingLabel }: Props) {
     <div style={{ marginTop: 12, marginBottom: 8 }}>
       <div ref={hostRef} />
       {!ready && (
-        <p style={{ fontSize: '0.75rem', color: 'var(--tj-muted)' }}>{loadingLabel}</p>
+        <p className="auth-turnstile-loading">{loadingLabel}</p>
       )}
     </div>
   );

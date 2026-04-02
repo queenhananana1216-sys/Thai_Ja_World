@@ -2,7 +2,7 @@
 
 /**
  * app/_components/GlobalNav.tsx — 글로벌 상단 네비 + 언어 전환
- * (네이트형: 상단 얇은 툴바 → 흰 띠에 로고·대형 검색·로그인 패널 → 주요 메뉴 줄)
+ * (네이트형: 상단 얇은 툴바 → 흰 띠에 로고·로그인 패널 → 주요 메뉴 줄에 통합 검색)
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -12,17 +12,24 @@ import { BrandPhrase } from './BrandPhrase';
 import LanguageSwitch from './LanguageSwitch';
 import SiteSearch from './SiteSearch';
 
-const HREFS = ['/', '/tips', '/local', '/community/boards', '/ilchon'] as const;
+const HREFS = ['/', '/tips', '/local', '/community/boards', '/ilchon', '/minihome'] as const;
 
 type Props = {
-  dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board'>;
+  dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board' | 'search'>;
   /** 관리자 화이트리스트(또는 개발용 허용 세션)일 때만 표시 */
   showAdminConsole?: boolean;
 };
 
 export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
   const pathname = usePathname();
-  const labels = [dict.nav.home, dict.nav.tips, dict.nav.local, dict.nav.community, dict.nav.ilchon];
+  const labels = [
+    dict.nav.home,
+    dict.nav.tips,
+    dict.nav.local,
+    dict.nav.community,
+    dict.nav.ilchon,
+    dict.nav.minihome,
+  ];
 
   const authProps = {
     memberNav: {
@@ -63,9 +70,6 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
             <BrandPhrase variant="light" />
             <span className="global-header__logo-suffix-nate">{dict.brandSuffix}</span>
           </Link>
-          <div className="global-header__nate-search">
-            <SiteSearch variant="headerNate" />
-          </div>
           <aside className="global-header__nate-user">
             <AuthBar variant="natePanel" {...authProps} />
           </aside>
@@ -73,6 +77,7 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
       </div>
 
       <nav className="site-container global-header__main-nav" aria-label={dict.nav.mainNavAria}>
+        <div className="global-header__main-nav-bar">
         <div className="global-header__nav">
           {HREFS.map((href, i) => {
             const isActive =
@@ -84,7 +89,9 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
                     ? pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade')
                     : href === '/ilchon'
                       ? pathname.startsWith('/ilchon')
-                      : pathname.startsWith(href);
+                      : href === '/minihome'
+                        ? pathname.startsWith('/minihome')
+                        : pathname.startsWith(href);
             return (
               <Link
                 key={href}
@@ -97,6 +104,10 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
               </Link>
             );
           })}
+        </div>
+        <div className="global-header__main-nav-search">
+          <SiteSearch variant="header" />
+        </div>
         </div>
       </nav>
     </header>

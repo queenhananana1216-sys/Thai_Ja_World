@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
 import { mergeBilingualCleanBody } from '@/lib/news/mergeCleanBody';
+import { validateNewsPublishFields } from '@/lib/news/validateNewsPublish';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
@@ -84,6 +85,13 @@ export async function POST(req: Request) {
   }
 
   const action = body.action === 'draft' ? 'draft' : 'publish';
+
+  if (action === 'publish') {
+    const v = validateNewsPublishFields(body.ko_title ?? '', body.ko_summary ?? '');
+    if (v) {
+      return NextResponse.json({ error: v }, { status: 400 });
+    }
+  }
 
   const nextBody = mergeBilingualCleanBody(row.clean_body as string | null, {
     ko_title: body.ko_title,

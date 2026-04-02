@@ -73,6 +73,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               logoAria: d.logoAria,
               lang: d.lang,
               board: d.board,
+              search: d.search,
             }}
           />
           <PremiumTopBanner />

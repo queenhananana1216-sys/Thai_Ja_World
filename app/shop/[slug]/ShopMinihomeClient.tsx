@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import ShopGuestbookPanel from './ShopGuestbookPanel';
 
 export type ShopSpotPayload = {
   id: string;
@@ -8,6 +9,7 @@ export type ShopSpotPayload = {
   description: string | null;
   line_url: string | null;
   photo_urls: unknown;
+  owner_profile_id: string | null;
   minihome_public_slug: string | null;
   minihome_intro: string | null;
   minihome_theme: unknown;
@@ -16,9 +18,11 @@ export type ShopSpotPayload = {
   minihome_layout_modules: unknown;
   minihome_extra: unknown;
   is_published: boolean;
+  /** 방명록·일촌평 수신 (false면 비오너에게 비노출, RLS) */
+  minihome_guestbook_enabled?: boolean | null;
 };
 
-const DEFAULT_LAYOUT = ['intro', 'menu', 'line', 'photos'] as const;
+const DEFAULT_LAYOUT = ['intro', 'menu', 'line', 'photos', 'guestbook'] as const;
 
 function asStringRecord(v: unknown): Record<string, unknown> {
   if (v && typeof v === 'object' && !Array.isArray(v)) return v as Record<string, unknown>;
@@ -231,6 +235,16 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
               ))}
             </div>
           ) : null}
+        </Section>
+
+        <Section id="guestbook">
+          <ShopGuestbookPanel
+            spotId={spot.id}
+            ownerProfileId={spot.owner_profile_id ?? null}
+            isPublished={spot.is_published}
+            minihomeGuestbookEnabled={spot.minihome_guestbook_enabled !== false}
+            publicSlug={(spot.minihome_public_slug ?? '').trim()}
+          />
         </Section>
       </div>
     </div>

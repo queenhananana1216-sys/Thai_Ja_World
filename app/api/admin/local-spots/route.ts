@@ -34,6 +34,7 @@ type Body = {
   minihome_menu_json?: string | null;
   minihome_layout_json?: string | null;
   minihome_extra_json?: string | null;
+  minihome_guestbook_enabled?: boolean;
 };
 
 const CATEGORIES = ['restaurant', 'cafe', 'night_market', 'service', 'shopping', 'other', 'massage'] as const;
@@ -275,6 +276,9 @@ export async function POST(req: Request) {
       }
     }
 
+    const minihome_guestbook_enabled =
+      typeof body.minihome_guestbook_enabled === 'boolean' ? body.minihome_guestbook_enabled : true;
+
     const { data: row, error } = await admin
       .from('local_spots')
       .insert({
@@ -296,6 +300,7 @@ export async function POST(req: Request) {
         minihome_menu,
         minihome_layout_modules: minihome_layout,
         minihome_extra,
+        minihome_guestbook_enabled,
       })
       .select('id, slug')
       .single();
@@ -327,6 +332,10 @@ export async function POST(req: Request) {
     minihome_extra,
     minihome_public_slug,
   };
+
+  if (Object.prototype.hasOwnProperty.call(body, 'minihome_guestbook_enabled')) {
+    patch.minihome_guestbook_enabled = Boolean(body.minihome_guestbook_enabled);
+  }
 
   if (Object.prototype.hasOwnProperty.call(body, 'owner_email')) {
     try {

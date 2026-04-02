@@ -5,6 +5,10 @@ import { useState } from 'react';
 import { mergeBilingualCleanBody } from '@/lib/news/mergeCleanBody';
 import { newsDetailFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { validateNewsPublishFields } from '@/lib/news/validateNewsPublish';
+import { isNewsStubKoSummary } from '@/lib/news/newsStubConstants';
+
+/** LLM 일괄 재가공 시 API 과부하를 막기 위한 건당 대기 시간 */
+const BATCH_REPROCESS_DELAY_MS = 400;
 
 export type QueueItem = {
   id: string;
@@ -50,6 +54,9 @@ export default function NewsQueueClient({
   const [publishBulkBusy, setPublishBulkBusy] = useState(false);
   const [ensureBusyRawId, setEnsureBusyRawId] = useState<string | null>(null);
   const [ensureBulkBusy, setEnsureBulkBusy] = useState(false);
+  const [reprocessBusyId, setReprocessBusyId] = useState<string | null>(null);
+  const [bulkLlmBusy, setBulkLlmBusy] = useState(false);
+  const [bulkLlmProgress, setBulkLlmProgress] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function submit(
@@ -189,6 +196,91 @@ export default function NewsQueueClient({
     } finally {
       setEnsureBulkBusy(false);
     }
+  }
+
+  async function reprocessWithLlm(processedNewsId: string) {
+    setMsg(null);
+    setReprocessBusyId(processedNewsId);
+    try {
+      const res = await fetch('/api/admin/news-reprocess-stub', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ processed_news_id: processedNewsId }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setMsg(j.error ?? `오류 (${res.status})`);
+        return;
+      }
+      setMsg('LLM 재가공 완료. 한·태 제목·요약을 확인한 뒤 게시하세요.');
+      router.refresh();
+    } finally {
+      setReprocessBusyId(null);
+    }
+  }
+
+  async function reprocessAllStubsWithLlm() {
+    const targets = items.filter((it) => isNewsStubKoSummary(it.ko_summary));
+    if (targets.length === 0) {
+      setMsg('LLM 미가공으로 보이는 초안이 없습니다.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `스텁·발췌 초안 ${targets.length}건을 순서대로 LLM 재가공합니다.\n` +
+          '건당 수십 초~1분 이상 걸릴 수 있으며, 전체는 수 분 이상 걸릴 수 있습니다.\n' +
+          '진행 중에는 이 탭을 닫지 마세요. 계속할까요?',
+      )
+    ) {
+      return;
+    }
+    setBulkLlmBusy(true);
+    setBulkLlmProgress(null);
+    setMsg(null);
+    let ok = 0;
+    let fail = 0;
+    const failSamples: string[] = [];
+    let idx = 0;
+    for (const it of targets) {
+      idx += 1;
+      setBulkLlmProgress(
+        `${idx}/${targets.length} — ${it.ko_title.slice(0, 36)}${it.ko_title.length > 36 ? '…' : ''}`,
+      );
+      try {
+        const res = await fetch('/api/admin/news-reprocess-stub', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ processed_news_id: it.id }),
+        });
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          fail += 1;
+          if (failSamples.length < 5) {
+            failSamples.push(
+              `${it.ko_title.slice(0, 28) || it.id.slice(0, 8)}: ${j.error ?? String(res.status)}`,
+            );
+          }
+        } else {
+          ok += 1;
+        }
+      } catch {
+        fail += 1;
+        if (failSamples.length < 5) {
+          failSamples.push(`${it.ko_title.slice(0, 28) || it.id.slice(0, 8)}: 네트워크 오류`);
+        }
+      }
+      await new Promise((r) => setTimeout(r, BATCH_REPROCESS_DELAY_MS));
+    }
+    setBulkLlmProgress(null);
+    setBulkLlmBusy(false);
+    setMsg(
+      `LLM 일괄 재가공 완료: 성공 ${ok}건, 실패 ${fail}건.` +
+        (failSamples.length ? ` 실패 예: ${failSamples.join(' | ')}` : '') +
+        ' 목록을 새로고침합니다.',
+    );
+    router.refresh();
   }
 
   async function publishAllDrafts() {
@@ -385,9 +477,11 @@ export default function NewsQueueClient({
   }
   const weeks = [...byWeek.keys()].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
 
+  const stubCount = items.filter((it) => isNewsStubKoSummary(it.ko_summary)).length;
+
   return (
     <div style={{ marginTop: 12 }}>
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 12, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <button
           type="button"
           disabled={publishBulkBusy || items.length === 0}
@@ -406,6 +500,27 @@ export default function NewsQueueClient({
         >
           {publishBulkBusy ? '처리 중…' : `승인 대기 뉴스 일괄 게시 (${items.length}건)`}
         </button>
+        {stubCount > 0 && (
+          <button
+            type="button"
+            disabled={bulkLlmBusy}
+            onClick={() => void reprocessAllStubsWithLlm()}
+            style={{
+              padding: '10px 14px',
+              background: '#d97706',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: bulkLlmBusy ? 'wait' : 'pointer',
+            }}
+          >
+            {bulkLlmBusy
+              ? `LLM 재가공 중… ${bulkLlmProgress ?? ''}`
+              : `스텁 ${stubCount}건 LLM 재가공`}
+          </button>
+        )}
       </div>
       {orphanPanel}
       {msg ? (
@@ -418,7 +533,14 @@ export default function NewsQueueClient({
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {byWeek.get(wk)!.map((it) => (
-              <DraftCard key={it.id} item={it} busy={busyId === it.id} onSubmit={submit} />
+              <DraftCard
+                key={it.id}
+                item={it}
+                busy={busyId === it.id}
+                reprocessBusy={reprocessBusyId === it.id}
+                onSubmit={submit}
+                onReprocessLlm={() => void reprocessWithLlm(it.id)}
+              />
             ))}
           </div>
         </section>
@@ -430,15 +552,19 @@ export default function NewsQueueClient({
 function DraftCard({
   item,
   busy,
+  reprocessBusy,
   onSubmit,
+  onReprocessLlm,
 }: {
   item: QueueItem;
   busy: boolean;
+  reprocessBusy: boolean;
   onSubmit: (
     id: string,
     action: 'publish' | 'draft' | 'delete',
     fields: Pick<QueueItem, 'ko_title' | 'ko_summary' | 'th_title' | 'th_summary'>,
   ) => Promise<void>;
+  onReprocessLlm: () => void;
 }) {
   const [koTitle, setKoTitle] = useState(item.ko_title);
   const [koSummary, setKoSummary] = useState(item.ko_summary);
@@ -454,16 +580,33 @@ function DraftCard({
   });
   const userView = newsDetailFromProcessed(mergedJson, item.raw_title, item.raw_url, item.summaries, 'ko');
   const publishErr = validateNewsPublishFields(koTitle, koSummary);
+  const isStub = isNewsStubKoSummary(item.ko_summary);
 
   return (
     <div
       style={{
-        border: '1px solid #e5e7eb',
+        border: `1px solid ${isStub ? '#fcd34d' : '#e5e7eb'}`,
         borderRadius: 10,
         padding: 14,
-        background: '#fafafa',
+        background: isStub ? '#fffbeb' : '#fafafa',
       }}
     >
+      {isStub && (
+        <p
+          style={{
+            margin: '0 0 10px',
+            fontSize: 12,
+            color: '#92400e',
+            background: '#fef3c7',
+            border: '1px solid #fbbf24',
+            borderRadius: 6,
+            padding: '6px 10px',
+          }}
+        >
+          ⚠️ <strong>LLM 미가공 초안</strong> — 아직 번역·요약·편집실 한마디가 만들어지지 않았습니다. «LLM 재가공»
+          버튼으로 다시 처리하거나 직접 편집 후 게시하세요.
+        </p>
+      )}
       <p style={{ margin: '0 0 8px', fontSize: 12, color: '#9ca3af' }}>
         원문 ·{' '}
         <a href={item.raw_url} target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1' }}>
@@ -546,6 +689,23 @@ function DraftCard({
       ) : null}
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        {isStub && (
+          <button
+            type="button"
+            disabled={busy || reprocessBusy}
+            onClick={onReprocessLlm}
+            style={{
+              padding: '8px 14px',
+              background: '#d97706',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              cursor: busy || reprocessBusy ? 'wait' : 'pointer',
+            }}
+          >
+            {reprocessBusy ? 'LLM 재가공 중…' : 'LLM 재가공'}
+          </button>
+        )}
         <button
           type="button"
           disabled={busy}

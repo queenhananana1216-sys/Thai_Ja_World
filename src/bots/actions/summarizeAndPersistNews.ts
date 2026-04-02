@@ -952,6 +952,120 @@ export type EnsureNewsDraftResult = {
   already_existed?: boolean;
 };
 
+export type ReprocessNewsStubResult = {
+  ok: boolean;
+  processed_news_id: string;
+  error?: string;
+};
+
+/**
+ * 미게시 초안(published=false) 단건을 LLM 으로 재가공합니다.
+ * clean_body 와 summaries 를 새 LLM 결과로 교체합니다.
+ * 이미 게시된 항목이나 LLM 키 미설정 시 오류를 반환합니다.
+ */
+export async function reprocessNewsStubWithLlm(
+  processedNewsId: string,
+): Promise<ReprocessNewsStubResult> {
+  const pid = processedNewsId.trim();
+  if (!pid) {
+    return { ok: false, processed_news_id: pid, error: 'processed_news_id 가 비었습니다.' };
+  }
+
+  if (!isNewsSummaryLlmConfigured()) {
+    return {
+      ok: false,
+      processed_news_id: pid,
+      error:
+        'LLM 키가 설정되어 있지 않습니다. OPENAI_API_KEY 또는 GEMINI_API_KEY 등을 Vercel 환경 변수에 넣은 뒤 다시 시도하세요.',
+    };
+  }
+
+  const client = getServerSupabaseClient();
+
+  const { data: proc, error: pErr } = await client
+    .from('processed_news')
+    .select('id, raw_news_id, published')
+    .eq('id', pid)
+    .maybeSingle();
+
+  if (pErr || !proc) {
+    return { ok: false, processed_news_id: pid, error: pErr?.message ?? '초안을 찾을 수 없습니다.' };
+  }
+  if (proc.published === true) {
+    return { ok: false, processed_news_id: pid, error: '이미 게시된 기사는 재가공할 수 없습니다.' };
+  }
+
+  const rawId = String(proc.raw_news_id);
+  const { data: raw, error: rErr } = await client
+    .from('raw_news')
+    .select('id, title, raw_body, external_url')
+    .eq('id', rawId)
+    .maybeSingle();
+
+  if (rErr || !raw) {
+    return {
+      ok: false,
+      processed_news_id: pid,
+      error: rErr?.message ?? '원문(raw_news)을 찾을 수 없습니다.',
+    };
+  }
+
+  const title = (raw.title as string | null)?.trim() || '(제목 없음)';
+  const url = (raw.external_url as string | null) ?? '';
+
+  let llm: LlmBilingualPayload;
+  try {
+    llm = await callBilingualSummary(title, raw.raw_body as string | null, url);
+  } catch (e) {
+    return {
+      ok: false,
+      processed_news_id: pid,
+      error: `LLM 호출 실패: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+
+  const cleanBody = JSON.stringify({
+    ko: {
+      title: llm.ko_title,
+      summary: llm.ko_summary,
+      blurb: llm.ko_blurb,
+      ...(llm.ko_editor_note ? { editor_note: llm.ko_editor_note } : {}),
+    },
+    th: {
+      title: llm.th_title,
+      summary: llm.th_summary,
+      blurb: llm.th_blurb,
+      ...(llm.th_editor_note ? { editor_note: llm.th_editor_note } : {}),
+    },
+    source_url: url,
+  });
+
+  const { error: updErr } = await client
+    .from('processed_news')
+    .update({ clean_body: cleanBody })
+    .eq('id', pid);
+
+  if (updErr) {
+    return { ok: false, processed_news_id: pid, error: updErr.message };
+  }
+
+  // summaries 교체: 기존 행 삭제 후 새 행 삽입
+  const { error: delErr } = await client.from('summaries').delete().eq('processed_news_id', pid);
+  if (delErr) {
+    return { ok: false, processed_news_id: pid, error: `summaries 삭제 실패: ${delErr.message}` };
+  }
+
+  const { error: insErr } = await client.from('summaries').insert([
+    { processed_news_id: pid, summary_text: llm.ko_summary, model: 'ko' },
+    { processed_news_id: pid, summary_text: llm.th_summary, model: 'th' },
+  ]);
+  if (insErr) {
+    return { ok: false, processed_news_id: pid, error: `summaries 삽입 실패: ${insErr.message}` };
+  }
+
+  return { ok: true, processed_news_id: pid };
+}
+
 /**
  * `processed_news` 가 없는 `raw_news` 에 LLM 없이 스텁 초안을 넣습니다. 항상 `published=false`.
  * 관리자 «승인 큐에 올리기» 전용.

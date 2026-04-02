@@ -2,6 +2,22 @@
 -- 052_local_shop_guestbook.sql
 -- 로컬 가게(/shop) 전용 방명록 + 오너 갤러리(photo_urls) 편집 허용
 -- =============================================================================
+--
+-- 선행: 이 스크립트는 public.local_spots.owner_profile_id 를 참조합니다.
+-- 045_local_spots_owner_minihome.sql 가 먼저 적용되는 것이 정석입니다.
+-- 원격 DB에 045가 빠져 있으면 42703 (column ... does not exist) 가 납니다.
+-- 아래 한 줄은 그 경우에도 052 단독 실행이 통과하도록 idempotent 보강입니다.
+
+alter table public.local_spots
+  add column if not exists owner_profile_id uuid references public.profiles (id) on delete set null;
+
+create index if not exists local_spots_owner_profile_id_idx
+  on public.local_spots (owner_profile_id)
+  where owner_profile_id is not null;
+
+-- 트리거 본문이 minihome_public_slug 를 참조하므로, 해당 컬럼도 없으면 실패합니다.
+alter table public.local_spots
+  add column if not exists minihome_public_slug text;
 
 -- -----------------------------------------------------------------------------
 -- 가게 방명록 (개인 미니홈 minihome_guestbook_entries 와 분리)

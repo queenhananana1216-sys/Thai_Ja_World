@@ -1,11 +1,12 @@
 /**
  * 절대 URL·사이트맵·robots·메타 canonical 공통 기준.
- * 프로덕션: NEXT_PUBLIC_SITE_URL 권장 (예: https://thaijaworld.com)
+ * 프로덕션: NEXT_PUBLIC_SITE_URL 권장 (예: https://www.thaijaworld.com)
+ * ⚠️ 반드시 www 포함 URL을 사용해야 Google 색인이 정상 작동합니다.
  */
 export function getSiteBaseUrl(): string {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (raw) return raw.replace(/\/+$/, '');
-  return 'https://thaijaworld.com';
+  return 'https://www.thaijaworld.com';
 }
 
 export function absoluteUrl(path: string): string {

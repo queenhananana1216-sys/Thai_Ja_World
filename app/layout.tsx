@@ -33,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const loc = await getLocale();
   const d = getDictionary(loc);
   return {
-    metadataBase: new URL('https://thaijaworld.com'),
+    metadataBase: new URL('https://www.thaijaworld.com'),
     title: {
       default: d.seo.defaultTitle,
       template: d.seo.titleTemplate,
@@ -87,7 +87,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         </Providers>
         <Analytics />
         <VercelSpeedInsights />
-        <footer className="site-footer">{d.footer}</footer>
       </body>
     </html>
   );

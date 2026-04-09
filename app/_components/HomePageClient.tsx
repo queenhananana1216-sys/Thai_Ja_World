@@ -376,26 +376,19 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
             <strong className="home-hero__accent">{heroLeadLine}</strong>
           </p>
           <p className="home-hero__sub">{heroSubBlock}</p>
-          <div className="home-hero__dream-wrap">
-            <p id="home-mini-teaser" className="home-hero__dream">
-              {dreamIntro}
-              {isLoggedIn ? (
-                <strong className="home-hero__dream-inline-label">{dreamMinihome}</strong>
-              ) : (
+          {!isLoggedIn ? (
+            <div className="home-hero__dream-wrap">
+              <p id="home-mini-teaser" className="home-hero__dream">
+                {dreamIntro}
                 <strong className="home-hero__accent">
                   <Link href={loginNextHref('/minihome')}>{dreamMinihome}</Link>
                 </strong>
-              )}
-              {dreamMid}
-              <strong className="home-hero__accent">{dreamPersonal}</strong>
-              {dreamOutro}
-            </p>
-            {isLoggedIn ? (
-              <Link href="/minihome" className="home-hero__dream-minihome-btn">
-                {d.nav.memberMinihome}
-              </Link>
-            ) : null}
-          </div>
+                {dreamMid}
+                <strong className="home-hero__accent">{dreamPersonal}</strong>
+                {dreamOutro}
+              </p>
+            </div>
+          ) : null}
         </div>
         <div className="hub-tiles">
           <Link

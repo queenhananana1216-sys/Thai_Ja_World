@@ -168,18 +168,21 @@ a:hover {
   flex: 0 0 220px;
   width: 100%;
   max-width: 280px;
-  align-self: stretch;
+  align-self: flex-start;
 }
 
 @media (max-width: 900px) {
   .global-header__nate-band-inner {
     flex-direction: column;
     align-items: stretch;
+    padding: 10px 0 12px;
+    gap: 10px 16px;
   }
 
   .global-header__nate-user {
     flex: 1 1 auto;
     max-width: none;
+    align-self: stretch;
   }
 }
 
@@ -215,14 +218,20 @@ a:hover {
   z-index: 500;
 }
 
-/* 네이트형 로그인 패널 */
+/* 네이트형 로그인 패널 — 모바일에서 전폭 CTA 한 줄로 압축 */
 .nate-user-panel {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid #e8e8e8;
   border-radius: 4px;
   background: #fafafa;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+@media (min-width: 901px) {
+  .nate-user-panel {
+    padding: 10px 12px;
+  }
 }
 
 .nate-user-panel__head {
@@ -264,14 +273,24 @@ a:hover {
   color: #e60012;
 }
 
-.nate-user-panel__minihome {
+.nate-user-panel__member-quick {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.nate-user-panel__minihome {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  margin-bottom: 8px;
-  padding: 10px 12px;
-  font-size: 0.82rem;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 5px 10px;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   text-decoration: none;
@@ -279,6 +298,8 @@ a:hover {
   background: #e60012;
   border-radius: 4px;
   border: 1px solid #b8000e;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .nate-user-panel__minihome:hover {
@@ -293,9 +314,21 @@ a:hover {
   gap: 6px;
 }
 
+.nate-user-panel__member-quick .nate-user-panel__subnav-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+}
+
+@media (min-width: 380px) {
+  .nate-user-panel__member-quick .nate-user-panel__subnav-link {
+    flex: 0 1 auto;
+  }
+}
+
 .nate-user-panel__subnav-link {
-  font-size: 0.68rem;
-  padding: 4px 8px;
+  font-size: 0.65rem;
+  padding: 4px 7px;
   border-radius: 2px;
   text-decoration: none;
   color: #444;
@@ -352,7 +385,7 @@ a:hover {
 }
 
 .nate-user-panel--loading {
-  min-height: 72px;
+  min-height: 52px;
 }
 
 .nate-user-panel__skeleton-line {

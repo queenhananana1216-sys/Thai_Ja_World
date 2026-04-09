@@ -47,9 +47,11 @@ export type SiteSearchVariant = 'header' | 'hero' | 'portal' | 'nate' | 'headerN
 
 type SiteSearchProps = {
   variant?: SiteSearchVariant;
+  /** 홈 포털 마스트 등 상단에 제목·부제가 이미 있을 때 hero/portal 안내 문구 중복 표시 생략 */
+  omitIntro?: boolean;
 };
 
-export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
+export default function SiteSearch({ variant = 'header', omitIntro = false }: SiteSearchProps) {
   const { locale, d } = useClientLocaleDictionary();
   const s = d.search;
   const router = useRouter();
@@ -204,8 +206,8 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
 
   return (
     <div ref={wrapRef} className={rootClass}>
-      {isHeroLike && <p className="site-search__hero-title">{s.heroTitle}</p>}
-      {isPortal && <p className="site-search__portal-lead">{s.portalLead}</p>}
+      {isHeroLike && !omitIntro ? <p className="site-search__hero-title">{s.heroTitle}</p> : null}
+      {isPortal && !omitIntro ? <p className="site-search__portal-lead">{s.portalLead}</p> : null}
       {showHeaderBarLabel ? (
         <span className="global-header__search-visible-label">{s.headerBarLabel}</span>
       ) : null}

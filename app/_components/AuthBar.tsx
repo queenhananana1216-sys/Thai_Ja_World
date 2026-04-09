@@ -128,10 +128,10 @@ export default function AuthBar({
             {labels.logout}
           </button>
         </div>
-        <Link href="/minihome" className="nate-user-panel__minihome">
-          {memberNav.minihome}
-        </Link>
-        <nav className="nate-user-panel__subnav" aria-label={memberNav.ariaLabel}>
+        <nav className="nate-user-panel__member-quick" aria-label={memberNav.ariaLabel}>
+          <Link href="/minihome" className="nate-user-panel__minihome">
+            {memberNav.minihome}
+          </Link>
           <Link href="/ilchon#ilchon-received" className="nate-user-panel__subnav-link">
             {memberNav.notesInbox}
           </Link>

@@ -201,6 +201,27 @@ a:hover {
   gap: 12px 16px;
 }
 
+/* 홈(/) — 본문에 통합 검색만 둘 때: 탭 한 줄 가로 스크롤로 높이·줄바꿈 폭주 방지 */
+.global-header__main-nav-bar--nav-only {
+  flex-wrap: nowrap;
+  gap: 6px 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
+}
+
+.global-header__main-nav-bar--nav-only .global-header__nav {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+.global-header__main-nav:has(.global-header__main-nav-bar--nav-only) {
+  padding-top: 6px;
+  padding-bottom: 8px;
+}
+
 .global-header__main-nav-search {
   flex: 1 1 220px;
   min-width: min(100%, 200px);
@@ -1085,6 +1106,25 @@ a:hover {
   color: var(--tj-museum-blue);
   background: #f0f4ff;
   box-shadow: 3px 3px 0 var(--tj-museum-saffron);
+}
+
+@media (max-width: 640px) {
+  .home-portal-mast {
+    padding: 16px 14px 14px;
+    margin-bottom: 16px;
+  }
+
+  .home-portal-mast__sub {
+    margin-bottom: 10px;
+  }
+
+  .home-portal-mast__search {
+    min-height: 0;
+  }
+
+  .home-portal-mast__quick {
+    margin-top: 10px;
+  }
 }
 
 /* 네이트식: 빨간 테두리 + 돋보기 오른쪽 */

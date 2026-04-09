@@ -351,7 +351,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
         <h2 className="home-portal-mast__title">{h.portalMastTitle}</h2>
         <p className="home-portal-mast__sub">{h.portalMastSub}</p>
         <div className="home-portal-mast__search">
-          <SiteSearch variant="nate" />
+          <SiteSearch variant="nate" omitIntro />
         </div>
         <nav className="home-portal-mast__quick" aria-label={h.portalMastQuickAria}>
           {portalQuickLinks.map((item) => (

@@ -22,6 +22,8 @@ type Props = {
 
 export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
   const pathname = usePathname();
+  /** 홈은 본문 포털 마스트에 통합 검색이 있어 헤더 검색을 숨겨 세로 중복·겹침을 줄임 */
+  const hideHeaderSearch = pathname === '/';
   const labels = [
     dict.nav.home,
     dict.nav.tips,
@@ -77,7 +79,12 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
       </div>
 
       <nav className="site-container global-header__main-nav" aria-label={dict.nav.mainNavAria}>
-        <div className="global-header__main-nav-bar">
+        <div
+          className={
+            'global-header__main-nav-bar' +
+            (hideHeaderSearch ? ' global-header__main-nav-bar--nav-only' : '')
+          }
+        >
         <div className="global-header__nav">
           {HREFS.map((href, i) => {
             const isActive =
@@ -105,9 +112,11 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
             );
           })}
         </div>
-        <div className="global-header__main-nav-search">
-          <SiteSearch variant="header" />
-        </div>
+        {!hideHeaderSearch ? (
+          <div className="global-header__main-nav-search">
+            <SiteSearch variant="header" />
+          </div>
+        ) : null}
         </div>
       </nav>
     </header>

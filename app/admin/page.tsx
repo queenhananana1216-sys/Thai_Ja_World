@@ -202,6 +202,12 @@ export default async function AdminDashboardPage() {
           </Link>
         </li>
         <li>
+          <Link href="/admin/pipeline-health">
+            파이프라인 헬스
+            <span>각 봇 컴포넌트 최근 72h 실행 상태 · 수동 트리거 안내</span>
+          </Link>
+        </li>
+        <li>
           <Link href="/admin/local-spots">
             로컬 가게 · 맛집 · 마사지
             <span>

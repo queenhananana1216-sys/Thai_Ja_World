@@ -28,6 +28,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </a>
         <a href="/admin/users">이용자</a>
         <a href="/admin/bot-actions">봇 기록</a>
+        <a href="/admin/pipeline-health">파이프라인 상태</a>
         <a href="/admin/publish">최종 승인</a>
         <a href="/admin/news">뉴스 승인</a>
         <a href="/admin/knowledge">지식 큐</a>

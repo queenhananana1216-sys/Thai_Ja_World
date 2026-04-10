@@ -3,69 +3,151 @@
   "version": 2,
   "final_space": true,
   "console_title_template": "langka | {{ .Shell }} in {{ .Folder }}",
+  "palette": {
+    "brand-purple": "#7C3AED",
+    "brand-purple-light": "#A78BFA",
+    "brand-blue": "#2563EB",
+    "brand-blue-light": "#60A5FA",
+    "brand-green": "#059669",
+    "brand-green-light": "#34D399",
+    "brand-red": "#DC2626",
+    "brand-orange": "#F59E0B",
+    "brand-teal": "#0891B2",
+    "brand-slate": "#475569",
+    "text-light": "#F8FAFC",
+    "text-muted": "#94A3B8",
+    "bg-dark": "#1E1B2E"
+  },
   "blocks": [
     {
       "type": "prompt",
       "alignment": "left",
       "segments": [
         {
-          "type": "text",
+          "type": "os",
           "style": "diamond",
           "leading_diamond": "\ue0b6",
-          "trailing_diamond": "\ue0b0",
-          "background": "#7C3AED",
-          "foreground": "#F5F3FF",
-          "template": " \uf120 langka "
+          "trailing_diamond": "",
+          "background": "p:brand-purple",
+          "foreground": "p:text-light",
+          "template": " {{ if .WSL }}\uf17c{{ else if eq .OS \"windows\" }}\ue62a{{ else if eq .OS \"linux\" }}\uf17c{{ else if eq .OS \"darwin\" }}\uf179{{ else }}\uf108{{ end }} "
+        },
+        {
+          "type": "shell",
+          "style": "powerline",
+          "powerline_symbol": "\ue0b0",
+          "background": "p:brand-purple",
+          "foreground": "p:brand-purple-light",
+          "template": "\uf489 {{ .Name }} "
+        },
+        {
+          "type": "session",
+          "style": "powerline",
+          "powerline_symbol": "\ue0b0",
+          "background": "p:brand-blue",
+          "foreground": "p:text-light",
+          "template": " {{ if .SSHSession }}\ueba9 {{ end }}{{ .UserName }} "
         },
         {
           "type": "path",
           "style": "powerline",
           "powerline_symbol": "\ue0b0",
-          "background": "#2563EB",
-          "foreground": "#EFF6FF",
+          "background": "p:brand-blue-light",
+          "foreground": "p:bg-dark",
           "properties": {
-            "style": "agnoster",
-            "max_depth": 4,
+            "style": "agnoster_short",
+            "max_depth": 3,
             "folder_separator_icon": " \ue0b1 ",
             "home_icon": "\uf015",
             "folder_icon": "\uf07b"
-          }
+          },
+          "template": " {{ .Path }} "
         },
         {
           "type": "git",
           "style": "powerline",
           "powerline_symbol": "\ue0b0",
-          "background": "#059669",
-          "foreground": "#ECFDF5",
+          "background": "p:brand-green",
+          "background_templates": [
+            "{{ if or (.Working.Changed) (.Staging.Changed) }}p:brand-orange{{ end }}",
+            "{{ if gt .Ahead 0 }}p:brand-teal{{ end }}",
+            "{{ if gt .Behind 0 }}p:brand-red{{ end }}"
+          ],
+          "foreground": "p:text-light",
           "properties": {
             "fetch_status": true,
+            "fetch_upstream_icon": true,
+            "branch_max_length": 30,
             "display_stash_count": true
-          }
+          },
+          "template": " {{ .UpstreamIcon }}{{ .HEAD }}{{if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} \uf044 {{ .Working.String }}{{ end }}{{ if and (.Working.Changed) (.Staging.Changed) }} |{{ end }}{{ if .Staging.Changed }} \uf046 {{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }} \ueb4b {{ .StashCount }}{{ end }} "
+        },
+        {
+          "type": "node",
+          "style": "powerline",
+          "powerline_symbol": "\ue0b0",
+          "background": "p:brand-teal",
+          "foreground": "p:text-light",
+          "properties": {
+            "fetch_package_manager": false,
+            "display_mode": "context"
+          },
+          "template": " \ue718 {{ .Full }} "
+        },
+        {
+          "type": "python",
+          "style": "powerline",
+          "powerline_symbol": "\ue0b0",
+          "background": "p:brand-teal",
+          "foreground": "p:text-light",
+          "properties": {
+            "display_mode": "context",
+            "fetch_virtual_env": true
+          },
+          "template": " \ue73c {{ if .Venv }}{{ .Venv }} {{ end }}{{ .Full }} "
+        },
+        {
+          "type": "text",
+          "style": "powerline",
+          "powerline_symbol": "\ue0b0",
+          "background": "transparent",
+          "foreground": "transparent",
+          "template": ""
         }
       ]
     },
     {
-      "type": "prompt",
-      "alignment": "right",
+      "type": "rprompt",
       "segments": [
         {
           "type": "executiontime",
           "style": "plain",
-          "foreground": "#94A3B8",
+          "foreground": "p:brand-orange",
           "background": "transparent",
           "properties": {
             "threshold": 500,
-            "style": "round"
-          }
+            "style": "roundrock"
+          },
+          "template": "\uf252 {{ .FormattedMs }} "
+        },
+        {
+          "type": "sysinfo",
+          "style": "plain",
+          "foreground": "p:text-muted",
+          "background": "transparent",
+          "template": "{{ if gt .PhysicalPercentUsed 80.0 }}\uf85a {{ round .PhysicalPercentUsed 0 }}%{{ end }}"
         },
         {
           "type": "time",
-          "style": "plain",
-          "foreground": "#94A3B8",
-          "background": "transparent",
+          "style": "diamond",
+          "leading_diamond": "\ue0b2",
+          "trailing_diamond": "",
+          "foreground": "p:text-light",
+          "background": "p:brand-slate",
           "properties": {
             "time_format": "15:04:05"
-          }
+          },
+          "template": " \uf017 {{ .CurrentDate | date .Format }} "
         }
       ]
     },
@@ -75,12 +157,29 @@
       "newline": true,
       "segments": [
         {
-          "type": "text",
+          "type": "status",
           "style": "plain",
-          "foreground": "#A78BFA",
-          "template": "\u276f "
+          "foreground": "p:brand-green-light",
+          "foreground_templates": [
+            "{{ if gt .Code 0 }}p:brand-red{{ end }}"
+          ],
+          "background": "transparent",
+          "properties": {
+            "always_enabled": true
+          },
+          "template": "{{ if gt .Code 0 }}\uf00d{{ else }}\uf105{{ end }} "
         }
       ]
     }
-  ]
+  ],
+  "transient_prompt": {
+    "foreground": "p:brand-purple-light",
+    "background": "transparent",
+    "template": "\uf105 "
+  },
+  "secondary_prompt": {
+    "foreground": "p:brand-purple-light",
+    "background": "transparent",
+    "template": "\uf105\uf105 "
+  }
 }

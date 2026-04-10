@@ -1,27 +1,68 @@
 {
   "$schema": "https://aka.ms/terminal-profiles-schema",
+  "schemes": [
+    {
+      "name": "llangkka Night",
+      "background": "#0F0D1A",
+      "foreground": "#E2E8F0",
+      "cursorColor": "#A78BFA",
+      "selectionBackground": "#7C3AED",
+      "black": "#1E1B2E",
+      "red": "#DC2626",
+      "green": "#059669",
+      "yellow": "#F59E0B",
+      "blue": "#2563EB",
+      "purple": "#7C3AED",
+      "cyan": "#0891B2",
+      "white": "#E2E8F0",
+      "brightBlack": "#475569",
+      "brightRed": "#F87171",
+      "brightGreen": "#34D399",
+      "brightYellow": "#FCD34D",
+      "brightBlue": "#60A5FA",
+      "brightPurple": "#A78BFA",
+      "brightCyan": "#22D3EE",
+      "brightWhite": "#F8FAFC"
+    }
+  ],
   "profiles": {
     "defaults": {
       "fontFace": "D2CodingLigature Nerd Font Mono",
       "fontSize": 13,
-      "useAcrylic": false
+      "colorScheme": "llangkka Night",
+      "useAcrylic": true,
+      "opacity": 92,
+      "padding": "12, 8, 12, 8",
+      "cursorShape": "filledBox",
+      "antialiasingMode": "cleartype",
+      "bellStyle": "none",
+      "scrollbarState": "hidden"
     },
     "list": [
       {
         "guid": "{D9B7F2F2-2B6B-4A62-A7E6-7D0E3A7B2C11}",
-        "name": "llangkka PowerShell 7",
+        "name": "llangkka pwsh 7",
         "commandline": "\"C:\\Program Files\\PowerShell\\7\\pwsh.exe\" -NoLogo",
-        "startingDirectory": "e:\\02_Workspace\\llangkka",
+        "startingDirectory": "e:\\llangkka_project\\llangkka",
+        "tabColor": "#7C3AED",
+        "hidden": false
+      },
+      {
+        "guid": "{D9B7F2F2-2B6B-4A62-A7E6-7D0E3A7B2C13}",
+        "name": "llangkka PowerShell",
+        "commandline": "powershell.exe -NoLogo",
+        "startingDirectory": "e:\\llangkka_project\\llangkka",
+        "tabColor": "#2563EB",
         "hidden": false
       },
       {
         "guid": "{D9B7F2F2-2B6B-4A62-A7E6-7D0E3A7B2C12}",
         "name": "llangkka Ubuntu",
-        "commandline": "wsl.exe -d Ubuntu",
-        "startingDirectory": "e:\\02_Workspace\\llangkka",
+        "commandline": "wsl.exe -d Ubuntu-22.04",
+        "startingDirectory": "e:\\llangkka_project\\llangkka",
+        "tabColor": "#059669",
         "hidden": false
       }
     ]
   }
 }
-

@@ -1,0 +1,10 @@
+*.sh text eol=lf
+*.zsh text eol=lf
+*.bash text eol=lf
+zshrc text eol=lf
+p10k.zsh text eol=lf
+*.toml text eol=lf
+*.ahk text eol=lf
+*.ps1 text eol=crlf
+*.json text eol=crlf
+*.md text eol=crlf

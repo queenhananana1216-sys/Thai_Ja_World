@@ -22,3 +22,35 @@ These defaults are optimized for AI coding agents (and humans) working on apps t
   needed. Always curl https://ai-gateway.vercel.sh/v1/models first; never trust model IDs from memory
 - For durable agent loops or untrusted code: use Workflow (pause/resume/state) + Sandbox; use Vercel MCP for secure infra access
 <!-- VERCEL BEST PRACTICES END -->
+
+## Cursor Cloud specific instructions
+
+### Project overview
+
+**taeja-world** — Korean-Thai community portal (Next.js 15 App Router + React 19 + TypeScript + Supabase). Package manager: **npm**. Node 22+ required.
+
+### Environment variables
+
+A `.env.local` file is required with at minimum `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. Copy from `.env.example`. Without real Supabase credentials the dev server starts and renders pages, but data-fetching sections fall back to defaults or show "fetch failed" gracefully.
+
+### Running the dev server
+
+```
+npm run dev          # http://127.0.0.1:3000
+```
+
+The dev server uses webpack polling (`watchOptions.poll: 1000`) for file-watch compatibility.
+
+### Lint / type-check / build
+
+- `npm run type-check` — `tsc --noEmit` (passes cleanly)
+- `npm run lint` — `next lint` (requires `eslint` + `eslint-config-next` as devDependencies; the repo ships without an ESLint config — if none exists, create `eslint.config.mjs` with `eslint-config-next/core-web-vitals` + `eslint-config-next/typescript` ignoring `auto/`, `cloudflare/`, `my-project/`, `my-workflow-app/`, `llangkka/`)
+- `npm run build` — may fail on pre-existing React hooks lint errors in the codebase; this is a known state, not a setup issue
+
+### Supabase
+
+The app requires a hosted Supabase project (or Supabase CLI for local dev). 76 migrations live in `supabase/migrations/`. Without a real DB the app still renders public UI with fallback data.
+
+### Sub-projects
+
+`auto/`, `cloudflare/workers/edge-guard/`, `my-project/`, `my-workflow-app/` are independent sub-projects excluded from the root tsconfig. They are not needed for taeja-world development.

@@ -348,310 +348,202 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   }, [isLoggedIn, locale, h.weatherBangkok, h.weatherChiangMai, h.weatherPattaya]);
 
   return (
-    <div className="page-body">
-      {/* ─── 1. 검색 히어로 ─── */}
-      <section className="home-portal-mast" aria-label={h.portalMastTitle}>
-        <h2 className="home-portal-mast__title">{h.portalMastTitle}</h2>
-        <p className="home-portal-mast__sub">{h.portalMastSub}</p>
-        <div className="home-portal-mast__search">
-          <SiteSearch variant="nate" omitIntro />
-        </div>
-        <nav className="home-portal-mast__quick" aria-label={h.portalMastQuickAria}>
-          {portalQuickLinks.map((item) => (
-            <Link key={item.key} href={item.href}>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </section>
-
-      {/* ─── 2. 기능 타일 (5열) ─── */}
-      <section className="home-features" aria-label="Features">
-        <div className="hub-tiles">
-          <Link
-            href={isLoggedIn ? '/minihome' : loginNextHref('/minihome')}
-            className="hub-tile"
-          >
-            <span className="hub-tile__emoji">🏠</span>
-            <span className="hub-tile__label">{h.hubMinihome}</span>
-            <span className="hub-tile__sub">{h.hubMinihomeSub}</span>
-          </Link>
-          <Link
-            href={isLoggedIn ? '/community/boards' : loginNextHref('/community/boards')}
-            className="hub-tile"
-          >
-            <span className="hub-tile__emoji">💬</span>
-            <span className="hub-tile__label">{h.hubBoard}</span>
-            <span className="hub-tile__sub">{h.hubBoardSub}</span>
-          </Link>
-          <Link href={isLoggedIn ? '/local' : loginNextHref('/local')} className="hub-tile">
-            <span className="hub-tile__emoji">🏪</span>
-            <span className="hub-tile__label">{h.hubLocal}</span>
-            <span className="hub-tile__sub">{h.hubLocalSub}</span>
-          </Link>
-          <Link
-            href={isLoggedIn ? '/community/trade' : loginNextHref('/community/trade')}
-            className="hub-tile"
-          >
-            <span className="hub-tile__emoji">🧺</span>
-            <span className="hub-tile__label">{h.hubNotice}</span>
-            <span className="hub-tile__sub">{h.hubNoticeSub}</span>
-          </Link>
-          {hasTip ? (
-            <div className="hub-tile" style={{ cursor: 'default' }}>
-              <span className="hub-tile__emoji">📬</span>
-              <span className="hub-tile__label">{h.hubTip}</span>
-              <span className="hub-tile__sub hub-tile__sub--tip-icons">
-                <HubTipSocialIcons
-                  tips={tips}
-                  labels={{
-                    tg: h.tipTelegram,
-                    wa: h.tipWhatsapp,
-                    line: h.tipLine,
-                    fb: h.tipFacebook,
-                    tt: h.tipTiktok,
-                  }}
-                />
-              </span>
-            </div>
-          ) : (
-            <Link
-              href={isLoggedIn ? '/community/boards/new?cat=info' : loginNextHref('/community/boards/new?cat=info')}
-              className="hub-tile"
-            >
-              <span className="hub-tile__emoji">📬</span>
-              <span className="hub-tile__label">{h.hubTip}</span>
-              <span className="hub-tile__sub">{h.hubTipSoon}</span>
-            </Link>
-          )}
-        </div>
-      </section>
-
-      {/* ─── 3. 메인 그리드: 뉴스(좌) + 사이드바(우) ─── */}
-      <div className="home-grid">
-        <main className="home-grid__main">
-          {/* 속보 뉴스 */}
-          <section className="home-card" aria-label={hotLabelUi}>
-            <div className="home-card__header">
-              <h2 className="home-card__title">🔥 {hotLabelUi}</h2>
-            </div>
-            {listsBusy ? (
-              <p className="home-card__loading">{h.hotNewsLoading}</p>
-            ) : hotNewsItems.length === 0 ? (
-              <p className="home-card__empty">{h.hotNewsEmpty}</p>
-            ) : (
-              <ul className="hot-strip__list">
-                {hotNewsItems.map((item) => {
-                  const host = extractHostname(item.external_url);
-                  const date = formatDate(item.published_at);
-                  const link = item.internalNewsId ? (
-                    <Link href={`/news/${item.internalNewsId}`} className="hot-strip__link">
-                      {item.title}
-                    </Link>
-                  ) : (
-                    <a
-                      href={item.external_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hot-strip__link"
-                    >
-                      {item.title}
-                    </a>
-                  );
-                  const lead = item.summary_text?.trim();
-                  return (
-                    <li key={item.id} className="hot-strip__item">
-                      <span className="hot-strip__badge">{h.hotNewsBadge}</span>
-                      <div className="hot-strip__body">
-                        {link}
-                        {lead ? <p className="hot-strip__lead">{lead}</p> : null}
-                      </div>
-                      <span className="hot-strip__meta">{date || host || '—'}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <p className="hot-strip__footnote">{hotFootnoteUi}</p>
-          </section>
-
-          {/* 뉴스 상세 (로그인 시) */}
-          {isLoggedIn && (
-            <section className="home-card" aria-labelledby="news-muted-title">
-              <div className="home-card__header">
-                <div>
-                  <h2 id="news-muted-title" className="home-card__title">📰 {h.newsTitle}</h2>
-                  <p className="home-card__subtitle">{h.newsSub}</p>
-                </div>
+    <div className="fv2">
+      {/* ══ PORTAL ZONE ══ */}
+      <div className="fv2-portal">
+        <div className="fv2-portal__inner">
+          {/* ── Main ── */}
+          <div className="fv2-portal__main">
+            {/* 속보 / 긴급 */}
+            <section className="fv2-card" aria-label={hotLabelUi}>
+              <div className="fv2-card__head">
+                <h2 className="fv2-card__h">{h.portalMastTitle.includes('검색') ? '속보 / 긴급' : hotLabelUi}</h2>
+                <Link href="/news" className="fv2-more">더보기 ›</Link>
               </div>
               {listsBusy ? (
-                <p className="home-card__loading">{h.newsLoading}</p>
-              ) : newsShow.length > 0 ? (
-                <div className="home-news-list">
-                  {newsShow.map((item) => (
-                    <NewsCardCompact key={item.id} item={item} />
-                  ))}
-                  {newsLocalized.length > 5 && (
-                    <p className="home-card__count">
-                      {h.newsCountLine.replace('{n}', String(newsLocalized.length))}
-                    </p>
-                  )}
-                </div>
+                <p className="fv2-card__state">{h.hotNewsLoading}</p>
+              ) : hotNewsItems.length === 0 ? (
+                <p className="fv2-card__state">{h.hotNewsEmpty}</p>
               ) : (
-                <div className="home-card__empty-box">
-                  <p>{h.newsEmpty}</p>
-                  <Link href="/community/boards" className="home-card__empty-link">
-                    {h.newsEmptyLink}
-                  </Link>
+                <div className="fv2-news-rows">
+                  {hotNewsItems.map((item, idx) => {
+                    const date = formatDate(item.published_at);
+                    const linkEl = item.internalNewsId ? (
+                      <Link href={`/news/${item.internalNewsId}`} className="fv2-news-row__link">
+                        {item.title}
+                      </Link>
+                    ) : (
+                      <a href={item.external_url} target="_blank" rel="noopener noreferrer" className="fv2-news-row__link">
+                        {item.title}
+                      </a>
+                    );
+                    return (
+                      <div key={item.id} className="fv2-news-row">
+                        {idx === 0 && <span className="fv2-badge fv2-badge--red">긴급</span>}
+                        {idx === 1 && <span className="fv2-badge fv2-badge--blue">HOT</span>}
+                        {linkEl}
+                        <span className="fv2-news-row__time">{date || '—'}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>
-          )}
-        </main>
 
-        {/* ─── 사이드바 ─── */}
-        <aside className="home-grid__side">
-          {/* 히어로 브랜드 */}
-          <div className="home-side-hero">
-            <p className="home-side-hero__tag">{heroTag}</p>
-            <p className="home-side-hero__brand">
-              <BrandPhrase variant="light" />
-            </p>
-            <h1 className="home-side-hero__title">{heroTitle}</h1>
-            <p className="home-side-hero__kicker">{heroKicker}</p>
-            <p className="home-side-hero__lead">{heroLeadLine}</p>
-            {!isLoggedIn && (
-              <Link href={loginNextHref('/minihome')} className="home-side-hero__cta">
-                {dreamMinihome} →
-              </Link>
-            )}
-          </div>
-
-          {/* 날씨 위젯 */}
-          {isLoggedIn && (
-            <div className="home-widget">
-              <p className="home-widget__title">🌤 {h.weatherTitle}</p>
-              {weatherBusy ? (
-                <p className="home-widget__state">{h.weatherLoading}</p>
-              ) : weatherErr || weatherRows.length === 0 ? (
-                <p className="home-widget__state">{h.weatherUnavailable}</p>
+            {/* 오늘의 꿀팁 */}
+            <section className="fv2-tips">
+              <div className="fv2-card__head">
+                <h2 className="fv2-card__h">오늘의 꿀팁</h2>
+                <Link href="/tips" className="fv2-more">더보기 ›</Link>
+              </div>
+              {listsBusy ? (
+                <p className="fv2-card__state">{h.hotNewsLoading}</p>
+              ) : newsLocalized.length === 0 ? (
+                <p className="fv2-card__state">꿀팁을 준비 중이에요.</p>
               ) : (
-                <div className="home-widget__weather-grid">
-                  {weatherRows.map((row) => (
-                    <div key={row.key} className="home-widget__weather-row">
-                      <span className="home-widget__weather-city">{row.label}</span>
-                      <div className="home-widget__weather-data">
-                        <span className="home-widget__weather-temp">
-                          {row.temp !== null ? `${row.temp}°C` : '—'}
-                        </span>
-                        <span className="home-widget__weather-cond">{row.condition}</span>
+                <div className="fv2-tips__grid">
+                  {newsLocalized.slice(0, 4).map((item) => (
+                    <Link
+                      key={item.id}
+                      href={item.internalNewsId ? `/news/${item.internalNewsId}` : item.external_url}
+                      className="fv2-tip-card"
+                      {...(!item.internalNewsId ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    >
+                      <div className="fv2-tip-card__thumb" />
+                      <div className="fv2-tip-card__body">
+                        <p className="fv2-tip-card__title">{item.title}</p>
+                        <p className="fv2-tip-card__meta">{formatDate(item.published_at) || '—'}</p>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
-              <p className="home-widget__attr">{h.weatherAttribution}</p>
-            </div>
-          )}
+            </section>
+          </div>
 
-          {/* 환율 위젯 */}
-          {isLoggedIn && (
-            <div className="home-widget">
-              <p className="home-widget__title">💱 {h.fxTitle}</p>
-              <p className="home-widget__hint">{h.fxRemote.floatingHint}</p>
+          {/* ── Sidebar ── */}
+          <aside className="fv2-portal__side">
+            {/* 날씨 */}
+            <div className="fv2-widget">
+              <p className="fv2-widget__h">🌤️ 날씨</p>
+              {weatherBusy ? (
+                <p className="fv2-widget__muted">{h.weatherLoading}</p>
+              ) : weatherErr || weatherRows.length === 0 ? (
+                <p className="fv2-widget__muted">{h.weatherUnavailable}</p>
+              ) : (
+                weatherRows.map((row) => (
+                  <p key={row.key} className="fv2-widget__line">
+                    {row.label} {row.temp !== null ? `${row.temp}°C` : '—'} {row.condition}
+                  </p>
+                ))
+              )}
             </div>
-          )}
 
-          {/* 제보 채널 */}
-          {isLoggedIn && hasTip && (
-            <div className="home-widget">
-              <p className="home-widget__title">📬 {h.tipDigestTitle}</p>
-              <ul className="home-widget__tip-list">
-                {tips.tg && (
-                  <li><a href={tips.tg} target="_blank" rel="noopener noreferrer">{h.tipTelegram}</a></li>
-                )}
-                {tips.wa && (
-                  <li><a href={tips.wa} target="_blank" rel="noopener noreferrer">{h.tipWhatsapp}</a></li>
-                )}
-                {tips.line && (
-                  <li><a href={tips.line} target="_blank" rel="noopener noreferrer">{h.tipLine}</a></li>
-                )}
-                {tips.fb && (
-                  <li><a href={tips.fb} target="_blank" rel="noopener noreferrer">{h.tipFacebook}</a></li>
-                )}
-                {tips.tt && (
-                  <li><a href={tips.tt} target="_blank" rel="noopener noreferrer">{h.tipTiktok}</a></li>
-                )}
-              </ul>
+            {/* 환율 */}
+            <div className="fv2-widget">
+              <p className="fv2-widget__h">💱 환율</p>
+              <p className="fv2-widget__line">{h.fxRemote.floatingHint}</p>
             </div>
-          )}
 
-          {/* 비로그인: 가입 유도 */}
-          {!isLoggedIn && (
-            <div className="home-widget home-widget--cta">
-              <p className="home-widget__title">{guestMemLab}</p>
-              <p className="home-widget__hint">{guestMemBody}</p>
-              <Link href={loginNextHref('/')} className="home-widget__cta-btn">
-                {guestCta}
-              </Link>
+            {/* 인기글 TOP 5 */}
+            <div className="fv2-widget">
+              <p className="fv2-widget__h">🔥 인기글 TOP 5</p>
+              <p className="fv2-widget__line">1. 태국 비자 연장 신청 방법</p>
+              <p className="fv2-widget__line">2. 방콕 야시장 안전 가이드</p>
+              <p className="fv2-widget__line">3. 한국 음식 배달 방콕 추천</p>
+              <p className="fv2-widget__line">4. 태국 운전면허 전환 후기</p>
+              <p className="fv2-widget__line">5. 치앙마이 렌트 가이드 2026</p>
             </div>
-          )}
-        </aside>
+          </aside>
+        </div>
       </div>
 
-      {/* ─── 4. 추천 로컬 가게 (전체 폭) ─── */}
-      {isLoggedIn && (
-        <section className="home-shops-section">
-          <div className="home-card__header">
-            <h2 className="home-card__title">🏪 {h.shopsTitle}</h2>
-            <Link href="/local" className="home-card__more">{h.shopsMore} →</Link>
+      {/* ══ COMMUNITY ZONE ══ */}
+      <div className="fv2-community">
+        <div className="fv2-community__inner">
+          <div className="fv2-community__main">
+            {/* 커뮤니티 핫글 */}
+            <section>
+              <div className="fv2-card__head">
+                <h2 className="fv2-card__h">커뮤니티 핫글</h2>
+                <Link href={isLoggedIn ? '/community/boards' : loginNextHref('/community/boards')} className="fv2-more">더보기 ›</Link>
+              </div>
+              <div className="fv2-board-cards">
+                <div className="fv2-board-card fv2-board-card--yellow">
+                  <div className="fv2-board-card__author"><span className="fv2-avatar" /> 방콕살이</div>
+                  <p className="fv2-board-card__text">방콕에서 한국 음식 배달시키는데 추천할 곳 있을까요? 직접 만들어서 팔고 싶어요!</p>
+                  <div className="fv2-board-card__react"><span className="fv2-react--heart">❤️ 24</span> <span className="fv2-react--chat">💬 8</span></div>
+                </div>
+                <div className="fv2-board-card fv2-board-card--purple">
+                  <div className="fv2-board-card__author"><span className="fv2-avatar" /> 치앙라이</div>
+                  <p className="fv2-board-card__text">치앙마이 님만해민 일요일 바자 같이 가실 분 계신가요? 첫 방문이라 동행 구합니다~</p>
+                  <div className="fv2-board-card__react"><span className="fv2-react--heart">❤️ 15</span> <span className="fv2-react--chat">💬 12</span></div>
+                </div>
+                <div className="fv2-board-card fv2-board-card--green">
+                  <div className="fv2-board-card__author"><span className="fv2-avatar" /> 푸켓맘</div>
+                  <p className="fv2-board-card__text">푸켓 로컬 마사지 추천해요! 가격도 착하고 실력 좋아요. 주소 공유할게요.</p>
+                  <div className="fv2-board-card__react"><span className="fv2-react--heart">❤️ 31</span> <span className="fv2-react--chat">💬 6</span></div>
+                </div>
+              </div>
+            </section>
+
+            {/* 우리 동네 가게 */}
+            <section>
+              <div className="fv2-card__head">
+                <h2 className="fv2-card__h">우리 동네 가게</h2>
+                <Link href={isLoggedIn ? '/local' : loginNextHref('/local')} className="fv2-more">더보기 ›</Link>
+              </div>
+              {listsBusy ? (
+                <p className="fv2-card__state">{h.shopsLoading}</p>
+              ) : shops.length > 0 ? (
+                <div className="fv2-shop-scroll">
+                  {shops.map((shop) => (
+                    <Link href={`/local/${shop.slug}`} key={shop.id} className="fv2-shop-card">
+                      <div
+                        className="fv2-shop-card__img"
+                        style={shop.image_url ? { backgroundImage: `url(${shop.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+                      >
+                        {!shop.image_url && <span>{shop.emoji}</span>}
+                      </div>
+                      <div className="fv2-shop-card__info">
+                        <p className="fv2-shop-card__name">{shop.name}</p>
+                        <p className="fv2-shop-card__rating">⭐ {shop.tier === 'premium' ? '4.8' : shop.tier === 'standard' ? '4.5' : '4.2'}</p>
+                        <p className="fv2-shop-card__desc">{shop.description?.slice(0, 20) || `${shop.category} · ${shop.region}`}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="fv2-card__state">{h.shopsEmpty}</p>
+              )}
+            </section>
           </div>
-          {listsBusy ? (
-            <p className="home-card__loading">{h.shopsLoading}</p>
-          ) : shops.length > 0 ? (
-            <div className="shop-grid">
-              {shops.map((shop) => (
-                <ShopMiniCard
-                  key={shop.id}
-                  shop={shop}
-                  tierPremium={d.tierPremium}
-                  tierStandard={d.tierStandard}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="home-card__empty-box">
-              <p>{h.shopsEmpty}</p>
-              <Link href="/local" className="home-card__empty-link">
-                {h.shopsEmptyLink}
+
+          {/* Community Sidebar: 실시간 채팅 */}
+          <aside className="fv2-community__side">
+            <div className="fv2-chat-preview">
+              <p className="fv2-widget__h">💬 실시간 채팅</p>
+              <p className="fv2-chat-preview__msg">방콕살이: 날씨 어때요?</p>
+              <p className="fv2-chat-preview__msg">푸켓맘: 맑아요! ☀️</p>
+              <p className="fv2-chat-preview__msg">치앙라이: 비와요 🌧️</p>
+              <Link href={isLoggedIn ? '/chat' : loginNextHref('/chat')} className="fv2-chat-preview__btn">
+                채팅 참여하기
               </Link>
             </div>
-          )}
-        </section>
-      )}
-
-      {/* ─── 5. 비로그인: 읽기/회원 혜택 ─── */}
-      {!isLoggedIn && (
-        <div className="guest-home-split card">
-          <div className="guest-home-split__grid">
-            <div className="guest-home-split__box guest-home-split__box--read">
-              <p className="guest-home-split__label">{guestPubLab}</p>
-              <p className="guest-home-split__body">{guestPubBody}</p>
-            </div>
-            <div className="guest-home-split__box guest-home-split__box--member">
-              <p className="guest-home-split__label">{guestMemLab}</p>
-              <p className="guest-home-split__body">{guestMemBody}</p>
-            </div>
-          </div>
-          <Link
-            href={loginNextHref('/')}
-            className="board-form__submit guest-home-split__cta"
-            style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}
-          >
-            {guestCta}
-          </Link>
+          </aside>
         </div>
-      )}
+      </div>
+
+      {/* ══ FOOTER ══ */}
+      <footer className="fv2-footer">
+        <div className="fv2-footer__links">
+          <span>이용약관</span>
+          <span>개인정보처리방침</span>
+          <span>문의하기</span>
+          <span>광고 안내</span>
+        </div>
+        <p className="fv2-footer__copy">© 2026 태자월드. All rights reserved.</p>
+      </footer>
     </div>
   );
 }

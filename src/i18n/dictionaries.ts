@@ -417,7 +417,12 @@ export type Dictionary = {
     styleShopBalance: string;
     styleShopCatSkin: string;
     styleShopCatMinimi: string;
+    styleShopCatBgm: string;
+    styleShopCatWallpaper: string;
+    styleShopCatFrame: string;
     styleShopBuy: string;
+    styleShopBuyRental: string;
+    styleShopBuyPerm: string;
     styleShopEquip: string;
     styleShopOwned: string;
     styleShopNeedPoints: string;
@@ -425,6 +430,12 @@ export type Dictionary = {
     styleShopEquipped: string;
     styleShopLoadError: string;
     styleShopEmpty: string;
+    styleShopDaysLeft: string;
+    styleShopRentalTag: string;
+    styleShopPermTag: string;
+    styleShopCheckin: string;
+    styleShopCheckedIn: string;
+    dotoriLabel: string;
     styleRpcNotAuth: string;
     styleRpcGreetingDone: string;
     styleRpcGreetingShort: string;
@@ -966,14 +977,25 @@ const ko: Dictionary = {
     styleShopBalance: '보유 점수',
     styleShopCatSkin: '룸 스킨',
     styleShopCatMinimi: '미니미',
+    styleShopCatBgm: 'BGM',
+    styleShopCatWallpaper: '배경',
+    styleShopCatFrame: '프레임',
     styleShopBuy: '구매',
+    styleShopBuyRental: '{days}일 대여',
+    styleShopBuyPerm: '영구 구매',
     styleShopEquip: '장착',
     styleShopOwned: '보유 중',
-    styleShopNeedPoints: '점수가 부족해요.',
+    styleShopNeedPoints: '도토리가 부족해요.',
     styleShopPurchased: '구매했어요. 미니홈에서 확인해 보세요.',
     styleShopEquipped: '장착했어요.',
     styleShopLoadError: '상점 목록을 불러오지 못했어요.',
     styleShopEmpty: '이 카테고리에 상품이 아직 없어요.',
+    styleShopDaysLeft: 'D-{n}',
+    styleShopRentalTag: '{days}일',
+    styleShopPermTag: '영구',
+    styleShopCheckin: '출석 체크',
+    styleShopCheckedIn: '오늘 출석 완료!',
+    dotoriLabel: '도토리',
     styleRpcNotAuth: '로그인이 필요해요.',
     styleRpcGreetingDone: '이미 가입 인사 보상을 받았어요.',
     styleRpcGreetingShort: '인사말을 조금만 더 길게 써 주세요.',
@@ -1512,14 +1534,25 @@ const th: Dictionary = {
     styleShopBalance: 'พอยต์คงเหลือ',
     styleShopCatSkin: 'สกินห้อง',
     styleShopCatMinimi: 'มินิมี',
+    styleShopCatBgm: 'BGM',
+    styleShopCatWallpaper: 'วอลเปเปอร์',
+    styleShopCatFrame: 'เฟรม',
     styleShopBuy: 'ซื้อ',
+    styleShopBuyRental: 'เช่า {days} วัน',
+    styleShopBuyPerm: 'ซื้อถาวร',
     styleShopEquip: 'สวมใส่',
     styleShopOwned: 'มีแล้ว',
-    styleShopNeedPoints: 'พอยต์ไม่พอ',
+    styleShopNeedPoints: 'โดโตริไม่พอ',
     styleShopPurchased: 'ซื้อแล้ว — ดูที่มินิโฮมได้เลย',
     styleShopEquipped: 'สวมใส่แล้ว',
     styleShopLoadError: 'โหลดร้านไม่สำเร็จ',
     styleShopEmpty: 'ยังไม่มีสินค้าในหมวดนี้',
+    styleShopDaysLeft: 'D-{n}',
+    styleShopRentalTag: '{days} วัน',
+    styleShopPermTag: 'ถาวร',
+    styleShopCheckin: 'เช็คอิน',
+    styleShopCheckedIn: 'เช็คอินวันนี้แล้ว!',
+    dotoriLabel: 'โดโตริ',
     styleRpcNotAuth: 'ต้องล็อกอินก่อน',
     styleRpcGreetingDone: 'รับรางวัลทักทายไปแล้ว',
     styleRpcGreetingShort: 'พิมพ์ข้อความให้ยาวขึ้นอีกนิด',

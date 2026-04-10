@@ -8,6 +8,7 @@ import type { MinihomePublicRow } from '@/types/minihome';
 import { parseLayoutModules, parseTheme, safeAccent } from '@/types/minihome';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils/formatDate';
+import MinihomeBgmPlayer from './MinihomeBgmPlayer';
 
 const FALLBACK_ACCENT = '#7c3aed';
 
@@ -624,6 +625,9 @@ export default function MinihomeRoomView({
               <div className="minihome-room__minimi" aria-hidden>
                 {minimi}
               </div>
+            ) : null}
+            {theme.bgm_url ? (
+              <MinihomeBgmPlayer url={theme.bgm_url} title={theme.bgm_title} />
             ) : null}
           </header>
 

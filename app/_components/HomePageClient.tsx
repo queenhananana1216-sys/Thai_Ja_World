@@ -204,6 +204,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   const [weatherRows, setWeatherRows] = useState<WeatherRow[]>([]);
   const [weatherBusy, setWeatherBusy] = useState(true);
   const [weatherErr, setWeatherErr] = useState(false);
+  const [dotoriBalance, setDotoriBalance] = useState<number | null>(null);
 
   useLayoutEffect(() => {
     setLocale(readLocaleCookie());
@@ -287,6 +288,15 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
         setShops(s);
       }
       setListsBusy(false);
+
+      if (isLoggedIn) {
+        const sb = createBrowserClient();
+        const { data: { user } } = await sb.auth.getUser();
+        if (user && !cancelled) {
+          const { data: prof } = await sb.from('profiles').select('style_score_total').eq('id', user.id).maybeSingle();
+          if (!cancelled) setDotoriBalance(typeof prof?.style_score_total === 'number' ? prof.style_score_total : null);
+        }
+      }
     })();
     return () => {
       cancelled = true;
@@ -438,6 +448,15 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
                 ))
               )}
             </div>
+
+            {/* 도토리 잔액 */}
+            {dotoriBalance !== null && (
+              <Link href="/minihome/shop" className="fv2-widget fv2-widget--dotori" style={{ textDecoration: 'none', display: 'block' }}>
+                <p className="fv2-widget__h">🌰 내 도토리</p>
+                <p className="fv2-widget__dotori-bal">{dotoriBalance}</p>
+                <p className="fv2-widget__muted" style={{ fontSize: '11px' }}>스타일 상점에서 꾸미기 →</p>
+              </Link>
+            )}
 
             {/* 환율 */}
             <div className="fv2-widget">

@@ -1,41 +1,105 @@
-# llangkka terminal prompt (PowerShell 7 / WSL bash 공용)
+# llangkka terminal prompt — starship (oh-my-posh 미설치 시 폴백)
+# PowerShell 7 / PowerShell 5.1 / WSL bash 공용
 
-add_newline = false
+add_newline = true
 
-# 애니/모션 최소화: 심볼 위주 + 모듈은 필요한 것만 사용
-format = "$directory$git_branch$git_status$cmd_duration$character"
+format = """
+$os\
+$shell\
+$username\
+$directory\
+$git_branch\
+$git_status\
+$nodejs\
+$python\
+$cmd_duration\
+$fill\
+$time\
+$line_break\
+$character"""
 
-[character]
-success_symbol = " >"
-error_symbol = " !"
-vicmd_symbol = " :"
+[os]
+disabled = false
+style = "bold fg:#A78BFA"
+[os.symbols]
+Windows = "\ue62a "
+Ubuntu = "\uf31b "
+Linux = "\uf17c "
+Macos = "\uf179 "
+
+[shell]
+disabled = false
+format = "[$indicator]($style) "
+style = "fg:#7C3AED"
+bash_indicator = "bash"
+zsh_indicator = "zsh"
+powershell_indicator = "pwsh"
+cmd_indicator = "cmd"
+
+[username]
+show_always = false
+style_user = "bold fg:#60A5FA"
+format = "[$user]($style) "
 
 [directory]
 truncation_length = 3
 truncate_to_repo = false
-read_only = " RO"
+read_only = " \uf023"
+style = "bold fg:#60A5FA"
+read_only_style = "fg:#DC2626"
+format = "[$read_only]($read_only_style)[$path]($style) "
 
 [git_branch]
-symbol = " git:"
+symbol = "\ue725 "
 truncation_length = 25
+style = "bold fg:#34D399"
+format = "[$symbol$branch(:$remote_branch)]($style) "
 
 [git_status]
-style = "bold red"
+style = "bold fg:#F59E0B"
+format = '([$all_status$ahead_behind]($style) )'
+conflicted = "\uf0e7 "
+ahead = "\uf062 ${count}"
+behind = "\uf063 ${count}"
+diverged = "\uf047 ${ahead_count}\uf063 ${behind_count}"
+untracked = "\uf128 ${count}"
+stashed = "\ueb4b ${count}"
+modified = "\uf044 ${count}"
+staged = "\uf046 ${count}"
+deleted = "\uf014 ${count}"
+
+[nodejs]
+format = "[\ue718 $version]($style) "
+style = "fg:#0891B2"
+detect_files = ["package.json", ".node-version"]
+detect_extensions = []
+
+[python]
+format = '[\ue73c ${pyenv_prefix}${version}( \($virtualenv\))]($style) '
+style = "fg:#0891B2"
 
 [cmd_duration]
 min_time = 500
-format = " took [$duration] "
+format = "[\uf252 $duration]($style) "
+style = "fg:#F59E0B"
 
-# 가상환경(venv/conda) 표시를 숨김
-[python]
-disabled = true
+[fill]
+symbol = " "
+
+[time]
+disabled = false
+time_format = "%H:%M:%S"
+format = "[\uf017 $time]($style)"
+style = "fg:#475569"
+
+[character]
+success_symbol = "[\uf105](bold fg:#34D399)"
+error_symbol = "[\uf00d](bold fg:#DC2626)"
+vimcmd_symbol = "[\uf105](bold fg:#A78BFA)"
 
 [conda]
 disabled = true
-
 [nix_shell]
 disabled = true
-
 [env_var]
 disabled = true
-

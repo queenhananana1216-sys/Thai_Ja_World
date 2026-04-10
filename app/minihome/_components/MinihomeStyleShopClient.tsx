@@ -10,20 +10,40 @@ type ShopRow = {
   item_key: string;
   category: string;
   price_points: number;
+  rental_days: number | null;
+  rental_price: number | null;
   label_ko: string;
   label_th: string;
   sort_order: number;
+  preview_url: string | null;
 };
+
+type OwnedRow = {
+  item_key: string;
+  expires_at: string | null;
+  equipped: boolean;
+  days_remaining: number | null;
+};
+
+const CATEGORIES = [
+  { key: 'room_skin', i18n: 'styleShopCatSkin' },
+  { key: 'minimi', i18n: 'styleShopCatMinimi' },
+  { key: 'bgm', i18n: 'styleShopCatBgm' },
+  { key: 'wallpaper', i18n: 'styleShopCatWallpaper' },
+  { key: 'profile_frame', i18n: 'styleShopCatFrame' },
+] as const;
 
 export default function MinihomeStyleShopClient() {
   const { locale, d } = useClientLocaleDictionary();
   const m = d.minihome;
   const [items, setItems] = useState<ShopRow[] | null>(null);
-  const [owned, setOwned] = useState<Set<string>>(new Set());
+  const [owned, setOwned] = useState<Map<string, OwnedRow>>(new Map());
   const [balance, setBalance] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [activeCat, setActiveCat] = useState('room_skin');
+  const [checkedIn, setCheckedIn] = useState(false);
 
   const labelFor = useCallback(
     (row: ShopRow) => (locale === 'th' ? row.label_th : row.label_ko),
@@ -43,9 +63,17 @@ export default function MinihomeStyleShopClient() {
     }
 
     const [cat, inv, prof] = await Promise.all([
-      sb.from('style_shop_items').select('item_key,category,price_points,label_ko,label_th,sort_order').eq('active', true).order('sort_order', { ascending: true }),
-      sb.from('profile_style_unlocks').select('item_key').eq('profile_id', user.id),
-      sb.from('profiles').select('style_score_total').eq('id', user.id).maybeSingle(),
+      sb.from('style_shop_items')
+        .select('item_key,category,price_points,rental_days,rental_price,label_ko,label_th,sort_order,preview_url')
+        .eq('active', true)
+        .order('sort_order', { ascending: true }),
+      sb.from('active_unlocks')
+        .select('item_key,expires_at,equipped,days_remaining')
+        .eq('profile_id', user.id),
+      sb.from('profiles')
+        .select('style_score_total')
+        .eq('id', user.id)
+        .maybeSingle(),
     ]);
 
     if (cat.error) {
@@ -54,7 +82,13 @@ export default function MinihomeStyleShopClient() {
       return;
     }
     setItems((cat.data ?? []) as ShopRow[]);
-    setOwned(new Set((inv.data ?? []).map((r) => r.item_key as string)));
+
+    const ownMap = new Map<string, OwnedRow>();
+    for (const r of (inv.data ?? []) as OwnedRow[]) {
+      ownMap.set(r.item_key, r);
+    }
+    setOwned(ownMap);
+
     const b = prof.data?.style_score_total;
     setBalance(typeof b === 'number' ? b : 0);
   }, [m.styleShopLoadError]);
@@ -63,15 +97,20 @@ export default function MinihomeStyleShopClient() {
     void load();
   }, [load]);
 
-  const skins = useMemo(() => (items ?? []).filter((r) => r.category === 'room_skin'), [items]);
-  const minimis = useMemo(() => (items ?? []).filter((r) => r.category === 'minimi'), [items]);
+  const filteredItems = useMemo(
+    () => (items ?? []).filter((r) => r.category === activeCat),
+    [items, activeCat],
+  );
 
-  async function buy(key: string) {
+  async function buy(key: string, rental: boolean) {
     setToast(null);
     setErr(null);
     setBusyKey(key);
     const sb = createBrowserClient();
-    const { error } = await sb.rpc('style_purchase_item', { p_item_key: key });
+    const { error } = await sb.rpc('style_purchase_item', {
+      p_item_key: key,
+      p_rental: rental,
+    });
     setBusyKey(null);
     if (error) {
       setErr(mapStyleRpcError(error.message, m));
@@ -95,53 +134,23 @@ export default function MinihomeStyleShopClient() {
     setToast(m.styleShopEquipped);
   }
 
-  function renderGrid(rows: ShopRow[]) {
-    if (!rows.length) return <p className="auth-field-hint">{m.styleShopEmpty}</p>;
-    return (
-      <ul className="style-shop-grid">
-        {rows.map((row) => {
-          const has = owned.has(row.item_key);
-          const canBuy = balance !== null && balance >= row.price_points;
-          const loading = busyKey === row.item_key;
-          return (
-            <li key={row.item_key} className="style-shop-card card">
-              <div className="style-shop-card__head">
-                <span className="style-shop-card__name">{labelFor(row)}</span>
-                <span className="style-shop-card__price">
-                  {row.price_points} {m.styleScoreLabel}
-                </span>
-              </div>
-              <div className="style-shop-card__actions">
-                {has ? (
-                  <>
-                    <span className="style-shop-card__owned">{m.styleShopOwned}</span>
-                    <button
-                      type="button"
-                      className="board-form__submit"
-                      style={{ background: '#fff', color: 'var(--tj-ink)', border: '1px solid var(--tj-line)' }}
-                      disabled={loading}
-                      onClick={() => void equip(row.item_key)}
-                    >
-                      {loading ? m.loadingMark : m.styleShopEquip}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    className="board-form__submit"
-                    disabled={loading || !canBuy}
-                    title={!canBuy ? m.styleShopNeedPoints : undefined}
-                    onClick={() => void buy(row.item_key)}
-                  >
-                    {loading ? m.loadingMark : m.styleShopBuy}
-                  </button>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    );
+  async function checkin() {
+    setToast(null);
+    setErr(null);
+    const sb = createBrowserClient();
+    const { data, error } = await sb.rpc('dotori_daily_checkin');
+    if (error) {
+      setErr(error.message);
+      return;
+    }
+    const res = data as { ok: boolean; amount?: number; reason?: string } | null;
+    if (res?.ok) {
+      setToast(`+${res.amount} ${m.dotoriLabel}!`);
+      setCheckedIn(true);
+      await load();
+    } else {
+      setCheckedIn(true);
+    }
   }
 
   return (
@@ -157,29 +166,131 @@ export default function MinihomeStyleShopClient() {
         </Link>
       </div>
 
-      <p style={{ margin: '0 0 16px', lineHeight: 1.55, color: 'var(--tj-muted)', fontSize: '0.9rem' }}>
-        {m.styleShopLead}
-      </p>
+      <p className="dotori-shop-lead">{m.styleShopLead}</p>
 
-      <div className="style-shop-balance card" style={{ padding: 14, marginBottom: 20 }}>
-        <strong>{m.styleShopBalance}</strong>
-        <span style={{ marginLeft: 10, fontSize: '1.15rem' }}>{balance ?? m.emDash}</span>
+      {/* Balance + Checkin */}
+      <div className="dotori-balance-bar">
+        <div className="dotori-balance-bar__left">
+          <span className="dotori-balance-bar__icon">🌰</span>
+          <strong className="dotori-balance-bar__label">{m.dotoriLabel}</strong>
+          <span className="dotori-balance-bar__amount">{balance ?? '—'}</span>
+        </div>
+        <button
+          type="button"
+          className="dotori-checkin-btn"
+          disabled={checkedIn}
+          onClick={() => void checkin()}
+        >
+          {checkedIn ? m.styleShopCheckedIn : m.styleShopCheckin}
+        </button>
       </div>
 
       {err ? <p className="auth-inline-error">{err}</p> : null}
       {toast ? <p className="auth-field-hint">{toast}</p> : null}
 
+      {/* Category Tabs */}
+      <nav className="dotori-cat-tabs" aria-label="shop categories">
+        {CATEGORIES.map((c) => (
+          <button
+            key={c.key}
+            type="button"
+            className={`dotori-cat-tab${activeCat === c.key ? ' dotori-cat-tab--active' : ''}`}
+            onClick={() => setActiveCat(c.key)}
+          >
+            {(m as Record<string, string>)[c.i18n] ?? c.key}
+          </button>
+        ))}
+      </nav>
+
+      {/* Items Grid */}
       {items === null ? (
         <p style={{ color: 'var(--tj-muted)' }}>{m.loadingMark}</p>
+      ) : filteredItems.length === 0 ? (
+        <p className="auth-field-hint">{m.styleShopEmpty}</p>
       ) : (
-        <>
-          <h2 className="minihome-edit-form__h">{m.styleShopCatSkin}</h2>
-          {renderGrid(skins)}
-          <h2 className="minihome-edit-form__h" style={{ marginTop: 28 }}>
-            {m.styleShopCatMinimi}
-          </h2>
-          {renderGrid(minimis)}
-        </>
+        <ul className="dotori-grid">
+          {filteredItems.map((row) => {
+            const o = owned.get(row.item_key);
+            const has = !!o;
+            const canBuyPerm = balance !== null && balance >= row.price_points;
+            const canBuyRent = row.rental_price !== null && balance !== null && balance >= row.rental_price;
+            const loading = busyKey === row.item_key;
+
+            return (
+              <li key={row.item_key} className="dotori-item">
+                <div className="dotori-item__head">
+                  <span className="dotori-item__name">{labelFor(row)}</span>
+                  {row.rental_days ? (
+                    <span className="dotori-item__tag dotori-item__tag--rental">
+                      {m.styleShopRentalTag.replace('{days}', String(row.rental_days))}
+                    </span>
+                  ) : (
+                    <span className="dotori-item__tag dotori-item__tag--perm">{m.styleShopPermTag}</span>
+                  )}
+                </div>
+
+                {/* Price row */}
+                <div className="dotori-item__prices">
+                  {row.rental_days && row.rental_price !== null && (
+                    <span className="dotori-item__price">
+                      🌰 {row.rental_price} <small>/ {row.rental_days}일</small>
+                    </span>
+                  )}
+                  <span className="dotori-item__price dotori-item__price--perm">
+                    🌰 {row.price_points} {!row.rental_days && <small>(영구)</small>}
+                    {row.rental_days && <small>(영구)</small>}
+                  </span>
+                </div>
+
+                {/* Owned / Remaining days */}
+                {has && o.days_remaining !== null && (
+                  <p className="dotori-item__expire">
+                    {m.styleShopDaysLeft.replace('{n}', String(o.days_remaining))}
+                  </p>
+                )}
+                {has && o.expires_at === null && (
+                  <p className="dotori-item__perm-owned">{m.styleShopOwned} ({m.styleShopPermTag})</p>
+                )}
+
+                {/* Actions */}
+                <div className="dotori-item__actions">
+                  {has ? (
+                    <button
+                      type="button"
+                      className="dotori-btn dotori-btn--equip"
+                      disabled={loading}
+                      onClick={() => void equip(row.item_key)}
+                    >
+                      {loading ? '...' : m.styleShopEquip}
+                    </button>
+                  ) : (
+                    <>
+                      {row.rental_days && row.rental_price !== null && (
+                        <button
+                          type="button"
+                          className="dotori-btn dotori-btn--rent"
+                          disabled={loading || !canBuyRent}
+                          onClick={() => void buy(row.item_key, true)}
+                        >
+                          {loading ? '...' : m.styleShopBuyRental.replace('{days}', String(row.rental_days))}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="dotori-btn dotori-btn--buy"
+                        disabled={loading || !canBuyPerm}
+                        title={!canBuyPerm ? m.styleShopNeedPoints : undefined}
+                        onClick={() => void buy(row.item_key, false)}
+                      >
+                        {loading ? '...' : m.styleShopBuyPerm}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

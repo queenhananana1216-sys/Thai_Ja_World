@@ -3,6 +3,9 @@ export type MinihomeTheme = {
   wallpaper?: string;
   /** 스타일 상점 미니미(이모지 등) */
   minimi?: string;
+  bgm_url?: string;
+  bgm_title?: string;
+  profile_frame?: string;
 };
 
 export type MinihomePublicRow = {
@@ -30,10 +33,16 @@ export function parseTheme(raw: unknown): MinihomeTheme {
   const accent = o.accent;
   const wallpaper = o.wallpaper;
   const minimi = o.minimi;
+  const bgm_url = o.bgm_url;
+  const bgm_title = o.bgm_title;
+  const profile_frame = o.profile_frame;
   return {
     accent: typeof accent === 'string' ? accent : undefined,
     wallpaper: typeof wallpaper === 'string' ? wallpaper : undefined,
     minimi: typeof minimi === 'string' && minimi.trim() ? minimi.trim().slice(0, 32) : undefined,
+    bgm_url: typeof bgm_url === 'string' && bgm_url.trim() ? bgm_url.trim() : undefined,
+    bgm_title: typeof bgm_title === 'string' ? bgm_title.trim() : undefined,
+    profile_frame: typeof profile_frame === 'string' ? profile_frame.trim() : undefined,
   };
 }
 

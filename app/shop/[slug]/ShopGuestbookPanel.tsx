@@ -73,7 +73,7 @@ export default function ShopGuestbookPanel({
 
     const list = (data as GbRow[]).map((r) => ({
       ...r,
-      entry_kind: r.entry_kind === 'ilchon' ? 'ilchon' : 'open',
+      entry_kind: (r.entry_kind === 'ilchon' ? 'ilchon' : 'open') as EntryKind,
     }));
     setRows(list);
     const ids = [...new Set(list.map((r) => r.author_id))];

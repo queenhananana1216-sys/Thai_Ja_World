@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 3010",
     "type-check": "tsc --noEmit",
-    "lint": "next lint"
+    "lint": "next lint",
+    "memory": "tsx --tsconfig tsconfig.json scripts/memory-cli.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.24",
@@ -25,6 +26,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.0"
   }
 }

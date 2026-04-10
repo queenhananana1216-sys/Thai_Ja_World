@@ -16,6 +16,7 @@ import {
   setSiteModeAction,
   toggleLockAction,
 } from './actions';
+import { MetaDraftForm } from './MetaDraftForm';
 
 export default async function AdminDashboardPage() {
   const jar = await cookies();
@@ -136,6 +137,16 @@ export default async function AdminDashboardPage() {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="panel">
+        <h2>SEO 메타 초안 · 외장 메모리 + Ollama</h2>
+        <p className="muted">
+          <code>seo.metaDraft</code> 도구를 실행합니다. 메모는{' '}
+          <code>npm run memory -- add …</code> 로 쌓고, Ollama는 포트 <code>11434</code> 에 이미 떠 있으면{' '}
+          <code>ollama serve</code> 는 필요 없습니다. 배포 전 태자 i18n·검수는 사람이 합니다.
+        </p>
+        <MetaDraftForm />
       </section>
 
       <section className="panel">

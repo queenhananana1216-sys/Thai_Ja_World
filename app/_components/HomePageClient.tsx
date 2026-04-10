@@ -349,6 +349,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
 
   return (
     <div className="page-body">
+      {/* ─── 1. 검색 히어로 ─── */}
       <section className="home-portal-mast" aria-label={h.portalMastTitle}>
         <h2 className="home-portal-mast__title">{h.portalMastTitle}</h2>
         <p className="home-portal-mast__sub">{h.portalMastSub}</p>
@@ -364,41 +365,15 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
         </nav>
       </section>
 
-      <section className="home-hero" aria-labelledby="home-hero-title">
-        <div className="home-hero__intro">
-          <p className="home-hero__tag">{heroTag}</p>
-          <p className="home-hero__brand">
-            <BrandPhrase variant="light" />
-          </p>
-          <h1 id="home-hero-title" className="home-hero__title">
-            {heroTitle}
-          </h1>
-          <p className="home-hero__kicker">{heroKicker}</p>
-          <p className="home-hero__lead">
-            <strong className="home-hero__accent">{heroLeadLine}</strong>
-          </p>
-          <p className="home-hero__sub">{heroSubBlock}</p>
-          {!isLoggedIn ? (
-            <div className="home-hero__dream-wrap">
-              <p id="home-mini-teaser" className="home-hero__dream">
-                {dreamIntro}
-                <strong className="home-hero__accent">
-                  <Link href={loginNextHref('/minihome')}>{dreamMinihome}</Link>
-                </strong>
-                {dreamMid}
-                <strong className="home-hero__accent">{dreamPersonal}</strong>
-                {dreamOutro}
-              </p>
-            </div>
-          ) : null}
-        </div>
+      {/* ─── 2. 기능 타일 (5열) ─── */}
+      <section className="home-features" aria-label="Features">
         <div className="hub-tiles">
           <Link
             href={isLoggedIn ? '/minihome' : loginNextHref('/minihome')}
             className="hub-tile"
           >
             <span className="hub-tile__emoji">🏠</span>
-            <span>{h.hubMinihome}</span>
+            <span className="hub-tile__label">{h.hubMinihome}</span>
             <span className="hub-tile__sub">{h.hubMinihomeSub}</span>
           </Link>
           <Link
@@ -406,12 +381,12 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
             className="hub-tile"
           >
             <span className="hub-tile__emoji">💬</span>
-            <span>{h.hubBoard}</span>
+            <span className="hub-tile__label">{h.hubBoard}</span>
             <span className="hub-tile__sub">{h.hubBoardSub}</span>
           </Link>
           <Link href={isLoggedIn ? '/local' : loginNextHref('/local')} className="hub-tile">
             <span className="hub-tile__emoji">🏪</span>
-            <span>{h.hubLocal}</span>
+            <span className="hub-tile__label">{h.hubLocal}</span>
             <span className="hub-tile__sub">{h.hubLocalSub}</span>
           </Link>
           <Link
@@ -419,13 +394,13 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
             className="hub-tile"
           >
             <span className="hub-tile__emoji">🧺</span>
-            <span>{h.hubNotice}</span>
+            <span className="hub-tile__label">{h.hubNotice}</span>
             <span className="hub-tile__sub">{h.hubNoticeSub}</span>
           </Link>
           {hasTip ? (
             <div className="hub-tile" style={{ cursor: 'default' }}>
               <span className="hub-tile__emoji">📬</span>
-              <span>{h.hubTip}</span>
+              <span className="hub-tile__label">{h.hubTip}</span>
               <span className="hub-tile__sub hub-tile__sub--tip-icons">
                 <HubTipSocialIcons
                   tips={tips}
@@ -443,59 +418,220 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
             <Link
               href={isLoggedIn ? '/community/boards/new?cat=info' : loginNextHref('/community/boards/new?cat=info')}
               className="hub-tile"
-              style={{ opacity: 0.92 }}
             >
               <span className="hub-tile__emoji">📬</span>
-              <span>{h.hubTip}</span>
-              <span className="hub-tile__sub">{h.hubTipSoon} · 게시판 제보하기</span>
+              <span className="hub-tile__label">{h.hubTip}</span>
+              <span className="hub-tile__sub">{h.hubTipSoon}</span>
             </Link>
           )}
         </div>
       </section>
 
-      <section className="hot-strip" aria-label={hotLabelUi}>
-        <p className="hot-strip__label">{hotLabelUi}</p>
-        {listsBusy ? (
-          <p className="hot-strip__state">{h.hotNewsLoading}</p>
-        ) : hotNewsItems.length === 0 ? (
-          <p className="hot-strip__state hot-strip__state--empty">{h.hotNewsEmpty}</p>
-        ) : (
-          <ul className="hot-strip__list">
-            {hotNewsItems.map((item) => {
-              const host = extractHostname(item.external_url);
-              const date = formatDate(item.published_at);
-              const link = item.internalNewsId ? (
-                <Link href={`/news/${item.internalNewsId}`} className="hot-strip__link">
-                  {item.title}
-                </Link>
-              ) : (
-                <a
-                  href={item.external_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hot-strip__link"
-                >
-                  {item.title}
-                </a>
-              );
-              const lead = item.summary_text?.trim();
-              return (
-                <li key={item.id} className="hot-strip__item">
-                  <span className="hot-strip__badge">{h.hotNewsBadge}</span>
-                  <div className="hot-strip__body">
-                    {link}
-                    {lead ? <p className="hot-strip__lead">{lead}</p> : null}
-                  </div>
-                  <span className="hot-strip__meta">{date || host || '—'}</span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <p className="hot-strip__footnote">{hotFootnoteUi}</p>
-      </section>
+      {/* ─── 3. 메인 그리드: 뉴스(좌) + 사이드바(우) ─── */}
+      <div className="home-grid">
+        <main className="home-grid__main">
+          {/* 속보 뉴스 */}
+          <section className="home-card" aria-label={hotLabelUi}>
+            <div className="home-card__header">
+              <h2 className="home-card__title">🔥 {hotLabelUi}</h2>
+            </div>
+            {listsBusy ? (
+              <p className="home-card__loading">{h.hotNewsLoading}</p>
+            ) : hotNewsItems.length === 0 ? (
+              <p className="home-card__empty">{h.hotNewsEmpty}</p>
+            ) : (
+              <ul className="hot-strip__list">
+                {hotNewsItems.map((item) => {
+                  const host = extractHostname(item.external_url);
+                  const date = formatDate(item.published_at);
+                  const link = item.internalNewsId ? (
+                    <Link href={`/news/${item.internalNewsId}`} className="hot-strip__link">
+                      {item.title}
+                    </Link>
+                  ) : (
+                    <a
+                      href={item.external_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hot-strip__link"
+                    >
+                      {item.title}
+                    </a>
+                  );
+                  const lead = item.summary_text?.trim();
+                  return (
+                    <li key={item.id} className="hot-strip__item">
+                      <span className="hot-strip__badge">{h.hotNewsBadge}</span>
+                      <div className="hot-strip__body">
+                        {link}
+                        {lead ? <p className="hot-strip__lead">{lead}</p> : null}
+                      </div>
+                      <span className="hot-strip__meta">{date || host || '—'}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <p className="hot-strip__footnote">{hotFootnoteUi}</p>
+          </section>
 
-      {!isLoggedIn ? (
+          {/* 뉴스 상세 (로그인 시) */}
+          {isLoggedIn && (
+            <section className="home-card" aria-labelledby="news-muted-title">
+              <div className="home-card__header">
+                <div>
+                  <h2 id="news-muted-title" className="home-card__title">📰 {h.newsTitle}</h2>
+                  <p className="home-card__subtitle">{h.newsSub}</p>
+                </div>
+              </div>
+              {listsBusy ? (
+                <p className="home-card__loading">{h.newsLoading}</p>
+              ) : newsShow.length > 0 ? (
+                <div className="home-news-list">
+                  {newsShow.map((item) => (
+                    <NewsCardCompact key={item.id} item={item} />
+                  ))}
+                  {newsLocalized.length > 5 && (
+                    <p className="home-card__count">
+                      {h.newsCountLine.replace('{n}', String(newsLocalized.length))}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="home-card__empty-box">
+                  <p>{h.newsEmpty}</p>
+                  <Link href="/community/boards" className="home-card__empty-link">
+                    {h.newsEmptyLink}
+                  </Link>
+                </div>
+              )}
+            </section>
+          )}
+        </main>
+
+        {/* ─── 사이드바 ─── */}
+        <aside className="home-grid__side">
+          {/* 히어로 브랜드 */}
+          <div className="home-side-hero">
+            <p className="home-side-hero__tag">{heroTag}</p>
+            <p className="home-side-hero__brand">
+              <BrandPhrase variant="light" />
+            </p>
+            <h1 className="home-side-hero__title">{heroTitle}</h1>
+            <p className="home-side-hero__kicker">{heroKicker}</p>
+            <p className="home-side-hero__lead">{heroLeadLine}</p>
+            {!isLoggedIn && (
+              <Link href={loginNextHref('/minihome')} className="home-side-hero__cta">
+                {dreamMinihome} →
+              </Link>
+            )}
+          </div>
+
+          {/* 날씨 위젯 */}
+          {isLoggedIn && (
+            <div className="home-widget">
+              <p className="home-widget__title">🌤 {h.weatherTitle}</p>
+              {weatherBusy ? (
+                <p className="home-widget__state">{h.weatherLoading}</p>
+              ) : weatherErr || weatherRows.length === 0 ? (
+                <p className="home-widget__state">{h.weatherUnavailable}</p>
+              ) : (
+                <div className="home-widget__weather-grid">
+                  {weatherRows.map((row) => (
+                    <div key={row.key} className="home-widget__weather-row">
+                      <span className="home-widget__weather-city">{row.label}</span>
+                      <div className="home-widget__weather-data">
+                        <span className="home-widget__weather-temp">
+                          {row.temp !== null ? `${row.temp}°C` : '—'}
+                        </span>
+                        <span className="home-widget__weather-cond">{row.condition}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="home-widget__attr">{h.weatherAttribution}</p>
+            </div>
+          )}
+
+          {/* 환율 위젯 */}
+          {isLoggedIn && (
+            <div className="home-widget">
+              <p className="home-widget__title">💱 {h.fxTitle}</p>
+              <p className="home-widget__hint">{h.fxRemote.floatingHint}</p>
+            </div>
+          )}
+
+          {/* 제보 채널 */}
+          {isLoggedIn && hasTip && (
+            <div className="home-widget">
+              <p className="home-widget__title">📬 {h.tipDigestTitle}</p>
+              <ul className="home-widget__tip-list">
+                {tips.tg && (
+                  <li><a href={tips.tg} target="_blank" rel="noopener noreferrer">{h.tipTelegram}</a></li>
+                )}
+                {tips.wa && (
+                  <li><a href={tips.wa} target="_blank" rel="noopener noreferrer">{h.tipWhatsapp}</a></li>
+                )}
+                {tips.line && (
+                  <li><a href={tips.line} target="_blank" rel="noopener noreferrer">{h.tipLine}</a></li>
+                )}
+                {tips.fb && (
+                  <li><a href={tips.fb} target="_blank" rel="noopener noreferrer">{h.tipFacebook}</a></li>
+                )}
+                {tips.tt && (
+                  <li><a href={tips.tt} target="_blank" rel="noopener noreferrer">{h.tipTiktok}</a></li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {/* 비로그인: 가입 유도 */}
+          {!isLoggedIn && (
+            <div className="home-widget home-widget--cta">
+              <p className="home-widget__title">{guestMemLab}</p>
+              <p className="home-widget__hint">{guestMemBody}</p>
+              <Link href={loginNextHref('/')} className="home-widget__cta-btn">
+                {guestCta}
+              </Link>
+            </div>
+          )}
+        </aside>
+      </div>
+
+      {/* ─── 4. 추천 로컬 가게 (전체 폭) ─── */}
+      {isLoggedIn && (
+        <section className="home-shops-section">
+          <div className="home-card__header">
+            <h2 className="home-card__title">🏪 {h.shopsTitle}</h2>
+            <Link href="/local" className="home-card__more">{h.shopsMore} →</Link>
+          </div>
+          {listsBusy ? (
+            <p className="home-card__loading">{h.shopsLoading}</p>
+          ) : shops.length > 0 ? (
+            <div className="shop-grid">
+              {shops.map((shop) => (
+                <ShopMiniCard
+                  key={shop.id}
+                  shop={shop}
+                  tierPremium={d.tierPremium}
+                  tierStandard={d.tierStandard}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="home-card__empty-box">
+              <p>{h.shopsEmpty}</p>
+              <Link href="/local" className="home-card__empty-link">
+                {h.shopsEmptyLink}
+              </Link>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ─── 5. 비로그인: 읽기/회원 혜택 ─── */}
+      {!isLoggedIn && (
         <div className="guest-home-split card">
           <div className="guest-home-split__grid">
             <div className="guest-home-split__box guest-home-split__box--read">
@@ -515,150 +651,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
             {guestCta}
           </Link>
         </div>
-      ) : null}
-
-      {isLoggedIn ? (
-      <section style={{ marginBottom: 28 }}>
-        <div className="section-header">
-          <h2 className="section-title">{h.shopsTitle}</h2>
-          <Link href="/local" className="section-more">
-            {h.shopsMore}
-          </Link>
-        </div>
-        {listsBusy ? (
-          <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--tj-muted)' }}>{h.shopsLoading}</p>
-        ) : shops.length > 0 ? (
-          <div className="shop-grid">
-            {shops.map((shop) => (
-              <ShopMiniCard
-                key={shop.id}
-                shop={shop}
-                tierPremium={d.tierPremium}
-                tierStandard={d.tierStandard}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="card empty-state" style={{ padding: '24px' }}>
-            <p>{h.shopsEmpty}</p>
-            <Link href="/local" style={{ color: 'var(--tj-link)', fontSize: '0.85rem' }}>
-              {h.shopsEmptyLink}
-            </Link>
-          </div>
-        )}
-      </section>
-      ) : null}
-
-      {isLoggedIn ? (
-      <div className="digest-strip">
-        <div className="digest-cell digest-cell--weather">
-          <p className="digest-cell__title">{h.weatherTitle}</p>
-          {weatherBusy ? (
-            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--tj-muted)' }}>{h.weatherLoading}</p>
-          ) : weatherErr || weatherRows.length === 0 ? (
-            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--tj-muted)' }}>{h.weatherUnavailable}</p>
-          ) : (
-            <div>
-              {weatherRows.map((row) => (
-                <div key={row.key} className="digest-weather__row">
-                  <span className="digest-weather__city">{row.label}</span>
-                  <span className="digest-weather__data">
-                    {row.temp !== null ? `${row.temp}°C` : '—'}
-                    <br />
-                    <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{row.condition}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-          <p style={{ margin: '8px 0 0', fontSize: '0.65rem', color: '#94a3b8' }}>{h.weatherAttribution}</p>
-        </div>
-        <div className="digest-cell digest-cell--compact">
-          <p className="digest-cell__title">{h.fxTitle}</p>
-          <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--tj-muted)', lineHeight: 1.45 }}>
-            {h.fxRemote.floatingHint}
-          </p>
-        </div>
-        <div className="digest-cell digest-cell--compact">
-          <p className="digest-cell__title">{h.tipDigestTitle}</p>
-          {hasTip ? (
-            <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-              {tips.tg && (
-                <li style={{ padding: '4px 0' }}>
-                  <a href={tips.tg} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--tj-link)' }}>
-                    {h.tipTelegram}
-                  </a>
-                </li>
-              )}
-              {tips.wa && (
-                <li style={{ padding: '4px 0' }}>
-                  <a href={tips.wa} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--tj-link)' }}>
-                    {h.tipWhatsapp}
-                  </a>
-                </li>
-              )}
-              {tips.line && (
-                <li style={{ padding: '4px 0' }}>
-                  <a href={tips.line} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--tj-link)' }}>
-                    {h.tipLine}
-                  </a>
-                </li>
-              )}
-              {tips.fb && (
-                <li style={{ padding: '4px 0' }}>
-                  <a href={tips.fb} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--tj-link)' }}>
-                    {h.tipFacebook}
-                  </a>
-                </li>
-              )}
-              {tips.tt && (
-                <li style={{ padding: '4px 0' }}>
-                  <a href={tips.tt} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--tj-link)' }}>
-                    {h.tipTiktok}
-                  </a>
-                </li>
-              )}
-            </ul>
-          ) : (
-            null
-          )}
-        </div>
-      </div>
-      ) : null}
-
-      {isLoggedIn ? (
-      <section className="news-section-muted" aria-labelledby="news-muted-title">
-        <div className="section-header">
-          <div>
-            <h2 id="news-muted-title" className="section-title">
-              {h.newsTitle}
-            </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#94a3b8' }}>{h.newsSub}</p>
-          </div>
-        </div>
-        {listsBusy ? (
-          <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--tj-muted)' }}>{h.newsLoading}</p>
-        ) : newsShow.length > 0 ? (
-          <>
-            {newsShow.map((item) => (
-              <NewsCardCompact key={item.id} item={item} />
-            ))}
-            {newsLocalized.length > 5 && (
-              <p style={{ marginTop: 8, fontSize: '0.75rem', color: '#94a3b8' }}>
-                {h.newsCountLine.replace('{n}', String(newsLocalized.length))}
-              </p>
-            )}
-          </>
-        ) : (
-          <div className="card empty-state" style={{ padding: '20px' }}>
-            <p>{h.newsEmpty}</p>
-            <Link href="/community/boards" style={{ color: 'var(--tj-link)', fontSize: '0.8rem' }}>
-              {h.newsEmptyLink}
-            </Link>
-          </div>
-        )}
-      </section>
-      ) : null}
+      )}
     </div>
   );
 }

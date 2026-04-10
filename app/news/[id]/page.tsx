@@ -146,6 +146,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
       content: c.content as string,
       created_at: c.created_at as string,
       display_name: nameMap[c.author_id as string] ?? 'member',
+      author_id: c.author_id as string,
     }));
   }
 
@@ -313,6 +314,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
           initial={comments}
           labels={d.board}
           loginNextPath={path}
+          currentUserId={user.id}
         />
       ) : null}
     </div>

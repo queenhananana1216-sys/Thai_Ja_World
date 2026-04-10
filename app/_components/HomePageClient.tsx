@@ -397,6 +397,26 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
         <div className="fv2-portal__inner">
           {/* ── Main ── */}
           <div className="fv2-portal__main">
+            {/* 통합 검색 + 바로가기 — 플랫폼 허브 */}
+            <section className="fv2-hub" aria-labelledby="fv2-portal-hub-title">
+              <div className="fv2-hub__head">
+                <h2 id="fv2-portal-hub-title" className="fv2-hub__title">
+                  {h.portalMastTitle}
+                </h2>
+                <p className="fv2-hub__sub">{h.portalMastSub}</p>
+              </div>
+              <div className="fv2-hub__search">
+                <SiteSearch variant="portal" omitIntro />
+              </div>
+              <nav className="fv2-hub__quick" aria-label={h.portalMastQuickAria}>
+                {portalQuickLinks.map((item) => (
+                  <Link key={item.key} href={item.href} className="fv2-hub__chip">
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            </section>
+
             {/* 속보 / 긴급 */}
             <section className="fv2-card" aria-label={hotLabelUi}>
               <div className="fv2-card__head">
@@ -605,10 +625,18 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
       {/* ══ FOOTER ══ */}
       <footer className="fv2-footer">
         <div className="fv2-footer__links">
-          <span>이용약관</span>
-          <span>개인정보처리방침</span>
-          <span>문의하기</span>
-          <span>광고 안내</span>
+          <Link href="/terms" className="fv2-footer__link">
+            {d.footerNav.terms}
+          </Link>
+          <Link href="/privacy" className="fv2-footer__link">
+            {d.footerNav.privacy}
+          </Link>
+          <Link href="/contact" className="fv2-footer__link">
+            {d.footerNav.contact}
+          </Link>
+          <Link href="/ads" className="fv2-footer__link">
+            {d.footerNav.ads}
+          </Link>
         </div>
         <p className="fv2-footer__copy">© 2026 태자월드. All rights reserved.</p>
       </footer>

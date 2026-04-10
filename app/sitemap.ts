@@ -37,6 +37,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     { url: `${base}/local`, lastModified: fallback, changeFrequency: 'weekly', priority: 0.78 },
     { url: `${base}/minihome`, lastModified: fallback, changeFrequency: 'weekly', priority: 0.62 },
+    { url: `${base}/terms`, lastModified: fallback, changeFrequency: 'yearly', priority: 0.35 },
+    { url: `${base}/privacy`, lastModified: fallback, changeFrequency: 'yearly', priority: 0.35 },
+    { url: `${base}/contact`, lastModified: fallback, changeFrequency: 'yearly', priority: 0.35 },
+    { url: `${base}/ads`, lastModified: fallback, changeFrequency: 'yearly', priority: 0.35 },
   ];
 
   const postsEntries: MetadataRoute.Sitemap = [];

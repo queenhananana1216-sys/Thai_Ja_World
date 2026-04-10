@@ -27,6 +27,8 @@ const PORTAL_QUICK_HREFS = [
   '/community/boards',
   '/community/boards?cat=info',
   '/community/trade',
+  '/chat',
+  '/notifications',
   '/ilchon',
   '/minihome',
 ] as const;
@@ -438,11 +440,15 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
               </span>
             </div>
           ) : (
-            <div className="hub-tile" style={{ opacity: 0.85 }}>
+            <Link
+              href={isLoggedIn ? '/community/boards/new?cat=info' : loginNextHref('/community/boards/new?cat=info')}
+              className="hub-tile"
+              style={{ opacity: 0.92 }}
+            >
               <span className="hub-tile__emoji">📬</span>
               <span>{h.hubTip}</span>
-              <span className="hub-tile__sub">{h.hubTipSoon}</span>
-            </div>
+              <span className="hub-tile__sub">{h.hubTipSoon} · 게시판 제보하기</span>
+            </Link>
           )}
         </div>
       </section>

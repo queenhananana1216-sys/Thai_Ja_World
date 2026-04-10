@@ -636,6 +636,12 @@ export default function MinihomeRoomView({
             <p className="minihome-cy-stage__hint">{labels.cyIntroEmpty}</p>
           )}
 
+          {!modules.includes('guestbook') ? (
+            <p className="minihome-room__soon" style={{ marginTop: 10 }}>
+              {labels.guestbookLocked}
+            </p>
+          ) : null}
+
           {ilchonMode !== 'loading' && ilchonMode !== 'hidden' ? (
             <div className="minihome-room__ilchon">
               {ilchonToast ? <p className="minihome-room__ilchon-note">{ilchonToast}</p> : null}

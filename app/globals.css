@@ -155,7 +155,7 @@ a:hover {
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
-  padding: 6px 0;
+  padding: 3px 0;
 }
 
 .global-header__nate-band {
@@ -170,8 +170,8 @@ a:hover {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 14px 20px;
-  padding: 14px 0 16px;
+  gap: 8px 16px;
+  padding: 6px 0 7px;
 }
 
 .global-header__logo-nate {
@@ -212,22 +212,22 @@ a:hover {
 }
 
 .global-header__nate-user {
-  flex: 0 0 220px;
+  flex: 0 0 200px;
   width: 100%;
-  max-width: 280px;
-  align-self: flex-start;
+  max-width: 240px;
+  align-self: center;
 }
 
 @media (max-width: 900px) {
   .global-header__toolbar-inner {
-    padding: 4px 0;
+    padding: 2px 0;
   }
 
   .global-header__nate-band-inner {
     flex-direction: column;
     align-items: stretch;
-    padding: 8px 0 10px;
-    gap: 8px 12px;
+    padding: 5px 0 6px;
+    gap: 6px 10px;
   }
 
   .global-header__nate-user {
@@ -237,7 +237,7 @@ a:hover {
   }
 
   .global-header__main-nav {
-    padding: 6px 0 8px;
+    padding: 4px 0 5px;
   }
 
   /* 통합 검색이 메인 네비 아래로 내려올 때 빈 줄·여백 과다 방지 */
@@ -256,7 +256,7 @@ a:hover {
 .global-header__main-nav {
   background: var(--tj-header);
   color: #f8f8fa;
-  padding: 8px 0 10px;
+  padding: 5px 0 6px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
@@ -309,7 +309,7 @@ a:hover {
 /* 네이트형 로그인 패널 — 모바일에서 전폭 CTA 한 줄로 압축 */
 .nate-user-panel {
   width: 100%;
-  padding: 8px 10px;
+  padding: 5px 10px;
   border: 1px solid #e8e8e8;
   border-radius: 4px;
   background: #fafafa;
@@ -318,7 +318,7 @@ a:hover {
 
 @media (min-width: 901px) {
   .nate-user-panel {
-    padding: 10px 12px;
+    padding: 6px 10px;
   }
 }
 
@@ -327,7 +327,7 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .nate-user-panel__name {
@@ -1087,8 +1087,8 @@ a:hover {
 
 /* 홈 최상단 — 로컬 포털(네이트 느낌) 통합 검색 띠 + 갤러리 라벨 톤 */
 .home-portal-mast {
-  margin: 0 0 24px;
-  padding: 32px 24px 28px;
+  margin: 0 0 16px;
+  padding: 18px 24px 16px;
   background: var(--tj-surface);
   border-radius: var(--tj-radius);
   box-shadow: var(--tj-shadow);
@@ -1156,8 +1156,8 @@ a:hover {
 
 @media (max-width: 640px) {
   .home-portal-mast {
-    padding: 20px 16px 18px;
-    margin-bottom: 16px;
+    padding: 14px 16px 12px;
+    margin-bottom: 12px;
     border-radius: var(--tj-radius-sm);
   }
 
@@ -3903,8 +3903,27 @@ a:hover {
 
 /* ── 미니홈 (싸이월드형 룸 + 오버레이) ───────────────────────────────────── */
 
+/* ── 미니홈 공개 페이지: 헤더 최소화 → 미니홈이 주인공 ── */
+body:has(.minihome-public-page) .global-header__toolbar,
+body:has(.minihome-public-page) .global-header__nate-band {
+  display: none;
+}
+body:has(.minihome-public-page) .global-header__main-nav {
+  padding: 5px 0 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+body:has(.minihome-public-page) .global-header__main-nav-search {
+  display: none;
+}
+.minihome-public-page {
+  padding-top: 8px;
+  padding-bottom: 28px;
+}
+.minihome-public-page .board-toolbar {
+  margin-bottom: 6px;
+}
 .minihome-public-page .minihome-room {
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 .minihome-room {
@@ -3914,6 +3933,25 @@ a:hover {
   background-size: cover;
   background-position: center;
   position: relative;
+}
+
+@keyframes minihome-open {
+  0% {
+    opacity: 0;
+    transform: scale(0.88) translateY(12px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.015) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.minihome-room--entering {
+  animation: minihome-open 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .minihome-room--overlay {
@@ -3962,6 +4000,28 @@ a:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* ── 싸이월드 프로필 영역 ── */
+.mh-cy-profile { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 0; border-bottom: 1px dashed rgba(0,0,0,0.1); margin-bottom: 14px; }
+.mh-cy-profile__left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.mh-cy-profile__minimi { font-size: 2.2rem; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.8); border: 2px solid var(--mh-accent, #7c3aed); flex-shrink: 0; }
+.mh-cy-profile__minimi--default { opacity: 0.5; }
+.mh-cy-profile__info { min-width: 0; }
+.mh-cy-profile__name { font-size: 1.05rem; font-weight: 700; margin: 0 0 2px; color: var(--tj-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mh-cy-profile__slug { font-size: 0.7rem; color: var(--tj-muted); margin: 0; }
+.mh-cy-profile__tagline { font-size: 0.78rem; color: var(--tj-muted); margin: 2px 0 0; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+.mh-cy-profile__right { flex-shrink: 0; }
+.mh-cy-visits { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.06); }
+.mh-cy-visits__label { font-size: 0.6rem; font-weight: 700; color: var(--tj-muted); letter-spacing: 0.08em; }
+.mh-cy-visits__num { font-size: 0.88rem; font-weight: 800; color: var(--mh-accent, #7c3aed); }
+.mh-cy-visits__sep { color: rgba(0,0,0,0.15); font-size: 0.7rem; }
+
+/* ── 섹션 공개 설정 UI ── */
+.mh-section-privacy { margin: 14px 0; padding: 12px 14px; border-radius: 8px; background: rgba(0,0,0,0.02); border: 1px solid var(--tj-line); }
+.mh-section-privacy__title { font-size: 0.78rem; font-weight: 700; color: var(--tj-ink); margin: 0 0 10px; }
+.mh-section-privacy__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; }
+.mh-section-privacy__label { font-size: 0.82rem; color: var(--tj-ink); font-weight: 500; }
+.mh-section-privacy__select { font-size: 0.78rem; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--tj-line); background: var(--tj-surface); color: var(--tj-ink); }
 
 .minihome-room__slug {
   font-size: 0.72rem;
@@ -4160,6 +4220,34 @@ a:hover {
 .minihome-bgm__btn:hover { background: var(--tj-bg); }
 .minihome-bgm__title { font-size: 0.78rem; color: var(--tj-muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+@keyframes bgm-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.35); }
+  50%      { box-shadow: 0 0 0 6px rgba(124, 58, 237, 0); }
+}
+.minihome-bgm--pulse .minihome-bgm__btn {
+  animation: bgm-pulse 1.8s ease-in-out infinite;
+}
+.minihome-bgm__click-hint {
+  background: none; border: none; cursor: pointer;
+  font-size: 0.72rem; font-weight: 700; color: var(--tj-link);
+  padding: 3px 10px; border-radius: 12px;
+  background: rgba(124, 58, 237, 0.08);
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.minihome-bgm__click-hint:hover { background: rgba(124, 58, 237, 0.16); }
+
+.minihome-section-locked {
+  display: flex; align-items: center; gap: 8px; justify-content: center;
+  padding: 16px 14px;
+  background: rgba(0, 0, 0, 0.025);
+  border-radius: var(--tj-radius-sm);
+  color: var(--tj-muted);
+  font-size: 0.84rem;
+  border: 1px dashed rgba(0, 0, 0, 0.08);
+}
+.minihome-section-locked__icon { font-size: 1.1rem; opacity: 0.6; }
+
 .minihome-room__section {
   margin-top: 18px;
   padding-top: 14px;
@@ -4322,6 +4410,72 @@ a:hover {
   z-index: 10;
 }
 
+.minihome-cy-win--diary {
+  top: 120px;
+  right: 8px;
+  z-index: 11;
+  min-width: 280px;
+}
+
+/* 다이어리 작성 폼 */
+.minihome-diary-form__title {
+  width: 100%; font-size: 0.88rem; padding: 7px 10px;
+  border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px;
+}
+.minihome-diary-form__body {
+  width: 100%; font-size: 0.86rem; padding: 8px 10px;
+  border: 1px solid #ddd; border-radius: 6px; resize: vertical;
+}
+.minihome-diary-form__mood {
+  display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;
+}
+.minihome-diary-form__mood-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid transparent; background: rgba(0,0,0,0.03);
+  cursor: pointer; font-size: 1.1rem; transition: border-color 0.15s;
+}
+.minihome-diary-form__mood-btn--sel {
+  border-color: var(--mh-accent, #7c3aed);
+  background: rgba(124,58,237,0.08);
+}
+.minihome-diary-form__secret {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 8px; font-size: 0.8rem; color: var(--tj-muted); cursor: pointer;
+}
+
+/* 다이어리 엔트리 */
+.minihome-diary-entry__head {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; color: var(--tj-muted);
+}
+.minihome-diary-entry__mood { font-size: 1.05rem; }
+.minihome-diary-entry__secret { font-size: 0.72rem; opacity: 0.6; }
+.minihome-diary-entry__title {
+  margin: 4px 0 2px; font-size: 0.9rem; font-weight: 700;
+}
+.minihome-diary-entry__body {
+  margin: 4px 0 0; font-size: 0.84rem; line-height: 1.55;
+  white-space: pre-wrap; word-break: break-word;
+}
+
+/* 사진 카드 */
+.minihome-photo-card {
+  position: relative; border-radius: 6px; overflow: hidden;
+}
+.minihome-photo-card__img {
+  width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+}
+.minihome-photo-card__caption {
+  display: block; padding: 3px 6px; font-size: 0.7rem;
+  color: var(--tj-muted); background: rgba(255,255,255,0.85);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.minihome-photo-card__del {
+  position: absolute; top: 4px; right: 4px; font-size: 10px;
+  padding: 2px 6px; border-radius: 4px; border: none;
+  background: rgba(0,0,0,0.55); color: #fff; cursor: pointer;
+}
+
 .minihome-cy-win__head {
   display: flex;
   align-items: center;
@@ -4433,7 +4587,8 @@ a:hover {
   }
 
   .minihome-cy-win--visitor,
-  .minihome-cy-win--photos {
+  .minihome-cy-win--photos,
+  .minihome-cy-win--diary {
     top: auto;
     right: auto;
   }

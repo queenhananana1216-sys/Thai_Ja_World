@@ -61,7 +61,7 @@ function MinihomeOverlayPortal() {
       const { data: row, error } = await sb
         .from('user_minihomes')
         .select(
-          'owner_id, public_slug, title, tagline, intro_body, theme, layout_modules, is_public',
+          'owner_id, public_slug, title, tagline, intro_body, theme, layout_modules, is_public, visit_count_today, visit_count_total, section_visibility',
         )
         .eq('public_slug', openSlug)
         .maybeSingle();

@@ -21,6 +21,8 @@ type LinkRow = {
   created_at: string;
 };
 
+type SlugMap = Record<string, string>;
+
 function mapRpcMessage(raw: string, L: Dictionary['ilchon']): string {
   const m = raw.toLowerCase();
   if (m.includes('pending_request_exists')) return L.errorPendingExists;
@@ -39,6 +41,7 @@ export default function IlchonInbox({ labels }: { labels: Dictionary['ilchon'] }
   const [names, setNames] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [slugs, setSlugs] = useState<SlugMap>({});
 
   const [acceptFor, setAcceptFor] = useState<ReqRow | null>(null);
   const [nickYouCallThem, setNickYouCallThem] = useState('');
@@ -92,12 +95,20 @@ export default function IlchonInbox({ labels }: { labels: Dictionary['ilchon'] }
       setBootDone(true);
       return;
     }
-    const { data: profs } = await sb.from('profiles').select('id, display_name').in('id', [...ids]);
+    const [profRes, slugRes] = await Promise.all([
+      sb.from('profiles').select('id, display_name').in('id', [...ids]),
+      sb.from('user_minihomes').select('owner_id, public_slug').in('owner_id', [...ids]).eq('is_public', true),
+    ]);
     const map: Record<string, string> = {};
-    for (const p of profs ?? []) {
+    for (const p of profRes.data ?? []) {
       map[p.id as string] = ((p.display_name as string) || '').trim() || 'member';
     }
     setNames(map);
+    const sMap: SlugMap = {};
+    for (const s of slugRes.data ?? []) {
+      sMap[s.owner_id as string] = s.public_slug as string;
+    }
+    setSlugs(sMap);
     setBootDone(true);
   }, []);
 
@@ -277,6 +288,15 @@ export default function IlchonInbox({ labels }: { labels: Dictionary['ilchon'] }
                 <p className="ilchon-page__nick">
                   {labels.youCallThemLabel}: “{r.my_nickname_for_peer}”
                 </p>
+                {slugs[r.peer_id] ? (
+                  <Link
+                    href={`/minihome/${slugs[r.peer_id]}`}
+                    className="ilchon-btn ilchon-btn--ghost"
+                    style={{ fontSize: '0.78rem', padding: '4px 10px', marginTop: 6, display: 'inline-block' }}
+                  >
+                    미니홈 방문
+                  </Link>
+                ) : null}
               </li>
             ))}
           </ul>

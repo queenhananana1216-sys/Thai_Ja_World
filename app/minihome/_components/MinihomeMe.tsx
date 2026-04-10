@@ -22,6 +22,7 @@ type Row = {
   intro_body: string | null;
   theme: unknown;
   is_public: boolean;
+  section_visibility: unknown;
 };
 
 type ProfileRow = {
@@ -43,6 +44,9 @@ export default function MinihomeMe() {
   const [accent, setAccent] = useState(DEFAULT_ACCENT);
   const [wallpaperUrl, setWallpaperUrl] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+  const [sectionVis, setSectionVis] = useState<Record<string, string>>({
+    intro: 'public', guestbook: 'public', photos: 'ilchon', diary: 'ilchon',
+  });
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [greetBody, setGreetBody] = useState('');
@@ -62,7 +66,7 @@ export default function MinihomeMe() {
     const q = () =>
       sb
         .from('user_minihomes')
-        .select('owner_id, public_slug, title, tagline, intro_body, theme, is_public')
+        .select('owner_id, public_slug, title, tagline, intro_body, theme, is_public, section_visibility')
         .eq('owner_id', user.id)
         .maybeSingle();
 
@@ -117,6 +121,10 @@ export default function MinihomeMe() {
       setAccent(safeAccent(t.accent, DEFAULT_ACCENT));
       setWallpaperUrl(t.wallpaper?.trim() ?? '');
       setIsPublic(data.is_public);
+      const sv = data.section_visibility;
+      if (sv && typeof sv === 'object' && !Array.isArray(sv)) {
+        setSectionVis({ intro: 'public', guestbook: 'public', photos: 'ilchon', diary: 'ilchon', ...(sv as Record<string, string>) });
+      }
       setLoading(false);
     })();
     return () => {
@@ -339,6 +347,35 @@ export default function MinihomeMe() {
           <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
           {labels.fieldPublic}
         </label>
+
+        {/* 섹션별 공개 설정 */}
+        <div className="mh-section-privacy">
+          <p className="mh-section-privacy__title">섹션별 공개 범위</p>
+          {(['intro', 'guestbook', 'photos', 'diary'] as const).map((sec) => (
+            <div key={sec} className="mh-section-privacy__row">
+              <span className="mh-section-privacy__label">
+                {sec === 'intro' ? '소개' : sec === 'guestbook' ? '방명록' : sec === 'photos' ? '사진첩' : '다이어리'}
+              </span>
+              <select
+                className="mh-section-privacy__select"
+                value={sectionVis[sec] ?? 'public'}
+                onChange={(e) => {
+                  const next = { ...sectionVis, [sec]: e.target.value };
+                  setSectionVis(next);
+                  const sb = createBrowserClient();
+                  void sb.rpc('minihome_update_section_visibility', {
+                    p_section: sec,
+                    p_visibility: e.target.value,
+                  });
+                }}
+              >
+                <option value="public">전체 공개</option>
+                <option value="ilchon">일촌만</option>
+                <option value="private">비공개 (나만)</option>
+              </select>
+            </div>
+          ))}
+        </div>
 
         <p className="auth-field-hint">{labels.layoutHint}</p>
 

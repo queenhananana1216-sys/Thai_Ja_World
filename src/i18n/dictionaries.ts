@@ -445,6 +445,26 @@ export type Dictionary = {
     styleRpcPoor: string;
     styleRpcNotOwned: string;
     styleRpcGeneric: string;
+    /** 섹션 잠금 안내 */
+    sectionLockedIlchon: string;
+    sectionLockedPrivate: string;
+    /** 다이어리 */
+    cyMenuDiary: string;
+    cyDiaryTitle: string;
+    cyDiaryEmpty: string;
+    cyDiaryWrite: string;
+    cyDiaryWriting: string;
+    cyDiarySave: string;
+    cyDiarySaved: string;
+    cyDiaryDelete: string;
+    cyDiaryDeleteConfirm: string;
+    cyDiarySecret: string;
+    cyDiaryMoodHappy: string;
+    cyDiaryMoodSad: string;
+    cyDiaryMoodAngry: string;
+    cyDiaryMoodLove: string;
+    cyDiaryMoodTired: string;
+    cyDiaryMoodNeutral: string;
     /** 로딩 자리 표시(한·태 동일 문자 권장) */
     loadingMark: string;
     /** 숫자 없음·대기(한·태 동일 문자 권장) */
@@ -1005,6 +1025,24 @@ const ko: Dictionary = {
     styleRpcPoor: '스타일 점수가 부족해요.',
     styleRpcNotOwned: '아직 사지 않은 아이템이에요.',
     styleRpcGeneric: '처리 중 문제가 났어요. 잠시 후 다시 시도해 주세요.',
+    sectionLockedIlchon: '일촌에게만 공개된 섹션이에요',
+    sectionLockedPrivate: '비공개 섹션이에요',
+    cyMenuDiary: '다이어리',
+    cyDiaryTitle: '다이어리',
+    cyDiaryEmpty: '아직 쓴 일기가 없어요.',
+    cyDiaryWrite: '일기 쓰기',
+    cyDiaryWriting: '저장 중…',
+    cyDiarySave: '저장',
+    cyDiarySaved: '저장됐어요!',
+    cyDiaryDelete: '삭제',
+    cyDiaryDeleteConfirm: '이 일기를 정말 삭제할까요?',
+    cyDiarySecret: '비밀 일기',
+    cyDiaryMoodHappy: '😊',
+    cyDiaryMoodSad: '😢',
+    cyDiaryMoodAngry: '😠',
+    cyDiaryMoodLove: '❤️',
+    cyDiaryMoodTired: '😩',
+    cyDiaryMoodNeutral: '😐',
     loadingMark: '…',
     emDash: '—',
   },
@@ -1562,6 +1600,24 @@ const th: Dictionary = {
     styleRpcPoor: 'พอยต์ไม่พอ',
     styleRpcNotOwned: 'ยังไม่ได้ซื้อสินค้านี้',
     styleRpcGeneric: 'มีข้อผิดพลาด ลองใหม่ภายหลัง',
+    sectionLockedIlchon: 'ส่วนนี้เปิดให้เฉพาะเพื่อน (อิลชอน)',
+    sectionLockedPrivate: 'ส่วนนี้ถูกซ่อนไว้',
+    cyMenuDiary: 'ไดอารี่',
+    cyDiaryTitle: 'ไดอารี่',
+    cyDiaryEmpty: 'ยังไม่มีไดอารี่',
+    cyDiaryWrite: 'เขียนไดอารี่',
+    cyDiaryWriting: 'กำลังบันทึก…',
+    cyDiarySave: 'บันทึก',
+    cyDiarySaved: 'บันทึกแล้ว!',
+    cyDiaryDelete: 'ลบ',
+    cyDiaryDeleteConfirm: 'ลบไดอารี่นี้จริงหรือ?',
+    cyDiarySecret: 'ไดอารี่ลับ',
+    cyDiaryMoodHappy: '😊',
+    cyDiaryMoodSad: '😢',
+    cyDiaryMoodAngry: '😠',
+    cyDiaryMoodLove: '❤️',
+    cyDiaryMoodTired: '😩',
+    cyDiaryMoodNeutral: '😐',
     loadingMark: '…',
     emDash: '—',
   },

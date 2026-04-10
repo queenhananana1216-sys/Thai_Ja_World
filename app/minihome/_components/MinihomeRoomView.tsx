@@ -2,10 +2,11 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { MinihomePublicRow } from '@/types/minihome';
-import { parseLayoutModules, parseTheme, safeAccent } from '@/types/minihome';
+import { parseLayoutModules, parseSectionVisibility, parseTheme, safeAccent } from '@/types/minihome';
+import type { SectionVisibility } from '@/types/minihome';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils/formatDate';
 import MinihomeBgmPlayer from './MinihomeBgmPlayer';
@@ -29,6 +30,15 @@ type PhotoRow = {
   storage_path: string;
   caption: string | null;
   sort_order: number;
+};
+
+type DiaryRow = {
+  id: string;
+  title: string;
+  body: string;
+  mood: string;
+  is_secret: boolean;
+  created_at: string;
 };
 
 type Props = {
@@ -110,6 +120,8 @@ export default function MinihomeRoomView({
   const modules = parseLayoutModules(data.layout_modules);
   const wallpaper = theme.wallpaper?.trim();
   const minimi = theme.minimi?.trim();
+  const profileFrame = theme.profile_frame?.trim();
+  const roomSkin = theme.room_skin?.trim();
 
   const [winGuest, setWinGuest] = useState(false);
   const [winVisitor, setWinVisitor] = useState(false);
@@ -129,6 +141,16 @@ export default function MinihomeRoomView({
   const [photosLoading, setPhotosLoading] = useState(false);
   const [photoUploadBusy, setPhotoUploadBusy] = useState(false);
 
+  const [winDiary, setWinDiary] = useState(false);
+  const [diaryRows, setDiaryRows] = useState<DiaryRow[]>([]);
+  const [diaryLoading, setDiaryLoading] = useState(false);
+  const [diaryWriting, setDiaryWriting] = useState(false);
+  const [diaryTitle, setDiaryTitle] = useState('');
+  const [diaryBody, setDiaryBody] = useState('');
+  const [diaryMood, setDiaryMood] = useState('neutral');
+  const [diarySecret, setDiarySecret] = useState(false);
+  const [diarySaveBusy, setDiarySaveBusy] = useState(false);
+
   const [ilchonMode, setIlchonMode] = useState<IlchonMode>('loading');
   const [ilchonToast, setIlchonToast] = useState<string | null>(null);
   const [requestOpen, setRequestOpen] = useState(false);
@@ -137,6 +159,34 @@ export default function MinihomeRoomView({
   const [reqBusy, setReqBusy] = useState(false);
 
   const isOwner = viewerId !== null && viewerId === data.owner_id;
+
+  const [entering, setEntering] = useState(true);
+  const roomRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!entering) return;
+    const el = roomRef.current;
+    if (!el) return;
+    const onEnd = () => setEntering(false);
+    el.addEventListener('animationend', onEnd, { once: true });
+    const fallback = setTimeout(onEnd, 800);
+    return () => {
+      el.removeEventListener('animationend', onEnd);
+      clearTimeout(fallback);
+    };
+  }, [entering]);
+
+  const sectionVis = useMemo(() => parseSectionVisibility(data.section_visibility), [data.section_visibility]);
+
+  const canViewSection = useCallback(
+    (section: string): boolean => {
+      if (isOwner) return true;
+      const vis: SectionVisibility = sectionVis[section] ?? 'public';
+      if (vis === 'public') return true;
+      if (vis === 'ilchon') return ilchonMode === 'linked';
+      return false;
+    },
+    [isOwner, sectionVis, ilchonMode],
+  );
 
   const ilchonRows = useMemo(
     () => (gbRows ?? []).filter((r) => r.entry_kind === 'ilchon'),
@@ -215,10 +265,27 @@ export default function MinihomeRoomView({
     setPhotosLoading(false);
   }, [data.owner_id]);
 
+  const loadDiary = useCallback(async () => {
+    if (!data.owner_id) return;
+    setDiaryLoading(true);
+    const sb = createBrowserClient();
+    const { data: rows } = await sb
+      .from('minihome_diary_entries')
+      .select('id, title, body, mood, is_secret, created_at')
+      .eq('owner_id', data.owner_id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    setDiaryRows((rows as DiaryRow[] | null) ?? []);
+    setDiaryLoading(false);
+  }, [data.owner_id]);
+
   useEffect(() => {
     const sb = createBrowserClient();
     void sb.auth.getUser().then(({ data: { user } }) => {
       setViewerId(user?.id ?? null);
+      if (user && user.id !== data.owner_id) {
+        void sb.rpc('minihome_record_visit', { p_owner_id: data.owner_id });
+      }
     });
     const {
       data: { subscription },
@@ -226,7 +293,7 @@ export default function MinihomeRoomView({
       setViewerId(session?.user.id ?? null);
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [data.owner_id]);
 
   useEffect(() => {
     if (!winGuest && !winVisitor) return;
@@ -237,6 +304,11 @@ export default function MinihomeRoomView({
     if (!winPhotos) return;
     void loadPhotos();
   }, [winPhotos, loadPhotos]);
+
+  useEffect(() => {
+    if (!winDiary) return;
+    void loadDiary();
+  }, [winDiary, loadDiary]);
 
   useEffect(() => {
     let cancelled = false;
@@ -305,11 +377,12 @@ export default function MinihomeRoomView({
   };
 
   const showIntro = modules.includes('intro') && Boolean(data.intro_body?.trim());
+  const bgImage = roomSkin || wallpaper;
   const layoutMod = {
     '--mh-accent': accent,
-    ...(wallpaper
+    ...(bgImage
       ? {
-          backgroundImage: `linear-gradient(rgba(255,253,254,0.88), rgba(255,253,254,0.92)), url(${wallpaper})`,
+          backgroundImage: `linear-gradient(rgba(255,253,254,0.88), rgba(255,253,254,0.92)), url(${bgImage})`,
         }
       : {}),
   } as CSSProperties & { '--mh-accent': string };
@@ -479,6 +552,46 @@ export default function MinihomeRoomView({
     await loadPhotos();
   }
 
+  const MOODS: { key: string; label: string }[] = [
+    { key: 'happy', label: labels.cyDiaryMoodHappy },
+    { key: 'sad', label: labels.cyDiaryMoodSad },
+    { key: 'angry', label: labels.cyDiaryMoodAngry },
+    { key: 'love', label: labels.cyDiaryMoodLove },
+    { key: 'tired', label: labels.cyDiaryMoodTired },
+    { key: 'neutral', label: labels.cyDiaryMoodNeutral },
+  ];
+
+  async function submitDiary() {
+    if (!isOwner || !diaryBody.trim()) return;
+    setDiarySaveBusy(true);
+    const sb = createBrowserClient();
+    const { error } = await sb.from('minihome_diary_entries').insert({
+      owner_id: data.owner_id,
+      title: diaryTitle.trim(),
+      body: diaryBody.trim(),
+      mood: diaryMood,
+      is_secret: diarySecret,
+    });
+    setDiarySaveBusy(false);
+    if (error) {
+      setPostErr(error.message);
+      return;
+    }
+    setDiaryTitle('');
+    setDiaryBody('');
+    setDiaryMood('neutral');
+    setDiarySecret(false);
+    setDiaryWriting(false);
+    await loadDiary();
+  }
+
+  async function deleteDiary(id: string) {
+    if (!isOwner || !confirm(labels.cyDiaryDeleteConfirm)) return;
+    const sb = createBrowserClient();
+    await sb.from('minihome_diary_entries').delete().eq('id', id);
+    await loadDiary();
+  }
+
   function publicUrl(path: string): string {
     const sb = createBrowserClient();
     const { data } = sb.storage.from('minihome-photos').getPublicUrl(path);
@@ -538,7 +651,8 @@ export default function MinihomeRoomView({
 
   return (
     <div
-      className={`minihome-room minihome-cy-layout${variant === 'overlay' ? ' minihome-room--overlay' : ''}`}
+      ref={roomRef}
+      className={`minihome-room minihome-cy-layout${variant === 'overlay' ? ' minihome-room--overlay' : ''}${entering ? ' minihome-room--entering' : ''}`}
       style={layoutMod}
     >
       {variant === 'overlay' && onClose ? (
@@ -562,12 +676,13 @@ export default function MinihomeRoomView({
           type="button"
           className={
             'minihome-cy-menu__btn' +
-            (!winGuest && !winVisitor && !winPhotos ? ' minihome-cy-menu__btn--active' : '')
+            (!winGuest && !winVisitor && !winPhotos && !winDiary ? ' minihome-cy-menu__btn--active' : '')
           }
           onClick={() => {
             setWinGuest(false);
             setWinVisitor(false);
             setWinPhotos(false);
+            setWinDiary(false);
           }}
         >
           <span className="minihome-cy-menu__emoji" aria-hidden>
@@ -575,7 +690,7 @@ export default function MinihomeRoomView({
           </span>
           <span className="minihome-cy-menu__txt">{labels.cyMenuMain}</span>
         </button>
-        {modules.includes('guestbook') ? (
+        {modules.includes('guestbook') && canViewSection('guestbook') ? (
           <button
             type="button"
             className={'minihome-cy-menu__btn' + (winGuest ? ' minihome-cy-menu__btn--active' : '')}
@@ -587,7 +702,7 @@ export default function MinihomeRoomView({
             <span className="minihome-cy-menu__txt">{labels.cyMenuGuestbook}</span>
           </button>
         ) : null}
-        {modules.includes('guestbook') ? (
+        {modules.includes('guestbook') && canViewSection('guestbook') ? (
           <button
             type="button"
             className={'minihome-cy-menu__btn' + (winVisitor ? ' minihome-cy-menu__btn--active' : '')}
@@ -599,7 +714,7 @@ export default function MinihomeRoomView({
             <span className="minihome-cy-menu__txt">{labels.cyMenuVisitor}</span>
           </button>
         ) : null}
-        {modules.includes('photos') ? (
+        {modules.includes('photos') && canViewSection('photos') ? (
           <button
             type="button"
             className={'minihome-cy-menu__btn' + (winPhotos ? ' minihome-cy-menu__btn--active' : '')}
@@ -611,39 +726,92 @@ export default function MinihomeRoomView({
             <span className="minihome-cy-menu__txt">{labels.cyMenuPhotos}</span>
           </button>
         ) : null}
+        {canViewSection('diary') ? (
+          <button
+            type="button"
+            className={'minihome-cy-menu__btn' + (winDiary ? ' minihome-cy-menu__btn--active' : '')}
+            onClick={() => toggle(setWinDiary, winDiary)}
+          >
+            <span className="minihome-cy-menu__emoji" aria-hidden>
+              📓
+            </span>
+            <span className="minihome-cy-menu__txt">{labels.cyMenuDiary}</span>
+          </button>
+        ) : null}
       </nav>
 
       <div className="minihome-cy-stage">
         <div className="minihome-room__paper minihome-cy-stage__paper" style={paperStyle}>
           <header className="minihome-room__header">
-            <p className="minihome-room__slug">/{data.public_slug}</p>
-            <h1 className="minihome-room__title" id="minihome-room-title">
-              {data.title ?? data.public_slug}
-            </h1>
-            {data.tagline ? <p className="minihome-room__tagline">{data.tagline}</p> : null}
-            {minimi ? (
-              <div className="minihome-room__minimi" aria-hidden>
-                {minimi}
+            {/* 싸이월드 스타일 프로필 영역 */}
+            <div className="mh-cy-profile">
+              <div className="mh-cy-profile__left">
+                {minimi ? (
+                  <div
+                    className={`mh-cy-profile__minimi${profileFrame ? ' mh-cy-profile__minimi--framed' : ''}`}
+                    aria-hidden
+                    style={profileFrame ? { borderImage: `url(${profileFrame}) 8 round`, borderWidth: 4, borderStyle: 'solid' } : undefined}
+                  >
+                    {minimi}
+                  </div>
+                ) : (
+                  <div className="mh-cy-profile__minimi mh-cy-profile__minimi--default" aria-hidden>{'🏠'}</div>
+                )}
+                <div className="mh-cy-profile__info">
+                  <h1 className="mh-cy-profile__name" id="minihome-room-title">
+                    {data.title ?? data.public_slug}
+                  </h1>
+                  <p className="mh-cy-profile__slug">/{data.public_slug}</p>
+                  {data.tagline ? <p className="mh-cy-profile__tagline">{data.tagline}</p> : null}
+                </div>
               </div>
-            ) : null}
+              <div className="mh-cy-profile__right">
+                <div className="mh-cy-visits">
+                  <span className="mh-cy-visits__label">TODAY</span>
+                  <span className="mh-cy-visits__num">{data.visit_count_today ?? 0}</span>
+                  <span className="mh-cy-visits__sep">|</span>
+                  <span className="mh-cy-visits__label">TOTAL</span>
+                  <span className="mh-cy-visits__num">{data.visit_count_total ?? 0}</span>
+                </div>
+              </div>
+            </div>
             {theme.bgm_url ? (
               <MinihomeBgmPlayer url={theme.bgm_url} title={theme.bgm_title} />
             ) : null}
           </header>
 
-          {showIntro ? (
-            <section className="minihome-room__section">
-              <h2 className="minihome-room__section-title">{labels.sectionIntro}</h2>
-              <div className="minihome-room__intro-body">{data.intro_body}</div>
-            </section>
+          {canViewSection('intro') ? (
+            showIntro ? (
+              <section className="minihome-room__section">
+                <h2 className="minihome-room__section-title">{labels.sectionIntro}</h2>
+                <div className="minihome-room__intro-body">{data.intro_body}</div>
+              </section>
+            ) : (
+              <p className="minihome-cy-stage__hint">{labels.cyIntroEmpty}</p>
+            )
           ) : (
-            <p className="minihome-cy-stage__hint">{labels.cyIntroEmpty}</p>
+            <div className="minihome-section-locked">
+              <span className="minihome-section-locked__icon" aria-hidden>🔒</span>
+              <span>{sectionVis.intro === 'ilchon' ? labels.sectionLockedIlchon : labels.sectionLockedPrivate}</span>
+            </div>
           )}
 
-          {!modules.includes('guestbook') ? (
-            <p className="minihome-room__soon" style={{ marginTop: 10 }}>
-              {labels.guestbookLocked}
-            </p>
+          {!modules.includes('guestbook') || !canViewSection('guestbook') ? (
+            <div className="minihome-section-locked" style={{ marginTop: 10 }}>
+              <span className="minihome-section-locked__icon" aria-hidden>🔒</span>
+              <span>
+                {!canViewSection('guestbook')
+                  ? sectionVis.guestbook === 'ilchon' ? labels.sectionLockedIlchon : labels.sectionLockedPrivate
+                  : labels.guestbookLocked}
+              </span>
+            </div>
+          ) : null}
+
+          {modules.includes('photos') && !canViewSection('photos') ? (
+            <div className="minihome-section-locked" style={{ marginTop: 10 }}>
+              <span className="minihome-section-locked__icon" aria-hidden>🔒</span>
+              <span>{sectionVis.photos === 'ilchon' ? labels.sectionLockedIlchon : labels.sectionLockedPrivate}</span>
+            </div>
           ) : null}
 
           {ilchonMode !== 'loading' && ilchonMode !== 'hidden' ? (
@@ -832,29 +1000,21 @@ export default function MinihomeRoomView({
               }}
             >
               {photos.map((p) => (
-                <div key={p.id} style={{ position: 'relative' }}>
+                <div key={p.id} className="minihome-photo-card">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={publicUrl(p.storage_path)}
-                    alt=""
-                    style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6 }}
+                    alt={p.caption ?? ''}
+                    className="minihome-photo-card__img"
                   />
+                  {p.caption ? (
+                    <span className="minihome-photo-card__caption">{p.caption}</span>
+                  ) : null}
                   {isOwner ? (
                     <button
                       type="button"
                       onClick={() => void deletePhoto(p)}
-                      style={{
-                        position: 'absolute',
-                        top: 4,
-                        right: 4,
-                        fontSize: 10,
-                        padding: '2px 6px',
-                        borderRadius: 4,
-                        border: 'none',
-                        background: 'rgba(0,0,0,0.55)',
-                        color: '#fff',
-                        cursor: 'pointer',
-                      }}
+                      className="minihome-photo-card__del"
                     >
                       {labels.cyPhotosDelete}
                     </button>
@@ -891,6 +1051,113 @@ export default function MinihomeRoomView({
             <p className="minihome-cy-win__muted" style={{ marginTop: 12, fontSize: '0.78rem' }}>
               {labels.cyPhotosVisitorHint}
             </p>
+          )}
+        </CyWindow>
+
+        <CyWindow
+          title={labels.cyDiaryTitle}
+          open={winDiary}
+          onClose={() => setWinDiary(false)}
+          accent={accent}
+          variant={variant}
+          winClass="minihome-cy-win--diary"
+          closeLabel={labels.cyWindowClose}
+        >
+          {diaryLoading ? (
+            <p className="minihome-cy-win__muted">{labels.loadingMark}</p>
+          ) : isOwner && diaryWriting ? (
+            <div className="minihome-diary-form">
+              <input
+                type="text"
+                value={diaryTitle}
+                onChange={(e) => setDiaryTitle(e.target.value)}
+                placeholder="제목 (선택)"
+                maxLength={200}
+                className="minihome-diary-form__title"
+              />
+              <textarea
+                value={diaryBody}
+                onChange={(e) => setDiaryBody(e.target.value)}
+                rows={6}
+                maxLength={5000}
+                placeholder="오늘 하루를 기록해 보세요…"
+                className="minihome-diary-form__body"
+              />
+              <div className="minihome-diary-form__mood">
+                {MOODS.map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    className={`minihome-diary-form__mood-btn${diaryMood === m.key ? ' minihome-diary-form__mood-btn--sel' : ''}`}
+                    onClick={() => setDiaryMood(m.key)}
+                    title={m.key}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <label className="minihome-diary-form__secret">
+                <input type="checkbox" checked={diarySecret} onChange={(e) => setDiarySecret(e.target.checked)} />
+                {labels.cyDiarySecret}
+              </label>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button
+                  type="button"
+                  className="ilchon-btn"
+                  disabled={diarySaveBusy || !diaryBody.trim()}
+                  onClick={() => void submitDiary()}
+                >
+                  {diarySaveBusy ? labels.cyDiaryWriting : labels.cyDiarySave}
+                </button>
+                <button
+                  type="button"
+                  className="ilchon-btn ilchon-btn--ghost"
+                  onClick={() => setDiaryWriting(false)}
+                >
+                  {labels.cyWindowClose}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {isOwner ? (
+                <button
+                  type="button"
+                  className="ilchon-btn"
+                  style={{ marginBottom: 12 }}
+                  onClick={() => setDiaryWriting(true)}
+                >
+                  {labels.cyDiaryWrite}
+                </button>
+              ) : null}
+              {diaryRows.length === 0 ? (
+                <p className="minihome-cy-win__muted">{labels.cyDiaryEmpty}</p>
+              ) : (
+                <ul className="minihome-cy-win__list">
+                  {diaryRows.map((d) => (
+                    <li key={d.id} className="minihome-cy-win__item minihome-diary-entry">
+                      <div className="minihome-diary-entry__head">
+                        <span className="minihome-diary-entry__mood">{MOODS.find((m) => m.key === d.mood)?.label ?? '😐'}</span>
+                        <span className="minihome-diary-entry__date">{formatDate(d.created_at)}</span>
+                        {d.is_secret ? <span className="minihome-diary-entry__secret">🔒</span> : null}
+                      </div>
+                      {d.title ? <h4 className="minihome-diary-entry__title">{d.title}</h4> : null}
+                      <p className="minihome-diary-entry__body">{d.body}</p>
+                      {isOwner ? (
+                        <button
+                          type="button"
+                          className="ilchon-btn ilchon-btn--ghost"
+                          style={{ fontSize: '0.72rem', padding: '3px 8px', marginTop: 6, color: '#b91c1c' }}
+                          onClick={() => void deleteDiary(d.id)}
+                        >
+                          {labels.cyDiaryDelete}
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </CyWindow>
       </div>

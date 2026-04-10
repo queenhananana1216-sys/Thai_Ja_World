@@ -4035,6 +4035,17 @@ a:hover {
 .dotori-btn--equip { background: var(--tj-surface); color: var(--tj-ink); }
 .dotori-btn--equip:hover:not(:disabled) { background: var(--tj-bg); }
 
+/* tier badges & card styles */
+.dotori-item__tags { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.dotori-tier-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.06em; }
+.dotori-tier-badge--premium { background: linear-gradient(135deg, #a78bfa, #7c3aed); color: #fff; }
+.dotori-tier-badge--legend { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #1a1a2e; }
+.dotori-item--premium { border-color: #c4b5fd; }
+.dotori-item--legend { border-color: #fbbf24; border-width: 2px; background: linear-gradient(135deg, #fffbeb 0%, #fff 40%); }
+.dotori-item__lock { padding: 8px 10px; margin-bottom: 8px; border-radius: 6px; background: #fef2f2; border: 1px solid #fecaca; }
+.dotori-item__lock p { margin: 0; font-size: 0.76rem; color: #991b1b; line-height: 1.5; }
+.dotori-grade { font-size: 0.82rem; color: #f59e0b; margin-left: 6px; letter-spacing: 1px; }
+
 /* ── BGM Player (미니홈 내) ── */
 .minihome-bgm {
   display: flex; align-items: center; gap: 10px;

@@ -16,6 +16,9 @@ type ShopRow = {
   label_th: string;
   sort_order: number;
   preview_url: string | null;
+  tier: string;
+  min_days_since_join: number;
+  min_activity_grade: number;
 };
 
 type OwnedRow = {
@@ -44,6 +47,8 @@ export default function MinihomeStyleShopClient() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [activeCat, setActiveCat] = useState('room_skin');
   const [checkedIn, setCheckedIn] = useState(false);
+  const [activityGrade, setActivityGrade] = useState(1);
+  const [daysSinceJoin, setDaysSinceJoin] = useState(0);
 
   const labelFor = useCallback(
     (row: ShopRow) => (locale === 'th' ? row.label_th : row.label_ko),
@@ -64,14 +69,14 @@ export default function MinihomeStyleShopClient() {
 
     const [cat, inv, prof] = await Promise.all([
       sb.from('style_shop_items')
-        .select('item_key,category,price_points,rental_days,rental_price,label_ko,label_th,sort_order,preview_url')
+        .select('item_key,category,price_points,rental_days,rental_price,label_ko,label_th,sort_order,preview_url,tier,min_days_since_join,min_activity_grade')
         .eq('active', true)
         .order('sort_order', { ascending: true }),
       sb.from('active_unlocks')
         .select('item_key,expires_at,equipped,days_remaining')
         .eq('profile_id', user.id),
       sb.from('profiles')
-        .select('style_score_total')
+        .select('style_score_total,activity_grade,created_at')
         .eq('id', user.id)
         .maybeSingle(),
     ]);
@@ -91,6 +96,12 @@ export default function MinihomeStyleShopClient() {
 
     const b = prof.data?.style_score_total;
     setBalance(typeof b === 'number' ? b : 0);
+    const ag = prof.data?.activity_grade;
+    setActivityGrade(typeof ag === 'number' ? ag : 1);
+    const ca = prof.data?.created_at;
+    if (typeof ca === 'string') {
+      setDaysSinceJoin(Math.floor((Date.now() - new Date(ca).getTime()) / 86_400_000));
+    }
   }, [m.styleShopLoadError]);
 
   useEffect(() => {
@@ -168,12 +179,15 @@ export default function MinihomeStyleShopClient() {
 
       <p className="dotori-shop-lead">{m.styleShopLead}</p>
 
-      {/* Balance + Checkin */}
+      {/* Balance + Grade + Checkin */}
       <div className="dotori-balance-bar">
         <div className="dotori-balance-bar__left">
           <span className="dotori-balance-bar__icon">🌰</span>
           <strong className="dotori-balance-bar__label">{m.dotoriLabel}</strong>
           <span className="dotori-balance-bar__amount">{balance ?? '—'}</span>
+          <span className="dotori-grade" title={`활동 등급 ${activityGrade}`}>
+            {'★'.repeat(activityGrade)}{'☆'.repeat(5 - activityGrade)}
+          </span>
         </div>
         <button
           type="button"
@@ -215,32 +229,56 @@ export default function MinihomeStyleShopClient() {
             const canBuyPerm = balance !== null && balance >= row.price_points;
             const canBuyRent = row.rental_price !== null && balance !== null && balance >= row.rental_price;
             const loading = busyKey === row.item_key;
+            const meetsDay = daysSinceJoin >= row.min_days_since_join;
+            const meetsGrade = activityGrade >= row.min_activity_grade;
+            const locked = !meetsDay || !meetsGrade;
+            const tierCls = row.tier === 'legend' ? ' dotori-item--legend' : row.tier === 'premium' ? ' dotori-item--premium' : '';
 
             return (
-              <li key={row.item_key} className="dotori-item">
+              <li key={row.item_key} className={`dotori-item${tierCls}`}>
                 <div className="dotori-item__head">
                   <span className="dotori-item__name">{labelFor(row)}</span>
-                  {row.rental_days ? (
-                    <span className="dotori-item__tag dotori-item__tag--rental">
-                      {m.styleShopRentalTag.replace('{days}', String(row.rental_days))}
-                    </span>
-                  ) : (
-                    <span className="dotori-item__tag dotori-item__tag--perm">{m.styleShopPermTag}</span>
-                  )}
+                  <div className="dotori-item__tags">
+                    {row.tier !== 'normal' && (
+                      <span className={`dotori-tier-badge dotori-tier-badge--${row.tier}`}>
+                        {row.tier === 'legend' ? 'LEGEND' : 'PREMIUM'}
+                      </span>
+                    )}
+                    {row.rental_days ? (
+                      <span className="dotori-item__tag dotori-item__tag--rental">
+                        {m.styleShopRentalTag.replace('{days}', String(row.rental_days))}
+                      </span>
+                    ) : (
+                      <span className="dotori-item__tag dotori-item__tag--perm">{m.styleShopPermTag}</span>
+                    )}
+                  </div>
                 </div>
 
+                {/* Lock message */}
+                {locked && !has && (
+                  <div className="dotori-item__lock">
+                    {!meetsDay && (
+                      <p>가입 후 {row.min_days_since_join}일 필요 (D-{row.min_days_since_join - daysSinceJoin})</p>
+                    )}
+                    {!meetsGrade && (
+                      <p>활동 등급 {row.min_activity_grade} 이상 필요 (현재 {activityGrade})</p>
+                    )}
+                  </div>
+                )}
+
                 {/* Price row */}
-                <div className="dotori-item__prices">
-                  {row.rental_days && row.rental_price !== null && (
-                    <span className="dotori-item__price">
-                      🌰 {row.rental_price} <small>/ {row.rental_days}일</small>
+                {!locked && (
+                  <div className="dotori-item__prices">
+                    {row.rental_days && row.rental_price !== null && (
+                      <span className="dotori-item__price">
+                        🌰 {row.rental_price} <small>/ {row.rental_days}일</small>
+                      </span>
+                    )}
+                    <span className="dotori-item__price dotori-item__price--perm">
+                      🌰 {row.price_points} <small>(영구)</small>
                     </span>
-                  )}
-                  <span className="dotori-item__price dotori-item__price--perm">
-                    🌰 {row.price_points} {!row.rental_days && <small>(영구)</small>}
-                    {row.rental_days && <small>(영구)</small>}
-                  </span>
-                </div>
+                  </div>
+                )}
 
                 {/* Owned / Remaining days */}
                 {has && o.days_remaining !== null && (
@@ -263,7 +301,7 @@ export default function MinihomeStyleShopClient() {
                     >
                       {loading ? '...' : m.styleShopEquip}
                     </button>
-                  ) : (
+                  ) : locked ? null : (
                     <>
                       {row.rental_days && row.rental_price !== null && (
                         <button

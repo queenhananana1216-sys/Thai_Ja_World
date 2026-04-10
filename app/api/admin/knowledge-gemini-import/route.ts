@@ -119,7 +119,7 @@ export async function POST(req: Request) {
   const results: Array<{ index: number; ok: boolean; processed_knowledge_id?: string; error?: string }> = [];
 
   for (let i = 0; i < items.length; i++) {
-    const item = items[i];
+    const item = items[i]!;
     const url = typeof item.external_url === 'string' ? item.external_url.trim() : '';
     if (!url || !item.ko?.title?.trim() || !item.ko?.summary?.trim() || !item.th?.title?.trim() || !item.th?.summary?.trim()) {
       results.push({ index: i, ok: false, error: 'external_url, ko.title/summary, th.title/summary 필수' });

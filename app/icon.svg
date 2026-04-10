@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Taeja World">
+  <rect width="48" height="48" rx="10" fill="#fdfcf4"/>
+  <ellipse cx="24" cy="29" rx="14" ry="12" fill="#fff5f0" stroke="#d42f3d" stroke-width="1.75"/>
+  <path fill="none" stroke="#0d0d0f" stroke-width="1.5" stroke-linecap="round" d="M14 28c2-5 7-8 10-8s8 3 10 8"/>
+  <circle cx="19" cy="26" r="2" fill="#0d0d0f"/>
+  <circle cx="29" cy="26" r="2" fill="#0d0d0f"/>
+  <path fill="none" stroke="#0d0d0f" stroke-width="1.25" stroke-linecap="round" d="M21 31q3 2 6 0"/>
+  <path fill="#e6a303" stroke="#0d0d0f" stroke-width="1.1" d="M24 10l-10 8h20L24 10z"/>
+  <path fill="#d42f3d" stroke="#0d0d0f" stroke-width="0.9" d="M24 6l2 3h-4l2-3zm-4 2l1.5 2.5h-3L20 8zm8 0l1.5 2.5h-3L28 8z"/>
+  <path fill="none" stroke="#0d0d0f" stroke-width="1.35" stroke-linecap="round" d="M32 24l6-4"/>
+</svg>

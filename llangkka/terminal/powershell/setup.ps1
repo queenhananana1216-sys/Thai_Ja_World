@@ -1,7 +1,10 @@
-# llangkka terminal setup (PowerShell 7)
-# 목적:
-# - PowerShell 프로필($PROFILE)에 llangkka의 profile.ps1를 안전하게 연결(중복 방지)
-# - starship 설치는 사용자가 직접 하도록 안내(네트워크/권한 이슈 방지)
+# llangkka terminal setup (PowerShell 7 + Windows PowerShell 5.1)
+# - 현재 실행 중인 PS 버전의 $PROFILE에 llangkka profile.ps1 연결
+# - 옵션: -Both 스위치로 PS 7과 5.1 모두 한 번에 설정
+
+param(
+  [switch]$Both
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -16,32 +19,60 @@ if (!(Test-Path $targetProfileScript)) {
   throw "profile.ps1을 찾을 수 없습니다: $targetProfileScript"
 }
 
-# PowerShell 프로필 파일 위치(현재 호스트/현재 사용자의 범위)
-$profilePath = $PROFILE
+function Install-LlangkkaProfile {
+  param([string]$ProfilePath, [string]$Label)
 
-if (-not $profilePath) {
-  throw "현재 PowerShell 프로필 경로($PROFILE)를 확인할 수 없습니다."
-}
+  if (-not $ProfilePath) {
+    Write-Warning "$Label : 프로필 경로를 확인할 수 없습니다. 건너뜁니다."
+    return
+  }
 
-$profileDir = Split-Path -Parent $profilePath
-if (!(Test-Path $profileDir)) {
-  New-Item -ItemType Directory -Force -Path $profileDir | Out-Null
-}
+  $profileDir = Split-Path -Parent $ProfilePath
+  if (!(Test-Path $profileDir)) {
+    New-Item -ItemType Directory -Force -Path $profileDir | Out-Null
+  }
+  if (!(Test-Path $ProfilePath)) {
+    New-Item -ItemType File -Force -Path $ProfilePath | Out-Null
+  }
 
-if (!(Test-Path $profilePath)) {
-  New-Item -ItemType File -Force -Path $profilePath | Out-Null
-}
+  $existing = Get-Content -Path $ProfilePath -Raw -ErrorAction SilentlyContinue
+  if ($existing -and ($existing -match [regex]::Escape($marker))) {
+    Write-Host "이미 설정됨: $Label ($ProfilePath)" -ForegroundColor Yellow
+    return
+  }
 
-$existing = Get-Content -Path $profilePath -Raw -ErrorAction SilentlyContinue
-if ($existing -notmatch [regex]::Escape($marker)) {
   $block = @"
 
 $marker
-`.${targetProfileScript}
+. "$targetProfileScript"
 "@
-  Add-Content -Path $profilePath -Value $block
+  Add-Content -Path $ProfilePath -Value $block
+  Write-Host "완료: $Label -> $ProfilePath" -ForegroundColor Green
 }
 
-Write-Host "완료: $marker 를 $profilePath 에 연결했습니다."
-Write-Host "다음 확인: PowerShell에서 `starship --version`이 되면 자동으로 프롬프트가 적용됩니다."
+$isPwsh7 = $PSVersionTable.PSVersion.Major -ge 7
 
+Install-LlangkkaProfile -ProfilePath $PROFILE -Label "현재 셸 ($($PSVersionTable.PSVersion))"
+
+if ($Both) {
+  if ($isPwsh7) {
+    $ps5Profile = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "WindowsPowerShell\Microsoft.PowerShell_profile.ps1"
+    Install-LlangkkaProfile -ProfilePath $ps5Profile -Label "Windows PowerShell 5.1"
+  } else {
+    $pwshExe = Get-Command pwsh -ErrorAction SilentlyContinue
+    if ($pwshExe) {
+      $ps7Profile = Join-Path ([Environment]::GetFolderPath('MyDocuments')) "PowerShell\Microsoft.PowerShell_profile.ps1"
+      Install-LlangkkaProfile -ProfilePath $ps7Profile -Label "PowerShell 7"
+    } else {
+      Write-Warning "PowerShell 7(pwsh)이 설치되어 있지 않아 건너뜁니다."
+    }
+  }
+}
+
+Write-Host ""
+Write-Host "다음 확인:" -ForegroundColor Cyan
+Write-Host "  oh-my-posh --version   (프롬프트 테마)" -ForegroundColor Gray
+Write-Host "  starship --version     (폴백 프롬프트)" -ForegroundColor Gray
+Write-Host ""
+Write-Host "두 셸 모두 설정하려면:" -ForegroundColor Cyan
+Write-Host "  .\setup.ps1 -Both" -ForegroundColor Yellow

@@ -160,6 +160,10 @@ export type Dictionary = {
     goLogin: string;
     goSignup: string;
     empty: string;
+    fallbackLead: string;
+    fallbackChecklistTitle: string;
+    fallbackCautionsTitle: string;
+    fallbackSourceLabel: string;
     backToList: string;
   };
   board: {
@@ -643,7 +647,7 @@ const ko: Dictionary = {
     heroSub:
       '집·비자·병원비처럼 막히는 일, 겪은 걸 나누면 다음 사람한테 닿아요.\n홍보보다 팁·주의·정리를 먼저 — 가볍게 올려도 돼요.\n필요할 때만 들러도 괜찮아요.',
     portalMastTitle: '태자 월드 통합 검색',
-    portalMastSub: '메뉴·뉴스·경로를 한 번에 — 로컬 포털처럼 쓰는 홈',
+    portalMastSub: '메뉴·뉴스·경로를 한 번에 찾는 포털형 홈',
     portalMastQuickAria: '자주 찾는 메뉴',
     dreamIntro: '지금 쓸 수 있어요 · ',
     dreamMinihome: '미니홈으로 ',
@@ -746,15 +750,19 @@ const ko: Dictionary = {
   tips: {
     pageTitle: '태국 생활 꿀팁',
     pageLead:
-      '짧은 훅만 미리 보여 드려요. 체크리스트·주의사항·출처 링크는 로그인(또는 가입) 후 광장에서 전체로 열립니다.',
+      '핵심만 먼저 보여 드려요. 체크리스트·주의사항·출처 링크는 로그인(또는 가입) 후 광장에서 전체를 확인할 수 있어요.',
     openCard: '자세히',
     detailLockedLead:
-      '요약·체크리스트·원문 출처는 회원에게만 공개돼요. 가입하면 광장 정보 게시판에서 같은 글을 끝까지 볼 수 있어요.',
-    loginForFull: '로그인하고 전체·출처 보기',
-    signupForFull: '가입하고 전체·출처 보기',
+      '체크리스트·주의사항·출처 링크는 회원에게만 공개돼요. 가입하면 광장 정보 게시판에서 같은 글을 끝까지 볼 수 있어요.',
+    loginForFull: '로그인하고 전체 내용 보기',
+    signupForFull: '가입하고 전체 내용 보기',
     goLogin: '로그인',
     goSignup: '회원가입',
-    empty: '아직 올라온 꿀팁이 없어요. 곧 채워질 거예요.',
+    empty: '아직 등록된 꿀팁이 없어요. 곧 알찬 내용으로 채워 둘게요.',
+    fallbackLead: '그동안 편집팀이 준비한 기본 꿀팁부터 먼저 보여 드릴게요.',
+    fallbackChecklistTitle: '체크리스트',
+    fallbackCautionsTitle: '주의사항',
+    fallbackSourceLabel: '출처',
     backToList: '꿀팁 목록',
   },
   board: {
@@ -1241,7 +1249,7 @@ const th: Dictionary = {
     heroSub:
       'บ้าน·วีซ่า·ค่ารพ ที่ติดขัด แชร์ประสบการณ์แล้วคนถัดไปได้ประโยชน์\nเน้นช่วยเหลือ·ข้อควรระวัง·สรุป มากกว่าโฆษณา — โพสต์สั้นๆ ก็ได้\nอยากเข้ามาตอนไหนก็ได้',
     portalMastTitle: 'ค้นหา Thai Ja World',
-    portalMastSub: 'เมนู·ข่าว·พาธในที่เดียว — หน้าแรกแบบพอร์ทัล',
+    portalMastSub: 'เมนู·ข่าว·เส้นทางต่าง ๆ ค้นหาได้ในที่เดียว — หน้าแรกสไตล์พอร์ทัล',
     portalMastQuickAria: 'ทางลัดเมนูยอดนิยม',
     dreamIntro: 'ใช้ได้แล้วตอนนี้ · ',
     dreamMinihome: 'ไปมินิโฮม ',
@@ -1344,15 +1352,19 @@ const th: Dictionary = {
   tips: {
     pageTitle: 'ทิปส์ชีวิตในไทย',
     pageLead:
-      'แสดงเฉพาะหัวข้อกับคำโปรยสั้นๆ รายการเช็ก·ข้อควรระวัง·ลิงก์แหล่งข่าว — ดูเต็มได้หลังเข้าสู่ระบบหรือสมัครที่บอร์ดข้อมูลในลานชุมชน',
+      'ตอนนี้จะแสดงเฉพาะประเด็นหลักก่อนนะ รายการเช็ก·ข้อควรระวัง·ลิงก์แหล่งอ้างอิง จะเปิดให้อ่านครบหลังเข้าสู่ระบบหรือสมัครสมาชิก',
     openCard: 'ดูต่อ',
     detailLockedLead:
-      'สรุปเต็ม·เช็กลิสต์·ลิงก์ต้นทาง — สำหรับสมาชิกเท่านั้น สมัครแล้วเปิดโพสต์เดิมในบอร์ดได้ครบ',
-    loginForFull: 'เข้าสู่ระบบเพื่ออ่านเต็ม·ลิงก์',
-    signupForFull: 'สมัครเพื่ออ่านเต็ม·ลิงก์',
+      'เช็กลิสต์·ข้อควรระวัง·ลิงก์ต้นทาง เปิดให้เฉพาะสมาชิก สมัครแล้วจะอ่านโพสต์เดียวกันได้ครบในบอร์ดข้อมูล',
+    loginForFull: 'เข้าสู่ระบบเพื่ออ่านแบบเต็ม',
+    signupForFull: 'สมัครสมาชิกเพื่ออ่านแบบเต็ม',
     goLogin: 'เข้าสู่ระบบ',
     goSignup: 'สมัครสมาชิก',
-    empty: 'ยังไม่มีทิปส์ — เร็วๆ นี้จะเพิ่ม',
+    empty: 'ตอนนี้ยังไม่มีทิปส์ที่เผยแพร่',
+    fallbackLead: 'ระหว่างนี้ดูทิปส์พื้นฐานที่ทีมบรรณาธิการเตรียมไว้ก่อนได้เลย',
+    fallbackChecklistTitle: 'เช็กลิสต์',
+    fallbackCautionsTitle: 'ข้อควรระวัง',
+    fallbackSourceLabel: 'แหล่งอ้างอิง',
     backToList: 'กลับรายการทิปส์',
   },
   board: {

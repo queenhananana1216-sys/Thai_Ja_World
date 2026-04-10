@@ -17,6 +17,7 @@ import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate, extractHostname } from '@/lib/utils/formatDate';
 import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
+import { getFallbackTips, type FallbackTipSummary } from '@/lib/tips/fallbackTips';
 
 const HOME_FETCH_BUDGET_MS = 12_000;
 
@@ -41,6 +42,7 @@ function loginNextHref(path: string): string {
 }
 
 type WeatherRow = { key: string; label: string; temp: number | null; condition: string };
+type TipPreview = FallbackTipSummary;
 
 function tipEnv() {
   return {
@@ -205,7 +207,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   const [weatherBusy, setWeatherBusy] = useState(true);
   const [weatherErr, setWeatherErr] = useState(false);
   const [dotoriBalance, setDotoriBalance] = useState<number | null>(null);
-  const [tipsItems, setTipsItems] = useState<{ id: string; title: string; excerpt: string; created_at: string }[]>([]);
+  const [tipsItems, setTipsItems] = useState<TipPreview[]>([]);
   const [popularPosts, setPopularPosts] = useState<{ id: string; title: string; author_name: string; reaction_count: number; comment_count: number }[]>([]);
   const [hotPosts, setHotPosts] = useState<{ id: string; title: string; author_name: string; reaction_count: number; comment_count: number; category: string }[]>([]);
   const [chatPreview, setChatPreview] = useState<{ id: string; body: string; author_name: string }[]>([]);
@@ -307,7 +309,8 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
       ]);
 
       if (cancelled) return;
-      setTipsItems((tipsRes as { id: string; title: string; excerpt: string; created_at: string }[]) ?? []);
+      const liveTips = (tipsRes as TipPreview[]) ?? [];
+      setTipsItems(liveTips.length > 0 ? liveTips : getFallbackTips(locale, 4));
       setPopularPosts((popRes as { id: string; title: string; author_name: string; reaction_count: number; comment_count: number }[]) ?? []);
       setHotPosts((hotRes as { id: string; title: string; author_name: string; reaction_count: number; comment_count: number; category: string }[]) ?? []);
       setChatPreview(((chatRes as { id: string; body: string; author_name: string }[]) ?? []).reverse());
@@ -334,7 +337,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
     return () => {
       cancelled = true;
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, locale]);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -621,25 +624,6 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
           </aside>
         </div>
       </div>
-
-      {/* ══ FOOTER ══ */}
-      <footer className="fv2-footer">
-        <div className="fv2-footer__links">
-          <Link href="/terms" className="fv2-footer__link">
-            {d.footerNav.terms}
-          </Link>
-          <Link href="/privacy" className="fv2-footer__link">
-            {d.footerNav.privacy}
-          </Link>
-          <Link href="/contact" className="fv2-footer__link">
-            {d.footerNav.contact}
-          </Link>
-          <Link href="/ads" className="fv2-footer__link">
-            {d.footerNav.ads}
-          </Link>
-        </div>
-        <p className="fv2-footer__copy">© 2026 태자월드. All rights reserved.</p>
-      </footer>
     </div>
   );
 }

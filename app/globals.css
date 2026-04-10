@@ -2161,6 +2161,44 @@ a:hover {
 .fv2-portal__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
 .fv2-portal__side { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; }
 
+/* ── Portal hub (통합 검색 + 바로가기) ── */
+.fv2-hub {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px 20px 16px;
+  box-shadow: 0 8px 24px rgba(30, 64, 175, 0.06);
+}
+.fv2-hub__head { margin-bottom: 12px; }
+.fv2-hub__title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+.fv2-hub__sub { margin: 0; font-size: 0.88rem; color: #6b7280; line-height: 1.55; }
+.fv2-hub__search { margin-bottom: 14px; }
+.fv2-hub__quick { display: flex; flex-wrap: wrap; gap: 8px; }
+.fv2-hub__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  background: #eef2ff;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  text-decoration: none;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.fv2-hub__chip:hover {
+  background: #dbeafe;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
 /* ── Card (white rounded) ── */
 .fv2-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 20px; }
 .fv2-card__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -2235,8 +2273,38 @@ a:hover {
 
 /* ── Footer ── */
 .fv2-footer { background: #1d1d1f; padding: 24px 32px; text-align: center; }
-.fv2-footer__links { display: flex; justify-content: center; gap: 24px; font-size: 12px; font-weight: 500; color: #9ca3af; margin-bottom: 8px; }
+.fv2-footer__links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin-bottom: 8px;
+}
+.fv2-footer__link { color: #9ca3af; text-decoration: none; }
+.fv2-footer__link:hover { color: #e5e7eb; text-decoration: underline; }
 .fv2-footer__copy { font-size: 11px; color: #6b7280; margin: 0; }
+
+/* 정적 안내 (/terms, /privacy, /contact, /ads) */
+.policy-page { max-width: 720px; }
+.policy-page__crumb { margin: 0 0 12px; font-size: 0.88rem; }
+.policy-page__crumb a { color: var(--tj-link); text-decoration: none; }
+.policy-page__crumb a:hover { text-decoration: underline; }
+.policy-page__h1 {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--tj-ink);
+  margin: 0 0 18px;
+  letter-spacing: -0.02em;
+}
+.policy-page__p {
+  margin: 0 0 14px;
+  line-height: 1.7;
+  font-size: 0.95rem;
+  color: var(--tj-muted);
+}
 
 /* ── Responsive ── */
 @media (max-width: 840px) {

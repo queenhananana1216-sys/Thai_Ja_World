@@ -34,6 +34,10 @@
   --color-semantic-error: #d42f3d;
   --color-semantic-info: #3753d6;
 
+  /* 레거시 헤더/푸터 토큰 — Tailwind `bg-tj-header` 등과 동기화 */
+  --color-tj-header: #0c0c0f;
+  --color-tj-line: #e5e7eb;
+
   --font-sans: var(--font-noto-kr, 'Noto Sans KR'), var(--font-noto-th, 'Noto Sans Thai'), 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, -apple-system, sans-serif;
   --font-thai: var(--font-noto-th, 'Noto Sans Thai'), var(--font-noto-kr, 'Noto Sans KR'), 'Sukhumvit Set', 'Leelawadee UI', system-ui, sans-serif;
 
@@ -78,7 +82,7 @@
   --tj-peach: #f59e0b;
   --tj-lilac: #7c3aed;
   --tj-lilac-soft: #ede9fe;
-  --tj-header: #111827;
+  --tj-header: #0c0c0f;
   --tj-header-muted: #9ca3af;
   --tj-link: #2563eb;
   --tj-link-hover: #1d4ed8;

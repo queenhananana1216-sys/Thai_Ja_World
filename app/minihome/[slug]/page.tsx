@@ -18,7 +18,7 @@ export default async function MinihomePublicPage({
   const { data, error } = await supabase
     .from('user_minihomes')
     .select(
-      'owner_id, public_slug, title, tagline, intro_body, theme, layout_modules, is_public',
+      'owner_id, public_slug, title, tagline, intro_body, theme, layout_modules, is_public, visit_count_today, visit_count_total, visit_count_date, section_visibility',
     )
     .eq('public_slug', slug)
     .maybeSingle();

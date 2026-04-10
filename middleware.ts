@@ -15,6 +15,8 @@ function pathRequiresAuth(pathname: string): boolean {
   if (pathname.startsWith('/minihome/')) return false;
 
   if (pathname === '/my-local-shop' || pathname.startsWith('/my-local-shop/')) return true;
+  if (pathname === '/chat' || pathname.startsWith('/chat/')) return true;
+  if (pathname === '/notifications' || pathname.startsWith('/notifications/')) return true;
 
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }

@@ -15,6 +15,8 @@ type GbRow = {
   author_id: string;
   entry_kind: EntryKind;
   is_hidden: boolean;
+  owner_reply: string | null;
+  owner_reply_at: string | null;
 };
 
 type IlchonMode = 'loading' | 'noop' | 'anon' | 'linked' | 'out' | 'in' | 'ask';
@@ -59,7 +61,7 @@ export default function ShopGuestbookPanel({
     const sb = createBrowserClient();
     const { data, error } = await sb
       .from('local_shop_guestbook_entries')
-      .select('id, body, created_at, author_id, entry_kind, is_hidden')
+      .select('id, body, created_at, author_id, entry_kind, is_hidden, owner_reply, owner_reply_at')
       .eq('local_spot_id', spotId)
       .order('created_at', { ascending: false })
       .limit(120);
@@ -78,6 +80,8 @@ export default function ShopGuestbookPanel({
       author_id: r.author_id,
       is_hidden: r.is_hidden,
       entry_kind: r.entry_kind === 'ilchon' ? 'ilchon' : 'open',
+      owner_reply: typeof r.owner_reply === 'string' ? r.owner_reply : null,
+      owner_reply_at: typeof r.owner_reply_at === 'string' ? r.owner_reply_at : null,
     }));
     setRows(list);
     const ids = [...new Set(list.map((r) => r.author_id))];
@@ -272,6 +276,22 @@ export default function ShopGuestbookPanel({
               ) : null}
             </div>
             <div style={{ marginTop: 6, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{r.body}</div>
+            {r.owner_reply?.trim() ? (
+              <div
+                style={{
+                  marginTop: 8,
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  background: 'rgba(99,102,241,0.16)',
+                  border: '1px solid rgba(165,180,252,0.28)',
+                }}
+              >
+                <div style={{ fontSize: 11, opacity: 0.9, marginBottom: 4 }}>
+                  사장님 답글 · {formatDate(r.owner_reply_at)}
+                </div>
+                <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{r.owner_reply}</div>
+              </div>
+            ) : null}
             {isOwner ? (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
                 <button

@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import ShopGuestbookPanel from './ShopGuestbookPanel';
+import ShopUpdatesPanel from './ShopUpdatesPanel';
 
 export type ShopSpotPayload = {
   id: string;
@@ -157,6 +158,8 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
             {openingHoursText}
           </p>
         ) : null}
+
+        <ShopUpdatesPanel spotId={spot.id} />
 
         <Section id="menu">
           {menu.length > 0 ? (

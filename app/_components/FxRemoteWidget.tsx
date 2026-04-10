@@ -469,7 +469,14 @@ export default function FxRemoteWidget({
             <button type="button" onClick={scrollMini}>
               {labels.minihome}
             </button>
-            <button type="button" disabled title={labels.slotSoon}>
+            <button
+              type="button"
+              title={labels.slotSoon}
+              onClick={() => {
+                setMenuOpen(false);
+                router.push('/notifications');
+              }}
+            >
               {labels.slotEmpty}
             </button>
             <button type="button" onClick={() => void onRefresh()} disabled={refreshing}>

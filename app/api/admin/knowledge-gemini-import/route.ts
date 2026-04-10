@@ -120,6 +120,10 @@ export async function POST(req: Request) {
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
+    if (!item) {
+      results.push({ index: i, ok: false, error: '항목 누락' });
+      continue;
+    }
     const url = typeof item.external_url === 'string' ? item.external_url.trim() : '';
     if (!url || !item.ko?.title?.trim() || !item.ko?.summary?.trim() || !item.th?.title?.trim() || !item.th?.summary?.trim()) {
       results.push({ index: i, ok: false, error: 'external_url, ko.title/summary, th.title/summary 필수' });

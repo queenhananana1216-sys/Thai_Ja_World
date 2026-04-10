@@ -478,7 +478,8 @@ export default function KnowledgeQueueClient({
     const failSamples: string[] = [];
     for (let i = 0; i < targets.length; i++) {
       const it = targets[i];
-      setBulkLlmProgress(`${i + 1}/${targets.length} — ${it!.ko_title.slice(0, 36)}${it!.ko_title.length > 36 ? '…' : ''}`);
+      if (!it) continue;
+      setBulkLlmProgress(`${i + 1}/${targets.length} — ${it.ko_title.slice(0, 36)}${it.ko_title.length > 36 ? '…' : ''}`);
       try {
         const res = await fetch('/api/admin/knowledge-reprocess-llm', {
           method: 'POST',

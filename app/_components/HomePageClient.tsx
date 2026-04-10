@@ -205,6 +205,11 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   const [weatherBusy, setWeatherBusy] = useState(true);
   const [weatherErr, setWeatherErr] = useState(false);
   const [dotoriBalance, setDotoriBalance] = useState<number | null>(null);
+  const [tipsItems, setTipsItems] = useState<{ id: string; title: string; excerpt: string; created_at: string }[]>([]);
+  const [popularPosts, setPopularPosts] = useState<{ id: string; title: string; author_name: string; reaction_count: number; comment_count: number }[]>([]);
+  const [hotPosts, setHotPosts] = useState<{ id: string; title: string; author_name: string; reaction_count: number; comment_count: number; category: string }[]>([]);
+  const [chatPreview, setChatPreview] = useState<{ id: string; body: string; author_name: string }[]>([]);
+  const [fxRates, setFxRates] = useState<{ thb_krw: string; usd_thb: string; krw_thb: string } | null>(null);
 
   useLayoutEffect(() => {
     setLocale(readLocaleCookie());
@@ -289,8 +294,36 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
       }
       setListsBusy(false);
 
+      if (cancelled) return;
+      const sb = createBrowserClient();
+
+      // 실DB 연결: 꿀팁, 인기글, 핫글, 채팅, 도토리
+      const [tipsRes, popRes, hotRes, chatRes, fxRes] = await Promise.all([
+        sb.rpc('get_tips_public', { limit_n: 4 }).then(r => r.data ?? []),
+        sb.rpc('get_popular_posts', { limit_n: 5, days_back: 30 }).then(r => r.data ?? []),
+        sb.rpc('get_popular_posts', { limit_n: 3, days_back: 7 }).then(r => r.data ?? []),
+        sb.rpc('get_chat_preview', { limit_n: 3 }).then(r => r.data ?? []),
+        fetch('/api/fx').then(r => r.ok ? r.json() : null).catch(() => null),
+      ]);
+
+      if (cancelled) return;
+      setTipsItems((tipsRes as { id: string; title: string; excerpt: string; created_at: string }[]) ?? []);
+      setPopularPosts((popRes as { id: string; title: string; author_name: string; reaction_count: number; comment_count: number }[]) ?? []);
+      setHotPosts((hotRes as { id: string; title: string; author_name: string; reaction_count: number; comment_count: number; category: string }[]) ?? []);
+      setChatPreview(((chatRes as { id: string; body: string; author_name: string }[]) ?? []).reverse());
+
+      if (fxRes && typeof fxRes === 'object') {
+        const fx = fxRes as { usdToThb?: number; usdToKrw?: number };
+        if (typeof fx.usdToThb === 'number' && typeof fx.usdToKrw === 'number') {
+          setFxRates({
+            thb_krw: (fx.usdToKrw / fx.usdToThb).toFixed(1),
+            usd_thb: fx.usdToThb.toFixed(1),
+            krw_thb: (fx.usdToThb / fx.usdToKrw).toFixed(4),
+          });
+        }
+      }
+
       if (isLoggedIn) {
-        const sb = createBrowserClient();
         const { data: { user } } = await sb.auth.getUser();
         if (user && !cancelled) {
           const { data: prof } = await sb.from('profiles').select('style_score_total').eq('id', user.id).maybeSingle();
@@ -400,29 +433,24 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
               )}
             </section>
 
-            {/* 오늘의 꿀팁 */}
+            {/* 오늘의 꿀팁 (실DB: get_tips_public) */}
             <section className="fv2-tips">
               <div className="fv2-card__head">
                 <h2 className="fv2-card__h">오늘의 꿀팁</h2>
                 <Link href="/tips" className="fv2-more">더보기 ›</Link>
               </div>
-              {listsBusy ? (
-                <p className="fv2-card__state">{h.hotNewsLoading}</p>
-              ) : newsLocalized.length === 0 ? (
+              {tipsItems.length === 0 && !listsBusy ? (
                 <p className="fv2-card__state">꿀팁을 준비 중이에요.</p>
+              ) : tipsItems.length === 0 ? (
+                <p className="fv2-card__state">{h.hotNewsLoading}</p>
               ) : (
                 <div className="fv2-tips__grid">
-                  {newsLocalized.slice(0, 4).map((item) => (
-                    <Link
-                      key={item.id}
-                      href={item.internalNewsId ? `/news/${item.internalNewsId}` : item.external_url}
-                      className="fv2-tip-card"
-                      {...(!item.internalNewsId ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                    >
+                  {tipsItems.map((tip) => (
+                    <Link key={tip.id} href={`/tips/${tip.id}`} className="fv2-tip-card">
                       <div className="fv2-tip-card__thumb" />
                       <div className="fv2-tip-card__body">
-                        <p className="fv2-tip-card__title">{item.title}</p>
-                        <p className="fv2-tip-card__meta">{formatDate(item.published_at) || '—'}</p>
+                        <p className="fv2-tip-card__title">{tip.title}</p>
+                        <p className="fv2-tip-card__meta">{tip.excerpt}</p>
                       </div>
                     </Link>
                   ))}
@@ -458,20 +486,32 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
               </Link>
             )}
 
-            {/* 환율 */}
+            {/* 환율 (실FX 데이터) */}
             <div className="fv2-widget">
               <p className="fv2-widget__h">💱 환율</p>
-              <p className="fv2-widget__line">{h.fxRemote.floatingHint}</p>
+              {fxRates ? (
+                <>
+                  <p className="fv2-widget__line">1 THB = {fxRates.thb_krw} KRW</p>
+                  <p className="fv2-widget__line">1 USD = {fxRates.usd_thb} THB</p>
+                  <p className="fv2-widget__line">1 KRW = {fxRates.krw_thb} THB</p>
+                </>
+              ) : (
+                <p className="fv2-widget__muted">{h.fxRemote.floatingHint}</p>
+              )}
             </div>
 
-            {/* 인기글 TOP 5 */}
+            {/* 인기글 TOP 5 (실DB: get_popular_posts) */}
             <div className="fv2-widget">
               <p className="fv2-widget__h">🔥 인기글 TOP 5</p>
-              <p className="fv2-widget__line">1. 태국 비자 연장 신청 방법</p>
-              <p className="fv2-widget__line">2. 방콕 야시장 안전 가이드</p>
-              <p className="fv2-widget__line">3. 한국 음식 배달 방콕 추천</p>
-              <p className="fv2-widget__line">4. 태국 운전면허 전환 후기</p>
-              <p className="fv2-widget__line">5. 치앙마이 렌트 가이드 2026</p>
+              {popularPosts.length === 0 ? (
+                <p className="fv2-widget__muted">아직 인기글이 없어요.</p>
+              ) : (
+                popularPosts.map((p, i) => (
+                  <Link key={p.id} href={`/community/boards/${p.id}`} className="fv2-widget__line" style={{ display: 'block', textDecoration: 'none', color: '#374151' }}>
+                    {i + 1}. {p.title}
+                  </Link>
+                ))
+              )}
             </div>
           </aside>
         </div>
@@ -481,29 +521,31 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
       <div className="fv2-community">
         <div className="fv2-community__inner">
           <div className="fv2-community__main">
-            {/* 커뮤니티 핫글 */}
+            {/* 커뮤니티 핫글 (실DB: get_popular_posts 7일) */}
             <section>
               <div className="fv2-card__head">
                 <h2 className="fv2-card__h">커뮤니티 핫글</h2>
                 <Link href={isLoggedIn ? '/community/boards' : loginNextHref('/community/boards')} className="fv2-more">더보기 ›</Link>
               </div>
-              <div className="fv2-board-cards">
-                <div className="fv2-board-card fv2-board-card--yellow">
-                  <div className="fv2-board-card__author"><span className="fv2-avatar" /> 방콕살이</div>
-                  <p className="fv2-board-card__text">방콕에서 한국 음식 배달시키는데 추천할 곳 있을까요? 직접 만들어서 팔고 싶어요!</p>
-                  <div className="fv2-board-card__react"><span className="fv2-react--heart">❤️ 24</span> <span className="fv2-react--chat">💬 8</span></div>
+              {hotPosts.length === 0 ? (
+                <p className="fv2-card__state">아직 핫글이 없어요. 첫 글을 남겨보세요!</p>
+              ) : (
+                <div className="fv2-board-cards">
+                  {hotPosts.map((p, i) => {
+                    const colors = ['fv2-board-card--yellow', 'fv2-board-card--purple', 'fv2-board-card--green'];
+                    return (
+                      <Link key={p.id} href={`/community/boards/${p.id}`} className={`fv2-board-card ${colors[i % 3]}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                        <div className="fv2-board-card__author"><span className="fv2-avatar" /> {p.author_name}</div>
+                        <p className="fv2-board-card__text">{p.title}</p>
+                        <div className="fv2-board-card__react">
+                          <span className="fv2-react--heart">❤️ {p.reaction_count}</span>
+                          <span className="fv2-react--chat">💬 {p.comment_count}</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
-                <div className="fv2-board-card fv2-board-card--purple">
-                  <div className="fv2-board-card__author"><span className="fv2-avatar" /> 치앙라이</div>
-                  <p className="fv2-board-card__text">치앙마이 님만해민 일요일 바자 같이 가실 분 계신가요? 첫 방문이라 동행 구합니다~</p>
-                  <div className="fv2-board-card__react"><span className="fv2-react--heart">❤️ 15</span> <span className="fv2-react--chat">💬 12</span></div>
-                </div>
-                <div className="fv2-board-card fv2-board-card--green">
-                  <div className="fv2-board-card__author"><span className="fv2-avatar" /> 푸켓맘</div>
-                  <p className="fv2-board-card__text">푸켓 로컬 마사지 추천해요! 가격도 착하고 실력 좋아요. 주소 공유할게요.</p>
-                  <div className="fv2-board-card__react"><span className="fv2-react--heart">❤️ 31</span> <span className="fv2-react--chat">💬 6</span></div>
-                </div>
-              </div>
+              )}
             </section>
 
             {/* 우리 동네 가게 */}
@@ -539,12 +581,19 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
           </div>
 
           {/* Community Sidebar: 실시간 채팅 */}
+          {/* 실시간 채팅 (실DB: get_chat_preview) */}
           <aside className="fv2-community__side">
             <div className="fv2-chat-preview">
               <p className="fv2-widget__h">💬 실시간 채팅</p>
-              <p className="fv2-chat-preview__msg">방콕살이: 날씨 어때요?</p>
-              <p className="fv2-chat-preview__msg">푸켓맘: 맑아요! ☀️</p>
-              <p className="fv2-chat-preview__msg">치앙라이: 비와요 🌧️</p>
+              {chatPreview.length === 0 ? (
+                <p className="fv2-chat-preview__msg" style={{ color: '#9ca3af' }}>아직 채팅이 없어요.</p>
+              ) : (
+                chatPreview.map((msg) => (
+                  <p key={msg.id} className="fv2-chat-preview__msg">
+                    <strong>{msg.author_name}</strong>: {msg.body.length > 40 ? msg.body.slice(0, 40) + '...' : msg.body}
+                  </p>
+                ))
+              )}
               <Link href={isLoggedIn ? '/chat' : loginNextHref('/chat')} className="fv2-chat-preview__btn">
                 채팅 참여하기
               </Link>

@@ -5,9 +5,6 @@
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -22,17 +19,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": [
-    "node_modules",
-    ".next",
-    "bestvip77",
-    "my-project",
-    "my-workflow-app",
-    "Thai_Ja_World",
-    "llangkka",
-    "projects",
-    "tools",
-    "auto",
-    "cloudflare"
-  ]
+  "exclude": ["node_modules"]
 }

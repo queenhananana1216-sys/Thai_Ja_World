@@ -1,0 +1,11 @@
+# Cloudflare 대시보드에서 Workers 라우트(예: *.example.com/*)와 연결한 뒤 배포합니다.
+# 원본이 Vercel인 경우 Worker에서 fetch로 넘길 호스트를 secrets 로 둡니다.
+
+name = "llangkka-edge-guard"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# [vars]
+# ORIGIN_HOST = "xxx.vercel.app"
+
+# wrangler secret put ORIGIN_HOST

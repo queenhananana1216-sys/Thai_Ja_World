@@ -2034,6 +2034,37 @@ a:hover {
   font-size: 0.7rem;
   color: var(--tj-muted);
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.board-comment__actions {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.board-comment__action-btn {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--tj-line);
+  background: var(--tj-surface);
+  color: var(--tj-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.board-comment__action-btn:hover {
+  border-color: var(--tj-link);
+  color: var(--tj-link);
+}
+
+.board-comment__action-btn--del:hover {
+  border-color: var(--tj-rose);
+  color: var(--tj-rose);
 }
 
 .site-footer {

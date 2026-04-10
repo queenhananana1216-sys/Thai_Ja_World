@@ -12,6 +12,7 @@ export type NewsCommentRow = {
   content: string;
   created_at: string;
   display_name: string;
+  author_id: string;
 };
 
 export default function NewsComments({
@@ -19,62 +20,86 @@ export default function NewsComments({
   initial,
   labels,
   loginNextPath,
+  currentUserId,
 }: {
   processedNewsId: string;
   initial: NewsCommentRow[];
   labels: Dictionary['board'];
   loginNextPath: string;
+  currentUserId?: string;
 }) {
   const router = useRouter();
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState('');
+  const [actionBusy, setActionBusy] = useState<string | null>(null);
+
+  async function getToken() {
+    const sb = createBrowserClient();
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) {
+      router.push(`/auth/login?next=${encodeURIComponent(loginNextPath)}`);
+      return null;
+    }
+    const { data: sess } = await sb.auth.getSession();
+    return sess.session?.access_token ?? null;
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    const sb = createBrowserClient();
-    const {
-      data: { user },
-    } = await sb.auth.getUser();
-    if (!user) {
-      router.push(`/auth/login?next=${encodeURIComponent(loginNextPath)}`);
-      return;
-    }
     const text = body.trim();
     if (text.length < 1) return;
-    const { data: sess } = await sb.auth.getSession();
-    const accessToken = sess.session?.access_token;
-    if (!accessToken) {
-      setError(labels.mod.auth);
-      router.push(`/auth/login?next=${encodeURIComponent(loginNextPath)}`);
-      return;
-    }
+    const token = await getToken();
+    if (!token) return;
     setLoading(true);
     const res = await fetch('/api/news/comments', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ processed_news_id: processedNewsId, content: text }),
     });
     let payload: { code?: string; message?: string } = {};
-    try {
-      payload = (await res.json()) as typeof payload;
-    } catch {
-      /* ignore */
-    }
+    try { payload = (await res.json()) as typeof payload; } catch { /* ignore */ }
     setLoading(false);
     if (!res.ok) {
-      setError(
-        payload.message?.trim()
-          ? payload.message
-          : boardModMessage(labels, payload.code),
-      );
+      setError(payload.message?.trim() ? payload.message : boardModMessage(labels, payload.code));
       return;
     }
     setBody('');
+    router.refresh();
+  }
+
+  async function onDelete(commentId: string) {
+    if (!confirm('댓글을 삭제할까요?')) return;
+    setActionBusy(commentId);
+    const sb = createBrowserClient();
+    const { error: delErr } = await sb.from('news_comments').delete().eq('id', commentId);
+    setActionBusy(null);
+    if (delErr) {
+      setError('삭제에 실패했어요.');
+      return;
+    }
+    router.refresh();
+  }
+
+  async function onEditSave(commentId: string) {
+    const text = editBody.trim();
+    if (text.length < 1) return;
+    setActionBusy(commentId);
+    const sb = createBrowserClient();
+    const { error: upErr } = await sb
+      .from('news_comments')
+      .update({ content: text })
+      .eq('id', commentId);
+    setActionBusy(null);
+    if (upErr) {
+      setError('수정에 실패했어요.');
+      return;
+    }
+    setEditingId(null);
+    setEditBody('');
     router.refresh();
   }
 
@@ -82,14 +107,67 @@ export default function NewsComments({
     <section className="board-comments">
       <h3 style={{ fontSize: '1rem', marginTop: 0 }}>{labels.comments}</h3>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-        {initial.map((c) => (
-          <li key={c.id} className="board-comment">
-            <div className="board-comment__meta">
-              {c.display_name} · {formatDate(c.created_at)}
-            </div>
-            <div style={{ whiteSpace: 'pre-wrap' }}>{c.content}</div>
-          </li>
-        ))}
+        {initial.map((c) => {
+          const isMine = currentUserId === c.author_id;
+          const isEditing = editingId === c.id;
+          const busy = actionBusy === c.id;
+          return (
+            <li key={c.id} className="board-comment">
+              <div className="board-comment__meta">
+                {c.display_name} · {formatDate(c.created_at)}
+                {isMine && !isEditing && (
+                  <span className="board-comment__actions">
+                    <button
+                      type="button"
+                      className="board-comment__action-btn"
+                      disabled={busy}
+                      onClick={() => { setEditingId(c.id); setEditBody(c.content); }}
+                    >
+                      수정
+                    </button>
+                    <button
+                      type="button"
+                      className="board-comment__action-btn board-comment__action-btn--del"
+                      disabled={busy}
+                      onClick={() => void onDelete(c.id)}
+                    >
+                      {busy ? '...' : '삭제'}
+                    </button>
+                  </span>
+                )}
+              </div>
+              {isEditing ? (
+                <div style={{ marginTop: 6 }}>
+                  <textarea
+                    value={editBody}
+                    onChange={(e) => setEditBody(e.target.value)}
+                    style={{ minHeight: 60, width: '100%', marginBottom: 6 }}
+                  />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      type="button"
+                      className="board-form__submit"
+                      style={{ fontSize: '0.78rem', padding: '5px 12px' }}
+                      disabled={busy}
+                      onClick={() => void onEditSave(c.id)}
+                    >
+                      {busy ? '...' : '저장'}
+                    </button>
+                    <button
+                      type="button"
+                      className="board-comment__action-btn"
+                      onClick={() => { setEditingId(null); setEditBody(''); }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ whiteSpace: 'pre-wrap' }}>{c.content}</div>
+              )}
+            </li>
+          );
+        })}
       </ul>
       {initial.length === 0 && (
         <p style={{ fontSize: '0.82rem', color: 'var(--tj-muted)' }}>—</p>
@@ -108,9 +186,6 @@ export default function NewsComments({
           {loading ? '…' : labels.sendComment}
         </button>
       </form>
-      <p style={{ fontSize: '0.75rem', color: 'var(--tj-muted)', marginTop: 8 }}>
-        {labels.loginForComment}
-      </p>
     </section>
   );
 }

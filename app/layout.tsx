@@ -39,6 +39,10 @@ export async function generateMetadata(): Promise<Metadata> {
       template: d.seo.titleTemplate,
     },
     description: d.seo.defaultDescription,
+    /** 탭·검색 결과 파비콘 — app/icon.svg (피그마 PNG로 바꿀 땐 app/icon.png 권장, 48×48 이상) */
+    icons: {
+      icon: [{ url: '/icon.svg', type: 'image/svg+xml', sizes: '48x48' }],
+    },
     /** 네이버 서치어드바이저 — HTML 태그 방식 소유확인 */
     verification: {
       other: {

@@ -162,8 +162,12 @@ export default function MinihomeRoomView({
       return;
     }
 
-    const list = (rows as GbRow[]).map((r) => ({
-      ...r,
+    const list: GbRow[] = rows.map((r) => ({
+      id: r.id,
+      body: r.body,
+      created_at: r.created_at,
+      author_id: r.author_id,
+      is_hidden: r.is_hidden,
       entry_kind: r.entry_kind === 'ilchon' ? 'ilchon' : 'open',
     }));
     setGbRows(list);

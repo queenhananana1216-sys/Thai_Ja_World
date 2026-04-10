@@ -22,5 +22,15 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    ".next",
+    "bestvip77",
+    "my-project",
+    "my-workflow-app",
+    "Thai_Ja_World",
+    "llangkka",
+    "projects",
+    "tools"
+  ]
 }

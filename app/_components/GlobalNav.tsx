@@ -21,7 +21,7 @@ type Props = {
 };
 
 export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '/';
   /** 홈은 본문 포털 마스트에 통합 검색이 있어 헤더 검색을 숨겨 세로 중복·겹침을 줄임 */
   const hideHeaderSearch = pathname === '/';
   const labels = [

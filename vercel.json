@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/news",
-      "schedule": "0 3,21 * * *"
+      "schedule": "0 3 * * *"
     },
     {
       "path": "/api/cron/purge-news",
@@ -22,7 +22,7 @@
     },
     {
       "path": "/api/cron/knowledge-stubs",
-      "schedule": "20 */3 * * *"
+      "schedule": "20 2 * * *"
     }
   ]
 }

@@ -2327,8 +2327,8 @@ a:hover {
 @media (max-width: 840px) {
   .fv2-portal { padding: 16px; }
   .fv2-portal__inner { flex-direction: column; }
-  .fv2-portal__side { width: 100%; flex-direction: row; flex-wrap: wrap; gap: 12px; }
-  .fv2-portal__side .fv2-widget { flex: 1 1 160px; }
+  .fv2-portal__side { width: 100%; order: -1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fv2-portal__side .fv2-widget { padding: 12px; }
   .fv2-community { padding: 16px; }
   .fv2-community__inner { flex-direction: column; }
   .fv2-community__side { width: 100%; }

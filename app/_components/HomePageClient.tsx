@@ -529,7 +529,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
                 <p className="fv2-widget__muted">아직 인기글이 없어요.</p>
               ) : (
                 popularPosts.map((p, i) => (
-                  <Link key={p.id} href={`/community/boards/${p.id}`} className="fv2-widget__line" style={{ display: 'block', textDecoration: 'none', color: '#374151' }}>
+                  <Link key={p.id} href={`/community/boards/${p.id}`} className="fv2-widget__line" style={{ display: 'block', textDecoration: 'none' }}>
                     {i + 1}. {p.title}
                   </Link>
                 ))

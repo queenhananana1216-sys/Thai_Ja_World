@@ -206,8 +206,8 @@ export default function SiteSearch({ variant = 'header', omitIntro = false }: Si
 
   return (
     <div ref={wrapRef} className={rootClass}>
-      {isHeroLike && !omitIntro ? <p className="site-search__hero-title">{s.heroTitle}</p> : null}
-      {isPortal && !omitIntro ? <p className="site-search__portal-lead">{s.portalLead}</p> : null}
+      {isHeroLike && !omitIntro && s.heroTitle ? <p className="site-search__hero-title">{s.heroTitle}</p> : null}
+      {isPortal && !omitIntro && s.portalLead ? <p className="site-search__portal-lead">{s.portalLead}</p> : null}
       {showHeaderBarLabel ? (
         <span className="global-header__search-visible-label">{s.headerBarLabel}</span>
       ) : null}
@@ -233,7 +233,7 @@ export default function SiteSearch({ variant = 'header', omitIntro = false }: Si
           onFocus={() => setOpen(true)}
         />
       </div>
-      {!isHeaderNate ? (
+      {!isHeaderNate && s.hint ? (
         <p className="global-header__search-hint" aria-hidden="true">
           {s.hint}
         </p>

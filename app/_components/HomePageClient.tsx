@@ -406,7 +406,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
                 <h2 id="fv2-portal-hub-title" className="fv2-hub__title">
                   {h.portalMastTitle}
                 </h2>
-                <p className="fv2-hub__sub">{h.portalMastSub}</p>
+                {h.portalMastSub ? <p className="fv2-hub__sub">{h.portalMastSub}</p> : null}
               </div>
               <div className="fv2-hub__search">
                 <SiteSearch variant="portal" omitIntro />

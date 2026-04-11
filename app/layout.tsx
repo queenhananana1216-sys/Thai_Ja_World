@@ -7,6 +7,7 @@ import VercelSpeedInsights from './_components/VercelSpeedInsights';
 import GlobalNav from './_components/GlobalNav';
 import PremiumTopBanner from './_components/PremiumTopBanner';
 import Providers from './_components/Providers';
+import { SiteFooter } from '@/components/shell/SiteFooter';
 import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
@@ -82,6 +83,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           />
           <PremiumTopBanner />
           {children}
+          <SiteFooter />
           <FxRemoteWidget
             locale={locale}
             initial={{ ...FX_SNAPSHOT_FALLBACK, dateISO: new Date().toISOString() }}

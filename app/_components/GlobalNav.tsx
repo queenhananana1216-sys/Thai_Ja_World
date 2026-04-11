@@ -6,7 +6,16 @@
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Menu } from 'lucide-react';
 import type { Dictionary } from '@/i18n/dictionaries';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import AuthBar from './AuthBar';
 import { BrandPhrase } from './BrandPhrase';
 import LanguageSwitch from './LanguageSwitch';
@@ -47,6 +56,20 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
     },
   };
 
+  function linkActive(href: string): boolean {
+    return href === '/'
+      ? pathname === '/'
+      : href === '/tips'
+        ? pathname === '/tips' || pathname.startsWith('/tips/')
+        : href === '/community/boards'
+          ? pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade')
+          : href === '/ilchon'
+            ? pathname.startsWith('/ilchon')
+            : href === '/minihome'
+              ? pathname.startsWith('/minihome')
+              : pathname.startsWith(href);
+  }
+
   return (
     <header className="global-header">
       <div className="global-header__toolbar">
@@ -85,38 +108,79 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
             (hideHeaderSearch ? ' global-header__main-nav-bar--nav-only' : '')
           }
         >
-        <div className="global-header__nav">
-          {HREFS.map((href, i) => {
-            const isActive =
-              href === '/'
-                ? pathname === '/'
-                : href === '/tips'
-                  ? pathname === '/tips' || pathname.startsWith('/tips/')
-                  : href === '/community/boards'
-                    ? pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade')
-                    : href === '/ilchon'
-                      ? pathname.startsWith('/ilchon')
-                      : href === '/minihome'
-                        ? pathname.startsWith('/minihome')
-                        : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={
-                  'global-header__link' + (isActive ? ' global-header__link--active' : '')
-                }
+          {/* 모바일: Sheet 메뉴 + (비홈일 때) 헤더 검색 */}
+          <div className="flex w-full items-center gap-2 md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0 border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                  aria-label={dict.nav.mainNavAria}
+                >
+                  <Menu className="size-5" aria-hidden />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="left"
+                className="border-zinc-700 bg-zinc-950 text-zinc-50 [&_button]:text-zinc-50"
               >
-                {labels[i]}
-              </Link>
-            );
-          })}
-        </div>
-        {!hideHeaderSearch ? (
-          <div className="global-header__main-nav-search">
-            <SiteSearch variant="header" />
+                <SheetHeader>
+                  <SheetTitle className="text-left text-zinc-50">{dict.nav.mainNavAria}</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 flex flex-col gap-1 pr-2">
+                  {HREFS.map((href, i) => {
+                    const isActive = linkActive(href);
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        className={
+                          'rounded-md px-3 py-2.5 text-sm font-medium no-underline transition-colors ' +
+                          (isActive
+                            ? 'bg-white/15 text-museum-saffron'
+                            : 'text-zinc-100 hover:bg-white/10 hover:text-white')
+                        }
+                      >
+                        {labels[i]}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </SheetContent>
+            </Sheet>
+            {!hideHeaderSearch ? (
+              <div className="global-header__main-nav-search min-w-0 flex-1">
+                <SiteSearch variant="header" />
+              </div>
+            ) : null}
           </div>
-        ) : null}
+
+          {/* 태블릿·데스크톱: 기존 가로 탭 + 검색 */}
+          <div className="hidden md:contents">
+            <div className="global-header__nav">
+              {HREFS.map((href, i) => {
+                const isActive = linkActive(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={
+                      'global-header__link' + (isActive ? ' global-header__link--active' : '')
+                    }
+                  >
+                    {labels[i]}
+                  </Link>
+                );
+              })}
+            </div>
+            {!hideHeaderSearch ? (
+              <div className="global-header__main-nav-search">
+                <SiteSearch variant="header" />
+              </div>
+            ) : null}
+          </div>
         </div>
       </nav>
     </header>

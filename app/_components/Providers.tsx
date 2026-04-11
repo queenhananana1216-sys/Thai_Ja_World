@@ -6,6 +6,7 @@ import LastSeenHeartbeat from './LastSeenHeartbeat';
 import { HeroSiteCopyProvider } from '@/contexts/HeroSiteCopyContext';
 import { StyleScorePreviewProvider } from '@/contexts/StyleScorePreviewContext';
 import type { MergedHeroSiteCopy } from '@/lib/siteCopy/heroCopyDefaults';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function Providers({
   children,
@@ -17,10 +18,12 @@ export default function Providers({
   return (
     <HeroSiteCopyProvider value={heroSiteCopy}>
       <StyleScorePreviewProvider>
-        <MinihomeOverlayProvider>
-          <LastSeenHeartbeat />
-          {children}
-        </MinihomeOverlayProvider>
+        <TooltipProvider delayDuration={200}>
+          <MinihomeOverlayProvider>
+            <LastSeenHeartbeat />
+            {children}
+          </MinihomeOverlayProvider>
+        </TooltipProvider>
       </StyleScorePreviewProvider>
     </HeroSiteCopyProvider>
   );

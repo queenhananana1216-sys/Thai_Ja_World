@@ -38,6 +38,10 @@ code {
   padding: 1.5rem;
 }
 
+.container.admin-wide {
+  max-width: 56rem;
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);

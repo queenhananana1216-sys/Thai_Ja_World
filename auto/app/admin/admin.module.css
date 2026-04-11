@@ -1,0 +1,90 @@
+/* 관리자 대시보드 — 섹션 내비·현황 */
+
+.toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.65rem;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  margin: 0 0 1.25rem;
+  background: rgba(91, 141, 239, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+.toc a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.2rem 0;
+}
+
+.toc a:hover {
+  text-decoration: underline;
+}
+
+.tocSep {
+  color: var(--muted);
+  user-select: none;
+}
+
+.lede {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.pillOk,
+.pillBad {
+  display: inline-block;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.pillOk {
+  background: rgba(62, 207, 142, 0.15);
+  color: var(--ok);
+  border: 1px solid rgba(62, 207, 142, 0.35);
+}
+
+.pillBad {
+  background: rgba(232, 93, 111, 0.12);
+  color: #f9a8b2;
+  border: 1px solid rgba(232, 93, 111, 0.35);
+}
+
+.envHint {
+  font-size: 0.78rem;
+  color: var(--muted);
+  max-width: 28rem;
+}
+
+.roleTag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.checklist {
+  margin: 0.5rem 0 0;
+  padding-left: 1.15rem;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.checklist li {
+  margin-bottom: 0.35rem;
+}
+
+.pubUrl {
+  font-size: 0.85rem;
+  word-break: break-all;
+}

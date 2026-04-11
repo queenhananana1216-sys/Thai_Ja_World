@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerClient } from '@/lib/supabase/server';
-import { getFallbackTips } from '@/lib/tips/fallbackTips';
 
 export async function generateMetadata(): Promise<Metadata> {
   const loc = await getLocale();
@@ -24,8 +23,6 @@ export default async function TipsHubPage() {
   const sb = createServerClient();
   const { data, error } = await sb.rpc('get_tips_public', { limit_n: 50 });
   const rows = (Array.isArray(data) ? data : []) as TipRow[];
-  const usingFallback = rows.length === 0;
-  const safeRows = rows.length > 0 ? rows : getFallbackTips(locale, 12);
 
   return (
     <div className="page-body board-page">
@@ -36,20 +33,18 @@ export default async function TipsHubPage() {
         {t.pageLead}
       </p>
 
-      {error && rows.length > 0 ? (
+      {error ? (
         <p className="auth-inline-error" style={{ fontSize: '0.88rem' }}>
           {error.message}
         </p>
       ) : null}
 
-      {usingFallback ? (
-        <p style={{ color: 'var(--tj-muted)' }}>
-          {t.empty} {t.fallbackLead}
-        </p>
+      {!error && rows.length === 0 ? (
+        <p style={{ color: 'var(--tj-muted)' }}>{t.empty}</p>
       ) : null}
 
       <ul className="tips-hub-list">
-        {safeRows.map((r) => (
+        {rows.map((r) => (
           <li key={r.id} className="tips-hub-card card">
             <h2 className="tips-hub-card__title">
               <Link href={`/tips/${r.id}`}>{r.title}</Link>

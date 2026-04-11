@@ -17,7 +17,6 @@ import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate, extractHostname } from '@/lib/utils/formatDate';
 import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
-import { getFallbackTips, type FallbackTipSummary } from '@/lib/tips/fallbackTips';
 
 const HOME_FETCH_BUDGET_MS = 12_000;
 
@@ -42,7 +41,7 @@ function loginNextHref(path: string): string {
 }
 
 type WeatherRow = { key: string; label: string; temp: number | null; condition: string };
-type TipPreview = FallbackTipSummary;
+type TipPreview = { id: string; title: string; excerpt: string; created_at: string };
 
 function tipEnv() {
   return {
@@ -310,7 +309,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
 
       if (cancelled) return;
       const liveTips = (tipsRes as TipPreview[]) ?? [];
-      setTipsItems(liveTips.length > 0 ? liveTips : getFallbackTips(locale, 4));
+      setTipsItems(liveTips);
       setPopularPosts((popRes as { id: string; title: string; author_name: string; reaction_count: number; comment_count: number }[]) ?? []);
       setHotPosts((hotRes as { id: string; title: string; author_name: string; reaction_count: number; comment_count: number; category: string }[]) ?? []);
       setChatPreview(((chatRes as { id: string; body: string; author_name: string }[]) ?? []).reverse());
@@ -500,10 +499,10 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
               )}
             </div>
 
-            {/* 도토리 잔액 */}
+            {/* 옥수수 잔액 */}
             {dotoriBalance !== null && (
               <Link href="/minihome/shop" className="fv2-widget fv2-widget--dotori" style={{ textDecoration: 'none', display: 'block' }}>
-                <p className="fv2-widget__h">🌰 내 도토리</p>
+                <p className="fv2-widget__h">🌽 옥수수</p>
                 <p className="fv2-widget__dotori-bal">{dotoriBalance}</p>
                 <p className="fv2-widget__muted" style={{ fontSize: '11px' }}>스타일 상점에서 꾸미기 →</p>
               </Link>

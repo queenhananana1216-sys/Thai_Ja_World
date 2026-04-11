@@ -4,9 +4,22 @@
  * ⚠️ 반드시 www 포함 URL을 사용해야 Google 색인이 정상 작동합니다.
  */
 export function getSiteBaseUrl(): string {
+  const fallback = 'https://www.thaijaworld.com';
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (raw) return raw.replace(/\/+$/, '');
-  return 'https://www.thaijaworld.com';
+  if (!raw) return fallback;
+
+  try {
+    const u = new URL(raw);
+    /** 운영 표준: www 고정 */
+    if (u.hostname === 'thaijaworld.com') {
+      u.hostname = 'www.thaijaworld.com';
+    }
+    /** SEO 기준 URL은 https 고정 */
+    u.protocol = 'https:';
+    return u.toString().replace(/\/+$/, '');
+  } catch {
+    return fallback;
+  }
 }
 
 export function absoluteUrl(path: string): string {

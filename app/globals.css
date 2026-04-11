@@ -2327,8 +2327,24 @@ a:hover {
 @media (max-width: 840px) {
   .fv2-portal { padding: 16px; }
   .fv2-portal__inner { flex-direction: column; }
-  .fv2-portal__side { width: 100%; order: -1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .fv2-portal__side .fv2-widget { padding: 12px; }
+  .fv2-portal__side {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .fv2-portal__side::-webkit-scrollbar { display: none; }
+  .fv2-portal__side .fv2-widget {
+    flex: 0 0 200px;
+    scroll-snap-align: start;
+    padding: 12px 14px;
+  }
   .fv2-community { padding: 16px; }
   .fv2-community__inner { flex-direction: column; }
   .fv2-community__side { width: 100%; }

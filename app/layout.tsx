@@ -47,7 +47,7 @@ export async function generateMetadata(): Promise<Metadata> {
     /** 네이버 서치어드바이저 — HTML 태그 방식 소유확인 */
     verification: {
       other: {
-        'naver-site-verification': '9242e16d7b7d2e8a177c9b1dbe89409aaa4a4f76',
+        'naver-site-verification': '8421df81e9b735dac47f3aed5e035450b027c279',
       },
     },
   };

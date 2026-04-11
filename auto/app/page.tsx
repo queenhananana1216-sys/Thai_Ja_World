@@ -3,9 +3,11 @@ import Link from 'next/link';
 import JsonLd from '@/lib/seo/JsonLd';
 import { getAutoSiteBaseUrl } from '@/lib/siteUrl';
 import { linkHostLabel } from '@/lib/linkWebHost';
-import { LINK_BANNERS } from '@/data/linkBanners';
+import { LINK_SPOT_TILES } from '@/data/linkBanners';
 import { LINK_WEB_COPY } from '@/data/linkWebCopy';
-import { LINK_WEB_ENTRIES } from '@/data/linkWeb';
+import { LINK_SECTIONS, flattenLinkEntries } from '@/data/linkWeb';
+import { BrandLogo } from './BrandLogo';
+import { CopyUrlButton } from './CopyUrlButton';
 import styles from './page.module.css';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -37,7 +39,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function HomePage() {
   const pageUrl = getAutoSiteBaseUrl();
   const c = LINK_WEB_COPY;
-  const itemListElements = LINK_WEB_ENTRIES.map((item, i) => ({
+  const flat = flattenLinkEntries(LINK_SECTIONS);
+  const itemListElements = flat.map((item, i) => ({
     '@type': 'ListItem' as const,
     position: i + 1,
     name: item.label,
@@ -68,92 +71,120 @@ export default function HomePage() {
           '@type': 'ItemList',
           name: c.title,
           description: c.description,
-          numberOfItems: LINK_WEB_ENTRIES.length,
+          numberOfItems: flat.length,
           itemListElement: itemListElements,
         }}
       />
+
+      <div className={styles.bgMesh} aria-hidden />
       <div className={styles.inner}>
-        <header className={styles.profile}>
-          <div className={styles.avatar} aria-hidden>
-            <span className={styles.avatarInner}>A</span>
+        <header className={styles.top}>
+          <div className={styles.brandRow}>
+            <div className={styles.logoWrap}>
+              <BrandLogo />
+            </div>
+            <div className={styles.brandText}>
+              <p className={styles.brandKo}>{c.brandKo}</p>
+              <p className={styles.brandEn}>{c.brandEn}</p>
+              <p className={styles.brandCredit}>{c.brandCredit}</p>
+            </div>
           </div>
-          <p className={styles.kicker}>{c.kicker}</p>
-          <h1 className={styles.displayName}>{c.displayName}</h1>
-          <p className={styles.handle}>{c.handle}</p>
-          <p className={styles.lead}>{c.lead}</p>
+          <p className={styles.tagline}>{c.kicker}</p>
         </header>
 
-        <section className={styles.bannerStack} aria-label="프로모션 배너">
-          {LINK_BANNERS.map((b) =>
-            b.variant === 'hero' ? (
+        <section className={styles.hero} aria-labelledby="hub-url-label">
+          <p id="hub-url-label" className={styles.heroEyebrow}>
+            {c.heroEyebrow}
+          </p>
+          <div className={styles.heroCard}>
+            <div className={styles.urlLine}>
+              <code className={styles.urlCode}>{pageUrl}</code>
+              <CopyUrlButton url={pageUrl} className={styles.copyBtn} />
+            </div>
+            <p className={styles.heroHint}>{c.heroHint}</p>
+          </div>
+        </section>
+
+        <section className={styles.spotSection} aria-labelledby="spot-label">
+          <h2 id="spot-label" className={styles.spotHeading}>
+            {c.spotLabel}
+          </h2>
+          <div className={styles.spotGrid}>
+            {LINK_SPOT_TILES.map((s) => (
               <a
-                key={b.id}
-                className={styles.bannerHero}
-                href={b.href}
+                key={s.id}
+                className={styles.spotTile}
+                href={s.href}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <span className={styles.bannerHeroGlow} aria-hidden />
-                <span className={styles.bannerBadge}>{b.badge}</span>
-                <span className={styles.bannerHeroTitle}>{b.title}</span>
-                <span className={styles.bannerHeroSub}>{b.subtitle}</span>
-                <span className={styles.bannerCta}>
-                  <span>{b.cta}</span>
-                  <span className={styles.bannerCtaArrow} aria-hidden>
-                    →
-                  </span>
+                <span className={styles.spotSub}>{s.sub}</span>
+                <span className={styles.spotTitle}>{s.title}</span>
+                <span className={styles.spotArrow} aria-hidden>
+                  ↗
                 </span>
               </a>
-            ) : (
-              <div key={b.id} className={styles.bannerStrip}>
-                <span className={styles.bannerStripAccent} aria-hidden />
-                <div className={styles.bannerStripText}>
-                  <span className={styles.bannerStripTitle}>{b.title}</span>
-                  <span className={styles.bannerStripSub}>{b.subtitle}</span>
-                </div>
-              </div>
-            ),
-          )}
+            ))}
+          </div>
         </section>
 
-        <nav className={styles.section} aria-labelledby="link-web-heading">
-          <h2 id="link-web-heading" className={styles.sectionLabel}>
-            {c.sectionLabel}
-          </h2>
-          <ul className={styles.list}>
-            {LINK_WEB_ENTRIES.map((item) => {
-              const host = linkHostLabel(item.href);
-              return (
-                <li key={item.id}>
-                  <a
-                    className={styles.pill}
-                    href={item.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <span className={styles.pillMain}>
-                      <span className={styles.pillLabel}>{item.label}</span>
-                      {host ? (
-                        <span className={styles.pillHost} title={item.href}>
-                          {host}
+        <div className={styles.sectionGrid}>
+          {LINK_SECTIONS.map((section) => (
+            <section key={section.id} className={styles.cat} aria-labelledby={`cat-${section.id}`}>
+              <div className={styles.catHead}>
+                <h2 id={`cat-${section.id}`} className={styles.catTitle}>
+                  {section.title}
+                </h2>
+                <span className={styles.catChev} aria-hidden>
+                  →
+                </span>
+              </div>
+              <ol className={styles.rankList}>
+                {section.items.map((item, idx) => {
+                  const rank = idx + 1;
+                  const host = linkHostLabel(item.href);
+                  const rankClass =
+                    rank === 1 ? styles.rank1 : rank === 2 ? styles.rank2 : rank === 3 ? styles.rank3 : styles.rankN;
+                  return (
+                    <li key={item.id} className={styles.rankItem}>
+                      <a
+                        className={styles.rankLink}
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span className={`${styles.rankBadge} ${rankClass}`} aria-hidden>
+                          {rank}
                         </span>
-                      ) : null}
-                      {item.hint ? <span className={styles.pillHint}>{item.hint}</span> : null}
-                    </span>
-                    <span className={styles.pillArrow} aria-hidden>
-                      ↗
-                    </span>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+                        <span className={styles.rankBody}>
+                          <span className={styles.rankLabel}>{item.label}</span>
+                          {host ? (
+                            <span className={styles.rankHost} title={item.href}>
+                              {host}
+                            </span>
+                          ) : null}
+                          {item.hint ? <span className={styles.rankHint}>{item.hint}</span> : null}
+                        </span>
+                        <span className={styles.rankGo} aria-hidden>
+                          ↗
+                        </span>
+                      </a>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
+        </div>
 
-        <p className={styles.foot}>{c.footNote}</p>
-        <p className={styles.adminLink}>
-          <Link href="/admin/login">운영 콘솔</Link>
-        </p>
+        <p className={styles.lead}>{c.lead}</p>
+
+        <footer className={styles.foot}>
+          <p className={styles.footNote}>{c.footNote}</p>
+          <Link href="/admin/login" className={styles.adminLink}>
+            운영 콘솔
+          </Link>
+        </footer>
       </div>
     </div>
   );

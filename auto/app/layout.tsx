@@ -5,10 +5,11 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'taeja-auto',
-    template: '%s — taeja-auto',
+    default: '링크정거장 · taeja-auto',
+    template: '%s · 링크정거장',
   },
-  description: '태자 월드 운영·도메인 자동화. 공개 링크 웹은 루트(/)에서 제공합니다.',
+  description:
+    '링크정거장(Link Station) — taeja-auto 링크 허브. 자주 쓰는 출구를 한 화면에 모아 둡니다.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

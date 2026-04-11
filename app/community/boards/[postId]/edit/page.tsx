@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import EditPostForm from '../../_components/EditPostForm';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
@@ -6,6 +7,13 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 
 type PageProps = { params: Promise<{ postId: string }> };
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
 
 export default async function EditBoardPostPage({ params }: PageProps) {
   const { postId } = await params;

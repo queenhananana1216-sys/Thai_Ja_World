@@ -158,6 +158,34 @@ export default async function NewsStoryPage({ params }: PageProps) {
     [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
     8000,
   );
+  const [{ data: relatedNewsRaw }, { data: relatedPostsRaw }] = await Promise.all([
+    supabase
+      .from('processed_news')
+      .select('id, created_at, raw_news(title)')
+      .eq('published', true)
+      .neq('id', id)
+      .order('created_at', { ascending: false })
+      .limit(6),
+    supabase
+      .from('posts')
+      .select('id, title, updated_at, category')
+      .eq('moderation_status', 'safe')
+      .order('updated_at', { ascending: false })
+      .limit(6),
+  ]);
+  const relatedNews = (relatedNewsRaw ?? []).map((item) => {
+    const raw = item.raw_news as { title?: string } | null;
+    return {
+      id: String(item.id),
+      title: String(raw?.title ?? `News ${item.id}`),
+      createdAt: String(item.created_at ?? ''),
+    };
+  });
+  const relatedPosts = (relatedPostsRaw ?? []).map((item) => ({
+    id: String(item.id),
+    title: String(item.title ?? `Post ${item.id}`),
+    updatedAt: String(item.updated_at ?? ''),
+  }));
 
   return (
     <div className="page-body board-page">
@@ -181,6 +209,32 @@ export default async function NewsStoryPage({ params }: PageProps) {
                 isBasedOn: detail.sourceUrl,
               }
             : {}),
+        }}
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              name: 'Home',
+              item: absoluteUrl('/'),
+            },
+            {
+              '@type': 'ListItem',
+              position: 2,
+              name: d.home.newsTitle,
+              item: absoluteUrl('/news'),
+            },
+            {
+              '@type': 'ListItem',
+              position: 3,
+              name: detail.title,
+              item: pageUrl,
+            },
+          ],
         }}
       />
       <Link href="/" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
@@ -307,6 +361,52 @@ export default async function NewsStoryPage({ params }: PageProps) {
           </p>
         </div>
       ) : null}
+
+      {(relatedNews.length > 0 || relatedPosts.length > 0) && (
+        <section className="card" style={{ marginTop: 24, padding: 18 }}>
+          <h2 style={{ marginTop: 0, marginBottom: 10, fontSize: '1rem' }}>더 읽을거리</h2>
+          {relatedNews.length > 0 && (
+            <div style={{ marginBottom: relatedPosts.length > 0 ? 14 : 0 }}>
+              <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: 'var(--tj-muted)' }}>관련 뉴스</p>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {relatedNews.map((item) => (
+                  <li key={item.id} style={{ marginBottom: 6 }}>
+                    <Link href={`/news/${item.id}`} style={{ color: 'var(--tj-link)' }}>
+                      {item.title}
+                    </Link>
+                    {item.createdAt ? (
+                      <span style={{ marginLeft: 8, color: 'var(--tj-muted)', fontSize: '0.78rem' }}>
+                        {formatDate(item.createdAt)}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {relatedPosts.length > 0 && (
+            <div>
+              <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: 'var(--tj-muted)' }}>
+                커뮤니티 인기 글
+              </p>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {relatedPosts.map((item) => (
+                  <li key={item.id} style={{ marginBottom: 6 }}>
+                    <Link href={`/community/boards/${item.id}`} style={{ color: 'var(--tj-link)' }}>
+                      {item.title}
+                    </Link>
+                    {item.updatedAt ? (
+                      <span style={{ marginLeft: 8, color: 'var(--tj-muted)', fontSize: '0.78rem' }}>
+                        {formatDate(item.updatedAt)}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
 
       {user ? (
         <NewsComments

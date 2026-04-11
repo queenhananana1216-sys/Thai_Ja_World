@@ -1,9 +1,17 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import NewPostForm from '../_components/NewPostForm';
 import { parseNewPostCategoryParam } from '@/lib/community/postCategories';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
 
 export default async function NewBoardPostPage({
   searchParams,

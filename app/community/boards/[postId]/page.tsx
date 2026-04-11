@@ -125,6 +125,35 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const pageUrl = absoluteUrl(path);
   const isAuthor = viewerId !== null && viewerId === (post.author_id as string);
   const authorHidden = Boolean(post.author_hidden);
+  const [{ data: relatedPostsRaw }, { data: relatedNewsRaw }] = await Promise.all([
+    supabase
+      .from('posts')
+      .select('id, title, updated_at')
+      .eq('moderation_status', 'safe')
+      .eq('category', String(post.category))
+      .neq('id', postId)
+      .order('updated_at', { ascending: false })
+      .limit(6),
+    supabase
+      .from('processed_news')
+      .select('id, created_at, raw_news(title)')
+      .eq('published', true)
+      .order('created_at', { ascending: false })
+      .limit(4),
+  ]);
+  const relatedPosts = (relatedPostsRaw ?? []).map((item) => ({
+    id: String(item.id),
+    title: String(item.title ?? `Post ${item.id}`),
+    updatedAt: String(item.updated_at ?? ''),
+  }));
+  const relatedNews = (relatedNewsRaw ?? []).map((item) => {
+    const raw = item.raw_news as { title?: string } | null;
+    return {
+      id: String(item.id),
+      title: String(raw?.title ?? `News ${item.id}`),
+      createdAt: String(item.created_at ?? ''),
+    };
+  });
 
   return (
     <div className="page-body board-page">
@@ -137,8 +166,42 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
             ? { text: trimForMetaDescription(post.content as string, 8000) }
             : {}),
           datePublished: post.created_at as string,
+          dateModified: post.created_at as string,
           url: pageUrl,
+          mainEntityOfPage: { '@type': 'WebPage', '@id': pageUrl },
           author: { '@type': 'Person', name: authorName },
+          commentCount: Number(post.comment_count ?? 0),
+          interactionStatistic: {
+            '@type': 'InteractionCounter',
+            interactionType: { '@type': 'http://schema.org/ViewAction' },
+            userInteractionCount: Number(post.view_count ?? 0),
+          },
+        }}
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            {
+              '@type': 'ListItem',
+              position: 1,
+              name: 'Home',
+              item: absoluteUrl('/'),
+            },
+            {
+              '@type': 'ListItem',
+              position: 2,
+              name: d.nav.community,
+              item: absoluteUrl('/community/boards'),
+            },
+            {
+              '@type': 'ListItem',
+              position: 3,
+              name: String(post.title ?? 'post'),
+              item: pageUrl,
+            },
+          ],
         }}
       />
       <Link href="/community/boards" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
@@ -197,6 +260,50 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
           />
         ))}
       </article>
+
+      {(relatedPosts.length > 0 || relatedNews.length > 0) && (
+        <section className="card" style={{ marginTop: 20, padding: 18 }}>
+          <h2 style={{ marginTop: 0, marginBottom: 10, fontSize: '1rem' }}>이 글 본 사람들이 함께 본 글</h2>
+          {relatedPosts.length > 0 && (
+            <div style={{ marginBottom: relatedNews.length > 0 ? 14 : 0 }}>
+              <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: 'var(--tj-muted)' }}>같은 카테고리 글</p>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {relatedPosts.map((item) => (
+                  <li key={item.id} style={{ marginBottom: 6 }}>
+                    <Link href={`/community/boards/${item.id}`} style={{ color: 'var(--tj-link)' }}>
+                      {item.title}
+                    </Link>
+                    {item.updatedAt ? (
+                      <span style={{ marginLeft: 8, color: 'var(--tj-muted)', fontSize: '0.78rem' }}>
+                        {formatDate(item.updatedAt)}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {relatedNews.length > 0 && (
+            <div>
+              <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: 'var(--tj-muted)' }}>관련 뉴스</p>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {relatedNews.map((item) => (
+                  <li key={item.id} style={{ marginBottom: 6 }}>
+                    <Link href={`/news/${item.id}`} style={{ color: 'var(--tj-link)' }}>
+                      {item.title}
+                    </Link>
+                    {item.createdAt ? (
+                      <span style={{ marginLeft: 8, color: 'var(--tj-muted)', fontSize: '0.78rem' }}>
+                        {formatDate(item.createdAt)}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
 
       <PostComments
         postId={postId}

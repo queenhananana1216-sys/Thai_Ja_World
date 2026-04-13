@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { MinihomeOverlayProvider } from '../minihome/_components/MinihomeOverlay';
 import GlobalUxTracker from './GlobalUxTracker';
 import LastSeenHeartbeat from './LastSeenHeartbeat';
+import { EffectTierRuntime } from '@/components/3d/EffectTierRuntime';
 import { HeroSiteCopyProvider } from '@/contexts/HeroSiteCopyContext';
 import { StyleScorePreviewProvider } from '@/contexts/StyleScorePreviewContext';
 import type { MergedHeroSiteCopy } from '@/lib/siteCopy/heroCopyDefaults';
@@ -21,6 +22,7 @@ export default function Providers({
       <StyleScorePreviewProvider>
         <TooltipProvider delayDuration={200}>
           <MinihomeOverlayProvider>
+            <EffectTierRuntime preferredTier="core" />
             <GlobalUxTracker />
             <LastSeenHeartbeat />
             {children}

@@ -7,6 +7,7 @@ import type { Dictionary } from '@/i18n/dictionaries';
 import type { MinihomePublicRow } from '@/types/minihome';
 import { parseLayoutModules, parseSectionVisibility, parseTheme, safeAccent } from '@/types/minihome';
 import type { SectionVisibility } from '@/types/minihome';
+import { SURFACE_DEFAULT_TIER } from '@/lib/3d/system';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils/formatDate';
 import MinihomeBgmPlayer from './MinihomeBgmPlayer';
@@ -115,6 +116,7 @@ export default function MinihomeRoomView({
   variant,
   onClose,
 }: Props) {
+  const tier = SURFACE_DEFAULT_TIER.minihome;
   const theme = parseTheme(data.theme);
   const accent = safeAccent(theme.accent, FALLBACK_ACCENT);
   const modules = parseLayoutModules(data.layout_modules);
@@ -652,7 +654,8 @@ export default function MinihomeRoomView({
   return (
     <div
       ref={roomRef}
-      className={`minihome-room minihome-cy-layout${variant === 'overlay' ? ' minihome-room--overlay' : ''}${entering ? ' minihome-room--entering' : ''}`}
+      className={`minihome-room minihome-cy-layout tj-3d-surface${variant === 'overlay' ? ' minihome-room--overlay' : ''}${entering ? ' minihome-room--entering' : ''}`}
+      data-surface-tier={tier}
       style={layoutMod}
     >
       {variant === 'overlay' && onClose ? (
@@ -741,7 +744,7 @@ export default function MinihomeRoomView({
       </nav>
 
       <div className="minihome-cy-stage">
-        <div className="minihome-room__paper minihome-cy-stage__paper" style={paperStyle}>
+        <div className={`minihome-room__paper minihome-cy-stage__paper tj-depth-card tj-depth-card--${tier}`} style={paperStyle}>
           <header className="minihome-room__header">
             {/* 싸이월드 스타일 프로필 영역 */}
             <div className="mh-cy-profile">

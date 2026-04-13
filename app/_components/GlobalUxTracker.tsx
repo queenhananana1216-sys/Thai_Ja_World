@@ -31,12 +31,22 @@ export default function GlobalUxTracker() {
   const queueRef = useRef<UxTrackEvent[]>([]);
   const lastClickRef = useRef<{ key: string; ts: number; n: number }>({ key: '', ts: 0, n: 0 });
 
+  function with3dMeta(meta?: Record<string, unknown>): Record<string, unknown> {
+    const html = document.documentElement;
+    return {
+      ...(meta ?? {}),
+      effect_tier: html.dataset.tjTier ?? 'unknown',
+      experiment_variant: html.dataset.tj3dVariant ?? 'unknown',
+    };
+  }
+
   function pushEvent(event: Omit<UxTrackEvent, 'session_id' | 'locale'>) {
     const locale = readLocaleCookie();
     queueRef.current.push({
       session_id: sessionId,
       locale,
       ...event,
+      meta: with3dMeta(event.meta),
     });
     if (queueRef.current.length >= 20) {
       void flush(false);

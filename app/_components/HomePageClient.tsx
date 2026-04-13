@@ -8,6 +8,9 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { BrandPhrase } from './BrandPhrase';
 import { HubTipSocialIcons } from './HubTipSocialIcons';
 import SiteSearch from './SiteSearch';
+import { DepthCard } from '@/components/3d/DepthCard';
+import { OrbitalNav } from '@/components/3d/OrbitalNav';
+import { StarfieldSection } from '@/components/3d/StarfieldSection';
 import { useHeroSiteCopy } from '@/contexts/HeroSiteCopyContext';
 import { getDictionary } from '@/i18n/dictionaries';
 import { readLocaleCookie } from '@/i18n/readLocaleCookie';
@@ -17,6 +20,7 @@ import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate, extractHostname } from '@/lib/utils/formatDate';
 import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
+import { SURFACE_DEFAULT_TIER } from '@/lib/3d/system';
 
 const HOME_FETCH_BUDGET_MS = 12_000;
 
@@ -204,6 +208,7 @@ interface Stats {
 }
 
 export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: boolean; stats?: Stats }) {
+  const homeTier = SURFACE_DEFAULT_TIER.home;
   const [locale, setLocale] = useState<Locale>('ko');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [shops, setShops] = useState<LocalBusiness[]>([]);
@@ -272,6 +277,12 @@ export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: bool
 
   const hotNewsItems = newsLocalized.slice(0, 5);
   const newsShow = newsLocalized.slice(0, 5);
+  const heroStats = [
+    { label: 'Members', value: stats?.memberCount ?? 0 },
+    { label: 'Tips', value: stats?.postCount ?? 0 },
+    { label: 'Shops', value: stats?.spotCount ?? 0 },
+    { label: 'News', value: stats?.newsCount ?? 0 },
+  ];
 
   const portalQuickLinks = useMemo(() => {
     return PORTAL_QUICK_HREFS.map((href) => {
@@ -401,13 +412,58 @@ export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: bool
 
   return (
     <div className="fv2">
+      <section className="tj-rev-hero" aria-label="TaejaWorld 3D hero">
+        <div className="tj-rev-hero__grid">
+          <DepthCard className="tj-rev-hero__copy" tier={homeTier}>
+            <p className="tj-rev-hero__kicker">{heroKicker || 'THAI JA WORLD PORTAL'}</p>
+            <h1 className="tj-rev-hero__title">
+              {heroTitle}
+              <span className="tj-rev-hero__title-sub">{heroTag}</span>
+            </h1>
+            <p className="tj-rev-hero__lead">{heroLeadLine}</p>
+            {heroSubBlock ? <p className="tj-rev-hero__sub">{heroSubBlock}</p> : null}
+            <BrandPhrase />
+            <div className="tj-rev-hero__actions">
+              <Link
+                href={isLoggedIn ? '/community/boards' : '/auth/login?next=%2Fcommunity%2Fboards'}
+                className="tj-rev-hero__cta tj-rev-hero__cta--main"
+              >
+                {isLoggedIn ? '지금 탐색 시작' : '30초 무료 가입'}
+              </Link>
+              <Link href="/news" className="tj-rev-hero__cta tj-rev-hero__cta--ghost">
+                뉴스 먼저 보기
+              </Link>
+            </div>
+            <div className="tj-rev-hero__metrics">
+              {heroStats.map((item) => (
+                <div key={item.label} className="tj-rev-hero__metric">
+                  <span className="tj-rev-hero__metric-label">{item.label}</span>
+                  <strong className="tj-rev-hero__metric-value">{item.value.toLocaleString()}</strong>
+                </div>
+              ))}
+            </div>
+          </DepthCard>
+
+          <DepthCard className="tj-rev-hero__visual" tier={homeTier}>
+            <div className="tj-rev-cubes" aria-hidden>
+              {Array.from({ length: 18 }).map((_, idx) => (
+                <span key={idx} className="tj-rev-cube" />
+              ))}
+            </div>
+            <p className="tj-rev-hero__visual-copy">{dreamIntro}</p>
+            <p className="tj-rev-hero__visual-copy">{dreamMinihome}</p>
+            <p className="tj-rev-hero__visual-copy">{dreamPersonal}</p>
+          </DepthCard>
+        </div>
+      </section>
+
       {/* ══ PORTAL ZONE ══ */}
-      <div className="fv2-portal">
+      <StarfieldSection className="fv2-portal" tier={homeTier}>
         <div className="fv2-portal__inner">
           {/* ── Main ── */}
           <div className="fv2-portal__main">
             {/* 통합 검색 + 바로가기 — 플랫폼 허브 */}
-            <section className="fv2-hub" aria-labelledby="fv2-portal-hub-title">
+            <DepthCard className="fv2-hub" tier={homeTier} aria-labelledby="fv2-portal-hub-title">
               <div className="fv2-hub__head">
                 <h2 id="fv2-portal-hub-title" className="fv2-hub__title">
                   {h.portalMastTitle}
@@ -417,17 +473,15 @@ export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: bool
               <div className="fv2-hub__search">
                 <SiteSearch variant="portal" omitIntro />
               </div>
-              <nav className="fv2-hub__quick" aria-label={h.portalMastQuickAria}>
-                {portalQuickLinks.map((item) => (
-                  <Link key={item.key} href={item.href} className="fv2-hub__chip">
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            </section>
+              <OrbitalNav
+                links={portalQuickLinks}
+                tier={homeTier}
+                ariaLabel={h.portalMastQuickAria}
+              />
+            </DepthCard>
 
             {/* 속보 / 긴급 */}
-            <section className="fv2-card" aria-label={hotLabelUi}>
+            <DepthCard className="fv2-card" tier={homeTier} aria-label={hotLabelUi}>
               <div className="fv2-card__head">
                 <h2 className="fv2-card__h">{h.portalMastTitle.includes('검색') ? '속보 / 긴급' : hotLabelUi}</h2>
                 <Link href="/news" className="fv2-more">더보기 ›</Link>
@@ -460,7 +514,7 @@ export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: bool
                   })}
                 </div>
               )}
-            </section>
+            </DepthCard>
 
             {/* 오늘의 꿀팁 (실DB: get_tips_public) */}
             <section className="fv2-tips">
@@ -544,7 +598,7 @@ export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: bool
             </div>
           </aside>
         </div>
-      </div>
+      </StarfieldSection>
 
       {/* ══ COMMUNITY ZONE ══ */}
       <div className="fv2-community">

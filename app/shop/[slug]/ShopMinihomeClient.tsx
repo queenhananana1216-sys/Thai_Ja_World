@@ -3,6 +3,9 @@
 import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import ShopGuestbookPanel from './ShopGuestbookPanel';
 import ShopUpdatesPanel from './ShopUpdatesPanel';
+import { DepthCard } from '@/components/3d/DepthCard';
+import { HoloButton } from '@/components/3d/HoloButton';
+import { SURFACE_DEFAULT_TIER } from '@/lib/3d/system';
 
 export type ShopSpotPayload = {
   id: string;
@@ -48,6 +51,7 @@ function menuItems(raw: unknown): MenuItem[] {
 }
 
 export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) {
+  const tier = SURFACE_DEFAULT_TIER.shop;
   const theme = useMemo(() => asStringRecord(spot.minihome_theme), [spot.minihome_theme]);
   const accent = typeof theme.accent === 'string' ? theme.accent : '#7c3aed';
   const wallpaper =
@@ -128,7 +132,10 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
     <div style={shellStyle}>
       {bgmUrl ? <audio ref={audioRef} src={bgmUrl} loop preload="none" /> : null}
 
-      <div style={{ ...cardStyle, marginTop: 8 }}>
+      <DepthCard
+        tier={tier}
+        style={{ ...cardStyle, marginTop: 8 }}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>{spot.name}</h1>
@@ -137,9 +144,9 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
             ) : null}
           </div>
           {bgmUrl ? (
-            <button
-              type="button"
+            <HoloButton
               onClick={toggleBgm}
+              tier={tier}
               style={{
                 flexShrink: 0,
                 padding: '8px 12px',
@@ -153,7 +160,7 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
               }}
             >
               {bgmOn ? 'BGM 끄기' : 'BGM 켜기'}
-            </button>
+            </HoloButton>
           ) : null}
         </div>
 
@@ -242,9 +249,9 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
           >
             QR 보기
           </a>
-          <button type="button" className="board-form__submit" style={{ padding: '6px 12px' }} onClick={() => void copyRoomUrl()}>
+          <HoloButton className="board-form__submit" tier={tier} style={{ padding: '6px 12px' }} onClick={() => void copyRoomUrl()}>
             링크 복사
-          </button>
+          </HoloButton>
           {copyMsg ? <span style={{ fontSize: 12, color: '#cbd5e1' }}>{copyMsg}</span> : null}
         </div>
 
@@ -280,7 +287,7 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
             publicSlug={(spot.minihome_public_slug ?? '').trim()}
           />
         </Section>
-      </div>
+      </DepthCard>
     </div>
   );
 }

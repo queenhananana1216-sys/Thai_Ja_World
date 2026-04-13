@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
+import { MINIHOME_THEME_PRESETS, themePresetLabel } from '@/lib/minihome/themePresets';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { mapStyleRpcError } from '@/lib/minihome/styleRpcMessages';
 import { parseTheme, safeAccent } from '@/types/minihome';
@@ -31,7 +32,7 @@ type ProfileRow = {
 };
 
 export default function MinihomeMe() {
-  const { d } = useClientLocaleDictionary();
+  const { d, locale } = useClientLocaleDictionary();
   const labels = d.minihome;
   const router = useRouter();
   const { open: openOverlay } = useMinihomeOverlay();
@@ -43,6 +44,9 @@ export default function MinihomeMe() {
   const [intro, setIntro] = useState('');
   const [accent, setAccent] = useState(DEFAULT_ACCENT);
   const [wallpaperUrl, setWallpaperUrl] = useState('');
+  const [bgmUrl, setBgmUrl] = useState('');
+  const [bgmTitle, setBgmTitle] = useState('');
+  const [roomSkin, setRoomSkin] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [sectionVis, setSectionVis] = useState<Record<string, string>>({
     intro: 'public', guestbook: 'public', photos: 'ilchon', diary: 'ilchon',
@@ -120,6 +124,9 @@ export default function MinihomeMe() {
       const t = parseTheme(data.theme);
       setAccent(safeAccent(t.accent, DEFAULT_ACCENT));
       setWallpaperUrl(t.wallpaper?.trim() ?? '');
+      setBgmUrl(t.bgm_url?.trim() ?? '');
+      setBgmTitle(t.bgm_title?.trim() ?? '');
+      setRoomSkin(t.room_skin?.trim() ?? '');
       setIsPublic(data.is_public);
       const sv = data.section_visibility;
       if (sv && typeof sv === 'object' && !Array.isArray(sv)) {
@@ -155,6 +162,18 @@ export default function MinihomeMe() {
     }
     if (prev.minimi) {
       nextTheme.minimi = prev.minimi;
+    }
+    if (bgmUrl.trim()) {
+      nextTheme.bgm_url = bgmUrl.trim();
+    }
+    if (bgmTitle.trim()) {
+      nextTheme.bgm_title = bgmTitle.trim();
+    }
+    if (roomSkin.trim()) {
+      nextTheme.room_skin = roomSkin.trim();
+    }
+    if (prev.profile_frame) {
+      nextTheme.profile_frame = prev.profile_frame;
     }
     const { error } = await sb
       .from('user_minihomes')
@@ -342,6 +361,49 @@ export default function MinihomeMe() {
           autoComplete="off"
         />
         <p className="auth-field-hint">{labels.fieldWallpaperHint}</p>
+        <label htmlFor="mh-bgm-url">{locale === 'th' ? 'ลิงก์ BGM' : 'BGM URL'}</label>
+        <input
+          id="mh-bgm-url"
+          type="url"
+          value={bgmUrl}
+          onChange={(e) => setBgmUrl(e.target.value)}
+          placeholder="https://"
+          autoComplete="off"
+        />
+        <label htmlFor="mh-bgm-title">{locale === 'th' ? 'ชื่อเพลง BGM' : 'BGM 제목'}</label>
+        <input
+          id="mh-bgm-title"
+          type="text"
+          value={bgmTitle}
+          onChange={(e) => setBgmTitle(e.target.value)}
+          maxLength={120}
+        />
+        <label htmlFor="mh-room-skin">{locale === 'th' ? 'ลิงก์พื้นหลังห้อง' : '룸 스킨 이미지 URL'}</label>
+        <input
+          id="mh-room-skin"
+          type="url"
+          value={roomSkin}
+          onChange={(e) => setRoomSkin(e.target.value)}
+          placeholder="https://"
+          autoComplete="off"
+        />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+          {MINIHOME_THEME_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className="ilchon-btn ilchon-btn--ghost"
+              style={{ padding: '6px 10px', fontSize: '0.8rem' }}
+              onClick={() => {
+                setAccent(preset.accent);
+                if (preset.wallpaper) setWallpaperUrl(preset.wallpaper);
+                if (preset.room_skin) setRoomSkin(preset.room_skin);
+              }}
+            >
+              {themePresetLabel(preset, locale)}
+            </button>
+          ))}
+        </div>
 
         <label className="minihome-edit-form__check">
           <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />

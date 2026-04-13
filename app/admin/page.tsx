@@ -202,6 +202,12 @@ export default async function AdminDashboardPage() {
           </Link>
         </li>
         <li>
+          <Link href="/admin/ux-bot">
+            UX 관리자봇
+            <span>5분 집계·플래그 자동조정 이력 확인</span>
+          </Link>
+        </li>
+        <li>
           <Link href="/admin/local-spots">
             로컬 가게 · 맛집 · 마사지
             <span>

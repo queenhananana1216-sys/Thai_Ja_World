@@ -89,13 +89,13 @@ export function getKnowledgeLlmAdminStatus(): {
 
 /**
  * LLM 미동작·행별 오류 시에도 승인 큐용 스텁을 넣을지.
- * 기본: 수동 승인 모드에서만 true (Vercel에 키 없을 때 지식 큐가 비지 않게).
+ * 기본: true. 자동 게시 모드에서도 스텁은 published=false 로 저장해 검수 큐로 보냅니다.
  */
 export function stubKnowledgeOnLlmFailure(): boolean {
   const raw = process.env.KNOWLEDGE_LLM_FALLBACK_STUB?.trim().toLowerCase();
   if (raw === '0' || raw === 'false' || raw === 'no' || raw === 'off') return false;
   if (raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on') return true;
-  return !knowledgeInsertAsPublished();
+  return true;
 }
 
 // ── HTTP LLM 호출 ─────────────────────────────────────────────────────────
@@ -125,6 +125,60 @@ function stripMarkdownFence(content: string): string {
   return t;
 }
 
+function llmTimeoutMsForBaseUrl(baseUrl: string): number {
+  const localRaw = process.env.LOCAL_LLM_TIMEOUT_MS?.trim();
+  const localParsed = localRaw ? Number(localRaw) : NaN;
+  const localTimeout =
+    Number.isFinite(localParsed) && localParsed > 0 ? Math.floor(localParsed) : 20_000;
+  try {
+    const normalized = /^[a-z][a-z0-9+.-]*:\/\//i.test(baseUrl) ? baseUrl : `http://${baseUrl}`;
+    const host = new URL(normalized).hostname.toLowerCase();
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
+      return Math.min(LLM_TIMEOUT_MS, localTimeout);
+    }
+  } catch {}
+  return LLM_TIMEOUT_MS;
+}
+
+const localKnowledgeLlmReachability = new Map<string, boolean>();
+
+function localModelsUrl(baseUrl: string): string {
+  const b = baseUrl.trim().replace(/\/+$/, '');
+  if (b.endsWith('/v1/models')) return b;
+  if (b.endsWith('/v1')) return `${b}/models`;
+  return `${b}/v1/models`;
+}
+
+function localHostLabel(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return '(invalid-url)';
+  }
+}
+
+async function ensureLocalKnowledgeLlmReachable(baseUrl: string): Promise<void> {
+  const cached = localKnowledgeLlmReachability.get(baseUrl);
+  if (cached === true) return;
+
+  const url = localModelsUrl(baseUrl);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 1500);
+  try {
+    const res = await fetch(url, { method: 'GET', signal: ctrl.signal });
+    if (!res.ok && res.status >= 500) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    localKnowledgeLlmReachability.set(baseUrl, true);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    localKnowledgeLlmReachability.set(baseUrl, false);
+    throw new Error(`로컬 LLM 접속 불가 (${localHostLabel(url)}): ${msg}`);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function callLlm(params: {
   baseUrl: string;
   model: string;
@@ -133,6 +187,7 @@ async function callLlm(params: {
   jsonObjectMode: boolean;
 }): Promise<string> {
   const url = chatCompletionsUrl(params.baseUrl);
+  const timeoutMs = llmTimeoutMsForBaseUrl(params.baseUrl);
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (params.apiKey?.trim()) {
     headers.Authorization = `Bearer ${params.apiKey.trim()}`;
@@ -149,7 +204,7 @@ async function callLlm(params: {
   }
 
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), LLM_TIMEOUT_MS);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   let res: Response;
   try {
     res = await fetch(url, {
@@ -161,7 +216,7 @@ async function callLlm(params: {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.toLowerCase().includes('aborted')) {
-      throw new Error(`${LLM_TIMEOUT_MS}ms LLM 타임아웃`);
+      throw new Error(`${timeoutMs}ms LLM 타임아웃`);
     }
     throw e;
   } finally {
@@ -430,6 +485,7 @@ async function routeKnowledgeLlmWithMessages(messages: KnowledgeChatMessage[]): 
 
   const runLocal = async (): Promise<KnowledgeLlmOutput> => {
     if (!localBase) throw new Error('LOCAL_LLM_BASE_URL 미설정');
+    await ensureLocalKnowledgeLlmReachable(localBase);
     const content = await callLlm({
       baseUrl: localBase,
       model: localModel,

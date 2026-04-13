@@ -42,6 +42,12 @@ export default async function HomePage() {
   const {
     data: { user },
   } = await auth.auth.getUser();
+
+  // 커뮤니티 통계 (10분 캐시)
+  const statsRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/api/stats`, {
+    next: { revalidate: 600 },
+  }).catch(() => null);
+  const stats = statsRes?.ok ? await statsRes.json() : { memberCount: 0, postCount: 0, spotCount: 0, newsCount: 0 };
   return (
     <>
       <JsonLd
@@ -61,7 +67,7 @@ export default async function HomePage() {
           url,
         }}
       />
-      <HomePageClient isLoggedIn={!!user} />
+      <HomePageClient isLoggedIn={!!user} stats={stats} />
     </>
   );
 }

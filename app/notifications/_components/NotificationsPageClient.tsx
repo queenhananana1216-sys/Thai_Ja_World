@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 type Notice = {
@@ -16,13 +17,46 @@ type Notice = {
   read_at: string | null;
 };
 
-function fmt(v: string): string {
+function fmt(v: string, locale: 'ko' | 'th'): string {
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return '-';
-  return d.toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(locale === 'th' ? 'th-TH' : 'ko-KR', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export default function NotificationsPageClient() {
+  const { locale } = useClientLocaleDictionary();
+  const T = locale === 'th'
+    ? {
+        title: 'กล่องแจ้งเตือน',
+        loginNeeded: 'ต้องล็อกอินก่อนใช้งาน',
+        loadFail: 'โหลดการแจ้งเตือนไม่สำเร็จ',
+        markFail: 'ทำเครื่องหมายว่าอ่านแล้วไม่สำเร็จ',
+        busy: 'กำลังดำเนินการ…',
+        markAll: 'อ่านทั้งหมด',
+        loading: 'กำลังโหลด…',
+        empty: 'ยังไม่มีการแจ้งเตือน',
+        move: 'ไปที่',
+        markRead: 'ทำว่าอ่านแล้ว',
+        read: 'อ่านแล้ว',
+      }
+    : {
+        title: '알림함',
+        loginNeeded: '로그인 후 이용할 수 있습니다.',
+        loadFail: '알림을 불러오지 못했습니다.',
+        markFail: '읽음 처리에 실패했습니다.',
+        busy: '처리 중…',
+        markAll: '전체 읽음',
+        loading: '불러오는 중…',
+        empty: '아직 알림이 없습니다.',
+        move: '이동',
+        markRead: '읽음 처리',
+        read: '읽음',
+      };
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [rows, setRows] = useState<Notice[]>([]);
@@ -54,7 +88,7 @@ export default function NotificationsPageClient() {
       cache: 'no-store',
     });
     if (!res.ok) {
-      setErr('알림을 불러오지 못했습니다.');
+      setErr(T.loadFail);
       setLoading(false);
       return;
     }
@@ -102,7 +136,7 @@ export default function NotificationsPageClient() {
     });
     setBusy(false);
     if (!res.ok) {
-      setErr('읽음 처리에 실패했습니다.');
+      setErr(T.markFail);
       return;
     }
     await load();
@@ -125,8 +159,8 @@ export default function NotificationsPageClient() {
   if (!token) {
     return (
       <div className="page-body board-page">
-        <h1 className="board-title">알림함</h1>
-        <p style={{ color: 'var(--tj-muted)' }}>로그인 후 이용할 수 있습니다.</p>
+        <h1 className="board-title">{T.title}</h1>
+        <p style={{ color: 'var(--tj-muted)' }}>{T.loginNeeded}</p>
       </div>
     );
   }
@@ -134,19 +168,19 @@ export default function NotificationsPageClient() {
   return (
     <div className="page-body board-page" style={{ maxWidth: 760 }}>
       <header className="board-toolbar">
-        <h1 className="board-title">알림함</h1>
+        <h1 className="board-title">{T.title}</h1>
         <button type="button" className="board-form__submit" disabled={busy || unreadCount === 0} onClick={() => void markAllRead()}>
-          {busy ? '처리 중…' : `전체 읽음 (${unreadCount})`}
+          {busy ? T.busy : `${T.markAll} (${unreadCount})`}
         </button>
       </header>
 
       {err ? <p className="auth-inline-error">{err}</p> : null}
 
       {loading ? (
-        <p style={{ color: 'var(--tj-muted)' }}>불러오는 중…</p>
+        <p style={{ color: 'var(--tj-muted)' }}>{T.loading}</p>
       ) : rows.length === 0 ? (
         <div className="card">
-          <p style={{ margin: 0, color: 'var(--tj-muted)' }}>아직 알림이 없습니다.</p>
+          <p style={{ margin: 0, color: 'var(--tj-muted)' }}>{T.empty}</p>
         </div>
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
@@ -158,18 +192,18 @@ export default function NotificationsPageClient() {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
                 <strong>{row.title}</strong>
-                <span style={{ fontSize: 12, color: '#64748b' }}>{fmt(row.created_at)}</span>
+                <span style={{ fontSize: 12, color: '#64748b' }}>{fmt(row.created_at, locale)}</span>
               </div>
               {row.body ? <p style={{ margin: '8px 0 0', whiteSpace: 'pre-wrap', fontSize: 14 }}>{row.body}</p> : null}
               <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                 {row.href ? (
                   row.href.startsWith('/') ? (
                     <Link href={row.href} className="board-form__submit" style={{ textDecoration: 'none', padding: '6px 12px' }}>
-                      이동
+                      {T.move}
                     </Link>
                   ) : (
                     <a href={row.href} target="_blank" rel="noopener noreferrer" className="board-form__submit" style={{ textDecoration: 'none', padding: '6px 12px' }}>
-                      이동
+                      {T.move}
                     </a>
                   )
                 ) : null}
@@ -179,10 +213,10 @@ export default function NotificationsPageClient() {
                     onClick={() => void markOneRead(row.id)}
                     style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '6px 10px', background: '#fff', cursor: 'pointer' }}
                   >
-                    읽음 처리
+                    {T.markRead}
                   </button>
                 ) : (
-                  <span style={{ fontSize: 12, color: '#64748b' }}>읽음</span>
+                  <span style={{ fontSize: 12, color: '#64748b' }}>{T.read}</span>
                 )}
               </div>
             </li>

@@ -85,13 +85,13 @@ export function isNewsSummaryLlmConfigured(): boolean {
 
 /**
  * LLM 미동작·오류 시에도 관리자 큐에 초안을 쌓을지.
- * 기본: 수동 승인 모드에서만 true (키 만료·Vercel 타임아웃으로 사이트가 죽는 것 방지).
+ * 기본: true. 자동 게시 모드라도 스텁은 published=false 로 강등해 큐에서 검수합니다.
  */
 export function stubOnLlmFailure(): boolean {
   const raw = process.env.NEWS_SUMMARY_FALLBACK_STUB?.trim().toLowerCase();
   if (raw === '0' || raw === 'false' || raw === 'no' || raw === 'off') return false;
   if (raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on') return true;
-  return !newsInsertAsPublished();
+  return true;
 }
 
 function batchNotReady(dbError?: string): SummarizeBatchResult {
@@ -273,6 +273,20 @@ function safeUrlHost(u: string): string {
   }
 }
 
+function llmTimeoutMsForUrl(url: string): number {
+  const localRaw = process.env.LOCAL_LLM_TIMEOUT_MS?.trim();
+  const localParsed = localRaw ? Number(localRaw) : NaN;
+  const localTimeout =
+    Number.isFinite(localParsed) && localParsed > 0 ? Math.floor(localParsed) : 20_000;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
+      return Math.min(LLM_TIMEOUT_MS, localTimeout);
+    }
+  } catch {}
+  return LLM_TIMEOUT_MS;
+}
+
 async function callOpenAiCompatibleChatCompletion(params: {
   baseUrl: string;
   model: string;
@@ -309,12 +323,13 @@ async function callOpenAiCompatibleChatCompletion(params: {
   }
 
   const host = safeUrlHost(url);
+  const timeoutMs = llmTimeoutMsForUrl(url);
   const maxAttempts = llmFetchRetryCount();
   let res: Response | undefined;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), LLM_TIMEOUT_MS);
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
       res = await fetch(url, {
         method: 'POST',
@@ -328,7 +343,7 @@ async function callOpenAiCompatibleChatCompletion(params: {
       clearTimeout(timer);
       const msg = e instanceof Error ? e.message : String(e);
       if (msg.toLowerCase().includes('aborted')) {
-        throw new Error(`${LLM_TIMEOUT_MS}ms 후 LLM 요청 타임아웃 (${host})`);
+        throw new Error(`${timeoutMs}ms 후 LLM 요청 타임아웃 (${host})`);
       }
       const chain = errorChainMessage(e);
       if (attempt >= maxAttempts) {
@@ -483,6 +498,38 @@ function resolveLocalLlmBaseUrlForRuntime(raw: string | undefined): string | und
   return t;
 }
 
+const localLlmReachability = new Map<string, boolean>();
+
+function localLlmModelsUrl(baseUrl: string): string {
+  const b = baseUrl.trim().replace(/\/+$/, '');
+  if (b.endsWith('/v1/models')) return b;
+  if (b.endsWith('/v1')) return `${b}/models`;
+  return `${b}/v1/models`;
+}
+
+async function ensureLocalLlmReachable(baseUrl: string): Promise<void> {
+  const cached = localLlmReachability.get(baseUrl);
+  if (cached === true) return;
+
+  const url = localLlmModelsUrl(baseUrl);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 1500);
+  try {
+    const res = await fetch(url, { method: 'GET', signal: ctrl.signal });
+    // 401/404 도 "접속은 됨" 으로 간주 (게이트웨이/프록시 구성에 따라 발생 가능).
+    if (!res.ok && res.status >= 500) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    localLlmReachability.set(baseUrl, true);
+  } catch (e) {
+    const msg = errorChainMessage(e) || (e instanceof Error ? e.message : String(e));
+    localLlmReachability.set(baseUrl, false);
+    throw new Error(`로컬 LLM 접속 불가 (${safeUrlHost(url)}): ${msg.slice(0, 180)}`);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function runNewsSummaryProviders<T>(
   messages: Array<{ role: string; content: string }>,
   parseFromContent: (content: string, label: string) => T,
@@ -504,6 +551,7 @@ async function runNewsSummaryProviders<T>(
     if (!localBase) {
       throw new Error('LOCAL_LLM_BASE_URL 이 설정되지 않았습니다.');
     }
+    await ensureLocalLlmReachable(localBase);
     const content = await callOpenAiCompatibleChatCompletion({
       baseUrl: localBase,
       model: localModel,
@@ -1096,7 +1144,12 @@ export async function summarizeAndPersistNewsBatch(
       }
     }
 
-    const rowResult = await persistBilingualProcessedNews(client, row as RawNewsTodoRow, llm);
+    const rowResult = await persistBilingualProcessedNews(
+      client,
+      row as RawNewsTodoRow,
+      llm,
+      usedStub ? false : undefined,
+    );
     results.push(rowResult);
     if (rowResult.ok && !usedStub) {
       slackDigest.push({

@@ -5,11 +5,15 @@ import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies
 import ShopMinihomeClient, { type ShopSpotPayload } from './ShopMinihomeClient';
 
 const SELECT =
-  'id,name,description,line_url,photo_urls,owner_profile_id,minihome_public_slug,minihome_intro,minihome_theme,minihome_bgm_url,minihome_menu,minihome_layout_modules,minihome_extra,is_published,minihome_guestbook_enabled';
+  'id,slug,name,description,line_url,photo_urls,owner_profile_id,minihome_public_slug,minihome_intro,minihome_theme,minihome_bgm_url,minihome_menu,minihome_layout_modules,minihome_extra,is_published,minihome_guestbook_enabled';
 
 async function loadSpot(slug: string): Promise<ShopSpotPayload | null> {
   const sb = await createServerSupabaseAuthClient();
-  const { data, error } = await sb.from('local_spots').select(SELECT).eq('minihome_public_slug', slug).maybeSingle();
+  const { data, error } = await sb
+    .from('local_spots')
+    .select(SELECT)
+    .or(`minihome_public_slug.eq.${slug},slug.eq.${slug}`)
+    .maybeSingle();
   if (error || !data) return null;
   return data as ShopSpotPayload;
 }

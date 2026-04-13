@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 type Room = {
@@ -19,13 +20,43 @@ type MessageRow = {
   created_at: string;
 };
 
-function fmt(v: string): string {
+function fmt(v: string, locale: 'ko' | 'th'): string {
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return '-';
-  return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(locale === 'th' ? 'th-TH' : 'ko-KR', { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function ChatPageClient() {
+  const { locale } = useClientLocaleDictionary();
+  const T = locale === 'th'
+    ? {
+        title: 'แชต',
+        loginNeeded: 'ต้องล็อกอินก่อนใช้งาน',
+        roomListFail: 'โหลดรายชื่อห้องแชตไม่สำเร็จ',
+        messagesFail: 'โหลดข้อความไม่สำเร็จ',
+        sendFail: 'ส่งข้อความไม่สำเร็จ',
+        rooms: 'ห้องแชต',
+        loading: 'กำลังโหลด…',
+        noRooms: 'ยังไม่มีห้องแชต',
+        noMessages: 'ยังไม่มีข้อความ',
+        inputPlaceholder: 'พิมพ์ข้อความ',
+        sending: 'กำลังส่ง…',
+        send: 'ส่ง',
+      }
+    : {
+        title: '채팅',
+        loginNeeded: '로그인 후 이용할 수 있습니다.',
+        roomListFail: '채팅방 목록을 불러오지 못했습니다.',
+        messagesFail: '메시지를 불러오지 못했습니다.',
+        sendFail: '메시지 전송에 실패했습니다.',
+        rooms: '채팅방',
+        loading: '불러오는 중…',
+        noRooms: '채팅방이 없습니다.',
+        noMessages: '아직 메시지가 없습니다.',
+        inputPlaceholder: '메시지를 입력하세요.',
+        sending: '전송 중…',
+        send: '전송',
+      };
   const [token, setToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -62,7 +93,7 @@ export default function ChatPageClient() {
       cache: 'no-store',
     });
     if (!res.ok) {
-      setErr('채팅방 목록을 불러오지 못했습니다.');
+      setErr(T.roomListFail);
       setLoadingRooms(false);
       return;
     }
@@ -82,7 +113,7 @@ export default function ChatPageClient() {
       cache: 'no-store',
     });
     if (!res.ok) {
-      setErr('메시지를 불러오지 못했습니다.');
+      setErr(T.messagesFail);
       setLoadingMessages(false);
       return;
     }
@@ -120,7 +151,7 @@ export default function ChatPageClient() {
     };
   }, [loadMessages, roomId]);
 
-  const roomTitle = useMemo(() => rooms.find((r) => r.id === roomId)?.title ?? '채팅', [roomId, rooms]);
+  const roomTitle = useMemo(() => rooms.find((r) => r.id === roomId)?.title ?? T.title, [T.title, roomId, rooms]);
 
   async function send() {
     if (!token || !roomId) return;
@@ -138,7 +169,7 @@ export default function ChatPageClient() {
     });
     setSending(false);
     if (!res.ok) {
-      setErr('메시지 전송에 실패했습니다.');
+      setErr(T.sendFail);
       return;
     }
     setDraft('');
@@ -148,8 +179,8 @@ export default function ChatPageClient() {
   if (!token) {
     return (
       <div className="page-body board-page">
-        <h1 className="board-title">채팅</h1>
-        <p style={{ color: 'var(--tj-muted)' }}>로그인 후 이용할 수 있습니다.</p>
+        <h1 className="board-title">{T.title}</h1>
+        <p style={{ color: 'var(--tj-muted)' }}>{T.loginNeeded}</p>
       </div>
     );
   }
@@ -157,7 +188,7 @@ export default function ChatPageClient() {
   return (
     <div className="page-body board-page" style={{ maxWidth: 860 }}>
       <header className="board-toolbar">
-        <h1 className="board-title">채팅</h1>
+        <h1 className="board-title">{T.title}</h1>
         <span style={{ fontSize: 13, color: 'var(--tj-muted)' }}>{roomTitle}</span>
       </header>
 
@@ -165,11 +196,11 @@ export default function ChatPageClient() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 12 }}>
         <aside className="card" style={{ padding: 12 }}>
-          <h2 style={{ margin: '0 0 8px', fontSize: 14 }}>채팅방</h2>
+          <h2 style={{ margin: '0 0 8px', fontSize: 14 }}>{T.rooms}</h2>
           {loadingRooms ? (
-            <p style={{ margin: 0, color: 'var(--tj-muted)', fontSize: 13 }}>불러오는 중…</p>
+            <p style={{ margin: 0, color: 'var(--tj-muted)', fontSize: 13 }}>{T.loading}</p>
           ) : rooms.length === 0 ? (
-            <p style={{ margin: 0, color: 'var(--tj-muted)', fontSize: 13 }}>채팅방이 없습니다.</p>
+            <p style={{ margin: 0, color: 'var(--tj-muted)', fontSize: 13 }}>{T.noRooms}</p>
           ) : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
               {rooms.map((room) => (
@@ -211,9 +242,9 @@ export default function ChatPageClient() {
             }}
           >
             {loadingMessages ? (
-              <p style={{ margin: 0, color: 'var(--tj-muted)', fontSize: 13 }}>불러오는 중…</p>
+              <p style={{ margin: 0, color: 'var(--tj-muted)', fontSize: 13 }}>{T.loading}</p>
             ) : messages.length === 0 ? (
-              <p style={{ margin: 0, color: 'var(--tj-muted)', fontSize: 13 }}>아직 메시지가 없습니다.</p>
+              <p style={{ margin: 0, color: 'var(--tj-muted)', fontSize: 13 }}>{T.noMessages}</p>
             ) : (
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8 }}>
                 {messages.map((m) => {
@@ -230,7 +261,7 @@ export default function ChatPageClient() {
                         }}
                       >
                         <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>
-                          {names[m.author_id] ?? 'member'} · {fmt(m.created_at)}
+                          {names[m.author_id] ?? 'member'} · {fmt(m.created_at, locale)}
                         </div>
                         <div style={{ whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.45 }}>
                           {m.is_deleted ? '(삭제됨)' : m.body}
@@ -248,7 +279,7 @@ export default function ChatPageClient() {
               onChange={(e) => setDraft(e.target.value)}
               rows={3}
               maxLength={1000}
-              placeholder="메시지를 입력하세요."
+              placeholder={T.inputPlaceholder}
               style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 14 }}
             />
             <button
@@ -258,7 +289,7 @@ export default function ChatPageClient() {
               className="board-form__submit"
               style={{ justifySelf: 'end' }}
             >
-              {sending ? '전송 중…' : '전송'}
+              {sending ? T.sending : T.send}
             </button>
           </div>
         </section>

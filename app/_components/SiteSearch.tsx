@@ -70,6 +70,19 @@ export default function SiteSearch({ variant = 'header', omitIntro = false }: Si
   const [apiNews, setApiNews] = useState<ApiNewsHit[]>([]);
   const [apiLoading, setApiLoading] = useState(false);
   const [apiTried, setApiTried] = useState(false);
+  const [searchAssist, setSearchAssist] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch('/api/public/ux-flags', { cache: 'no-store' });
+        const body = (await res.json()) as { flags?: Record<string, { enabled?: boolean }> };
+        setSearchAssist(Boolean(body.flags?.['global.search_assist']?.enabled));
+      } catch {
+        setSearchAssist(false);
+      }
+    })();
+  }, []);
 
   const quickList = useMemo(() => {
     return QUICK_HREFS.map((h) => SITE_SEARCH_ENTRIES.find((e) => e.href === h)).filter(
@@ -236,6 +249,13 @@ export default function SiteSearch({ variant = 'header', omitIntro = false }: Si
       {!isHeaderNate && s.hint ? (
         <p className="global-header__search-hint" aria-hidden="true">
           {s.hint}
+        </p>
+      ) : null}
+      {searchAssist && qTrim.length < 2 && open ? (
+        <p className="global-header__search-hint" style={{ color: 'var(--tj-link)', marginTop: 6 }}>
+          {locale === 'th'
+            ? 'ลองพิมพ์หมวด เช่น ร้าน, วีซ่า, มือสอง, งาน'
+            : '“로컬, 비자, 중고, 알바”처럼 카테고리 키워드로 찾으면 빨라요.'}
         </p>
       ) : null}
 

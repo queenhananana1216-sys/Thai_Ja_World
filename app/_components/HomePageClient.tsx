@@ -196,7 +196,14 @@ function ShopMiniCard({
   );
 }
 
-export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) {
+interface Stats {
+  memberCount: number;
+  postCount: number;
+  spotCount: number;
+  newsCount: number;
+}
+
+export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: boolean; stats?: Stats }) {
   const [locale, setLocale] = useState<Locale>('ko');
   const [news, setNews] = useState<NewsItem[]>([]);
   const [shops, setShops] = useState<LocalBusiness[]>([]);

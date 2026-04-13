@@ -13,6 +13,7 @@ import {
   Bot,
   Newspaper,
   Megaphone,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { href: '/admin/home-hero', icon: Image, label: 'Hero' },
   { href: '/admin/premium-banners', icon: Image, label: 'Banners' },
   { href: '/admin/bot-actions', icon: Bot, label: 'Bot Actions' },
+  { href: '/admin/ux-bot', icon: Activity, label: 'UX Bot' },
 ];
 
 type Props = {

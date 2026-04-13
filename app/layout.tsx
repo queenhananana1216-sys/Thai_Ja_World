@@ -13,6 +13,7 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { fetchMergedHeroSiteCopy } from '@/lib/siteCopy/heroCopy';
 import { FX_SNAPSHOT_FALLBACK } from '@/lib/fx/fetchUsdFx';
+import { getActiveUxFlagsServer } from '@/lib/ux/flagsServer';
 import './globals.css';
 
 const notoSansKr = Noto_Sans_KR({
@@ -60,8 +61,20 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();
   const d = getDictionary(locale);
+  const uxFlags = await getActiveUxFlagsServer();
   const adminSession = await resolveAdminAccess();
   const heroSiteCopy = await fetchMergedHeroSiteCopy();
+  const noteLabelOverride =
+    locale === 'th'
+      ? (uxFlags['nav.member_notes_label']?.th as string | undefined)
+      : (uxFlags['nav.member_notes_label']?.ko as string | undefined);
+  const navForHeader = {
+    ...d.nav,
+    memberNotesInbox:
+      typeof noteLabelOverride === 'string' && noteLabelOverride.trim()
+        ? noteLabelOverride.trim()
+        : d.nav.memberNotesInbox,
+  };
 
   /** Vercel 빌드 시 커밋 SHA — 페이지 소스에서 배포가 최신인지 확인용 */
   const deploySha = process.env.VERCEL_GIT_COMMIT_SHA ?? '';
@@ -73,7 +86,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <GlobalNav
             showAdminConsole={!!adminSession}
             dict={{
-              nav: d.nav,
+              nav: navForHeader,
               brandSuffix: d.brandSuffix,
               logoAria: d.logoAria,
               lang: d.lang,

@@ -132,7 +132,7 @@ export default function AuthBar({
           <Link href="/minihome" className="nate-user-panel__minihome">
             {memberNav.minihome}
           </Link>
-          <Link href="/ilchon#ilchon-received" className="nate-user-panel__subnav-link">
+          <Link href="/ilchon#ilchon-notes" className="nate-user-panel__subnav-link">
             {memberNav.notesInbox}
           </Link>
           <Link href="/ilchon#ilchon-friends" className="nate-user-panel__subnav-link">
@@ -149,7 +149,7 @@ export default function AuthBar({
         {memberNav.minihome}
       </Link>
       <nav className="member-quick-nav" aria-label={memberNav.ariaLabel}>
-        <Link href="/ilchon#ilchon-received" className="member-quick-nav__link">
+        <Link href="/ilchon#ilchon-notes" className="member-quick-nav__link">
           {memberNav.notesInbox}
         </Link>
         <Link href="/ilchon#ilchon-friends" className="member-quick-nav__link">

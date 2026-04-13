@@ -71,6 +71,7 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
     typeof extra.opening_hours_text === 'string' ? extra.opening_hours_text.trim() : '';
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [bgmOn, setBgmOn] = useState(false);
+  const [copyMsg, setCopyMsg] = useState('');
 
   const bgmUrl = spot.minihome_bgm_url?.trim() || '';
 
@@ -82,6 +83,20 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
       setBgmOn(false);
     } else {
       void el.play().then(() => setBgmOn(true)).catch(() => setBgmOn(false));
+    }
+  }
+  const roomUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/shop/${encodeURIComponent(spot.minihome_public_slug ?? '')}`
+      : `/shop/${encodeURIComponent(spot.minihome_public_slug ?? '')}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(roomUrl)}`;
+
+  async function copyRoomUrl() {
+    try {
+      await navigator.clipboard.writeText(roomUrl);
+      setCopyMsg('링크를 복사했어요.');
+    } catch {
+      setCopyMsg('복사에 실패했어요.');
     }
   }
 
@@ -216,6 +231,22 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
             </p>
           ) : null}
         </Section>
+
+        <div style={{ marginTop: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <a
+            href={qrUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="board-form__submit"
+            style={{ textDecoration: 'none', padding: '6px 12px', background: '#fff', color: '#111827', border: '1px solid #e2e8f0' }}
+          >
+            QR 보기
+          </a>
+          <button type="button" className="board-form__submit" style={{ padding: '6px 12px' }} onClick={() => void copyRoomUrl()}>
+            링크 복사
+          </button>
+          {copyMsg ? <span style={{ fontSize: 12, color: '#cbd5e1' }}>{copyMsg}</span> : null}
+        </div>
 
         <Section id="photos">
           {photos.length > 0 ? (

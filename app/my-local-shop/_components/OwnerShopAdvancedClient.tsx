@@ -3,9 +3,11 @@
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
+import { MINIHOME_THEME_PRESETS, themePresetLabel } from '@/lib/minihome/themePresets';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 type Row = {
+  is_published: boolean;
   minihome_intro: string | null;
   minihome_theme: unknown;
   minihome_bgm_url: string | null;
@@ -26,7 +28,7 @@ function stringifyJson(v: unknown, fallback: string): string {
 export default function OwnerShopAdvancedClient() {
   const params = useParams();
   const id = typeof params.id === 'string' ? params.id : '';
-  const { d } = useClientLocaleDictionary();
+  const { d, locale } = useClientLocaleDictionary();
   const shopL = d.localShop;
 
   const [loading, setLoading] = useState(true);
@@ -41,6 +43,7 @@ export default function OwnerShopAdvancedClient() {
   const [extraJson, setExtraJson] = useState('{}');
   const [guestbookEnabled, setGuestbookEnabled] = useState(true);
   const [guestbookInLayout, setGuestbookInLayout] = useState(true);
+  const [isPublished, setIsPublished] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -57,7 +60,7 @@ export default function OwnerShopAdvancedClient() {
     const { data, error } = await sb
       .from('local_spots')
       .select(
-        'minihome_intro,minihome_theme,minihome_bgm_url,minihome_menu,minihome_layout_modules,minihome_extra,minihome_guestbook_enabled',
+        'is_published,minihome_intro,minihome_theme,minihome_bgm_url,minihome_menu,minihome_layout_modules,minihome_extra,minihome_guestbook_enabled',
       )
       .eq('id', id)
       .eq('owner_profile_id', user.id)
@@ -67,6 +70,7 @@ export default function OwnerShopAdvancedClient() {
       setMsg(error.message);
     } else if (data) {
       const r = data as Row;
+      setIsPublished(Boolean(r.is_published));
       setIntro(r.minihome_intro ?? '');
       setThemeJson(stringifyJson(r.minihome_theme, '{}'));
       setBgmUrl(r.minihome_bgm_url ?? '');
@@ -150,6 +154,7 @@ export default function OwnerShopAdvancedClient() {
       const { error } = await sb
         .from('local_spots')
         .update({
+          is_published: isPublished,
           minihome_intro: intro.trim() || null,
           minihome_theme,
           minihome_bgm_url: bgmUrl.trim() || null,
@@ -181,6 +186,10 @@ export default function OwnerShopAdvancedClient() {
         있습니다.
       </p>
       <p style={{ margin: 0, fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>{shopL.ownerSettingsLead}</p>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+        <input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} />
+        <span style={{ fontSize: 14 }}>로컬 목록/미니홈 공개</span>
+      </label>
       <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
         <input type="checkbox" checked={guestbookEnabled} onChange={(e) => setGuestbookEnabled(e.target.checked)} />
         <span style={{ fontSize: 14 }}>{shopL.guestbookReceive}</span>
@@ -222,6 +231,26 @@ export default function OwnerShopAdvancedClient() {
           style={{ width: '100%', fontFamily: 'monospace', fontSize: 12, padding: 8, borderRadius: 8, border: '1px solid #cbd5e1' }}
         />
       </label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {MINIHOME_THEME_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className="ilchon-btn ilchon-btn--ghost"
+            style={{ padding: '6px 10px', fontSize: '0.8rem' }}
+            onClick={() => {
+              const next = {
+                accent: preset.accent,
+                wallpaper_url: preset.wallpaper ?? '',
+                room_skin: preset.room_skin ?? '',
+              };
+              setThemeJson(JSON.stringify(next, null, 2));
+            }}
+          >
+            {themePresetLabel(preset, locale)}
+          </button>
+        ))}
+      </div>
 
       <label style={{ display: 'block' }}>
         <span style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>메뉴 JSON 배열</span>

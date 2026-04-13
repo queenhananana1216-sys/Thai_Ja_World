@@ -8,6 +8,11 @@ export type OpenAIModerationResult =
   | { flagged: true; categories?: Record<string, boolean> }
   | { error: 'IMAGE_REQUIRES_OPENAI' | 'HTTP' | 'PARSE'; detail?: string };
 
+function envFlag(name: string): boolean {
+  const raw = process.env[name]?.trim().toLowerCase();
+  return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on';
+}
+
 function parseResults(data: unknown): boolean {
   if (data === null || typeof data !== 'object') return false;
   const o = data as { results?: Array<{ flagged?: boolean }> };
@@ -22,9 +27,19 @@ export async function moderatePostContent(
 ): Promise<OpenAIModerationResult> {
   const key = process.env.OPENAI_API_KEY?.trim();
   const text = `${title}\n\n${body}`.slice(0, 12000);
+  const requireOpenAiForImages = envFlag('REQUIRE_OPENAI_FOR_IMAGE_MODERATION');
 
   if (imageUrls.length > 0 && !key) {
-    return { error: 'IMAGE_REQUIRES_OPENAI' };
+    if (requireOpenAiForImages) {
+      return { error: 'IMAGE_REQUIRES_OPENAI' };
+    }
+    console.warn(
+      '[moderation] OPENAI_API_KEY missing; skipping image moderation (fail-open enabled)',
+      {
+        imageCount: imageUrls.length,
+      },
+    );
+    return { flagged: false };
   }
 
   if (!key) {

@@ -487,6 +487,10 @@ export type Dictionary = {
     pageLead: string;
     needLogin: string;
     goLogin: string;
+    searchTitle: string;
+    searchPlaceholder: string;
+    searchButton: string;
+    searching: string;
     requestButton: string;
     requestTitle: string;
     messageLabel: string;
@@ -517,6 +521,20 @@ export type Dictionary = {
     friendsEmpty: string;
     youCallThemLabel: string;
     proposedFromThem: string;
+    visitMinihome: string;
+    lastSeenLabel: string;
+    lastSeenUnknown: string;
+    onlineNow: string;
+    notesTitle: string;
+    notesEmpty: string;
+    notesUnreadPrefix: string;
+    openChat: string;
+    chatWithPrefix: string;
+    chatEmpty: string;
+    youLabel: string;
+    dmPlaceholder: string;
+    dmSend: string;
+    dmSending: string;
     errorGeneric: string;
     errorPendingExists: string;
     errorAlreadyIlchon: string;
@@ -1084,6 +1102,10 @@ const ko: Dictionary = {
       '신청을 보내고, 상대가 수락하면 서로 부르는 일촌명이 정해져요. 받은 신청은 여기서 수락·거절할 수 있어요.',
     needLogin: '일촌은 로그인한 뒤 이용할 수 있어요.',
     goLogin: '로그인하기',
+    searchTitle: '닉네임으로 일촌 찾기',
+    searchPlaceholder: '닉네임 검색',
+    searchButton: '검색',
+    searching: '찾는 중…',
     requestButton: '일촌 신청',
     requestTitle: '일촌 신청 보내기',
     messageLabel: '메시지 (선택)',
@@ -1114,6 +1136,20 @@ const ko: Dictionary = {
     friendsEmpty: '아직 맺은 일촌이 없어요. 미니홈에서 신청해 보세요.',
     youCallThemLabel: '내가 부르는 이름',
     proposedFromThem: '신청자가 나를 부르고 싶어 하는 이름(제안)',
+    visitMinihome: '미니홈 방문',
+    lastSeenLabel: '마지막 접속',
+    lastSeenUnknown: '접속 기록 없음',
+    onlineNow: '접속 중',
+    notesTitle: '쪽지함',
+    notesEmpty: '읽지 않은 쪽지가 없어요.',
+    notesUnreadPrefix: '안 읽은 쪽지',
+    openChat: '대화 열기',
+    chatWithPrefix: '대화 상대:',
+    chatEmpty: '아직 대화가 없습니다.',
+    youLabel: '나',
+    dmPlaceholder: '쪽지를 입력하세요.',
+    dmSend: '보내기',
+    dmSending: '보내는 중…',
     errorGeneric: '잠시 안 됐어요. 다시 시도해 주세요.',
     errorPendingExists: '이미 진행 중인 신청이 있어요.',
     errorAlreadyIlchon: '이미 일촌이에요.',
@@ -1682,6 +1718,10 @@ const th: Dictionary = {
       'ส่งคำขอ — เมื่ออีกฝ่ายยอมรับ จะตั้งชื่อเรียกกันได้สองทาง ดูคำขอที่ได้รับและยอมรับ/ปฏิเสธได้ที่นี่',
     needLogin: 'ล็อกอินก่อนถึงใช้ฟีเจอร์นี้ได้',
     goLogin: 'ไปล็อกอิน',
+    searchTitle: 'ค้นหาเพื่อนด้วยชื่อเล่น',
+    searchPlaceholder: 'ค้นหาชื่อเล่น',
+    searchButton: 'ค้นหา',
+    searching: 'กำลังค้นหา…',
     requestButton: 'ขอเป็นเพื่อน',
     requestTitle: 'ส่งคำขอเป็นเพื่อน',
     messageLabel: 'ข้อความ (ไม่บังคับ)',
@@ -1712,6 +1752,20 @@ const th: Dictionary = {
     friendsEmpty: 'ยังไม่มีเพื่อน — ลองขอจากมินิโฮม',
     youCallThemLabel: 'ชื่อที่ฉันเรียก',
     proposedFromThem: 'ชื่อที่คนขออยากเรียกคุณ (ข้อเสนอ)',
+    visitMinihome: 'ไปมินิโฮม',
+    lastSeenLabel: 'ออนไลน์ล่าสุด',
+    lastSeenUnknown: 'ยังไม่มีสถานะล่าสุด',
+    onlineNow: 'ออนไลน์อยู่',
+    notesTitle: 'กล่องข้อความ',
+    notesEmpty: 'ไม่มีข้อความค้างอ่าน',
+    notesUnreadPrefix: 'ยังไม่อ่าน',
+    openChat: 'เปิดแชต',
+    chatWithPrefix: 'แชตกับ:',
+    chatEmpty: 'ยังไม่มีบทสนทนา',
+    youLabel: 'ฉัน',
+    dmPlaceholder: 'พิมพ์ข้อความ',
+    dmSend: 'ส่ง',
+    dmSending: 'กำลังส่ง…',
     errorGeneric: 'ไม่สำเร็จชั่วคราว ลองอีกครั้ง',
     errorPendingExists: 'มีคำขอค้างอยู่แล้ว',
     errorAlreadyIlchon: 'เป็นเพื่อนกันแล้ว',

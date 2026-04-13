@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { MinihomeOverlayProvider } from '../minihome/_components/MinihomeOverlay';
+import GlobalUxTracker from './GlobalUxTracker';
 import LastSeenHeartbeat from './LastSeenHeartbeat';
 import { HeroSiteCopyProvider } from '@/contexts/HeroSiteCopyContext';
 import { StyleScorePreviewProvider } from '@/contexts/StyleScorePreviewContext';
@@ -20,6 +21,7 @@ export default function Providers({
       <StyleScorePreviewProvider>
         <TooltipProvider delayDuration={200}>
           <MinihomeOverlayProvider>
+            <GlobalUxTracker />
             <LastSeenHeartbeat />
             {children}
           </MinihomeOverlayProvider>

@@ -11,7 +11,17 @@ type ActionState = {
 
 const idleState: ActionState = { busy: false, message: '', tone: 'idle' };
 
-export default function AdminQuickOpsPanel() {
+type Props = {
+  newsDraftCount: number;
+  knowledgeDraftCount: number;
+  botHealthLabel: string;
+};
+
+export default function AdminQuickOpsPanel({
+  newsDraftCount,
+  knowledgeDraftCount,
+  botHealthLabel,
+}: Props) {
   const router = useRouter();
   const [state, setState] = useState<ActionState>(idleState);
 
@@ -94,6 +104,10 @@ export default function AdminQuickOpsPanel() {
       <h2 style={{ margin: '0 0 8px', fontSize: 15 }}>빠른 실행</h2>
       <p style={{ margin: '0 0 10px', fontSize: 12, color: '#64748b' }}>
         복잡한 메뉴 없이 아래 두 버튼만 누르면 됩니다.
+      </p>
+      <p style={{ margin: '0 0 10px', fontSize: 12, color: '#334155' }}>
+        현재 대기: 뉴스 <strong>{newsDraftCount}</strong>건 · 꿀정보 <strong>{knowledgeDraftCount}</strong>건 · 봇 상태:{' '}
+        <strong>{botHealthLabel}</strong>
       </p>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <button

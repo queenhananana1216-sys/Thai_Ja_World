@@ -25,6 +25,7 @@ export default async function AdminDashboardPage() {
   let draftKnowledge: number | null = null;
   let draftLocalSpots: number | null = null;
   let dbNote: string | null = null;
+  let botHealthLabel = '확인 불가';
 
   try {
     const admin = createServiceRoleClient();
@@ -50,6 +51,30 @@ export default async function AdminDashboardPage() {
       admin.from('processed_knowledge').select('*', { count: 'exact', head: true }).eq('published', false),
       admin.from('local_spots').select('*', { count: 'exact', head: true }).eq('is_published', false),
     ]);
+
+    const { data: botRows } = await admin
+      .from('bot_actions')
+      .select('bot_name,status,created_at')
+      .in('bot_name', [
+        'news_curator',
+        'news_summarizer',
+        'knowledge_curator_collect',
+        'knowledge_curator_process',
+      ])
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (Array.isArray(botRows) && botRows.length > 0) {
+      const latestByBot = new Map<string, string>();
+      for (const row of botRows as Array<{ bot_name: string; status: string }>) {
+        if (!latestByBot.has(row.bot_name)) latestByBot.set(row.bot_name, row.status);
+      }
+      const statuses = Array.from(latestByBot.values());
+      const failed = statuses.filter((s) => s === 'failed').length;
+      botHealthLabel = failed > 0 ? `실패 ${failed}건` : '정상';
+    } else {
+      botHealthLabel = '실행 이력 없음';
+    }
 
     if (e1) {
       dbNote = `프로필 수 집계 실패: ${e1.message}`;
@@ -94,7 +119,19 @@ export default async function AdminDashboardPage() {
         태자 월드 회원·접속·뉴스 초안 지표입니다. <strong>마지막 접속</strong>은 사이트 하트비트로 갱신되는{' '}
         <code>profiles.last_seen_at</code> 기준이며, Supabase Auth의 “최종 로그인”과는 다를 수 있습니다.
       </p>
-      <AdminQuickOpsPanel />
+      <AdminQuickOpsPanel
+        newsDraftCount={draftNews ?? 0}
+        knowledgeDraftCount={draftKnowledge ?? 0}
+        botHealthLabel={botHealthLabel}
+      />
+      <section className="admin-dash__pipeline" style={{ marginBottom: 16 }}>
+        <h2>운영 매뉴얼 (한국어)</h2>
+        <p style={{ margin: '8px 0 0', fontSize: 13, color: '#475569', lineHeight: 1.6 }}>
+          1) <strong>안 돌았으면 돌리기</strong>: 뉴스·꿀정보·UX 봇을 한 번에 실행합니다. 2){' '}
+          <strong>적용하기</strong>: 가공된 초안을 뉴스/꿀정보 큐에서 일괄 게시합니다. 3) 광고주 권한은{' '}
+          <Link href="/admin/local-spots">로컬 가게</Link>에서 <code>owner_email</code> 을 입력해 연결하면 됩니다.
+        </p>
+      </section>
 
       {dbNote && <div className="admin-dash__alert">{dbNote}</div>}
 

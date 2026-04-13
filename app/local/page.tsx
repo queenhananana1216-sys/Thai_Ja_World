@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getLocale } from '@/i18n/get-locale';
 import { createServerClient } from '@/lib/supabase/server';
 import { getSiteBaseUrl } from '@/lib/seo/site';
 import { getActiveUxFlagsServer } from '@/lib/ux/flagsServer';
@@ -50,9 +51,11 @@ async function fetchSpots(): Promise<LocalSpotRow[]> {
 function SpotCard({
   spot,
   qrEmphasis,
+  locale,
 }: {
   spot: LocalSpotRow;
   qrEmphasis: boolean;
+  locale: 'ko' | 'th';
 }) {
   const publicSlug = (spot.minihome_public_slug?.trim() || spot.slug || '').trim();
   const shopHref = `/shop/${encodeURIComponent(publicSlug)}`;
@@ -84,7 +87,7 @@ function SpotCard({
         ) : null}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
           <Link href={shopHref} className="board-form__submit" style={{ textDecoration: 'none', padding: '6px 12px' }}>
-            미니홈 보기
+            {locale === 'th' ? 'ดูมินิโฮม' : '미니홈 보기'}
           </Link>
           <a
             href={qrHref}
@@ -100,12 +103,18 @@ function SpotCard({
               fontWeight: qrEmphasis ? 700 : 500,
             }}
           >
-            {qrEmphasis ? 'QR 바로가기 (추천)' : 'QR 보기'}
+            {qrEmphasis
+              ? locale === 'th'
+                ? 'เข้า QR ทันที (แนะนำ)'
+                : 'QR 바로가기 (추천)'
+              : locale === 'th'
+                ? 'ดู QR'
+                : 'QR 보기'}
           </a>
         </div>
         {spot.line_url?.trim() ? (
           <a href={spot.line_url} target="_blank" rel="noopener noreferrer" style={{ marginTop: 8, display: 'inline-block', color: 'var(--tj-link)' }}>
-            LINE 문의
+            {locale === 'th' ? 'ติดต่อ LINE' : 'LINE 문의'}
           </a>
         ) : null}
       </div>
@@ -114,6 +123,7 @@ function SpotCard({
 }
 
 export default async function LocalPage() {
+  const locale = await getLocale();
   const flags = await getActiveUxFlagsServer();
   const qrEmphasis = Boolean(flags['local.qr_emphasis']?.enabled);
   const spots = await fetchSpots();
@@ -135,14 +145,18 @@ export default async function LocalPage() {
             margin: '0 0 6px',
           }}
         >
-          🏪 로컬 가게
+          {locale === 'th' ? '🏪 ร้านท้องถิ่น' : '🏪 로컬 가게'}
         </h1>
         <p style={{ margin: 0, color: '#64748b', fontSize: '0.88rem' }}>
-          공개 미니홈은 비회원도 바로 볼 수 있어요. QR을 찍어 가게 메뉴판·사진·공지로 바로 들어갈 수 있습니다.
+          {locale === 'th'
+            ? 'มินิโฮมสาธารณะดูได้ทันทีแม้ไม่ใช่สมาชิก สแกน QR เพื่อเปิดเมนูร้าน·รูป·ประกาศได้เลย'
+            : '공개 미니홈은 비회원도 바로 볼 수 있어요. QR을 찍어 가게 메뉴판·사진·공지로 바로 들어갈 수 있습니다.'}
         </p>
         {qrEmphasis ? (
           <p style={{ marginTop: 8, color: '#6d28d9', fontSize: '0.82rem', fontWeight: 700 }}>
-            지금은 QR 진입 버튼을 강조해서 바로 메뉴판으로 들어가기 쉽게 조정했어요.
+            {locale === 'th'
+              ? 'ตอนนี้เน้นปุ่ม QR เพื่อให้เข้าหน้าเมนูได้เร็วขึ้น'
+              : '지금은 QR 진입 버튼을 강조해서 바로 메뉴판으로 들어가기 쉽게 조정했어요.'}
           </p>
         ) : null}
         <div
@@ -155,8 +169,9 @@ export default async function LocalPage() {
           }}
         >
           <span>
-            🏪 전체{' '}
-            <strong style={{ color: '#1a2025' }}>{spots.length}</strong>개
+            🏪 {locale === 'th' ? 'ทั้งหมด' : '전체'}{' '}
+            <strong style={{ color: '#1a2025' }}>{spots.length}</strong>
+            {locale === 'th' ? ' ร้าน' : '개'}
           </span>
         </div>
       </div>
@@ -164,12 +179,12 @@ export default async function LocalPage() {
       {spots.length === 0 ? (
         <div className="card empty-state">
           <p style={{ fontSize: '2rem', marginBottom: '8px' }}>🏪</p>
-          <p>아직 공개된 로컬 미니홈이 없습니다.</p>
+          <p>{locale === 'th' ? 'ยังไม่มีมินิโฮมสาธารณะ' : '아직 공개된 로컬 미니홈이 없습니다.'}</p>
         </div>
       ) : (
         <div className="shop-grid">
           {spots.map((spot) => (
-            <SpotCard key={spot.id} spot={spot} qrEmphasis={qrEmphasis} />
+            <SpotCard key={spot.id} spot={spot} qrEmphasis={qrEmphasis} locale={locale} />
           ))}
         </div>
       )}

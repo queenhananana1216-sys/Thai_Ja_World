@@ -5,6 +5,7 @@ import ShopGuestbookPanel from './ShopGuestbookPanel';
 import ShopUpdatesPanel from './ShopUpdatesPanel';
 import { DepthCard } from '@/components/3d/DepthCard';
 import { HoloButton } from '@/components/3d/HoloButton';
+import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { SURFACE_DEFAULT_TIER } from '@/lib/3d/system';
 
 export type ShopSpotPayload = {
@@ -51,6 +52,7 @@ function menuItems(raw: unknown): MenuItem[] {
 }
 
 export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) {
+  const { locale } = useClientLocaleDictionary();
   const tier = SURFACE_DEFAULT_TIER.shop;
   const theme = useMemo(() => asStringRecord(spot.minihome_theme), [spot.minihome_theme]);
   const accent = typeof theme.accent === 'string' ? theme.accent : '#7c3aed';
@@ -98,9 +100,9 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
   async function copyRoomUrl() {
     try {
       await navigator.clipboard.writeText(roomUrl);
-      setCopyMsg('링크를 복사했어요.');
+      setCopyMsg(locale === 'th' ? 'คัดลอกลิงก์แล้ว' : '링크를 복사했어요.');
     } catch {
-      setCopyMsg('복사에 실패했어요.');
+      setCopyMsg(locale === 'th' ? 'คัดลอกไม่สำเร็จ' : '복사에 실패했어요.');
     }
   }
 
@@ -140,7 +142,9 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
           <div>
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>{spot.name}</h1>
             {!spot.is_published ? (
-              <p style={{ margin: '8px 0 0', fontSize: 12, color: '#fbbf24' }}>비공개 미리보기 (오너·운영)</p>
+              <p style={{ margin: '8px 0 0', fontSize: 12, color: '#fbbf24' }}>
+                {locale === 'th' ? 'พรีวิวแบบไม่เผยแพร่ (เจ้าของ·ผู้ดูแล)' : '비공개 미리보기 (오너·운영)'}
+              </p>
             ) : null}
           </div>
           {bgmUrl ? (
@@ -159,7 +163,13 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
                 cursor: 'pointer',
               }}
             >
-              {bgmOn ? 'BGM 끄기' : 'BGM 켜기'}
+              {bgmOn
+                ? locale === 'th'
+                  ? 'ปิด BGM'
+                  : 'BGM 끄기'
+                : locale === 'th'
+                  ? 'เปิด BGM'
+                  : 'BGM 켜기'}
             </HoloButton>
           ) : null}
         </div>
@@ -175,7 +185,7 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
         {openingHoursText ? (
           <p style={{ marginTop: 16, lineHeight: 1.55, opacity: 0.92, whiteSpace: 'pre-wrap' }}>
             <span style={{ display: 'block', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', marginBottom: 6 }}>
-              영업시간
+              {locale === 'th' ? 'เวลาเปิดทำการ' : '영업시간'}
             </span>
             {openingHoursText}
           </p>
@@ -209,7 +219,7 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
                   ) : null}
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                      <strong>{it.name || '메뉴'}</strong>
+                      <strong>{it.name || (locale === 'th' ? 'เมนู' : '메뉴')}</strong>
                       {it.price ? (
                         <span style={{ color: '#a5b4fc', fontWeight: 600 }}>{it.price}</span>
                       ) : null}
@@ -233,7 +243,7 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
                 rel="noopener noreferrer"
                 style={{ color: '#86efac', fontWeight: 700 }}
               >
-                LINE으로 연결
+                {locale === 'th' ? 'ติดต่อผ่าน LINE' : 'LINE으로 연결'}
               </a>
             </p>
           ) : null}
@@ -247,10 +257,10 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
             className="board-form__submit"
             style={{ textDecoration: 'none', padding: '6px 12px', background: '#fff', color: '#111827', border: '1px solid #e2e8f0' }}
           >
-            QR 보기
+            {locale === 'th' ? 'ดู QR' : 'QR 보기'}
           </a>
           <HoloButton className="board-form__submit" tier={tier} style={{ padding: '6px 12px' }} onClick={() => void copyRoomUrl()}>
-            링크 복사
+            {locale === 'th' ? 'คัดลอกลิงก์' : '링크 복사'}
           </HoloButton>
           {copyMsg ? <span style={{ fontSize: 12, color: '#cbd5e1' }}>{copyMsg}</span> : null}
         </div>

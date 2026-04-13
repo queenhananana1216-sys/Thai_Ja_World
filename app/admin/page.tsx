@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AdminQuickOpsPanel from './_components/AdminQuickOpsPanel';
 import { getKstDayRangeISO } from '@/lib/admin/kstDayRange';
 import {
   knowledgePublishModeEnvRaw,
@@ -93,6 +94,7 @@ export default async function AdminDashboardPage() {
         태자 월드 회원·접속·뉴스 초안 지표입니다. <strong>마지막 접속</strong>은 사이트 하트비트로 갱신되는{' '}
         <code>profiles.last_seen_at</code> 기준이며, Supabase Auth의 “최종 로그인”과는 다를 수 있습니다.
       </p>
+      <AdminQuickOpsPanel />
 
       {dbNote && <div className="admin-dash__alert">{dbNote}</div>}
 

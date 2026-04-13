@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { isAdminActorEmail } from '@/lib/admin/adminAllowedEmails';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import ShopMinihomeClient, { type ShopSpotPayload } from './ShopMinihomeClient';
 
@@ -39,6 +40,19 @@ export default async function ShopMinihomePage({
 
   const spot = await loadSpot(slug);
   if (!spot) notFound();
+
+  // 비공개 가게 미니홈은 오너/관리자만 접근 가능하게 제한합니다.
+  if (!spot.is_published) {
+    const sb = await createServerSupabaseAuthClient();
+    const {
+      data: { user },
+    } = await sb.auth.getUser();
+    const viewerId = user?.id ?? null;
+    const viewerEmail = user?.email ?? null;
+    const canPreview =
+      (viewerId !== null && spot.owner_profile_id === viewerId) || isAdminActorEmail(viewerEmail);
+    if (!canPreview) notFound();
+  }
 
   return (
     <div className="page-body" style={{ padding: '0 0 48px' }}>

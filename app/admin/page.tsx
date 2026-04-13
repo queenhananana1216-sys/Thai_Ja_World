@@ -208,6 +208,12 @@ export default async function AdminDashboardPage() {
           </Link>
         </li>
         <li>
+          <Link href="/admin/ops-center">
+            운영 통합센터
+            <span>뉴스·꿀정보·UX 전체 실행 및 실패 재실행</span>
+          </Link>
+        </li>
+        <li>
           <Link href="/admin/local-spots">
             로컬 가게 · 맛집 · 마사지
             <span>

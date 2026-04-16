@@ -125,9 +125,7 @@ export default function FxRemoteWidget({
   }, []);
 
   const isLandingRoute = pathname === '/' || pathname === '/landing';
-  if (isLandingRoute && isMobileViewport) {
-    return null;
-  }
+  const shouldHideOnMobileLanding = isLandingRoute && isMobileViewport;
 
   useEffect(() => {
     setSnap(initial);
@@ -404,6 +402,10 @@ export default function FxRemoteWidget({
       saveState(c.x, c.y, true);
       return c;
     });
+  }
+
+  if (shouldHideOnMobileLanding) {
+    return null;
   }
 
   if (!ready) {

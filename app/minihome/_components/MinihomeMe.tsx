@@ -183,6 +183,7 @@ export default function MinihomeMe() {
         intro_body: intro.trim() || null,
         theme: nextTheme,
         is_public: isPublic,
+        section_visibility: sectionVis,
       })
       .eq('owner_id', user.id);
     setSaveBusy(false);
@@ -225,74 +226,177 @@ export default function MinihomeMe() {
   if (!row) {
     return (
       <div className="page-body board-page">
-        <p style={{ color: '#be185d', fontSize: '0.9rem' }}>{labels.notProvisioned}</p>
-        <Link href="/" style={{ color: 'var(--tj-link)' }}>
-          ← home
-        </Link>
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+          <h2 className="m-0 text-lg font-bold text-rose-700">
+            {locale === 'th' ? 'โหลดมินิโฮมไม่สำเร็จ' : '미니홈을 불러오지 못했습니다'}
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-rose-700">
+            {locale === 'th'
+              ? 'อาจเกิดข้อผิดพลาดชั่วคราว ลองรีเฟรช หรือกลับหน้าแรกก่อน'
+              : '일시 오류이거나 계정 연결이 늦은 상태일 수 있습니다. 새로고침 후 다시 확인해 주세요.'}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-rose-700">{labels.notProvisioned}</p>
+          <Link href="/" className="mt-3 inline-block text-sm font-semibold text-rose-800 no-underline hover:underline">
+            ← {locale === 'th' ? 'กลับหน้าแรก' : '홈으로 이동'}
+          </Link>
+        </div>
       </div>
     );
   }
 
   const score = prof?.style_score_total ?? null;
   const showGreet = prof && !prof.signup_greeting_done;
+  const isTh = locale === 'th';
+  const quickLead = isTh
+    ? 'ไม่ต้องไล่หาทีละช่อง เริ่มจาก 입장 → 공개 설정 → 꾸미기 เท่านี้ก็ใช้งานได้ครบ'
+    : '기능을 찾느라 헤매지 않게, 입장 → 공개 설정 → 꾸미기 순서로 바로 끝낼 수 있게 구성했습니다.';
+  const sectionPrivacyTitle = isTh ? 'การเปิดเผยแต่ละ 섹션' : '섹션별 공개 범위';
+  const step1Title = isTh ? '1) เปิดห้องมินิโฮม' : '1) 미니홈 입장';
+  const step1Desc = isTh
+    ? 'ดูหน้า 공개 จริงก่อน แล้วค่อยปรับรายละเอียด'
+    : '공개 페이지를 먼저 열어 보고, 보이는 화면 기준으로 수정하세요.';
+  const step2Title = isTh ? '2) ตั้งค่าเปิดเผย' : '2) 공개 범위 설정';
+  const step2Desc = isTh
+    ? 'แยกเปิดเผย intro / guestbook / photos / diary ตามที่ต้องการ'
+    : '소개/방명록/사진첩/다이어리를 각각 공개·일촌·비공개로 나눠 관리하세요.';
+  const step3Title = isTh ? '3) แต่งสไตล์' : '3) 꾸미기';
+  const step3Desc = isTh
+    ? 'ปรับ accent / wallpaper / bgm ให้เข้าบรรยากาศห้อง'
+    : 'accent, wallpaper, bgm을 정리해서 방 분위기를 통일하세요.';
+  const saveNowLabel = isTh ? 'บันทึกตอนนี้' : '지금 저장하기';
+  const panelTitle = isTh ? 'มินิโฮม 설정 패널' : '미니홈 설정 패널';
+  const sectionLabels: Record<'intro' | 'guestbook' | 'photos' | 'diary', string> = {
+    intro: isTh ? 'แนะนำตัว' : '소개',
+    guestbook: isTh ? 'สมุดเยี่ยม' : '방명록',
+    photos: isTh ? 'อัลบั้มรูป' : '사진첩',
+    diary: isTh ? 'ไดอารี่' : '다이어리',
+  };
+  const visPublicLabel = isTh ? 'เปิดสาธารณะ' : '전체 공개';
+  const visIlchonLabel = isTh ? 'อิลชอนเท่านั้น' : '일촌만';
+  const visPrivateLabel = isTh ? 'ส่วนตัว (เฉพาะฉัน)' : '비공개 (나만)';
+  const hasIntro = intro.trim().length > 0;
+  const hasThemeDecoration = wallpaperUrl.trim().length > 0 || roomSkin.trim().length > 0 || bgmUrl.trim().length > 0;
+  const hasCommunityOpen = ['guestbook', 'photos', 'diary'].some((sec) => (sectionVis[sec] ?? 'private') !== 'private');
+  const progressSteps = [
+    {
+      key: 'quest',
+      done: Boolean(prof?.signup_greeting_done),
+      title: isTh ? '퀘스트 인사 완료' : '퀘스트 인사 완료',
+      desc: isTh ? 'โพสต์ทักทายครั้งแรกเพื่อรับ 포인트' : '첫 인사글을 작성해 스타일 포인트를 받으세요.',
+    },
+    {
+      key: 'intro',
+      done: hasIntro,
+      title: isTh ? '프로필 소개 작성' : '프로필 소개 작성',
+      desc: isTh ? 'ใส่ intro ให้คนใหม่เข้าใจร้าน/방ทันที' : '소개글을 채워 방문자가 바로 이해할 수 있게 만드세요.',
+    },
+    {
+      key: 'open',
+      done: isPublic && (sectionVis.intro ?? 'public') === 'public',
+      title: isTh ? '공개 세팅 완료' : '공개 세팅 완료',
+      desc: isTh ? 'ตั้ง 공개 범위 ให้เข้ากับ 운영 방식' : '전체 공개/일촌 공개를 운영 목적에 맞게 설정하세요.',
+    },
+    {
+      key: 'skin',
+      done: hasThemeDecoration,
+      title: isTh ? '스킨·BGM 적용' : '스킨·BGM 적용',
+      desc: isTh ? 'ปรับ wallpaper / room skin / bgm ให้บรรยากาศชัด' : 'wallpaper, room skin, bgm으로 방 분위기를 완성하세요.',
+    },
+    {
+      key: 'social',
+      done: hasCommunityOpen,
+      title: isTh ? '소통 모듈 오픈' : '소통 모듈 오픈',
+      desc: isTh ? 'เปิด guestbook/photos/diary อย่างน้อย 1개' : '방명록/사진첩/다이어리 중 최소 1개를 공개해 소통을 시작하세요.',
+    },
+  ];
+  const completedSteps = progressSteps.filter((step) => step.done).length;
+  const progressPercent = Math.round((completedSteps / progressSteps.length) * 100);
 
   return (
     <div className="page-body board-page">
-      <div className="board-toolbar">
-        <h1 className="board-title">{labels.pageTitle}</h1>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          {score !== null ? (
-            <span className="minihome-style-score-pill" style={{ fontSize: '0.82rem', fontWeight: 700 }}>
-              {labels.styleScoreLabel} {score}
-            </span>
-          ) : null}
-          <Link href="/minihome/shop" className="board-form__submit" style={{ textAlign: 'center' }}>
-            {labels.styleShopNav}
-          </Link>
-          <button
-            type="button"
-            className="board-form__submit"
-            onClick={() => openOverlay(row.public_slug)}
-          >
-            {labels.previewOverlay}
-          </button>
-          <Link
-            href={`/minihome/${row.public_slug}`}
-            className="board-form__submit"
-            style={{ textAlign: 'center', background: '#fff', color: 'var(--tj-ink)', border: '1px solid var(--tj-line)' }}
-          >
-            {labels.publicPage}
-          </Link>
+      <section className="mb-6 rounded-3xl border border-violet-200/60 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="m-0 text-2xl font-extrabold tracking-tight text-slate-900">{labels.pageTitle}</h1>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">{quickLead}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {score !== null ? (
+              <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
+                {labels.styleScoreLabel} {score}
+              </span>
+            ) : null}
+            <Link href="/minihome/shop" className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white no-underline">
+              {labels.styleShopNav}
+            </Link>
+            <button
+              type="button"
+              onClick={() => openOverlay(row.public_slug)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800"
+            >
+              {labels.previewOverlay}
+            </button>
+            <Link
+              href={`/minihome/${row.public_slug}`}
+              className="rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 no-underline"
+            >
+              {labels.publicPage}
+            </Link>
+          </div>
         </div>
-      </div>
 
-      <div
-        className="card"
-        style={{
-          padding: 20,
-          marginBottom: 20,
-          border: `2px solid ${accent}`,
-          background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.07), rgba(236, 72, 153, 0.06))',
-        }}
-      >
-        <h2 className="minihome-edit-form__h" style={{ marginTop: 0, marginBottom: 8 }}>
-          {labels.roomEnterTitle}
-        </h2>
-        <p style={{ margin: '0 0 14px', fontSize: '0.88rem', lineHeight: 1.55, color: 'var(--tj-muted)' }}>
-          {labels.roomEnterLead}
-        </p>
-        <Link
-          href={`/minihome/${row.public_slug}`}
-          className="board-form__submit"
-          style={{ display: 'inline-block', textAlign: 'center' }}
-        >
-          {labels.roomEnterCta}
-        </Link>
-      </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+            <p className="m-0 text-xs font-semibold text-slate-500">{step1Title}</p>
+            <p className="mt-1 text-sm text-slate-700">{step1Desc}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+            <p className="m-0 text-xs font-semibold text-slate-500">{step2Title}</p>
+            <p className="mt-1 text-sm text-slate-700">{step2Desc}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+            <p className="m-0 text-xs font-semibold text-slate-500">{step3Title}</p>
+            <p className="mt-1 text-sm text-slate-700">{step3Desc}</p>
+          </div>
+        </div>
+      </section>
 
-      <p style={{ margin: '0 0 18px', lineHeight: 1.55, color: 'var(--tj-muted)', fontSize: '0.9rem' }}>
-        {labels.yourSpace}
-      </p>
+      <section className="mb-6 rounded-3xl border border-emerald-200/70 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="m-0 text-lg font-bold text-slate-900">
+              {isTh ? 'แผนแต่งมินิโฮมทีละขั้น' : '미니홈 꾸미기 진행도'}
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              {isTh
+                ? `ทำเสร็จแล้ว ${completedSteps}/${progressSteps.length} ขั้น (${progressPercent}%)`
+                : `${completedSteps}/${progressSteps.length} 단계 완료 · ${progressPercent}%`}
+            </p>
+          </div>
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+            {isTh ? `คะแนนสไตล์ ${score ?? 0}` : `스타일 점수 ${score ?? 0}`}
+          </span>
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${progressPercent}%` }} />
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          {progressSteps.map((step) => (
+            <div
+              key={step.key}
+              className={`rounded-xl border p-3 ${
+                step.done ? 'border-emerald-200 bg-emerald-50/70' : 'border-slate-200 bg-slate-50/80'
+              }`}
+            >
+              <p className="m-0 text-xs font-semibold text-slate-500">
+                {step.done ? (isTh ? '완료' : '완료') : (isTh ? '다음' : '다음')}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-800">{step.title}</p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-600">{step.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {showGreet ? (
         <div className="card minihome-greet-card" style={{ padding: 18, marginBottom: 22 }}>
@@ -327,9 +431,16 @@ export default function MinihomeMe() {
         </div>
       ) : null}
 
-      <form className="board-form minihome-edit-form" onSubmit={(e) => void onSave(e)}>
-        <h2 className="minihome-edit-form__h">{labels.editSectionTitle}</h2>
-        <p className="minihome-edit-form__hint">{labels.editHint}</p>
+      <form className="board-form minihome-edit-form rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6" onSubmit={(e) => void onSave(e)}>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="m-0 text-xl font-bold text-slate-900">{panelTitle}</h2>
+            <p className="mt-1 text-sm text-slate-600">{labels.editHint}</p>
+          </div>
+          <button type="submit" className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white" disabled={saveBusy}>
+            {saveBusy ? labels.saving : saveNowLabel}
+          </button>
+        </div>
 
         <label htmlFor="mh-title">{labels.fieldTitle}</label>
         <input id="mh-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
@@ -411,12 +522,12 @@ export default function MinihomeMe() {
         </label>
 
         {/* 섹션별 공개 설정 */}
-        <div className="mh-section-privacy">
-          <p className="mh-section-privacy__title">섹션별 공개 범위</p>
+        <div className="mh-section-privacy rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
+          <p className="mh-section-privacy__title">{sectionPrivacyTitle}</p>
           {(['intro', 'guestbook', 'photos', 'diary'] as const).map((sec) => (
             <div key={sec} className="mh-section-privacy__row">
               <span className="mh-section-privacy__label">
-                {sec === 'intro' ? '소개' : sec === 'guestbook' ? '방명록' : sec === 'photos' ? '사진첩' : '다이어리'}
+                {sectionLabels[sec]}
               </span>
               <select
                 className="mh-section-privacy__select"
@@ -424,16 +535,11 @@ export default function MinihomeMe() {
                 onChange={(e) => {
                   const next = { ...sectionVis, [sec]: e.target.value };
                   setSectionVis(next);
-                  const sb = createBrowserClient();
-                  void sb.rpc('minihome_update_section_visibility', {
-                    p_section: sec,
-                    p_visibility: e.target.value,
-                  });
                 }}
               >
-                <option value="public">전체 공개</option>
-                <option value="ilchon">일촌만</option>
-                <option value="private">비공개 (나만)</option>
+                <option value="public">{visPublicLabel}</option>
+                <option value="ilchon">{visIlchonLabel}</option>
+                <option value="private">{visPrivateLabel}</option>
               </select>
             </div>
           ))}

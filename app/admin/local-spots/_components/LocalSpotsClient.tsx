@@ -28,6 +28,19 @@ export type LocalSpotRow = {
   updated_at: string;
 };
 
+export type LocalSpotTemplateDraftRow = {
+  id: string;
+  local_spot_id: string;
+  confidence: number;
+  status: 'draft' | 'approved' | 'rejected' | 'applied';
+  review_note: string | null;
+  created_at: string;
+  approved_at: string | null;
+  applied_at: string | null;
+  template_json: unknown;
+  pipeline_meta: unknown;
+};
+
 function photosToLines(photo_urls: unknown): string {
   if (!photo_urls) return '';
   if (Array.isArray(photo_urls)) {
@@ -206,12 +219,59 @@ const emptyForm: FormState = {
   minihome_guestbook_enabled: true,
 };
 
-export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
+export default function LocalSpotsClient({
+  spots,
+  drafts = [],
+}: {
+  spots: LocalSpotRow[];
+  drafts?: LocalSpotTemplateDraftRow[];
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
   const [focusField, setFocusField] = useState<MinihomeMissingKey | null>(null);
+  async function reviewDraft(
+    draft: LocalSpotTemplateDraftRow,
+    action: 'approve' | 'reject' | 'rollback',
+  ) {
+    setBusy(true);
+    setMsg(null);
+    try {
+      let reviewNote: string | null = null;
+      if (action === 'reject') {
+        reviewNote = prompt('거절 사유(선택)', draft.review_note ?? '') ?? null;
+      }
+      if (action === 'approve' && !confirm('이 초안을 미니홈에 적용할까요?')) return;
+      if (action === 'rollback' && !confirm('해당 초안 적용 전 상태로 롤백할까요?')) return;
+      const res = await fetch(
+        `/api/admin/local-shops/${draft.local_spot_id}/template-drafts/${draft.id}/approve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action,
+            reviewNote: reviewNote?.trim() || null,
+          }),
+        },
+      );
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error || res.statusText);
+      setMsg(
+        action === 'approve'
+          ? '초안을 승인하고 적용했습니다.'
+          : action === 'rollback'
+            ? '직전 스냅샷으로 롤백했습니다.'
+            : '초안을 거절 상태로 변경했습니다.',
+      );
+      router.refresh();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const slugRef = useRef<HTMLInputElement | null>(null);
   const introRef = useRef<HTMLTextAreaElement | null>(null);
   const menuRef = useRef<HTMLTextAreaElement | null>(null);
@@ -411,6 +471,9 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
     }
   }
 
+  const draftQueue = drafts.filter((d) => d.status === 'draft');
+  const spotNameById = new Map(spots.map((s) => [s.id, s.name]));
+
   return (
     <div style={{ maxWidth: 960 }}>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
@@ -473,6 +536,112 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
           </button>
         </div>
       ) : null}
+
+      <div
+        style={{
+          marginBottom: 16,
+          border: '1px solid #e2e8f0',
+          borderRadius: 10,
+          padding: 12,
+          background: '#f8fafc',
+        }}
+      >
+        <p style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 700 }}>
+          메뉴판 템플릿 검수 큐 · 대기 {draftQueue.length}건
+        </p>
+        {drafts.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
+            아직 생성된 초안이 없습니다. 점주가 메뉴판 이미지를 올리면 파이프라인이 초안을 생성합니다.
+          </p>
+        ) : (
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8 }}>
+            {drafts.slice(0, 12).map((draft) => {
+              const template = draft.template_json && typeof draft.template_json === 'object'
+                ? (draft.template_json as Record<string, unknown>)
+                : {};
+              const rec =
+                template.recommendations &&
+                typeof template.recommendations === 'object' &&
+                !Array.isArray(template.recommendations)
+                  ? (template.recommendations as Record<string, unknown>)
+                  : {};
+              const concept = typeof rec.concept_summary === 'string' ? rec.concept_summary : '';
+              const confidencePct = Math.round(Number(draft.confidence || 0) * 100);
+              const queueReason =
+                draft.pipeline_meta &&
+                typeof draft.pipeline_meta === 'object' &&
+                !Array.isArray(draft.pipeline_meta) &&
+                typeof (draft.pipeline_meta as Record<string, unknown>).queue_reason === 'string'
+                  ? String((draft.pipeline_meta as Record<string, unknown>).queue_reason)
+                  : '';
+              return (
+                <li
+                  key={draft.id}
+                  style={{
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 8,
+                    padding: 10,
+                    background: '#fff',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+                    <div>
+                      <strong style={{ fontSize: 14 }}>
+                        {spotNameById.get(draft.local_spot_id) ?? draft.local_spot_id}
+                      </strong>
+                      <p style={{ margin: '4px 0 0', fontSize: 12, color: '#64748b' }}>
+                        상태: {draft.status} · confidence {confidencePct}% {queueReason ? `· ${queueReason}` : ''}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {draft.status === 'draft' ? (
+                        <>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            style={{ ...btnPrimary, fontSize: 12, padding: '8px 10px' }}
+                            onClick={() => void reviewDraft(draft, 'approve')}
+                          >
+                            승인·적용
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            style={{ ...btnGhost, fontSize: 12, padding: '8px 10px' }}
+                            onClick={() => void reviewDraft(draft, 'reject')}
+                          >
+                            거절
+                          </button>
+                        </>
+                      ) : null}
+                      {draft.status === 'applied' ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          style={{ ...btnGhost, fontSize: 12, padding: '8px 10px' }}
+                          onClick={() => void reviewDraft(draft, 'rollback')}
+                        >
+                          롤백
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                  {concept ? (
+                    <p style={{ margin: '8px 0 0', fontSize: 13, color: '#334155' }}>
+                      {concept}
+                    </p>
+                  ) : null}
+                  {draft.review_note ? (
+                    <p style={{ margin: '6px 0 0', fontSize: 12, color: '#7c2d12' }}>
+                      검수 메모: {draft.review_note}
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {orderedSpots.map((s) => {

@@ -6,19 +6,43 @@ import Link from 'next/link';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import LocalSpotsClient, { type LocalSpotRow } from './_components/LocalSpotsClient';
 
+type LocalSpotTemplateDraftRow = {
+  id: string;
+  local_spot_id: string;
+  confidence: number;
+  status: 'draft' | 'approved' | 'rejected' | 'applied';
+  review_note: string | null;
+  created_at: string;
+  approved_at: string | null;
+  applied_at: string | null;
+  template_json: unknown;
+  pipeline_meta: unknown;
+};
+
 export default async function AdminLocalSpotsPage() {
   let spots: LocalSpotRow[] = [];
+  let drafts: LocalSpotTemplateDraftRow[] = [];
   let err: string | null = null;
 
   try {
     const admin = createServiceRoleClient();
-    const { data, error } = await admin
-      .from('local_spots')
-      .select('*')
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: false });
+    const [{ data, error }, draftsRes] = await Promise.all([
+      admin
+        .from('local_spots')
+        .select('*')
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: false }),
+      admin
+        .from('local_spot_template_drafts')
+        .select('id, local_spot_id, confidence, status, review_note, created_at, approved_at, applied_at, template_json, pipeline_meta')
+        .order('created_at', { ascending: false })
+        .limit(80),
+    ]);
     if (error) err = error.message;
     else spots = (data ?? []) as LocalSpotRow[];
+
+    if (draftsRes.error) err = draftsRes.error.message;
+    else drafts = (draftsRes.data ?? []) as LocalSpotTemplateDraftRow[];
   } catch (e) {
     err = e instanceof Error ? e.message : String(e);
   }
@@ -46,7 +70,7 @@ export default async function AdminLocalSpotsPage() {
         </div>
       )}
 
-      <LocalSpotsClient spots={spots} />
+      <LocalSpotsClient spots={spots} drafts={drafts} />
     </main>
   );
 }

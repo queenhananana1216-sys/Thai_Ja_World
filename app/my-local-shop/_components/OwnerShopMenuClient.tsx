@@ -4,6 +4,25 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
 
+type MenuAsset = {
+  id: string;
+  asset_type: 'menu_board' | 'price_list' | 'treatment_sheet' | 'shop_scene';
+  public_url: string;
+  status: 'uploaded' | 'queued' | 'processing' | 'processed' | 'failed';
+  error_message?: string | null;
+  created_at: string;
+};
+
+type TemplateDraft = {
+  id: string;
+  confidence: number;
+  status: 'draft' | 'approved' | 'rejected' | 'applied';
+  review_note?: string | null;
+  created_at: string;
+  template_json?: unknown;
+  pipeline_meta?: unknown;
+};
+
 function stringifyMenu(v: unknown): string {
   try {
     const m = v ?? [];
@@ -21,6 +40,10 @@ export default function OwnerShopMenuClient() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [assets, setAssets] = useState<MenuAsset[]>([]);
+  const [drafts, setDrafts] = useState<TemplateDraft[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [assetType, setAssetType] = useState<'menu_board' | 'price_list' | 'treatment_sheet' | 'shop_scene'>('menu_board');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -42,6 +65,15 @@ export default function OwnerShopMenuClient() {
       .maybeSingle();
     if (error) setMsg(error.message);
     else setMenuJson(stringifyMenu(data?.minihome_menu));
+    const snapshotRes = await fetch(`/api/local-shops/${id}/menu-assets`, {
+      cache: 'no-store',
+      credentials: 'include',
+    });
+    if (snapshotRes.ok) {
+      const payload = (await snapshotRes.json()) as { assets?: MenuAsset[]; drafts?: TemplateDraft[] };
+      setAssets(payload.assets ?? []);
+      setDrafts(payload.drafts ?? []);
+    }
     setLoading(false);
   }, [id]);
 
@@ -80,6 +112,33 @@ export default function OwnerShopMenuClient() {
     setSaving(false);
   }
 
+  async function uploadMenuAsset(files: FileList | null) {
+    if (!id || !files?.length) return;
+    setUploading(true);
+    setMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append('asset_type', assetType);
+      for (let i = 0; i < files.length; i++) {
+        const f = files.item(i);
+        if (f) fd.append('file', f);
+      }
+      const res = await fetch(`/api/local-shops/${id}/menu-assets`, {
+        method: 'POST',
+        body: fd,
+        credentials: 'include',
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(j.error || res.statusText);
+      setMsg('이미지 업로드 완료. 관리자 승인용 템플릿 초안이 생성됩니다.');
+      await load();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   if (!id) return null;
   if (loading) return <p style={{ color: '#64748b' }}>불러오는 중…</p>;
 
@@ -108,9 +167,115 @@ export default function OwnerShopMenuClient() {
           }}
         />
       </label>
+      <div
+        style={{
+          border: '1px solid #e2e8f0',
+          borderRadius: 8,
+          padding: 12,
+          background: '#f8fafc',
+        }}
+      >
+        <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700 }}>
+          메뉴판/가격표 이미지 업로드 (관리자 승인 모드)
+        </p>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <select
+            value={assetType}
+            onChange={(e) => setAssetType(e.target.value as 'menu_board' | 'price_list' | 'treatment_sheet' | 'shop_scene')}
+            style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 12 }}
+          >
+            <option value="menu_board">메뉴판</option>
+            <option value="price_list">가격표</option>
+            <option value="treatment_sheet">시술표</option>
+            <option value="shop_scene">로컬 분위기 사진</option>
+          </select>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            disabled={uploading}
+            onChange={(e) => void uploadMenuAsset(e.target.files)}
+          />
+        </div>
+        <p style={{ margin: '8px 0 0', fontSize: 12, color: '#64748b' }}>
+          업로드 후 자동으로 템플릿 초안이 생성되며, 관리자가 승인해야 실제 미니홈에 반영됩니다.
+        </p>
+      </div>
+
+      <div
+        style={{
+          border: '1px solid #e2e8f0',
+          borderRadius: 8,
+          padding: 12,
+          background: '#fff',
+        }}
+      >
+        <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700 }}>
+          최근 업로드 자산 ({assets.length})
+        </p>
+        {assets.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>아직 업로드된 메뉴 이미지가 없습니다.</p>
+        ) : (
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
+            {assets.slice(0, 8).map((asset) => (
+              <li key={asset.id} style={{ fontSize: 12, color: '#334155' }}>
+                [{asset.asset_type}] {asset.status}
+                {asset.public_url ? (
+                  <>
+                    {' '}
+                    · <a href={asset.public_url} target="_blank" rel="noreferrer">이미지 보기</a>
+                  </>
+                ) : null}
+                {asset.error_message ? ` · 오류: ${asset.error_message}` : ''}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div
+        style={{
+          border: '1px solid #e2e8f0',
+          borderRadius: 8,
+          padding: 12,
+          background: '#fff',
+        }}
+      >
+        <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700 }}>
+          템플릿 초안 상태 ({drafts.length})
+        </p>
+        {drafts.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>
+            생성된 초안이 없습니다. 이미지 업로드 후 잠시 뒤 다시 확인해 주세요.
+          </p>
+        ) : (
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
+            {drafts.slice(0, 8).map((draft) => {
+              const template =
+                draft.template_json && typeof draft.template_json === 'object' && !Array.isArray(draft.template_json)
+                  ? (draft.template_json as Record<string, unknown>)
+                  : {};
+              const rec =
+                template.recommendations &&
+                typeof template.recommendations === 'object' &&
+                !Array.isArray(template.recommendations)
+                  ? (template.recommendations as Record<string, unknown>)
+                  : {};
+              const concept = typeof rec.concept_summary === 'string' ? rec.concept_summary : '';
+              return (
+                <li key={draft.id} style={{ fontSize: 12, color: '#334155' }}>
+                  {draft.status} · confidence {Math.round(Number(draft.confidence || 0) * 100)}%
+                  {concept ? ` · ${concept}` : ''}
+                  {draft.review_note ? ` · 검수 메모: ${draft.review_note}` : ''}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
       <button
         type="button"
-        disabled={saving}
+        disabled={saving || uploading}
         onClick={() => void save()}
         style={{
           alignSelf: 'flex-start',
@@ -120,8 +285,8 @@ export default function OwnerShopMenuClient() {
           border: 'none',
           borderRadius: 8,
           fontWeight: 600,
-          cursor: saving ? 'wait' : 'pointer',
-          opacity: saving ? 0.7 : 1,
+          cursor: saving || uploading ? 'wait' : 'pointer',
+          opacity: saving || uploading ? 0.7 : 1,
         }}
       >
         {saving ? '저장 중…' : '메뉴 저장'}

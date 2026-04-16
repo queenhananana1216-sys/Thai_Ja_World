@@ -120,6 +120,10 @@ export default function MinihomeRoomView({
   const theme = parseTheme(data.theme);
   const accent = safeAccent(theme.accent, FALLBACK_ACCENT);
   const modules = parseLayoutModules(data.layout_modules);
+  const isThaiUi = /[\u0E00-\u0E7F]/.test(labels.pageTitle);
+  const todayLabel = isThaiUi ? 'วันนี้' : 'TODAY';
+  const totalLabel = isThaiUi ? 'ทั้งหมด' : 'TOTAL';
+  const memberFallbackLabel = isThaiUi ? 'สมาชิก' : 'member';
   const wallpaper = theme.wallpaper?.trim();
   const minimi = theme.minimi?.trim();
   const profileFrame = theme.profile_frame?.trim();
@@ -195,6 +199,18 @@ export default function MinihomeRoomView({
     [gbRows],
   );
   const openRows = useMemo(() => (gbRows ?? []).filter((r) => r.entry_kind === 'open'), [gbRows]);
+  const visibleIlchonRows = useMemo(
+    () => (isOwner ? ilchonRows : ilchonRows.filter((row) => !row.is_hidden)),
+    [ilchonRows, isOwner],
+  );
+  const visibleOpenRows = useMemo(
+    () => (isOwner ? openRows : openRows.filter((row) => !row.is_hidden)),
+    [openRows, isOwner],
+  );
+  const visibleDiaryRows = useMemo(
+    () => (isOwner ? diaryRows : diaryRows.filter((entry) => !entry.is_secret)),
+    [diaryRows, isOwner],
+  );
 
   const loadGuestbook = useCallback(async () => {
     if (!data.owner_id) return;
@@ -233,11 +249,11 @@ export default function MinihomeRoomView({
     const { data: profs } = await sb.from('profiles').select('id, display_name').in('id', ids);
     const map: Record<string, string> = {};
     for (const p of profs ?? []) {
-      map[p.id as string] = ((p.display_name as string) || '').trim() || 'member';
+      map[p.id as string] = ((p.display_name as string) || '').trim() || memberFallbackLabel;
     }
     setNames(map);
     setGbLoading(false);
-  }, [data.owner_id]);
+  }, [data.owner_id, memberFallbackLabel]);
 
   const loadPhotos = useCallback(async () => {
     if (!data.owner_id) return;
@@ -611,7 +627,7 @@ export default function MinihomeRoomView({
             style={{ opacity: r.is_hidden ? 0.72 : 1 }}
           >
             <div className="minihome-cy-win__meta">
-              {names[r.author_id] ?? 'member'} · {formatDate(r.created_at)}
+              {names[r.author_id] ?? memberFallbackLabel} · {formatDate(r.created_at)}
               {r.is_hidden ? (
                 <span style={{ marginLeft: 8, fontSize: '0.72rem', fontWeight: 700, color: '#b45309' }}>
                   [{labels.cyHiddenBadge}]
@@ -770,10 +786,10 @@ export default function MinihomeRoomView({
               </div>
               <div className="mh-cy-profile__right">
                 <div className="mh-cy-visits">
-                  <span className="mh-cy-visits__label">TODAY</span>
+                  <span className="mh-cy-visits__label">{todayLabel}</span>
                   <span className="mh-cy-visits__num">{data.visit_count_today ?? 0}</span>
                   <span className="mh-cy-visits__sep">|</span>
-                  <span className="mh-cy-visits__label">TOTAL</span>
+                  <span className="mh-cy-visits__label">{totalLabel}</span>
                   <span className="mh-cy-visits__num">{data.visit_count_total ?? 0}</span>
                 </div>
               </div>
@@ -881,10 +897,10 @@ export default function MinihomeRoomView({
           </p>
           {gbLoading ? (
             <p className="minihome-cy-win__muted">{labels.loadingMark}</p>
-          ) : ilchonRows.length === 0 ? (
+          ) : visibleIlchonRows.length === 0 ? (
             <p className="minihome-cy-win__muted">{labels.cyGuestbookEmpty}</p>
           ) : (
-            renderGbList(ilchonRows, true)
+            renderGbList(visibleIlchonRows, true)
           )}
           {showIlchonComposer ? (
             <div style={{ marginTop: 14, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 12 }}>
@@ -940,10 +956,10 @@ export default function MinihomeRoomView({
           </p>
           {gbLoading ? (
             <p className="minihome-cy-win__muted">{labels.loadingMark}</p>
-          ) : openRows.length === 0 ? (
+          ) : visibleOpenRows.length === 0 ? (
             <p className="minihome-cy-win__muted">{labels.cyVisitorEmpty}</p>
           ) : (
-            renderGbList(openRows, false)
+            renderGbList(visibleOpenRows, false)
           )}
           {showOpenComposer ? (
             <div style={{ marginTop: 14, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 12 }}>
@@ -1074,7 +1090,7 @@ export default function MinihomeRoomView({
                 type="text"
                 value={diaryTitle}
                 onChange={(e) => setDiaryTitle(e.target.value)}
-                placeholder="제목 (선택)"
+                placeholder={labels.fieldTitle}
                 maxLength={200}
                 className="minihome-diary-form__title"
               />
@@ -1083,7 +1099,7 @@ export default function MinihomeRoomView({
                 onChange={(e) => setDiaryBody(e.target.value)}
                 rows={6}
                 maxLength={5000}
-                placeholder="오늘 하루를 기록해 보세요…"
+                placeholder={labels.fieldIntro}
                 className="minihome-diary-form__body"
               />
               <div className="minihome-diary-form__mood">
@@ -1133,11 +1149,11 @@ export default function MinihomeRoomView({
                   {labels.cyDiaryWrite}
                 </button>
               ) : null}
-              {diaryRows.length === 0 ? (
+              {visibleDiaryRows.length === 0 ? (
                 <p className="minihome-cy-win__muted">{labels.cyDiaryEmpty}</p>
               ) : (
                 <ul className="minihome-cy-win__list">
-                  {diaryRows.map((d) => (
+                  {visibleDiaryRows.map((d) => (
                     <li key={d.id} className="minihome-cy-win__item minihome-diary-entry">
                       <div className="minihome-diary-entry__head">
                         <span className="minihome-diary-entry__mood">{MOODS.find((m) => m.key === d.mood)?.label ?? '😐'}</span>

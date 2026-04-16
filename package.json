@@ -15,6 +15,7 @@
     "news:ingest": "tsx scripts/run-news-ingest-once.ts",
     "knowledge:ingest": "tsx scripts/run-knowledge-ingest-once.ts",
     "home-copy:refresh": "tsx scripts/run-home-copy-refresh.ts",
+    "local-shop-template:pipeline": "tsx scripts/run-local-shop-template-pipeline.ts",
     "pipeline:content-ui": "npm run news:ingest && npm run knowledge:ingest && npm run home-copy:refresh",
     "news:backfill-editor-notes": "tsx scripts/run-backfill-editor-notes-once.ts",
     "bot:knowledge:daemon": "node scripts/run-knowledge-cron-daemon.mjs",

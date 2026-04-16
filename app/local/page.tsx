@@ -63,45 +63,46 @@ function SpotCard({
   const qrHref = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(abs)}`;
   const thumb = firstPhoto(spot.photo_urls);
   return (
-    <article className="shop-card">
+    <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
       <div
-        className="shop-card__image"
+        className="flex h-44 items-center justify-center bg-slate-100 text-4xl"
         style={thumb ? { backgroundImage: `url(${thumb})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
       >
         {!thumb ? '🏪' : null}
       </div>
-      <div className="shop-card__body">
-        <span className="shop-card__name">{spot.name}</span>
-        <span className="shop-card__category">
-          {spot.category}
-        </span>
-        {spot.description ? <p className="shop-card__desc">{spot.description}</p> : null}
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-base font-extrabold text-slate-900">{spot.name}</h3>
+          <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
+            {spot.category}
+          </span>
+        </div>
+        {spot.description ? <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600">{spot.description}</p> : null}
         {Array.isArray(spot.tags) && spot.tags.length > 0 ? (
-          <div className="shop-card__tags">
+          <div className="mt-3 flex flex-wrap gap-1.5">
             {spot.tags.slice(0, 4).map((t) => (
-              <span key={t} className="shop-card__tag">
+              <span key={t} className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                 #{t}
               </span>
             ))}
           </div>
         ) : null}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-          <Link href={shopHref} className="board-form__submit" style={{ textDecoration: 'none', padding: '6px 12px' }}>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href={shopHref}
+            className="rounded-lg bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white no-underline transition hover:bg-slate-700"
+          >
             {locale === 'th' ? 'ดูมินิโฮม' : '미니홈 보기'}
           </Link>
           <a
             href={qrHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="board-form__submit"
-            style={{
-              textDecoration: 'none',
-              padding: '6px 12px',
-              background: qrEmphasis ? 'rgba(124,58,237,0.12)' : '#fff',
-              color: 'var(--tj-ink)',
-              border: qrEmphasis ? '1px solid #7c3aed' : '1px solid var(--tj-line)',
-              fontWeight: qrEmphasis ? 700 : 500,
-            }}
+            className={`rounded-lg border px-3.5 py-2 text-xs font-semibold no-underline transition ${
+              qrEmphasis
+                ? 'border-violet-500 bg-violet-50 text-violet-700 hover:bg-violet-100'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
           >
             {qrEmphasis
               ? locale === 'th'
@@ -111,12 +112,17 @@ function SpotCard({
                 ? 'ดู QR'
                 : 'QR 보기'}
           </a>
+          {spot.line_url?.trim() ? (
+            <a
+              href={spot.line_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 no-underline transition hover:bg-emerald-100"
+            >
+              {locale === 'th' ? 'ติดต่อ LINE' : 'LINE 문의'}
+            </a>
+          ) : null}
         </div>
-        {spot.line_url?.trim() ? (
-          <a href={spot.line_url} target="_blank" rel="noopener noreferrer" style={{ marginTop: 8, display: 'inline-block', color: 'var(--tj-link)' }}>
-            {locale === 'th' ? 'ติดต่อ LINE' : 'LINE 문의'}
-          </a>
-        ) : null}
       </div>
     </article>
   );
@@ -129,65 +135,49 @@ export default async function LocalPage() {
   const spots = await fetchSpots();
 
   return (
-    <div className="page-body">
-      <div
-        style={{
-          marginBottom: '28px',
-          paddingBottom: '20px',
-          borderBottom: '1px solid #e2e8f0',
-        }}
-      >
-        <h1
-          style={{
-            fontSize: '1.4rem',
-            fontWeight: 800,
-            color: '#1a2025',
-            margin: '0 0 6px',
-          }}
-        >
+    <main className="mx-auto max-w-[1320px] px-4 pb-16 pt-8">
+      <section className="rounded-3xl border border-violet-200/60 bg-[linear-gradient(120deg,#eef2ff_0%,#fdf2f8_100%)] p-6 shadow-sm sm:p-8">
+        <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">
           {locale === 'th' ? '🏪 ร้านท้องถิ่น' : '🏪 로컬 가게'}
         </h1>
-        <p style={{ margin: 0, color: '#64748b', fontSize: '0.88rem' }}>
+        <p className="mt-2 text-sm leading-relaxed text-slate-700">
           {locale === 'th'
             ? 'มินิโฮมสาธารณะดูได้ทันทีแม้ไม่ใช่สมาชิก สแกน QR เพื่อเปิดเมนูร้าน·รูป·ประกาศได้เลย'
             : '공개 미니홈은 비회원도 바로 볼 수 있어요. QR을 찍어 가게 메뉴판·사진·공지로 바로 들어갈 수 있습니다.'}
         </p>
         {qrEmphasis ? (
-          <p style={{ marginTop: 8, color: '#6d28d9', fontSize: '0.82rem', fontWeight: 700 }}>
+          <p className="mt-3 text-xs font-bold text-violet-700">
             {locale === 'th'
               ? 'ตอนนี้เน้นปุ่ม QR เพื่อให้เข้าหน้าเมนูได้เร็วขึ้น'
               : '지금은 QR 진입 버튼을 강조해서 바로 메뉴판으로 들어가기 쉽게 조정했어요.'}
           </p>
         ) : null}
-        <div
-          style={{
-            display: 'flex',
-            gap: '20px',
-            marginTop: '16px',
-            fontSize: '0.82rem',
-            color: '#64748b',
-          }}
-        >
-          <span>
-            🏪 {locale === 'th' ? 'ทั้งหมด' : '전체'}{' '}
-            <strong style={{ color: '#1a2025' }}>{spots.length}</strong>
+        <div className="mt-5 flex flex-wrap items-center gap-2 text-xs">
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-600">
+            🏪 {locale === 'th' ? 'ทั้งหมด' : '전체'} <strong className="text-slate-900">{spots.length}</strong>
             {locale === 'th' ? ' ร้าน' : '개'}
           </span>
+          <Link
+            href="/ads"
+            className="rounded-full border border-violet-300 bg-violet-50 px-3 py-1.5 font-semibold text-violet-700 no-underline transition hover:bg-violet-100"
+          >
+            {locale === 'th' ? 'โปรโมทร้านของคุณ' : '우리 가게 광고 문의'}
+          </Link>
         </div>
-      </div>
+      </section>
 
       {spots.length === 0 ? (
-        <div className="card empty-state">
-          <p style={{ fontSize: '2rem', marginBottom: '8px' }}>🏪</p>
+        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">
+          <p className="mb-2 text-3xl">🏪</p>
           <p>{locale === 'th' ? 'ยังไม่มีมินิโฮมสาธารณะ' : '아직 공개된 로컬 미니홈이 없습니다.'}</p>
         </div>
       ) : (
-        <div className="shop-grid">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {spots.map((spot) => (
             <SpotCard key={spot.id} spot={spot} qrEmphasis={qrEmphasis} locale={locale} />
           ))}
         </div>
       )}
-    </div>
+    </main>
   );
 }

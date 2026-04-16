@@ -14,12 +14,35 @@ export async function GET() {
       { count: postCount },
       { count: spotCount },
       { count: newsCount },
+      { data: latestPostRow },
+      { data: latestSpotRow },
+      { data: latestNewsRow },
     ] = await Promise.all([
       admin.from('profiles').select('*', { count: 'exact', head: true }),
       admin.from('posts').select('*', { count: 'exact', head: true }),
       admin.from('local_spots').select('*', { count: 'exact', head: true }).eq('is_published', true),
       admin.from('processed_news').select('*', { count: 'exact', head: true }).eq('published', true),
+      admin.from('posts').select('created_at').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      admin
+        .from('local_spots')
+        .select('updated_at')
+        .eq('is_published', true)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      admin
+        .from('processed_news')
+        .select('created_at')
+        .eq('published', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
+
+    const lastUpdatedAt = [latestPostRow?.created_at, latestSpotRow?.updated_at, latestNewsRow?.created_at]
+      .filter((v): v is string => typeof v === 'string' && v.length > 0)
+      .sort()
+      .at(-1) ?? null;
 
     return NextResponse.json(
       {
@@ -27,6 +50,7 @@ export async function GET() {
         postCount: postCount ?? 0,
         spotCount: spotCount ?? 0,
         newsCount: newsCount ?? 0,
+        lastUpdatedAt,
       },
       {
         headers: {
@@ -37,7 +61,7 @@ export async function GET() {
   } catch (error) {
     console.error('[/api/stats] 집계 오류:', error);
     return NextResponse.json(
-      { memberCount: 0, postCount: 0, spotCount: 0, newsCount: 0 },
+      { memberCount: 0, postCount: 0, spotCount: 0, newsCount: 0, lastUpdatedAt: null },
       { status: 500 }
     );
   }

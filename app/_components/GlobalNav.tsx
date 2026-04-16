@@ -95,7 +95,7 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
             <BrandPhrase variant="light" />
             <span className="global-header__logo-suffix-nate">{dict.brandSuffix}</span>
           </Link>
-          <aside className="global-header__nate-user">
+          <aside className="global-header__nate-user hidden lg:block">
             <AuthBar variant="natePanel" {...authProps} />
           </aside>
         </div>
@@ -130,6 +130,18 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
                   <SheetTitle className="text-left text-zinc-50">{dict.nav.mainNavAria}</SheetTitle>
                 </SheetHeader>
                 <div className="mt-6 flex flex-col gap-1 pr-2">
+                  <Link
+                    href={`/auth/login?next=${encodeURIComponent(pathname)}`}
+                    className="mb-2 rounded-md border border-violet-300/40 bg-violet-300/10 px-3 py-2.5 text-sm font-semibold text-violet-100 no-underline transition hover:bg-violet-300/20"
+                  >
+                    {dict.board.login}
+                  </Link>
+                  <Link
+                    href={`/auth/signup?next=${encodeURIComponent(pathname)}`}
+                    className="mb-2 rounded-md border border-pink-300/40 bg-pink-300/10 px-3 py-2.5 text-sm font-semibold text-pink-100 no-underline transition hover:bg-pink-300/20"
+                  >
+                    {dict.board.signup}
+                  </Link>
                   {HREFS.map((href, i) => {
                     const isActive = linkActive(href);
                     return (

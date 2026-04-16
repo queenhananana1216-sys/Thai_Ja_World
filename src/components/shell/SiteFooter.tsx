@@ -6,6 +6,7 @@ import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 const FOOTER_LINKS = {
   explore: [
     { href: '/', labelKo: '홈', labelTh: 'หน้าแรก' },
+    { href: '/news', labelKo: '뉴스 스냅샷', labelTh: 'สรุปข่าว' },
     { href: '/tips', labelKo: '꿀팁', labelTh: 'เคล็ดลับ' },
     { href: '/local', labelKo: '로컬', labelTh: 'ท้องถิ่น' },
     { href: '/community/boards', labelKo: '커뮤니티', labelTh: 'ชุมชน' },
@@ -28,8 +29,37 @@ export function SiteFooter() {
   const fn = d.footerNav;
 
   return (
-    <footer className="mt-16 border-t-2 border-zinc-600 bg-tj-header text-zinc-100">
-      <div className="mx-auto grid max-w-[1280px] gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="mt-20 border-t border-violet-300/20 bg-[linear-gradient(180deg,#090a1a_0%,#060814_100%)] text-zinc-100">
+      <div className="mx-auto max-w-[1320px] px-4 pb-2 pt-10">
+        <div className="mb-8 rounded-3xl border border-violet-300/25 bg-white/5 p-5 shadow-[0_16px_45px_rgba(2,6,23,0.45)] backdrop-blur sm:p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-200">For Local Partners</p>
+              <h3 className="mt-2 text-xl font-extrabold text-white sm:text-2xl">
+                로컬 가게 광고, 브랜드 신뢰를 높이는 방식으로 시작하세요
+              </h3>
+              <p className="mt-2 text-sm text-zinc-300">
+                QR 유입 기반 미니홈, 메뉴/예약/공지 동선, 커뮤니티 신뢰 리뷰까지 한 번에 연결됩니다.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Link
+                href="/ads"
+                className="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 no-underline transition hover:opacity-90"
+              >
+                광고 상품 보기
+              </Link>
+              <Link
+                href="/contact"
+                className="rounded-xl border border-violet-200/60 px-4 py-2.5 text-sm font-semibold text-violet-100 no-underline transition hover:bg-white/10"
+              >
+                광고 문의하기
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="mx-auto grid max-w-[1320px] gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
         {/* Brand */}
         <div className="flex flex-col gap-3">
           <span className="text-lg font-extrabold tracking-tight text-white">
@@ -47,7 +77,7 @@ export function SiteFooter() {
 
         {/* Explore */}
         <div>
-          <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-amber-300">
+          <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-violet-200">
             {locale === 'th' ? 'สำรวจ' : '둘러보기'}
           </h4>
           <ul className="flex flex-col gap-2">
@@ -66,7 +96,7 @@ export function SiteFooter() {
 
         {/* Social */}
         <div>
-          <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-amber-300">
+          <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-violet-200">
             {locale === 'th' ? 'โซเชียล' : '소셜'}
           </h4>
           <ul className="flex flex-col gap-2">
@@ -85,7 +115,7 @@ export function SiteFooter() {
 
         {/* Account */}
         <div>
-          <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-amber-300">
+          <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-violet-200">
             {locale === 'th' ? 'บัญชี' : '계정'}
           </h4>
           <ul className="flex flex-col gap-2">
@@ -104,8 +134,8 @@ export function SiteFooter() {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-zinc-600/90">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="border-t border-white/10">
+        <div className="mx-auto flex max-w-[1320px] flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <nav
             className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-zinc-200"
             aria-label={locale === 'th' ? 'นโยบายและข้อมูล' : '약관·안내'}

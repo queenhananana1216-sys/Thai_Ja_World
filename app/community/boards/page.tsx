@@ -73,6 +73,7 @@ export default async function BoardsListPage({
       'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set',
     )
     .eq('moderation_status', 'safe')
+    .eq('is_knowledge_tip', false)
     .order('created_at', { ascending: false })
     .limit(80);
 
@@ -107,26 +108,38 @@ export default async function BoardsListPage({
   }
 
   return (
-    <div className="page-body board-page">
-      <div className="board-toolbar">
-        <h1 className="board-title">{listTitle}</h1>
-        <Link href={newPostHref} className="board-form__submit" style={{ textAlign: 'center' }}>
-          {d.board.newPost}
-        </Link>
+    <main className="mx-auto max-w-[1320px] px-4 pb-16 pt-8">
+      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">{listTitle}</h1>
+            <p className="mt-1 text-sm text-slate-600">
+              {locale === 'th'
+                ? 'บอร์ดชุมชนที่เก็บข้อมูลแบบค้นหาได้ เพื่อไม่ให้โพสต์ดี ๆ หายไปในแชต'
+                : '정보 글이 묻히지 않도록 구조화해서 저장되는 커뮤니티 보드입니다.'}
+            </p>
+          </div>
+          <Link
+            href={newPostHref}
+            className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white no-underline transition hover:bg-slate-700"
+          >
+            {d.board.newPost}
+          </Link>
+        </div>
       </div>
 
       {error && (
-        <p style={{ color: '#be185d', fontSize: '0.86rem' }}>
+        <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           게시글을 불러오지 못했습니다. posts.image_urls 컬럼과 RLS를 확인하세요. ({error.message})
         </p>
       )}
 
       {!error && list.length === 0 && (
-        <div className="card" style={{ padding: 24 }}>
-          <p style={{ margin: 0 }}>{d.board.empty}</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <p className="m-0 text-slate-700">{d.board.empty}</p>
           <Link
             href={`/auth/signup?next=${encodeURIComponent(newPostHref)}`}
-            style={{ display: 'inline-block', marginTop: 12, color: 'var(--tj-link)' }}
+            className="mt-3 inline-block text-sm font-semibold text-violet-700 no-underline hover:underline"
           >
             {d.board.signup} →
           </Link>
@@ -145,53 +158,55 @@ export default async function BoardsListPage({
         const authorHidden = Boolean(p.author_hidden);
 
         return (
-          <div key={pid} className="board-post-wrap">
-            <Link href={`/community/boards/${pid}`} className="board-post" style={{ display: 'block' }}>
-              <div className="board-post__meta">
+          <article key={pid} className="mb-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-violet-300 hover:shadow-md">
+            <Link href={`/community/boards/${pid}`} className="block no-underline hover:no-underline">
+              <div className="text-xs font-medium text-slate-500">
                 {cat} · {author} · {formatDate(p.created_at as string | null)} · {d.board.comments}{' '}
                 {p.comment_count ?? 0} · {d.board.views} {p.view_count ?? 0} · 좋아요 {counts.like} · 공감{' '}
                 {counts.heart}
                 {authorHidden ? (
                   <>
                     {' '}
-                    · <span style={{ color: '#7c6f94' }}>{d.board.postPrivateBadge}</span>
+                    · <span className="font-semibold text-violet-700">{d.board.postPrivateBadge}</span>
                   </>
                 ) : null}
               </div>
-              <h2 className="board-post__title">{p.title as string}</h2>
-              <p className="board-post__excerpt">{excerpt}</p>
+              <h2 className="mt-2 text-lg font-extrabold text-slate-900">{p.title as string}</h2>
+              <p className="mt-1 text-sm leading-relaxed text-slate-600">{excerpt}</p>
               {thumb && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={thumb} alt="" className="board-post__thumb" loading="lazy" />
+                <img src={thumb} alt="" className="mt-3 h-40 w-full rounded-xl object-cover" loading="lazy" />
               )}
             </Link>
             {isAuthor ? (
-              <PostAuthorMenu
-                postId={pid}
-                authorHidden={authorHidden}
-                ownerGateSet={Boolean((p as { owner_edit_password_set?: boolean }).owner_edit_password_set)}
-                listLayout
-                labels={{
-                  postOwnerMenu: d.board.postOwnerMenu,
-                  postDelete: d.board.postDelete,
-                  postMakePrivate: d.board.postMakePrivate,
-                  postMakePublic: d.board.postMakePublic,
-                  postDeleteConfirm: d.board.postDeleteConfirm,
-                  postBusy: d.board.postBusy,
-                  postActionError: d.board.postActionError,
-                  postEdit: d.board.postEdit,
-                  postOwnerPasswordPrompt: d.board.postOwnerPasswordPrompt,
-                  postOwnerPasswordPlaceholder: d.board.postOwnerPasswordPlaceholder,
-                  postOwnerPasswordSubmit: d.board.postOwnerPasswordSubmit,
-                  postOwnerPasswordCancel: d.board.postOwnerPasswordCancel,
-                  postOwnerPasswordRequired: d.board.postOwnerPasswordRequired,
-                  postOwnerPasswordWrong: d.board.postOwnerPasswordWrong,
-                }}
-              />
+              <div className="mt-3">
+                <PostAuthorMenu
+                  postId={pid}
+                  authorHidden={authorHidden}
+                  ownerGateSet={Boolean((p as { owner_edit_password_set?: boolean }).owner_edit_password_set)}
+                  listLayout
+                  labels={{
+                    postOwnerMenu: d.board.postOwnerMenu,
+                    postDelete: d.board.postDelete,
+                    postMakePrivate: d.board.postMakePrivate,
+                    postMakePublic: d.board.postMakePublic,
+                    postDeleteConfirm: d.board.postDeleteConfirm,
+                    postBusy: d.board.postBusy,
+                    postActionError: d.board.postActionError,
+                    postEdit: d.board.postEdit,
+                    postOwnerPasswordPrompt: d.board.postOwnerPasswordPrompt,
+                    postOwnerPasswordPlaceholder: d.board.postOwnerPasswordPlaceholder,
+                    postOwnerPasswordSubmit: d.board.postOwnerPasswordSubmit,
+                    postOwnerPasswordCancel: d.board.postOwnerPasswordCancel,
+                    postOwnerPasswordRequired: d.board.postOwnerPasswordRequired,
+                    postOwnerPasswordWrong: d.board.postOwnerPasswordWrong,
+                  }}
+                />
+              </div>
             ) : null}
-          </div>
+          </article>
         );
       })}
-    </div>
+    </main>
   );
 }

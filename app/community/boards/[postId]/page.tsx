@@ -130,6 +130,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
       .from('posts')
       .select('id, title, updated_at')
       .eq('moderation_status', 'safe')
+      .eq('is_knowledge_tip', false)
       .eq('category', String(post.category))
       .neq('id', postId)
       .order('updated_at', { ascending: false })
@@ -156,7 +157,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   });
 
   return (
-    <div className="page-body board-page">
+    <main className="mx-auto max-w-[1100px] px-4 pb-16 pt-8">
       <JsonLd
         data={{
           '@context': 'https://schema.org',
@@ -204,49 +205,61 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
           ],
         }}
       />
-      <Link href="/community/boards" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
-        ← {d.board.backToList}
-      </Link>
+      <div className="mb-5 flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <Link href="/community/boards" className="text-sm font-semibold text-violet-700 no-underline hover:underline">
+          ← {d.board.backToList}
+        </Link>
+        <Link
+          href="/ads"
+          className="rounded-full border border-violet-300 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 no-underline transition hover:bg-violet-100"
+        >
+          광고/제휴 문의
+        </Link>
+      </div>
 
-      <article style={{ marginTop: 16 }}>
-        <div className="board-post__meta">
+      <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+        <div className="text-xs font-medium text-slate-500">
           {cat} · {d.board.author} {authorName} · {formatDate(post.created_at as string | null)} ·{' '}
           {d.board.views} {post.view_count ?? 0}
           {authorHidden ? (
             <>
               {' '}
-              · <span style={{ color: 'var(--tj-muted)' }}>{d.board.postPrivateBadge}</span>
+              · <span className="font-semibold text-violet-700">{d.board.postPrivateBadge}</span>
             </>
           ) : null}
         </div>
         {isAuthor ? (
-          <PostAuthorMenu
-            postId={postId}
-            authorHidden={authorHidden}
-            ownerGateSet={Boolean((post as { owner_edit_password_set?: boolean }).owner_edit_password_set)}
-            labels={{
-              postOwnerMenu: d.board.postOwnerMenu,
-              postDelete: d.board.postDelete,
-              postMakePrivate: d.board.postMakePrivate,
-              postMakePublic: d.board.postMakePublic,
-              postDeleteConfirm: d.board.postDeleteConfirm,
-              postBusy: d.board.postBusy,
-              postActionError: d.board.postActionError,
-              postEdit: d.board.postEdit,
-              postOwnerPasswordPrompt: d.board.postOwnerPasswordPrompt,
-              postOwnerPasswordPlaceholder: d.board.postOwnerPasswordPlaceholder,
-              postOwnerPasswordSubmit: d.board.postOwnerPasswordSubmit,
-              postOwnerPasswordCancel: d.board.postOwnerPasswordCancel,
-              postOwnerPasswordRequired: d.board.postOwnerPasswordRequired,
-              postOwnerPasswordWrong: d.board.postOwnerPasswordWrong,
-            }}
-          />
+          <div className="mt-3">
+            <PostAuthorMenu
+              postId={postId}
+              authorHidden={authorHidden}
+              ownerGateSet={Boolean((post as { owner_edit_password_set?: boolean }).owner_edit_password_set)}
+              labels={{
+                postOwnerMenu: d.board.postOwnerMenu,
+                postDelete: d.board.postDelete,
+                postMakePrivate: d.board.postMakePrivate,
+                postMakePublic: d.board.postMakePublic,
+                postDeleteConfirm: d.board.postDeleteConfirm,
+                postBusy: d.board.postBusy,
+                postActionError: d.board.postActionError,
+                postEdit: d.board.postEdit,
+                postOwnerPasswordPrompt: d.board.postOwnerPasswordPrompt,
+                postOwnerPasswordPlaceholder: d.board.postOwnerPasswordPlaceholder,
+                postOwnerPasswordSubmit: d.board.postOwnerPasswordSubmit,
+                postOwnerPasswordCancel: d.board.postOwnerPasswordCancel,
+                postOwnerPasswordRequired: d.board.postOwnerPasswordRequired,
+                postOwnerPasswordWrong: d.board.postOwnerPasswordWrong,
+              }}
+            />
+          </div>
         ) : null}
-        <PostReactionsPanel postId={postId} loginNextPath={path} />
-        <h1 className="board-title" style={{ margin: '12px 0 16px' }}>
+        <div className="mt-3">
+          <PostReactionsPanel postId={postId} loginNextPath={path} />
+        </div>
+        <h1 className="mt-4 text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl">
           {post.title as string}
         </h1>
-        <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.95rem', lineHeight: 1.65 }}>
+        <div className="mt-4 whitespace-pre-wrap text-[15px] leading-7 text-slate-700">
           {post.content as string}
         </div>
         {images.map((url) => (
@@ -255,26 +268,25 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
             key={url}
             src={url}
             alt=""
-            className="board-post__thumb"
-            style={{ marginTop: 12 }}
+            className="mt-4 w-full rounded-xl border border-slate-200 object-cover"
           />
         ))}
       </article>
 
       {(relatedPosts.length > 0 || relatedNews.length > 0) && (
-        <section className="card" style={{ marginTop: 20, padding: 18 }}>
-          <h2 style={{ marginTop: 0, marginBottom: 10, fontSize: '1rem' }}>이 글 본 사람들이 함께 본 글</h2>
+        <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-base font-bold text-slate-900">이 글 본 사람들이 함께 본 글</h2>
           {relatedPosts.length > 0 && (
-            <div style={{ marginBottom: relatedNews.length > 0 ? 14 : 0 }}>
-              <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: 'var(--tj-muted)' }}>같은 카테고리 글</p>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
+            <div className={relatedNews.length > 0 ? 'mb-4' : ''}>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">같은 카테고리 글</p>
+              <ul className="m-0 list-disc space-y-1 pl-5">
                 {relatedPosts.map((item) => (
-                  <li key={item.id} style={{ marginBottom: 6 }}>
-                    <Link href={`/community/boards/${item.id}`} style={{ color: 'var(--tj-link)' }}>
+                  <li key={item.id}>
+                    <Link href={`/community/boards/${item.id}`} className="text-sm font-medium text-violet-700 no-underline hover:underline">
                       {item.title}
                     </Link>
                     {item.updatedAt ? (
-                      <span style={{ marginLeft: 8, color: 'var(--tj-muted)', fontSize: '0.78rem' }}>
+                      <span className="ml-2 text-xs text-slate-500">
                         {formatDate(item.updatedAt)}
                       </span>
                     ) : null}
@@ -285,15 +297,15 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
           )}
           {relatedNews.length > 0 && (
             <div>
-              <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: 'var(--tj-muted)' }}>관련 뉴스</p>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">관련 뉴스</p>
+              <ul className="m-0 list-disc space-y-1 pl-5">
                 {relatedNews.map((item) => (
-                  <li key={item.id} style={{ marginBottom: 6 }}>
-                    <Link href={`/news/${item.id}`} style={{ color: 'var(--tj-link)' }}>
+                  <li key={item.id}>
+                    <Link href={`/news/${item.id}`} className="text-sm font-medium text-violet-700 no-underline hover:underline">
                       {item.title}
                     </Link>
                     {item.createdAt ? (
-                      <span style={{ marginLeft: 8, color: 'var(--tj-muted)', fontSize: '0.78rem' }}>
+                      <span className="ml-2 text-xs text-slate-500">
                         {formatDate(item.createdAt)}
                       </span>
                     ) : null}
@@ -312,6 +324,6 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
         loginNextPath={path}
         showLoginHint={!viewerId}
       />
-    </div>
+    </main>
   );
 }

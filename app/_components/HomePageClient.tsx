@@ -11,10 +11,12 @@ import SiteSearch from './SiteSearch';
 import { DepthCard } from '@/components/3d/DepthCard';
 import { OrbitalNav } from '@/components/3d/OrbitalNav';
 import { StarfieldSection } from '@/components/3d/StarfieldSection';
+import { EntryFlowSection } from '@/components/sections/landing/EntryFlowSection';
 import { useHeroSiteCopy } from '@/contexts/HeroSiteCopyContext';
 import { getDictionary } from '@/i18n/dictionaries';
 import { readLocaleCookie } from '@/i18n/readLocaleCookie';
 import { TJ_LOCALE_CHANGE_EVENT, type Locale } from '@/i18n/types';
+import type { EntryFlowResponse } from '@/lib/landing/types';
 import type { NewsItem, LocalBusiness } from '@/types/taeworld';
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { createBrowserClient } from '@/lib/supabase/client';
@@ -108,20 +110,50 @@ async function fetchNewsBrowser(): Promise<NewsItem[]> {
 async function fetchFeaturedShopsBrowser(): Promise<LocalBusiness[]> {
   const sb = createBrowserClient();
   try {
+    type LocalSpotHomeRow = {
+      id: string;
+      slug: string;
+      name: string;
+      category: string;
+      description: string | null;
+      photo_urls: unknown;
+      tags: string[] | null;
+      minihome_public_slug: string | null;
+    };
+    const firstPhoto = (raw: unknown): string | null => {
+      if (!Array.isArray(raw)) return null;
+      const v = raw.find((x) => typeof x === 'string' && x.trim().length > 0);
+      return typeof v === 'string' ? v : null;
+    };
     const { data } = await sb
-      .from('local_businesses')
+      .from('local_spots')
       .select(
-        'id, slug, name, category, region, description, image_url, emoji, tier, is_recommended, has_discount, discount, tags',
+        'id,slug,name,category,description,photo_urls,tags,minihome_public_slug',
       )
-      .eq('is_active', true)
-      .order('is_recommended', { ascending: false })
-      .order('created_at', { ascending: false })
+      .eq('is_published', true)
+      .order('sort_order', { ascending: true })
+      .order('updated_at', { ascending: false })
       .limit(4);
 
-    const TIER_RANK: Record<string, number> = { premium: 0, standard: 1, basic: 2 };
-    return (data ?? [])
-      .map((b) => b as unknown as LocalBusiness)
-      .sort((a, b) => (TIER_RANK[a.tier] ?? 2) - (TIER_RANK[b.tier] ?? 2));
+    return ((data ?? []) as LocalSpotHomeRow[]).map((b) => {
+      const publicSlug = (b.minihome_public_slug?.trim() || b.slug || '').trim();
+      return {
+        id: b.id,
+        // Home 카드 링크는 공개 미니홈 slug를 우선 사용
+        slug: publicSlug,
+        name: b.name,
+        category: b.category,
+        region: '',
+        description: b.description,
+        image_url: firstPhoto(b.photo_urls),
+        emoji: '🏪',
+        tier: 'basic',
+        is_recommended: false,
+        has_discount: false,
+        discount: null,
+        tags: b.tags ?? [],
+      } satisfies LocalBusiness;
+    });
   } catch {
     return [];
   }
@@ -168,7 +200,7 @@ function ShopMiniCard({
   tierStandard: string;
 }) {
   return (
-    <Link href={`/local/${shop.slug}`} className="shop-card">
+    <Link href={`/shop/${shop.slug}`} className="shop-card">
       <div
         className="shop-card__image"
         style={
@@ -193,7 +225,7 @@ function ShopMiniCard({
           )}
         </div>
         <span className="shop-card__category">
-          {shop.category} · {shop.region}
+          {shop.region ? `${shop.category} · ${shop.region}` : shop.category}
         </span>
       </div>
     </Link>
@@ -207,6 +239,73 @@ interface Stats {
   newsCount: number;
 }
 
+const ENTRY_FLOW_FALLBACK: EntryFlowResponse = {
+  generatedAt: new Date(0).toISOString(),
+  snapshot: {
+    posts7d: 0,
+    flea7d: 0,
+    job7d: 0,
+    publishedShops: 0,
+    deliveryReadyShops: 0,
+    minihomePublicRooms: 0,
+    news3d: 0,
+    tradeClicks14d: 0,
+    jobClicks14d: 0,
+    localClicks14d: 0,
+    minihomeClicks14d: 0,
+    tradeConversions14d: 0,
+    jobConversions14d: 0,
+    localConversions14d: 0,
+    minihomeConversions14d: 0,
+  },
+  lanes: [
+    {
+      id: 'trade',
+      title: '번개장터',
+      description: '오늘 올라온 중고·거래 글을 먼저 보고 바로 문의하세요.',
+      primaryHref: '/community/boards?cat=flea',
+      primaryLabel: '번개장터 글 보기',
+      secondaryHref: '/community/boards/new?cat=flea',
+      secondaryLabel: '판매 글 올리기',
+      signal: '최근 데이터 수집 중',
+      score: 0,
+    },
+    {
+      id: 'job',
+      title: '구인구직',
+      description: '채용/알바/도움 요청 글만 모아서 빠르게 확인하세요.',
+      primaryHref: '/community/boards?cat=job',
+      primaryLabel: '구인구직 글 보기',
+      secondaryHref: '/community/boards/new?cat=job',
+      secondaryLabel: '구인 글 올리기',
+      signal: '최근 데이터 수집 중',
+      score: 0,
+    },
+    {
+      id: 'local',
+      title: '로컬 가게 예약·홍보',
+      description: '당일 예약/배송 가능한 가게를 찾고, 우리 가게 홍보도 연결하세요.',
+      primaryHref: '/local',
+      primaryLabel: '로컬 가게 찾기',
+      secondaryHref: '/ads',
+      secondaryLabel: '가게 홍보 문의',
+      signal: '최근 데이터 수집 중',
+      score: 0,
+    },
+    {
+      id: 'minihome',
+      title: '미니홈 · 꾸미기',
+      description: '싸이월드 감성으로 내 방을 꾸미고 일촌/방명록으로 소통하세요.',
+      primaryHref: '/minihome',
+      primaryLabel: '미니홈 둘러보기',
+      secondaryHref: '/minihome/shop',
+      secondaryLabel: '꾸미기 상점 가기',
+      signal: '최근 데이터 수집 중',
+      score: 0,
+    },
+  ],
+};
+
 export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: boolean; stats?: Stats }) {
   const homeTier = SURFACE_DEFAULT_TIER.home;
   const [locale, setLocale] = useState<Locale>('ko');
@@ -219,6 +318,7 @@ export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: bool
   const [weatherErr, setWeatherErr] = useState(false);
   const [dotoriBalance, setDotoriBalance] = useState<number | null>(null);
   const [tipsItems, setTipsItems] = useState<TipPreview[]>([]);
+  const [entryFlow, setEntryFlow] = useState<EntryFlowResponse>(ENTRY_FLOW_FALLBACK);
   const [popularPosts, setPopularPosts] = useState<{ id: string; title: string; author_name: string; reaction_count: number; comment_count: number }[]>([]);
   const [hotPosts, setHotPosts] = useState<{ id: string; title: string; author_name: string; reaction_count: number; comment_count: number; category: string }[]>([]);
   const [chatPreview, setChatPreview] = useState<{ id: string; body: string; author_name: string }[]>([]);
@@ -294,6 +394,23 @@ export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: bool
       return { href: target, label, key: href };
     }).filter((x): x is PortalQuickLink => x !== null);
   }, [isLoggedIn, locale]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch('/api/landing/entry-flow', { cache: 'no-store' });
+        if (!response.ok) return;
+        const payload = (await response.json()) as EntryFlowResponse;
+        if (!cancelled) setEntryFlow(payload);
+      } catch {
+        // keep fallback if loading fails
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -431,7 +548,7 @@ export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: bool
                 {isLoggedIn ? '지금 탐색 시작' : '30초 무료 가입'}
               </Link>
               <Link href="/news" className="tj-rev-hero__cta tj-rev-hero__cta--ghost">
-                뉴스 먼저 보기
+                {h.newsHubHeroCta}
               </Link>
             </div>
             <div className="tj-rev-hero__metrics">
@@ -456,6 +573,8 @@ export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: bool
           </DepthCard>
         </div>
       </section>
+
+      <EntryFlowSection flow={entryFlow} />
 
       {/* ══ PORTAL ZONE ══ */}
       <StarfieldSection className="fv2-portal" tier={homeTier}>
@@ -484,7 +603,9 @@ export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: bool
             <DepthCard className="fv2-card" tier={homeTier} aria-label={hotLabelUi}>
               <div className="fv2-card__head">
                 <h2 className="fv2-card__h">{h.portalMastTitle.includes('검색') ? '속보 / 긴급' : hotLabelUi}</h2>
-                <Link href="/news" className="fv2-more">더보기 ›</Link>
+                <Link href="/news" className="fv2-more">
+                  {h.newsHubSectionMore}
+                </Link>
               </div>
               {listsBusy ? (
                 <p className="fv2-card__state">{h.hotNewsLoading}</p>
@@ -635,14 +756,14 @@ export default function HomePageClient({ isLoggedIn, stats }: { isLoggedIn: bool
             <section>
               <div className="fv2-card__head">
                 <h2 className="fv2-card__h">우리 동네 가게</h2>
-                <Link href={isLoggedIn ? '/local' : loginNextHref('/local')} className="fv2-more">더보기 ›</Link>
+                <Link href="/local" className="fv2-more">더보기 ›</Link>
               </div>
               {listsBusy ? (
                 <p className="fv2-card__state">{h.shopsLoading}</p>
               ) : shops.length > 0 ? (
                 <div className="fv2-shop-scroll">
                   {shops.map((shop) => (
-                    <Link href={`/local/${shop.slug}`} key={shop.id} className="fv2-shop-card">
+                    <Link href={`/shop/${shop.slug}`} key={shop.id} className="fv2-shop-card">
                       <div
                         className="fv2-shop-card__img"
                         style={shop.image_url ? { backgroundImage: `url(${shop.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}

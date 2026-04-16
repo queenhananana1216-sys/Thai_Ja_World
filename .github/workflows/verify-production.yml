@@ -1,0 +1,32 @@
+# 수동 실행: 프로덕션 스모크 + (선택) /news 엄격 검사
+# 저장소 루트가 이 Next 앱( package.json = taeja-world )일 때 사용합니다.
+
+name: Verify production
+
+on:
+  workflow_dispatch:
+    inputs:
+      strict_news:
+        description: '/news 가 404면 실패 (배포 후 켜기)'
+        type: boolean
+        default: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm install --legacy-peer-deps
+      - name: Production verify (smoke + cron check)
+        run: |
+          if [ "${{ inputs.strict_news }}" = "true" ]; then
+            npx tsx scripts/verify-production-pipeline.ts --strict
+          else
+            npx tsx scripts/verify-production-pipeline.ts
+          fi

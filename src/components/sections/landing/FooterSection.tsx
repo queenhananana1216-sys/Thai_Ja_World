@@ -4,7 +4,7 @@ export function FooterSection() {
   return (
     <section className="border-t border-white/10 bg-[#040816] py-14">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <h3 className="text-lg font-bold text-white">Advertiser QR Offer</h3>
+        <h3 className="text-lg font-bold text-white">광고주 QR 제휴 안내</h3>
         <p className="mt-3 text-sm leading-relaxed text-slate-300">
           카운터 앞에 태자월드 QR 명함을 배치하면 첫 1개월 광고비를 무료로 제공합니다. 오프라인 방문객이 QR을 스캔하면
           랜딩 → 로컬 탭 → 매장 미니홈으로 연결되어 메뉴, 공지, 예약 채널까지 자연스럽게 이동합니다.

@@ -76,17 +76,17 @@ export async function seedCuratedKnowledgeSources(): Promise<SeedCuratedKnowledg
   }
 
   for (const row of CURATED_RSS) {
-    const { data: existing, error: selErr } = await client
+    const { data: existingRows, error: selErr } = await client
       .from('knowledge_sources')
       .select('id')
       .eq('kind', 'rss')
       .eq('rss_url', row.rss_url)
-      .maybeSingle();
+      .limit(1);
     if (selErr) {
       out.error = `[knowledge_sources] 조회: ${selErr.message}`;
       return out;
     }
-    if (existing) continue;
+    if (existingRows && existingRows.length > 0) continue;
     const { error: insErr } = await client.from('knowledge_sources').insert({
       name: row.name,
       kind: 'rss',
@@ -100,17 +100,17 @@ export async function seedCuratedKnowledgeSources(): Promise<SeedCuratedKnowledg
     out.rss_inserted += 1;
   }
 
-  const { data: ul, error: ulSelErr } = await client
+  const { data: ulRows, error: ulSelErr } = await client
     .from('knowledge_sources')
     .select('id')
     .eq('kind', 'url_list')
     .eq('name', URL_LIST_NAME)
-    .maybeSingle();
+    .limit(1);
   if (ulSelErr) {
     out.error = `[knowledge_sources] url_list 조회: ${ulSelErr.message}`;
     return out;
   }
-  if (!ul) {
+  if (!ulRows?.length) {
     const { error: ulIns } = await client.from('knowledge_sources').insert({
       name: URL_LIST_NAME,
       kind: 'url_list',
@@ -124,17 +124,17 @@ export async function seedCuratedKnowledgeSources(): Promise<SeedCuratedKnowledg
     out.url_list_inserted = true;
   }
 
-  const { data: lf, error: lfSelErr } = await client
+  const { data: lfRows, error: lfSelErr } = await client
     .from('knowledge_sources')
     .select('id')
     .eq('kind', 'url_list')
     .eq('name', LIFESTYLE_URL_LIST_NAME)
-    .maybeSingle();
+    .limit(1);
   if (lfSelErr) {
     out.error = `[knowledge_sources] 생활 url_list 조회: ${lfSelErr.message}`;
     return out;
   }
-  if (!lf) {
+  if (!lfRows?.length) {
     const { error: lfIns } = await client.from('knowledge_sources').insert({
       name: LIFESTYLE_URL_LIST_NAME,
       kind: 'url_list',

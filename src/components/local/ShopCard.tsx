@@ -39,7 +39,7 @@ export function ShopCard({
   const shadowType = tier === 'premium' ? 'saffron' : tier === 'standard' ? 'coral' : 'default';
 
   return (
-    <Link href={`/local/${slug}`} className="no-underline hover:no-underline">
+    <Link href={`/shop/${slug}`} className="no-underline hover:no-underline">
       <MuseumCard shadow={shadowType} hover="lift" size="sm" className="h-full">
         {/* Image */}
         <div className="mb-3 aspect-[4/3] w-full overflow-hidden rounded-md bg-gray-100">

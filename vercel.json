@@ -5,6 +5,10 @@
       "schedule": "0 */4 * * *"
     },
     {
+      "path": "/api/cron/home-copy",
+      "schedule": "50 */4 * * *"
+    },
+    {
       "path": "/api/cron/knowledge",
       "schedule": "30 3,15 * * *"
     },

@@ -29,8 +29,13 @@ export default async function TipsHubPage() {
       <div className="board-toolbar">
         <h1 className="board-title">{t.pageTitle}</h1>
       </div>
-      <p style={{ margin: '0 0 22px', lineHeight: 1.6, color: 'var(--tj-muted)', fontSize: '0.92rem' }}>
+      <p style={{ margin: '0 0 12px', lineHeight: 1.6, color: 'var(--tj-muted)', fontSize: '0.92rem' }}>
         {t.pageLead}
+      </p>
+      <p style={{ margin: '0 0 22px', fontSize: '0.88rem' }}>
+        <Link href="/news" style={{ color: 'var(--tj-link)', fontWeight: 600 }}>
+          {t.crossLinkNewsHub}
+        </Link>
       </p>
 
       {error ? (

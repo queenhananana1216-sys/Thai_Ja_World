@@ -237,8 +237,8 @@ export default async function NewsStoryPage({ params }: PageProps) {
           ],
         }}
       />
-      <Link href="/" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
-        {h.newsDetailBack}
+      <Link href="/news" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
+        {h.newsDetailBackToHub}
       </Link>
 
       <article className="news-story" style={{ marginTop: 18 }}>

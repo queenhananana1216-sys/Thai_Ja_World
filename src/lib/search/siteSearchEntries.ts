@@ -147,6 +147,15 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thBlob: 'มินิโฮม โปรไฟล์ ห้อง ตกแต่ง',
   },
   {
+    href: '/news',
+    koTitle: '뉴스 스냅샷·속보',
+    thTitle: 'สรุปข่าว·ฮอต',
+    koHint: '/news',
+    thHint: '/news',
+    koBlob: '뉴스 스냅샷 속보 요약 기사 processed news 허브 목록',
+    thBlob: 'ข่าว สรุป ฮอต รายการข่าว news snapshot',
+  },
+  {
     href: '/tips',
     koTitle: '태국 생활 꿀팁',
     thTitle: 'ทิปส์ชีวิตในไทย',

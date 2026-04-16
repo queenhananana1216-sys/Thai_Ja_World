@@ -11,7 +11,14 @@ type Row = {
   is_published: boolean;
 };
 
-export default function MyLocalShopHub() {
+type Props = {
+  /** 연결된 가게 없음 — 운영 모델 안내 */
+  emptyFollowup?: string;
+  /** /contact 링크 라벨 */
+  contactCta?: string;
+};
+
+export default function MyLocalShopHub({ emptyFollowup, contactCta }: Props) {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
@@ -67,9 +74,27 @@ export default function MyLocalShopHub() {
 
   if (rows.length === 0) {
     return (
-      <p style={{ color: '#64748b' }}>
-        연결된 로컬 가게가 없습니다. 운영진에게 오너 계정 연결을 요청하세요.
-      </p>
+      <div
+        style={{
+          padding: 20,
+          background: '#f8fafc',
+          borderRadius: 12,
+          border: '1px solid #e2e8f0',
+          color: '#64748b',
+        }}
+      >
+        <p style={{ margin: 0 }}>연결된 로컬 가게가 없습니다. 운영진에게 오너 계정 연결을 요청하세요.</p>
+        {emptyFollowup ? (
+          <p style={{ margin: '14px 0 0', lineHeight: 1.55, fontSize: 14 }}>{emptyFollowup}</p>
+        ) : null}
+        {contactCta ? (
+          <p style={{ margin: '16px 0 0' }}>
+            <Link href="/contact" style={{ color: '#7c3aed', fontWeight: 600 }}>
+              {contactCta}
+            </Link>
+          </p>
+        ) : null}
+      </div>
     );
   }
 

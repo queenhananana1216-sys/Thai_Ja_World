@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { LOCALE_COOKIE, isLocale } from '@/i18n/types';
 
-/** /news/[id]·/minihome/[slug](공개)·/shop/[slug]·/local 는 비회원 열람. /minihome(내 편집)·/my-local-shop·커뮤니티·관리자는 로그인 필요 */
+/** /news·/news/[id]·/minihome/[slug](공개)·/shop/[slug]·/local 는 비회원 열람. /minihome(내 편집)·/my-local-shop·커뮤니티·관리자는 로그인 필요 */
 const PROTECTED_PREFIXES = ['/community', '/admin'] as const;
 
 function pathRequiresAuth(pathname: string): boolean {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import ShopDeliveryRequestPanel from './ShopDeliveryRequestPanel';
 import ShopGuestbookPanel from './ShopGuestbookPanel';
 import ShopUpdatesPanel from './ShopUpdatesPanel';
 import { DepthCard } from '@/components/3d/DepthCard';
@@ -10,6 +11,7 @@ import { SURFACE_DEFAULT_TIER } from '@/lib/3d/system';
 
 export type ShopSpotPayload = {
   id: string;
+  slug: string;
   name: string;
   description: string | null;
   line_url: string | null;
@@ -51,6 +53,15 @@ function menuItems(raw: unknown): MenuItem[] {
   return raw.map((x) => (x && typeof x === 'object' ? (x as MenuItem) : {}));
 }
 
+function asBool(v: unknown, fallback = false): boolean {
+  return typeof v === 'boolean' ? v : fallback;
+}
+
+function asNumber(v: unknown, fallback = 45): number {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return fallback;
+  return Math.max(10, Math.min(480, Math.floor(v)));
+}
+
 export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) {
   const { locale } = useClientLocaleDictionary();
   const tier = SURFACE_DEFAULT_TIER.shop;
@@ -75,11 +86,17 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
   const extra = useMemo(() => asStringRecord(spot.minihome_extra), [spot.minihome_extra]);
   const openingHoursText =
     typeof extra.opening_hours_text === 'string' ? extra.opening_hours_text.trim() : '';
+  const deliveryEnabled = asBool(extra.delivery_enabled, false);
+  const deliveryQuickEnabled = asBool(extra.delivery_quick_enabled, true);
+  const deliveryLeadMinutes = asNumber(extra.delivery_lead_minutes, 45);
+  const deliveryNotice = typeof extra.delivery_notice === 'string' ? extra.delivery_notice.trim() : '';
+  const deliveryContact = typeof extra.delivery_contact === 'string' ? extra.delivery_contact.trim() : '';
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [bgmOn, setBgmOn] = useState(false);
   const [copyMsg, setCopyMsg] = useState('');
 
   const bgmUrl = spot.minihome_bgm_url?.trim() || '';
+  const effectiveSlug = (spot.minihome_public_slug?.trim() || spot.slug || '').trim();
 
   function toggleBgm() {
     const el = audioRef.current;
@@ -93,8 +110,8 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
   }
   const roomUrl =
     typeof window !== 'undefined'
-      ? `${window.location.origin}/shop/${encodeURIComponent(spot.minihome_public_slug ?? '')}`
-      : `/shop/${encodeURIComponent(spot.minihome_public_slug ?? '')}`;
+      ? `${window.location.origin}/shop/${encodeURIComponent(effectiveSlug)}`
+      : `/shop/${encodeURIComponent(effectiveSlug)}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(roomUrl)}`;
 
   async function copyRoomUrl() {
@@ -231,7 +248,11 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
                 </li>
               ))}
             </ul>
-          ) : null}
+          ) : (
+            <p style={{ marginTop: 16, fontSize: 13, color: '#cbd5e1' }}>
+              {locale === 'th' ? 'ร้านนี้ยังไม่เพิ่มเมนู' : '이 가게는 아직 메뉴판을 준비 중입니다.'}
+            </p>
+          )}
         </Section>
 
         <Section id="line">
@@ -297,6 +318,15 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
             publicSlug={(spot.minihome_public_slug ?? '').trim()}
           />
         </Section>
+
+        <ShopDeliveryRequestPanel
+          spotId={spot.id}
+          deliveryEnabled={deliveryEnabled}
+          leadMinutes={deliveryLeadMinutes}
+          notice={deliveryNotice}
+          contact={deliveryContact}
+          quickEnabled={deliveryQuickEnabled}
+        />
       </DepthCard>
     </div>
   );

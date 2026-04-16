@@ -1,7 +1,7 @@
 /**
  * GET /api/cron/news — Vercel Cron 전용 (수집 + 요약 한 번에)
  *
- * vercel.json 스케줄: `0 3,21 * * *` (UTC) — 하루 2회(수집+요약).
+ * vercel.json 스케줄: UTC 기준 4시간마다 — 표현식은 저장소 루트 vercel.json 의 crons 항목과 동일.
  *
  * Vercel 대시보드에서 같은 이름의 CRON_SECRET 을 설정하면
  * 요청 헤더 Authorization: Bearer <CRON_SECRET> 으로 검증됩니다.

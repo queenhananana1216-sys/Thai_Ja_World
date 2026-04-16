@@ -1,27 +1,42 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import PostComments, { type CommentRow } from '../../community/boards/_components/PostComments';
+import PostReactionsPanel from '../../community/boards/_components/PostReactionsPanel';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
-import { createServerClient } from '@/lib/supabase/server';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { trimForMetaDescription } from '@/lib/seo/site';
 
 type PageProps = { params: Promise<{ postId: string }> };
 
-type TipRow = { id: string; title: string; excerpt: string; created_at: string };
+type TipPostRow = {
+  id: string;
+  title: string;
+  excerpt: string | null;
+  content: string;
+  created_at: string;
+  author_id: string;
+};
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { postId } = await params;
   const locale = await getLocale();
   const d = getDictionary(locale);
-  const sb = createServerClient();
-  const { data } = await sb.rpc('get_tip_public', { p_id: postId });
-  const row = Array.isArray(data) && data[0] ? (data[0] as TipRow) : null;
+  const sb = await createServerSupabaseAuthClient();
+  const { data } = await sb
+    .from('posts')
+    .select('id,title,excerpt,content')
+    .eq('id', postId)
+    .eq('category', 'info')
+    .eq('is_knowledge_tip', true)
+    .eq('moderation_status', 'safe')
+    .maybeSingle();
+  const row = data as Pick<TipPostRow, 'title' | 'excerpt' | 'content'> | null;
   if (!row) {
     return { title: d.tips.pageTitle, robots: { index: false, follow: true } };
   }
-  const desc = trimForMetaDescription(row.excerpt || row.title);
+  const desc = trimForMetaDescription(row.excerpt || row.content || row.title);
   return {
     title: row.title,
     description: desc,
@@ -35,78 +50,79 @@ export default async function TipsTeaserPage({ params }: PageProps) {
 
   const locale = await getLocale();
   const d = getDictionary(locale);
-  const t = d.tips;
-  const sb = createServerClient();
-  const { data, error } = await sb.rpc('get_tip_public', { p_id: postId });
-  const row = Array.isArray(data) && data[0] ? (data[0] as TipRow) : null;
-
   const auth = await createServerSupabaseAuthClient();
+  const { data: post, error } = await auth
+    .from('posts')
+    .select('id,title,content,excerpt,created_at,author_id')
+    .eq('id', postId)
+    .eq('category', 'info')
+    .eq('is_knowledge_tip', true)
+    .eq('moderation_status', 'safe')
+    .maybeSingle();
+
   const {
     data: { user },
   } = await auth.auth.getUser();
-  if (user && row) {
-    redirect(`/community/boards/${postId}`);
-  }
+  const viewerId = user?.id ?? null;
 
-  if (error || !row) {
+  if (error || !post) {
     notFound();
   }
 
-  const tipRow = row as TipRow;
+  const tipRow = post as TipPostRow;
+  const { data: commentsRaw } = await auth
+    .from('comments')
+    .select('id,content,created_at,author_id')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
 
-  const nextLogin = `/auth/login?next=${encodeURIComponent(`/community/boards/${postId}`)}`;
-  const nextSignup = `/auth/signup?next=${encodeURIComponent(`/community/boards/${postId}`)}`;
+  const authorIds = [...new Set((commentsRaw ?? []).map((r) => String(r.author_id)))];
+  const nameMap: Record<string, string> = {};
+  if (authorIds.length > 0) {
+    const { data: profs } = await auth.from('profiles').select('id,display_name').in('id', authorIds);
+    for (const p of profs ?? []) {
+      nameMap[String(p.id)] = (p.display_name as string) || 'member';
+    }
+  }
+  const comments: CommentRow[] = (commentsRaw ?? []).map((r) => ({
+    id: String(r.id),
+    content: String(r.content ?? ''),
+    created_at: String(r.created_at ?? ''),
+    display_name: nameMap[String(r.author_id)] ?? 'member',
+  }));
+  const path = `/tips/${postId}`;
 
   return (
     <div className="page-body board-page">
       <p style={{ margin: '0 0 12px' }}>
         <Link href="/tips" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
-          ← {t.backToList}
+          ← {d.tips.backToList}
         </Link>
       </p>
       <article className="tips-teaser card" style={{ padding: 22, maxWidth: 720 }}>
         <h1 className="board-title" style={{ marginTop: 0 }}>
           {tipRow.title}
         </h1>
-        {tipRow.excerpt ? (
+        {tipRow.content?.trim() ? (
+          <p style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: 'var(--tj-ink)', fontSize: '0.95rem' }}>
+            {tipRow.content}
+          </p>
+        ) : tipRow.excerpt ? (
           <p style={{ whiteSpace: 'pre-wrap', lineHeight: 1.65, color: 'var(--tj-ink)', fontSize: '0.95rem' }}>
             {tipRow.excerpt}
           </p>
         ) : null}
-        <div
-          style={{
-            marginTop: 24,
-            padding: 16,
-            borderRadius: 12,
-            background: 'rgba(237, 233, 254, 0.5)',
-            border: '1px solid rgba(196, 181, 253, 0.45)',
-          }}
-        >
-          <p style={{ margin: '0 0 14px', fontSize: '0.88rem', lineHeight: 1.55, color: 'var(--tj-muted)' }}>
-            {t.detailLockedLead}
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-            <Link href={nextLogin} className="board-form__submit" style={{ textAlign: 'center' }}>
-              {t.loginForFull}
-            </Link>
-            <Link
-              href={nextSignup}
-              className="board-form__submit"
-              style={{
-                textAlign: 'center',
-                background: 'var(--tj-surface)',
-                color: 'var(--tj-ink)',
-                border: '1px solid var(--tj-line)',
-              }}
-            >
-              {t.signupForFull}
-            </Link>
-          </div>
-          <p style={{ margin: '14px 0 0', fontSize: '0.8rem', color: 'var(--tj-muted)' }}>
-            {t.goLogin} · {t.goSignup}
-          </p>
-        </div>
+        <PostReactionsPanel postId={postId} loginNextPath={path} />
       </article>
+      <div style={{ maxWidth: 720, marginTop: 14 }}>
+        <PostComments
+          postId={postId}
+          initial={comments}
+          labels={d.board}
+          loginNextPath={path}
+          showLoginHint={!viewerId}
+        />
+      </div>
     </div>
   );
 }

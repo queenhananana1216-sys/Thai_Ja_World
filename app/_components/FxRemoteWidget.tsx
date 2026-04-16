@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { Locale } from '@/i18n/types';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { useStyleScorePreview } from '@/contexts/StyleScorePreviewContext';
@@ -93,6 +93,7 @@ export default function FxRemoteWidget({
   panelTitle: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { previewCost } = useStyleScorePreview();
   const panelRef = useRef<HTMLDivElement>(null);
   const fabRef = useRef<HTMLButtonElement>(null);
@@ -112,6 +113,21 @@ export default function FxRemoteWidget({
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [styleBalance, setStyleBalance] = useState<number | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+
+  useEffect(() => {
+    function updateViewportFlag() {
+      setIsMobileViewport(window.innerWidth < 1024);
+    }
+    updateViewportFlag();
+    window.addEventListener('resize', updateViewportFlag);
+    return () => window.removeEventListener('resize', updateViewportFlag);
+  }, []);
+
+  const isLandingRoute = pathname === '/' || pathname === '/landing';
+  if (isLandingRoute && isMobileViewport) {
+    return null;
+  }
 
   useEffect(() => {
     setSnap(initial);

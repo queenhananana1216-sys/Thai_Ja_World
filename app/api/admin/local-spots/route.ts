@@ -149,6 +149,31 @@ export async function POST(req: Request) {
   if (action === 'publish' || action === 'unpublish') {
     const id = typeof body.id === 'string' ? body.id.trim() : '';
     if (!id) return NextResponse.json({ error: 'id 필요' }, { status: 400 });
+    if (action === 'publish') {
+      const { data: row, error: readErr } = await admin
+        .from('local_spots')
+        .select('id,slug,minihome_public_slug,minihome_intro,minihome_menu,photo_urls')
+        .eq('id', id)
+        .maybeSingle();
+      if (readErr || !row) {
+        return NextResponse.json({ error: readErr?.message ?? '가게를 찾지 못했습니다.' }, { status: 404 });
+      }
+      const hasPublicSlug = Boolean(String(row.minihome_public_slug ?? '').trim());
+      const hasIntro = Boolean(String(row.minihome_intro ?? '').trim());
+      const hasMenu = Array.isArray(row.minihome_menu) && row.minihome_menu.length > 0;
+      const hasPhotos = Array.isArray(row.photo_urls) && row.photo_urls.some((x) => String(x).trim().length > 0);
+      const missing: string[] = [];
+      if (!hasPublicSlug) missing.push('미니홈 공개 슬러그');
+      if (!hasIntro) missing.push('미니홈 소개');
+      if (!hasMenu) missing.push('메뉴판');
+      if (!hasPhotos) missing.push('사진');
+      if (missing.length > 0) {
+        return NextResponse.json(
+          { error: `공개 전 보완 필요: ${missing.join(', ')}` },
+          { status: 400 },
+        );
+      }
+    }
     const { error } = await admin
       .from('local_spots')
       .update({ is_published: action === 'publish' })

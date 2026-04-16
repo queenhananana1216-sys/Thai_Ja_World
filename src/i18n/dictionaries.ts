@@ -148,6 +148,22 @@ export type Dictionary = {
     newsDetailGuestNote: string;
     /** 비회원 — 본문(요약·편집 노트·원문) 잠금 안내 */
     newsDetailLockedLead: string;
+    /** /news 허브 — 카드에서 상세로 */
+    newsHubOpenDetail: string;
+    /** /news 허브 상단 — 꿀팁(/tips)과 구분 */
+    newsHubCrossLinkTips: string;
+    /** 플레이스홀더 {n} = 현재 목록 건수 */
+    newsHubListingNote: string;
+    /** 홈 히어로 보조 CTA → /news */
+    newsHubHeroCta: string;
+    /** 홈 속보 블록 «더보기» → /news */
+    newsHubSectionMore: string;
+    /** 뉴스 상세 상단 «목록으로» */
+    newsDetailBackToHub: string;
+    /** /my-local-shop — 연결된 가게 없을 때 안내 문단 */
+    myLocalShopEmptyFollowup: string;
+    /** /my-local-shop — 문의 페이지로 */
+    myLocalShopContactCta: string;
   };
   /** 비회원 공개 꿀팁 허브 — 본문·출처는 로그인 후 광장 */
   tips: {
@@ -165,6 +181,8 @@ export type Dictionary = {
     fallbackCautionsTitle: string;
     fallbackSourceLabel: string;
     backToList: string;
+    /** 꿀팁 허브 하단 — 뉴스 스냅샷과 구분 */
+    crossLinkNewsHub: string;
   };
   board: {
     pageTitle: string;
@@ -764,6 +782,15 @@ const ko: Dictionary = {
       '요약·편집 노트·원문 링크·댓글은 로그인(또는 가입) 후에 이용할 수 있어요. 광장·거래·미니홈 등도 회원 전용이에요.',
     newsDetailLockedLead:
       '아래부터는 회원에게만 보이는 정리·출처·댓글입니다. 로그인하면 이어서 읽고 참여할 수 있어요.',
+    newsHubOpenDetail: '스냅샷 열기 →',
+    newsHubCrossLinkTips: '생활 꿀팁 모음은 별도 코너(/tips)에 있어요.',
+    newsHubListingNote: '최근 게시 순 · 지금 {n}건까지 표시합니다.',
+    newsHubHeroCta: '스냅샷·속보 더보기',
+    newsHubSectionMore: '스냅샷 목록 ›',
+    newsDetailBackToHub: '← 스냅샷 목록',
+    myLocalShopEmptyFollowup:
+      '가게 등록·오너 연결은 운영(관리자)에서 진행합니다. 본인 사업장이라면 가입 이메일을 알려 주고 «로컬 스팟»에 오너로 연결해 달라고 요청해 주세요.',
+    myLocalShopContactCta: '문의·연결 요청 →',
   },
   tips: {
     pageTitle: '태국 생활 꿀팁',
@@ -782,6 +809,7 @@ const ko: Dictionary = {
     fallbackCautionsTitle: '주의사항',
     fallbackSourceLabel: '출처',
     backToList: '꿀팁 목록',
+    crossLinkNewsHub: '외부 기사 요약·속보 스냅샷은 /news 에서 보세요.',
   },
   board: {
     pageTitle: '광장 게시판',
@@ -1383,6 +1411,15 @@ const th: Dictionary = {
       'สรุปเต็ม·ลิงก์ต้นทาง·ความคิดเห็น — ใช้ได้หลังเข้าสู่ระบบหรือสมัคร บอร์ด·ซื้อขาย·มินิโฮมก็เฉพาะสมาชิก',
     newsDetailLockedLead:
       'ด้านล่างนี้เป็นสรุป·แหล่งที่มา·ความคิดเห็นสำหรับสมาชิก — เข้าสู่ระบบเพื่ออ่านต่อและร่วมพูดคุย',
+    newsHubOpenDetail: 'เปิดสรุปข่าว →',
+    newsHubCrossLinkTips: 'ทิปส์ชีวิตในไทย (มุมแยก) อยู่ที่ /tips',
+    newsHubListingNote: 'เรียงจากใหม่สุด · แสดง {n} รายการ',
+    newsHubHeroCta: 'ดูสรุปข่าว·ฮอต',
+    newsHubSectionMore: 'รายการสรุปข่าว ›',
+    newsDetailBackToHub: '← กลับรายการสรุปข่าว',
+    myLocalShopEmptyFollowup:
+      'การลงทะเบียนร้าน·เชื่อมเจ้าของทำโดยทีมงาน (แอดมิน) หากเป็นร้านของคุณ แจ้งอีเมลที่สมัครเพื่อให้เชื่อมเป็นเจ้าของใน «จุดท้องถิ่น»',
+    myLocalShopContactCta: 'ติดต่อ·ขอเชื่อมบัญชี →',
   },
   tips: {
     pageTitle: 'ทิปส์ชีวิตในไทย',
@@ -1401,6 +1438,7 @@ const th: Dictionary = {
     fallbackCautionsTitle: 'ข้อควรระวัง',
     fallbackSourceLabel: 'แหล่งอ้างอิง',
     backToList: 'กลับรายการทิปส์',
+    crossLinkNewsHub: 'สรุปข่าวจากสื่อ·ฮอต ไปดูที่ /news',
   },
   board: {
     pageTitle: 'บอร์ดลานชุมชน',

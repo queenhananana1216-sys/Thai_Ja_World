@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 export type LocalSpotRow = {
   id: string;
@@ -41,6 +41,44 @@ function linesToPhotos(text: string): string[] {
     .split(/\r?\n/)
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+function asStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.map((x) => String(x).trim()).filter(Boolean);
+}
+
+type MinihomeMissingKey = 'slug' | 'intro' | 'menu' | 'photos';
+
+function minihomeHealth(row: LocalSpotRow): {
+  publicSlug: string;
+  hasPublicSlug: boolean;
+  hasIntro: boolean;
+  hasMenu: boolean;
+  hasPhotos: boolean;
+  isReady: boolean;
+  reasons: Array<{ key: MinihomeMissingKey; label: string }>;
+} {
+  const publicSlug = (row.minihome_public_slug?.trim() || '').trim();
+  const hasPublicSlug = Boolean(publicSlug);
+  const hasIntro = Boolean(row.minihome_intro?.trim());
+  const hasMenu = Array.isArray(row.minihome_menu) && row.minihome_menu.length > 0;
+  const hasPhotos = asStringArray(row.photo_urls).length > 0;
+  const reasons: Array<{ key: MinihomeMissingKey; label: string }> = [];
+  if (!hasPublicSlug) reasons.push({ key: 'slug', label: '공개 슬러그 없음' });
+  if (!hasIntro) reasons.push({ key: 'intro', label: '소개 없음' });
+  if (!hasMenu) reasons.push({ key: 'menu', label: '메뉴판 없음' });
+  if (!hasPhotos) reasons.push({ key: 'photos', label: '사진 없음' });
+  return {
+    publicSlug,
+    hasPublicSlug,
+    hasIntro,
+    hasMenu,
+    hasPhotos,
+    // 운영 공개 기준: 슬러그 + 소개 + 메뉴 + 사진
+    isReady: hasPublicSlug && hasIntro && hasMenu && hasPhotos,
+    reasons,
+  };
 }
 
 function extraToString(extra: unknown): string {
@@ -173,6 +211,27 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
+  const [focusField, setFocusField] = useState<MinihomeMissingKey | null>(null);
+  const slugRef = useRef<HTMLInputElement | null>(null);
+  const introRef = useRef<HTMLTextAreaElement | null>(null);
+  const menuRef = useRef<HTMLTextAreaElement | null>(null);
+  const photosRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (!form || !focusField) return;
+    const map: Record<MinihomeMissingKey, HTMLElement | null> = {
+      slug: slugRef.current,
+      intro: introRef.current,
+      menu: menuRef.current,
+      photos: photosRef.current,
+    };
+    const el = map[focusField];
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (typeof (el as HTMLInputElement).focus === 'function') (el as HTMLInputElement).focus();
+    });
+  }, [form, focusField]);
 
   async function postJson(body: Record<string, unknown>) {
     const res = await fetch('/api/admin/local-spots', {
@@ -321,6 +380,9 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
     return (a.sort_order ?? 0) - (b.sort_order ?? 0);
   });
   const pendingCount = spots.filter((s) => !s.is_published).length;
+  const publishedCount = spots.filter((s) => s.is_published).length;
+  const publishedReadyCount = spots.filter((s) => s.is_published && minihomeHealth(s).isReady).length;
+  const publishedNeedsFixCount = publishedCount - publishedReadyCount;
 
   async function onPickFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -391,6 +453,19 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
           승인 대기 {pendingCount}곳 — 내용 확인 후 «승인·공개» 또는 «수정»을 눌러 주세요.
         </p>
       ) : null}
+      <p
+        style={{
+          fontSize: 13,
+          color: '#475569',
+          margin: '0 0 12px',
+          padding: '10px 12px',
+          borderRadius: 8,
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+        }}
+      >
+        공개 {publishedCount}곳 · 미니홈 운영준비 완료 {publishedReadyCount}곳 · 보완 필요 {publishedNeedsFixCount}곳
+      </p>
       {pendingCount > 0 ? (
         <div style={{ margin: '0 0 12px' }}>
           <button type="button" disabled={busy} style={{ ...btnPrimary, opacity: busy ? 0.7 : 1 }} onClick={() => void publishAllPending()}>
@@ -400,7 +475,9 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
       ) : null}
 
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {orderedSpots.map((s) => (
+        {orderedSpots.map((s) => {
+          const health = minihomeHealth(s);
+          return (
           <li
             key={s.id}
             style={{
@@ -417,32 +494,78 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
             <div>
               <strong>{s.name}</strong>{' '}
               <code style={{ fontSize: 12, background: '#f1f5f9', padding: '2px 6px' }}>{s.slug}</code>
+              <span
+                style={{
+                  marginLeft: 8,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: health.isReady ? '#065f46' : '#9a3412',
+                  background: health.isReady ? '#d1fae5' : '#ffedd5',
+                  border: `1px solid ${health.isReady ? '#6ee7b7' : '#fdba74'}`,
+                  borderRadius: 999,
+                  padding: '2px 8px',
+                }}
+              >
+                {health.isReady ? '미니홈 준비완료' : '미니홈 보완필요'}
+              </span>
               <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
                 {s.is_published ? '공개' : '비공개'} · 정렬 {s.sort_order} · {s.category}
                 {s.owner_profile_id ? ' · 오너 연결됨' : ''}
-                {s.minihome_public_slug ? (
+                {health.publicSlug ? (
                   <>
                     {' '}
                     · 미니홈{' '}
                     <a
-                      href={`/shop/${s.minihome_public_slug}`}
+                      href={`/shop/${health.publicSlug}`}
                       target="_blank"
                       rel="noreferrer"
                       style={{ color: '#7c3aed' }}
                     >
-                      /shop/{s.minihome_public_slug}
+                      /shop/{health.publicSlug}
                     </a>
                   </>
                 ) : null}
               </div>
+              {!health.isReady ? (
+                <div style={{ fontSize: 12, color: '#9a3412', marginTop: 4 }}>
+                  보완 항목:{' '}
+                  {health.reasons.map((r, idx) => (
+                    <button
+                      key={r.key}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        setMsg(null);
+                        setFocusField(r.key);
+                        setForm(rowToForm(s));
+                      }}
+                      style={{
+                        marginRight: 6,
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#b45309',
+                        textDecoration: 'underline',
+                        cursor: 'pointer',
+                        padding: 0,
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {r.label}
+                      {idx < health.reasons.length - 1 ? ',' : ''}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
               {!s.is_published ? (
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || !health.isReady}
                   style={{ ...btnPrimary, fontSize: 12, padding: '8px 12px' }}
                   onClick={() => void quickPublish(s.id)}
+                  title={health.isReady ? '공개' : `보완 후 공개 가능: ${health.reasons.map((r) => r.label).join(', ')}`}
                 >
                   승인·공개
                 </button>
@@ -469,7 +592,8 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
               </button>
             </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       {spots.length === 0 && (
@@ -580,6 +704,7 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
             <label style={fieldStyle}>
               <span style={labelSpan}>미니홈 공개 슬러그 (/shop/···)</span>
               <input
+                ref={slugRef}
                 value={form.minihome_public_slug}
                 onChange={(e) => setForm({ ...form, minihome_public_slug: e.target.value })}
                 placeholder="my-restaurant-bkk"
@@ -590,6 +715,7 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
             <label style={fieldStyle}>
               <span style={labelSpan}>미니홈 소개 (공개 페이지 상단)</span>
               <textarea
+                ref={introRef}
                 value={form.minihome_intro}
                 onChange={(e) => setForm({ ...form, minihome_intro: e.target.value })}
                 rows={3}
@@ -611,6 +737,7 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
             <label style={fieldStyle}>
               <span style={labelSpan}>미니홈 메뉴 JSON 배열 (오너도 /my-local-shop에서 수정 가능)</span>
               <textarea
+                ref={menuRef}
                 value={form.minihome_menu_json}
                 onChange={(e) => setForm({ ...form, minihome_menu_json: e.target.value })}
                 rows={4}
@@ -654,6 +781,7 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
             <label style={fieldStyle}>
               <span style={labelSpan}>사진 URL (한 줄에 하나)</span>
               <textarea
+                ref={photosRef}
                 value={form.photos}
                 onChange={(e) => setForm({ ...form, photos: e.target.value })}
                 rows={5}

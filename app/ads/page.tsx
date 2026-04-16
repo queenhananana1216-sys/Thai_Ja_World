@@ -19,7 +19,7 @@ export default async function AdsPage() {
     <main className="mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6">
       <section className="rounded-3xl border border-violet-300/25 bg-[linear-gradient(130deg,#1e1b4b_0%,#3b0764_100%)] p-8 text-white shadow-[0_20px_50px_rgba(30,27,75,0.45)] sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-100">
-          {isThai ? 'ข้อเสนอสำหรับพาร์ทเนอร์ร้านค้า' : 'Local Partner Offer'}
+          {isThai ? 'ข้อเสนอสำหรับพาร์ทเนอร์ร้านค้า' : '로컬 파트너 제휴 안내'}
         </p>
         <h1 className="mt-3 text-3xl font-extrabold leading-tight sm:text-4xl">
           {isThai

@@ -1,10 +1,7 @@
 /**
  * GET /api/cron/knowledge — Vercel Cron 전용 (수집 + 가공 순차 실행)
  *
- * vercel.json 스케줄 권장:
- *   수집: "30 21 * * *" (UTC) ≈ 한국 06:30
- *   가공: "50 21 * * *" (UTC) ≈ 한국 06:50 (수집 완료 후 실행)
- *   또는 이 엔드포인트 하나로 pipeline 실행
+ * vercel.json 실제 스케줄: `30 3,15 * * *` (UTC) — 이 라우트에서 collect+process 파이프라인 실행
  *
  * 쿼리 (선택): itemsPerSource=5&limit=5
  *

@@ -21,6 +21,7 @@ export const RENEWAL_WAVE_FILES: Record<RolloutWave, string[]> = {
   ],
   waveC: [
     'app/community/boards/page.tsx',
+    'app/news/page.tsx',
     'app/news/[id]/page.tsx',
     'app/globals.css',
   ],

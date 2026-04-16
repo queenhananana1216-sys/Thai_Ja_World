@@ -60,7 +60,7 @@ export function FeaturedShops({
       ) : shops.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {shops.map((shop) => (
-            <Link key={shop.id} href={`/local/${shop.slug}`} className="no-underline hover:no-underline">
+            <Link key={shop.id} href={`/shop/${shop.slug}`} className="no-underline hover:no-underline">
               <MuseumCard shadow="saffron" hover="glow" size="sm" className="h-full">
                 <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-md bg-saffron-50 text-2xl">
                   {shop.image_url ? (

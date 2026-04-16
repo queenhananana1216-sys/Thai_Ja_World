@@ -75,11 +75,11 @@ function StatsContent({ stats }: { stats: StatsResponse }) {
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300">
         <span className="rounded-full border border-violet-300/30 bg-violet-400/10 px-2.5 py-1">
-          {STATS_VISIBILITY_MODE === 'live' ? '실시간 지표 모드' : '가공 지표 모드 (로직 유지)'}
+          {STATS_VISIBILITY_MODE === 'live' ? '실시간 현황' : '누적 현황'}
         </span>
         {lastUpdatedLabel ? (
           <span className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-2.5 py-1 text-emerald-100">
-            자동 파이프라인 최근 업데이트: {lastUpdatedLabel}
+            최근 업데이트: {lastUpdatedLabel}
           </span>
         ) : null}
       </div>

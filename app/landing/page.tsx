@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import { CTASection } from '@/components/sections/landing/CTASection';
+import { EntryFlowSection } from '@/components/sections/landing/EntryFlowSection';
 import { FooterSection } from '@/components/sections/landing/FooterSection';
 import { HeroSection } from '@/components/sections/landing/HeroSection';
 import { ProblemSection } from '@/components/sections/landing/ProblemSection';
 import { ServiceSection } from '@/components/sections/landing/ServiceSection';
 import { TestimonialSection } from '@/components/sections/landing/TestimonialSection';
 import { LANDING_DEFAULT_STATS } from '@/lib/landing/constants';
+import { getLandingEntryFlow } from '@/lib/landing/entryFlow';
 import type { StatsResponse } from '@/lib/landing/types';
 
 const SPLINE_SCENE_CANDIDATES = [
@@ -51,6 +53,7 @@ async function getInitialStats(): Promise<StatsResponse> {
 
 export default async function LandingPage() {
   const stats = await getInitialStats();
+  const entryFlow = await getLandingEntryFlow();
   const splineSceneUrl = process.env.NEXT_PUBLIC_SPLINE_HERO_SCENE_URL;
   const sceneUrls = Array.from(
     new Set(
@@ -73,6 +76,7 @@ export default async function LandingPage() {
       <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6">
         <HeroSection memberCount={stats.memberCount} sceneUrls={sceneUrls} />
       </div>
+      <EntryFlowSection flow={entryFlow} />
       <ProblemSection />
       <ServiceSection />
       <TestimonialSection />

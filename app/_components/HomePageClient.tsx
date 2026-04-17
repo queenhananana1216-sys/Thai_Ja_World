@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { HubTipSocialIcons } from './HubTipSocialIcons';
 import SiteSearch from './SiteSearch';
-import { getDictionary } from '@/i18n/dictionaries';
+import { getDictionary, type Dictionary } from '@/i18n/dictionaries';
 import { readLocaleCookie } from '@/i18n/readLocaleCookie';
 import { TJ_LOCALE_CHANGE_EVENT, type Locale } from '@/i18n/types';
 import type { NewsItem, LocalBusiness } from '@/types/taeworld';
@@ -215,7 +215,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   }, []);
 
   const d = useMemo(() => getDictionary(locale), [locale]);
-  const h = d.home;
+  const h: Dictionary['home'] = d.home;
   const tips = useMemo(() => tipEnv(), []);
   const hasTip = Boolean(tips.tg || tips.wa || tips.line || tips.fb || tips.tt);
 

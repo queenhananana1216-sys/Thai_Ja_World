@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { SplineHeroCanvas } from '@/components/3d/SplineHeroCanvas';
 
 interface HeroSectionProps {
+  memberCount?: number;
   sceneUrls?: string[];
 }
 
-export function HeroSection({ sceneUrls = [] }: HeroSectionProps) {
+export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: HeroSectionProps) {
   const availableScenes = useMemo(
     () => sceneUrls.filter((value) => typeof value === 'string' && value.trim().length > 0),
     [sceneUrls]

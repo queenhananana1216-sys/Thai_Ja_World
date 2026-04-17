@@ -5,10 +5,8 @@
  */
 import Link from 'next/link';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { BrandPhrase } from './BrandPhrase';
 import { HubTipSocialIcons } from './HubTipSocialIcons';
 import SiteSearch from './SiteSearch';
-import { useHeroSiteCopy } from '@/contexts/HeroSiteCopyContext';
 import { getDictionary } from '@/i18n/dictionaries';
 import { readLocaleCookie } from '@/i18n/readLocaleCookie';
 import { TJ_LOCALE_CHANGE_EVENT, type Locale } from '@/i18n/types';
@@ -218,24 +216,6 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
 
   const d = useMemo(() => getDictionary(locale), [locale]);
   const h = d.home;
-  const heroSite = useHeroSiteCopy();
-  const heroTitle = locale === 'th' ? heroSite.titleTh : heroSite.titleKo;
-  const heroTag = locale === 'th' ? heroSite.tagTh : heroSite.tagKo;
-  const heroKicker = locale === 'th' ? heroSite.heroKickerTh : heroSite.heroKickerKo;
-  const heroLeadLine = locale === 'th' ? heroSite.heroLeadTh : heroSite.heroLeadKo;
-  const heroSubBlock = locale === 'th' ? heroSite.heroSubTh : heroSite.heroSubKo;
-  const hotLabelUi = locale === 'th' ? heroSite.hotLabelTh : heroSite.hotLabelKo;
-  const hotFootnoteUi = locale === 'th' ? heroSite.hotFootnoteTh : heroSite.hotFootnoteKo;
-  const guestPubLab = locale === 'th' ? heroSite.guestPublicLabelTh : heroSite.guestPublicLabelKo;
-  const guestPubBody = locale === 'th' ? heroSite.guestPublicBodyTh : heroSite.guestPublicBodyKo;
-  const guestMemLab = locale === 'th' ? heroSite.guestMemberLabelTh : heroSite.guestMemberLabelKo;
-  const guestMemBody = locale === 'th' ? heroSite.guestMemberBodyTh : heroSite.guestMemberBodyKo;
-  const guestCta = locale === 'th' ? heroSite.guestLoginCtaTh : heroSite.guestLoginCtaKo;
-  const dreamIntro = locale === 'th' ? heroSite.dreamIntroTh : heroSite.dreamIntroKo;
-  const dreamMinihome = locale === 'th' ? heroSite.dreamMinihomeTh : heroSite.dreamMinihomeKo;
-  const dreamMid = locale === 'th' ? heroSite.dreamMidTh : heroSite.dreamMidKo;
-  const dreamPersonal = locale === 'th' ? heroSite.dreamPersonalTh : heroSite.dreamPersonalKo;
-  const dreamOutro = locale === 'th' ? heroSite.dreamOutroTh : heroSite.dreamOutroKo;
   const tips = useMemo(() => tipEnv(), []);
   const hasTip = Boolean(tips.tg || tips.wa || tips.line || tips.fb || tips.tt);
 
@@ -256,6 +236,16 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
 
   const hotNewsItems = newsLocalized.slice(0, 5);
   const newsShow = newsLocalized.slice(0, 5);
+  const focusNewsHead = hotNewsItems[0]?.title?.trim() || h.focusNewsFallback;
+  const weatherTop = weatherRows[0];
+  const focusWeatherSummary =
+    weatherBusy
+      ? h.weatherLoading
+      : weatherErr || !weatherTop
+        ? h.focusWeatherFallback
+        : `${weatherTop.label} · ${weatherTop.temp !== null ? `${weatherTop.temp}°C` : '—'} · ${
+            weatherTop.condition || '—'
+          }`;
 
   const portalQuickLinks = useMemo(() => {
     return PORTAL_QUICK_HREFS.map((href) => {
@@ -292,12 +282,6 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   }, [isLoggedIn]);
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      setWeatherBusy(false);
-      setWeatherRows([]);
-      setWeatherErr(false);
-      return;
-    }
     let cancelled = false;
     void (async () => {
       setWeatherBusy(true);
@@ -364,39 +348,77 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
 
       <section className="home-hero" aria-labelledby="home-hero-title">
         <div className="home-hero__intro">
-          <p className="home-hero__tag">{heroTag}</p>
-          <p className="home-hero__brand">
-            <BrandPhrase variant="light" />
-          </p>
+          <p className="home-hero__tag">{h.tag}</p>
           <h1 id="home-hero-title" className="home-hero__title">
-            {heroTitle}
+            {h.title}
           </h1>
-          <p className="home-hero__kicker">{heroKicker}</p>
+          <p className="home-hero__kicker">{h.heroKicker}</p>
           <p className="home-hero__lead">
-            <strong className="home-hero__accent">{heroLeadLine}</strong>
+            <strong className="home-hero__accent">{h.heroLead}</strong>
           </p>
-          <p className="home-hero__sub">{heroSubBlock}</p>
-          <div className="home-hero__dream-wrap">
-            <p id="home-mini-teaser" className="home-hero__dream">
-              {dreamIntro}
-              {isLoggedIn ? (
-                <strong className="home-hero__dream-inline-label">{dreamMinihome}</strong>
-              ) : (
-                <strong className="home-hero__accent">
-                  <Link href={loginNextHref('/minihome')}>{dreamMinihome}</Link>
-                </strong>
-              )}
-              {dreamMid}
-              <strong className="home-hero__accent">{dreamPersonal}</strong>
-              {dreamOutro}
-            </p>
-            {isLoggedIn ? (
-              <Link href="/minihome" className="home-hero__dream-minihome-btn">
-                {d.nav.memberMinihome}
-              </Link>
-            ) : null}
+          <p className="home-hero__sub">{h.heroSub}</p>
+          <div className="home-hero__cta-row">
+            <Link href="/tips" className="home-hero__cta home-hero__cta--primary">
+              {h.heroPrimaryCta}
+            </Link>
+            <Link
+              href={isLoggedIn ? '/community/boards?cat=info' : loginNextHref('/community/boards?cat=info')}
+              className="home-hero__cta"
+            >
+              {h.heroSecondaryCta}
+            </Link>
           </div>
         </div>
+
+        <div className="home-focus-grid" aria-label={h.focusGridAria}>
+          <article className="home-focus-card">
+            <p className="home-focus-card__label">{h.focusTipsTitle}</p>
+            <p className="home-focus-card__summary">{h.focusTipsSummary}</p>
+            <Link href="/tips" className="home-focus-card__cta">
+              {h.focusTipsCta}
+            </Link>
+          </article>
+
+          <article className="home-focus-card">
+            <p className="home-focus-card__label">{h.focusNewsTitle}</p>
+            <p className="home-focus-card__summary">{focusNewsHead}</p>
+            <Link
+              href={isLoggedIn ? '/community/boards?cat=info' : loginNextHref('/community/boards?cat=info')}
+              className="home-focus-card__cta"
+            >
+              {h.focusNewsCta}
+            </Link>
+          </article>
+
+          <article className="home-focus-card">
+            <p className="home-focus-card__label">{h.focusWeatherTitle}</p>
+            <p className="home-focus-card__summary">{focusWeatherSummary}</p>
+            <Link href={isLoggedIn ? '/local' : loginNextHref('/local')} className="home-focus-card__cta">
+              {h.focusWeatherCta}
+            </Link>
+          </article>
+        </div>
+
+        <div className="home-conversion-strip" aria-label={h.conversionLead}>
+          <p className="home-conversion-strip__lead">{h.conversionLead}</p>
+          <div className="home-conversion-strip__cta-row">
+            <Link
+              href={isLoggedIn ? '/community/boards?cat=flea' : loginNextHref('/community/boards?cat=flea')}
+              className="home-conversion-strip__cta"
+            >
+              <span>{h.conversionMarketCta}</span>
+              <small>{h.conversionMarketHint}</small>
+            </Link>
+            <Link
+              href={isLoggedIn ? '/community/boards?cat=job' : loginNextHref('/community/boards?cat=job')}
+              className="home-conversion-strip__cta"
+            >
+              <span>{h.conversionJobsCta}</span>
+              <small>{h.conversionJobsHint}</small>
+            </Link>
+          </div>
+        </div>
+
         <div className="hub-tiles">
           <Link
             href={isLoggedIn ? '/minihome' : loginNextHref('/minihome')}
@@ -454,8 +476,8 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
         </div>
       </section>
 
-      <section className="hot-strip" aria-label={hotLabelUi}>
-        <p className="hot-strip__label">{hotLabelUi}</p>
+      <section className="hot-strip" aria-label={h.hotLabel}>
+        <p className="hot-strip__label">{h.hotLabel}</p>
         {listsBusy ? (
           <p className="hot-strip__state">{h.hotNewsLoading}</p>
         ) : hotNewsItems.length === 0 ? (
@@ -493,19 +515,19 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
             })}
           </ul>
         )}
-        <p className="hot-strip__footnote">{hotFootnoteUi}</p>
+        <p className="hot-strip__footnote">{h.hotFootnote}</p>
       </section>
 
       {!isLoggedIn ? (
         <div className="guest-home-split card">
           <div className="guest-home-split__grid">
             <div className="guest-home-split__box guest-home-split__box--read">
-              <p className="guest-home-split__label">{guestPubLab}</p>
-              <p className="guest-home-split__body">{guestPubBody}</p>
+              <p className="guest-home-split__label">{h.guestHomePublicLabel}</p>
+              <p className="guest-home-split__body">{h.guestHomePublicBody}</p>
             </div>
             <div className="guest-home-split__box guest-home-split__box--member">
-              <p className="guest-home-split__label">{guestMemLab}</p>
-              <p className="guest-home-split__body">{guestMemBody}</p>
+              <p className="guest-home-split__label">{h.guestHomeMemberLabel}</p>
+              <p className="guest-home-split__body">{h.guestHomeMemberBody}</p>
             </div>
           </div>
           <Link
@@ -513,7 +535,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
             className="board-form__submit guest-home-split__cta"
             style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}
           >
-            {guestCta}
+            {h.guestHomeLoginCta}
           </Link>
         </div>
       ) : null}

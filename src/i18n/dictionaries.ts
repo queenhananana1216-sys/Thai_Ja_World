@@ -6,6 +6,10 @@ import type { Locale } from './types';
 export type Dictionary = {
   nav: {
     home: string;
+    /** 번개장터 허브(중고) */
+    marketplace: string;
+    /** 구인·구직 허브 */
+    jobs: string;
     /** 공개 꿀팁 허브 (/tips) */
     tips: string;
     local: string;
@@ -40,10 +44,27 @@ export type Dictionary = {
     heroLead: string;
     /** 히어로 서브 설명 — 줄바꿈은 \\n */
     heroSub: string;
+    heroPrimaryCta: string;
+    heroSecondaryCta: string;
     /** 홈 최상단 포털형 검색 띠 제목 */
     portalMastTitle: string;
     portalMastSub: string;
     portalMastQuickAria: string;
+    focusGridAria: string;
+    focusTipsTitle: string;
+    focusTipsSummary: string;
+    focusTipsCta: string;
+    focusNewsTitle: string;
+    focusNewsFallback: string;
+    focusNewsCta: string;
+    focusWeatherTitle: string;
+    focusWeatherFallback: string;
+    focusWeatherCta: string;
+    conversionLead: string;
+    conversionMarketCta: string;
+    conversionMarketHint: string;
+    conversionJobsCta: string;
+    conversionJobsHint: string;
     dreamIntro: string;
     dreamMinihome: string;
     dreamMid: string;
@@ -561,6 +582,8 @@ export type Dictionary = {
 const ko: Dictionary = {
   nav: {
     home: '홈',
+    marketplace: '번개장터',
+    jobs: '구인구직',
     tips: '꿀팁',
     local: '로컬',
     community: '광장',
@@ -581,15 +604,32 @@ const ko: Dictionary = {
   tierPremium: '프리미엄',
   tierStandard: '스탠다드',
   home: {
-    tag: 'THAI JA WORLD · 살이 막힐 때 정리',
-    title: '태국 살이, 서로 도와서 넘기는 곳',
-    heroKicker: '경험담 · 제보 · 일자리 · 동네',
-    heroLead: '막히면 여기서부터',
+    tag: '오늘의 한줄 기사 · 생활정보 · 태국 꿀팁',
+    title: '오늘 태국 한줄 기사부터 확인하세요',
+    heroKicker: '한줄 기사 · 생활정보 · 태국 꿀팁',
+    heroLead: '지금 뜨는 정보만 짧고 빠르게 보여드립니다',
     heroSub:
-      '집·비자·병원비처럼 막히는 일, 겪은 걸 나누면 다음 사람한테 닿아요.\n홍보보다 팁·주의·정리를 먼저 — 가볍게 올려도 돼요.\n필요할 때만 들러도 괜찮아요.',
-    portalMastTitle: '태자 월드 통합 검색',
-    portalMastSub: '메뉴·뉴스·경로를 한 번에 — 로컬 포털처럼 쓰는 홈',
+      '비자·병원·집·교통, 오늘 필요한 내용을 한줄로 먼저 확인하고 바로 이동하세요.',
+    heroPrimaryCta: '오늘의 생활꿀팁 보기',
+    heroSecondaryCta: '주요 기사 확인하기',
+    portalMastTitle: '오늘 필요한 태국 정보 검색',
+    portalMastSub: '한줄 기사·생활정보·꿀팁·메뉴를 한 번에 찾으세요',
     portalMastQuickAria: '자주 찾는 메뉴',
+    focusGridAria: '첫 화면 핵심 정보 카드',
+    focusTipsTitle: '오늘의 생활꿀팁',
+    focusTipsSummary: '비자·병원·집·교통 핵심만 한줄로 확인',
+    focusTipsCta: '꿀팁 바로 보기',
+    focusNewsTitle: '오늘의 주요 기사',
+    focusNewsFallback: '오늘 주요 기사를 불러오는 중입니다.',
+    focusNewsCta: '기사 더 보기',
+    focusWeatherTitle: '오늘의 날씨/생활 알림',
+    focusWeatherFallback: '현재 날씨·생활 알림을 불러오는 중입니다.',
+    focusWeatherCta: '날씨·로컬 정보 보기',
+    conversionLead: '확인 끝났다면, 지금 필요한 행동으로 바로 이동하세요.',
+    conversionMarketCta: '번개장터 가기',
+    conversionMarketHint: '근처 중고·생활물품 바로 확인',
+    conversionJobsCta: '구인구직 보기',
+    conversionJobsHint: '현지 채용·알바 공고 바로 확인',
     dreamIntro: '지금 쓸 수 있어요 · ',
     dreamMinihome: '미니홈으로 ',
     dreamMid: '내 방, 내 규칙. ',
@@ -605,12 +645,11 @@ const ko: Dictionary = {
     hubTipSoon: '채널만 연결되면 여기서 바로 열려요 · 지금은 연결 준비 중이에요',
     hubMinihome: '미니홈',
     hubMinihomeSub: '배경·소개 글 · 공개 설정',
-    hotLabel: '🔥 오늘 태국 살이에 닿는 참고 한 줄',
+    hotLabel: '🔥 오늘 태국 한줄 기사',
     hotNewsBadge: '브리핑',
     hotNewsEmpty: '아직 조용해요. 곧 태국 살이에 닿는 이야기로 채울게요.',
     hotNewsLoading: '쓸 만한 소식만 고르는 중…',
-    hotFootnote:
-      '제목을 누르면 원문 기사로 이동해요. 회색 한 줄은 요약입니다. 광장 게시판과는 다른 코너예요.',
+    hotFootnote: '제목을 누르면 상세 기사로 이동합니다. 회색 문장은 한줄 요약입니다.',
     shopsTitle: '🏪 동네 가게',
     shopsMore: '더 보기 →',
     shopsEmpty: '아직 소개된 가게가 없어요. 곧 채워 넣을게요.',
@@ -1110,6 +1149,8 @@ const ko: Dictionary = {
 const th: Dictionary = {
   nav: {
     home: 'หน้าแรก',
+    marketplace: 'ตลาดด่วน',
+    jobs: 'หางาน',
     tips: 'ทิปส์',
     local: 'ร้านท้องถิ่น',
     community: 'ลานชุมชน',
@@ -1131,14 +1172,31 @@ const th: Dictionary = {
   tierStandard: 'สแตนดาร์ด',
   home: {
     tag: 'THAI JA WORLD · ติดขัดเมื่อไหร่ก็มาอ่าน',
-    title: 'ชีวิตที่ไทย — ช่วยกันผ่านไป',
-    heroKicker: 'ประสบการณ์ · แจ้งเรื่อง · งาน · ท้องถิ่น',
-    heroLead: 'ติดขัดตรงไหน — เริ่มที่นี่',
+    title: 'ข้อมูลชีวิตในไทย ที่เห็นภาพในหน้าจอแรก',
+    heroKicker: 'ข่าว · ทิปส์ชีวิต · อากาศ · ข้อมูลท้องถิ่น',
+    heroLead: 'เช็กข้อมูลที่ต้องใช้วันนี้ได้ทันที',
     heroSub:
-      'บ้าน·วีซ่า·ค่ารพ ที่ติดขัด แชร์ประสบการณ์แล้วคนถัดไปได้ประโยชน์\nเน้นช่วยเหลือ·ข้อควรระวัง·สรุป มากกว่าโฆษณา — โพสต์สั้นๆ ก็ได้\nอยากเข้ามาตอนไหนก็ได้',
-    portalMastTitle: 'ค้นหา Thai Ja World',
-    portalMastSub: 'เมนู·ข่าว·พาธในที่เดียว — หน้าแรกแบบพอร์ทัล',
+      'หน้าแรกเน้นข่าวและทิปส์ที่ใช้ได้จริงก่อน ไม่วางข้อความยาวเกินจำเป็น\nดูอากาศและข้อมูลชีวิต แล้วไปต่อที่ตลาดด่วนหรือหางานได้ทันที',
+    heroPrimaryCta: 'ดูทิปส์ชีวิตวันนี้',
+    heroSecondaryCta: 'ดูข่าวสำคัญ',
+    portalMastTitle: 'ค้นหาข้อมูลที่ต้องใช้วันนี้',
+    portalMastSub: 'ค้นหาข่าว ทิปส์ อากาศ และเมนูหลักในจุดเดียว',
     portalMastQuickAria: 'ทางลัดเมนูยอดนิยม',
+    focusGridAria: 'การ์ดข้อมูลสำคัญหน้าแรก',
+    focusTipsTitle: 'ทิปส์ชีวิตวันนี้',
+    focusTipsSummary: 'วีซ่า โรงพยาบาล ที่พัก เดินทาง และเรื่องใช้ชีวิตที่เจอบ่อย',
+    focusTipsCta: 'ดูทิปส์ทันที',
+    focusNewsTitle: 'ข่าวสำคัญวันนี้',
+    focusNewsFallback: 'กำลังสรุปข่าวสำคัญของวันนี้ โปรดกลับมาตรวจอีกครั้ง',
+    focusNewsCta: 'ดูข่าวเพิ่มเติม',
+    focusWeatherTitle: 'อากาศ/แจ้งเตือนชีวิตประจำวัน',
+    focusWeatherFallback: 'กำลังโหลดข้อมูลอากาศล่าสุด',
+    focusWeatherCta: 'ดูอากาศและข้อมูลท้องถิ่น',
+    conversionLead: 'เมื่อเช็กข้อมูลแล้ว ไปต่อยังสิ่งที่ต้องทำได้ทันที',
+    conversionMarketCta: 'ไปตลาดด่วน',
+    conversionMarketHint: 'ดูของใช้มือสองและประกาศซื้อขาย',
+    conversionJobsCta: 'ดูงานและประกาศจ้าง',
+    conversionJobsHint: 'เช็กงานท้องถิ่นและงานพาร์ทไทม์',
     dreamIntro: 'ใช้ได้แล้วตอนนี้ · ',
     dreamMinihome: 'ไปมินิโฮม ',
     dreamMid: 'ห้องของฉัน กฎของฉัน ',

@@ -216,6 +216,24 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
 
   const d = useMemo(() => getDictionary(locale), [locale]);
   const h: Dictionary['home'] = d.home;
+  const hAny = h as Dictionary['home'] & Record<string, string>;
+  const heroPrimaryCta = hAny.heroPrimaryCta ?? h.tipDigestTitle;
+  const heroSecondaryCta = hAny.heroSecondaryCta ?? h.newsTitle;
+  const focusGridAria = hAny.focusGridAria ?? h.portalMastQuickAria;
+  const focusTipsTitle = hAny.focusTipsTitle ?? h.tipDigestTitle;
+  const focusTipsSummary = hAny.focusTipsSummary ?? h.newsSub;
+  const focusTipsCta = hAny.focusTipsCta ?? h.newsEmptyLink;
+  const focusNewsTitle = hAny.focusNewsTitle ?? h.newsTitle;
+  const focusNewsFallback = hAny.focusNewsFallback ?? h.hotNewsEmpty;
+  const focusNewsCta = hAny.focusNewsCta ?? h.newsEmptyLink;
+  const focusWeatherTitle = hAny.focusWeatherTitle ?? h.weatherTitle;
+  const focusWeatherFallback = hAny.focusWeatherFallback ?? h.weatherUnavailable;
+  const focusWeatherCta = hAny.focusWeatherCta ?? h.shopsMore;
+  const conversionLead = hAny.conversionLead ?? h.newsSub;
+  const conversionMarketCta = hAny.conversionMarketCta ?? d.nav.marketplace;
+  const conversionMarketHint = hAny.conversionMarketHint ?? h.newsEmpty;
+  const conversionJobsCta = hAny.conversionJobsCta ?? d.nav.jobs;
+  const conversionJobsHint = hAny.conversionJobsHint ?? h.newsEmpty;
   const tips = useMemo(() => tipEnv(), []);
   const hasTip = Boolean(tips.tg || tips.wa || tips.line || tips.fb || tips.tt);
 
@@ -236,13 +254,13 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
 
   const hotNewsItems = newsLocalized.slice(0, 5);
   const newsShow = newsLocalized.slice(0, 5);
-  const focusNewsHead = hotNewsItems[0]?.title?.trim() || h.focusNewsFallback;
+  const focusNewsHead = hotNewsItems[0]?.title?.trim() || focusNewsFallback;
   const weatherTop = weatherRows[0];
   const focusWeatherSummary =
     weatherBusy
       ? h.weatherLoading
       : weatherErr || !weatherTop
-        ? h.focusWeatherFallback
+        ? focusWeatherFallback
         : `${weatherTop.label} · ${weatherTop.temp !== null ? `${weatherTop.temp}°C` : '—'} · ${
             weatherTop.condition || '—'
           }`;
@@ -359,62 +377,62 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
           <p className="home-hero__sub">{h.heroSub}</p>
           <div className="home-hero__cta-row">
             <Link href="/tips" className="home-hero__cta home-hero__cta--primary">
-              {h.heroPrimaryCta}
+              {heroPrimaryCta}
             </Link>
             <Link
               href={isLoggedIn ? '/community/boards?cat=info' : loginNextHref('/community/boards?cat=info')}
               className="home-hero__cta"
             >
-              {h.heroSecondaryCta}
+              {heroSecondaryCta}
             </Link>
           </div>
         </div>
 
-        <div className="home-focus-grid" aria-label={h.focusGridAria}>
+        <div className="home-focus-grid" aria-label={focusGridAria}>
           <article className="home-focus-card">
-            <p className="home-focus-card__label">{h.focusTipsTitle}</p>
-            <p className="home-focus-card__summary">{h.focusTipsSummary}</p>
+            <p className="home-focus-card__label">{focusTipsTitle}</p>
+            <p className="home-focus-card__summary">{focusTipsSummary}</p>
             <Link href="/tips" className="home-focus-card__cta">
-              {h.focusTipsCta}
+              {focusTipsCta}
             </Link>
           </article>
 
           <article className="home-focus-card">
-            <p className="home-focus-card__label">{h.focusNewsTitle}</p>
+            <p className="home-focus-card__label">{focusNewsTitle}</p>
             <p className="home-focus-card__summary">{focusNewsHead}</p>
             <Link
               href={isLoggedIn ? '/community/boards?cat=info' : loginNextHref('/community/boards?cat=info')}
               className="home-focus-card__cta"
             >
-              {h.focusNewsCta}
+              {focusNewsCta}
             </Link>
           </article>
 
           <article className="home-focus-card">
-            <p className="home-focus-card__label">{h.focusWeatherTitle}</p>
+            <p className="home-focus-card__label">{focusWeatherTitle}</p>
             <p className="home-focus-card__summary">{focusWeatherSummary}</p>
             <Link href={isLoggedIn ? '/local' : loginNextHref('/local')} className="home-focus-card__cta">
-              {h.focusWeatherCta}
+              {focusWeatherCta}
             </Link>
           </article>
         </div>
 
-        <div className="home-conversion-strip" aria-label={h.conversionLead}>
-          <p className="home-conversion-strip__lead">{h.conversionLead}</p>
+        <div className="home-conversion-strip" aria-label={conversionLead}>
+          <p className="home-conversion-strip__lead">{conversionLead}</p>
           <div className="home-conversion-strip__cta-row">
             <Link
               href={isLoggedIn ? '/community/boards?cat=flea' : loginNextHref('/community/boards?cat=flea')}
               className="home-conversion-strip__cta"
             >
-              <span>{h.conversionMarketCta}</span>
-              <small>{h.conversionMarketHint}</small>
+              <span>{conversionMarketCta}</span>
+              <small>{conversionMarketHint}</small>
             </Link>
             <Link
               href={isLoggedIn ? '/community/boards?cat=job' : loginNextHref('/community/boards?cat=job')}
               className="home-conversion-strip__cta"
             >
-              <span>{h.conversionJobsCta}</span>
-              <small>{h.conversionJobsHint}</small>
+              <span>{conversionJobsCta}</span>
+              <small>{conversionJobsHint}</small>
             </Link>
           </div>
         </div>

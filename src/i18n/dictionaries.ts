@@ -501,6 +501,24 @@ export type Dictionary = {
     incomingTitle: string;
     outgoingTitle: string;
     friendsTitle: string;
+    searchTitle: string;
+    searchPlaceholder: string;
+    searchButton: string;
+    searching: string;
+    lastSeenLabel: string;
+    lastSeenUnknown: string;
+    visitMinihome: string;
+    openChat: string;
+    notesTitle: string;
+    notesEmpty: string;
+    notesUnreadPrefix: string;
+    onlineNow: string;
+    chatWithPrefix: string;
+    chatEmpty: string;
+    youLabel: string;
+    dmPlaceholder: string;
+    dmSending: string;
+    dmSend: string;
     incomingEmpty: string;
     outgoingEmpty: string;
     friendsEmpty: string;
@@ -1080,6 +1098,24 @@ const ko: Dictionary = {
     incomingTitle: '받은 신청',
     outgoingTitle: '보낸 신청',
     friendsTitle: '내 일촌',
+    searchTitle: '사람 찾기',
+    searchPlaceholder: '닉네임으로 찾기',
+    searchButton: '검색',
+    searching: '검색 중…',
+    lastSeenLabel: '최근 접속',
+    lastSeenUnknown: '접속 정보 없음',
+    visitMinihome: '미니홈 방문',
+    openChat: '쪽지',
+    notesTitle: '쪽지함',
+    notesEmpty: '새 쪽지가 없어요.',
+    notesUnreadPrefix: '안 읽은 쪽지',
+    onlineNow: '방금 접속',
+    chatWithPrefix: '대화 상대',
+    chatEmpty: '아직 대화가 없어요.',
+    youLabel: '나',
+    dmPlaceholder: '쪽지를 입력해 주세요',
+    dmSending: '보내는 중…',
+    dmSend: '쪽지 보내기',
     incomingEmpty: '받은 신청이 없어요.',
     outgoingEmpty: '보낸 대기 중인 신청이 없어요.',
     friendsEmpty: '아직 맺은 일촌이 없어요. 미니홈에서 신청해 보세요.',
@@ -1659,6 +1695,24 @@ const th: Dictionary = {
     incomingTitle: 'คำขอที่ได้รับ',
     outgoingTitle: 'คำขอที่ส่งไป',
     friendsTitle: 'เพื่อนของฉัน',
+    searchTitle: 'ค้นหาผู้ใช้',
+    searchPlaceholder: 'ค้นหาด้วยชื่อเล่น',
+    searchButton: 'ค้นหา',
+    searching: 'กำลังค้นหา…',
+    lastSeenLabel: 'ใช้งานล่าสุด',
+    lastSeenUnknown: 'ไม่มีข้อมูลการใช้งาน',
+    visitMinihome: 'ไปมินิโฮม',
+    openChat: 'ส่งข้อความ',
+    notesTitle: 'กล่องข้อความ',
+    notesEmpty: 'ยังไม่มีข้อความใหม่',
+    notesUnreadPrefix: 'ยังไม่อ่าน',
+    onlineNow: 'ออนไลน์ล่าสุด',
+    chatWithPrefix: 'กำลังคุยกับ',
+    chatEmpty: 'ยังไม่มีบทสนทนา',
+    youLabel: 'ฉัน',
+    dmPlaceholder: 'พิมพ์ข้อความ',
+    dmSending: 'กำลังส่ง…',
+    dmSend: 'ส่งข้อความ',
     incomingEmpty: 'ยังไม่มีคำขอ',
     outgoingEmpty: 'ไม่มีคำขอที่รออยู่',
     friendsEmpty: 'ยังไม่มีเพื่อน — ลองขอจากมินิโฮม',

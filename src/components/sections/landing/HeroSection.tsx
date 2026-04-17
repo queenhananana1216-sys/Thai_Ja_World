@@ -5,11 +5,10 @@ import Link from 'next/link';
 import { SplineHeroCanvas } from '@/components/3d/SplineHeroCanvas';
 
 interface HeroSectionProps {
-  memberCount?: number;
   sceneUrls?: string[];
 }
 
-export function HeroSection({ memberCount = 0, sceneUrls = [] }: HeroSectionProps) {
+export function HeroSection({ sceneUrls = [] }: HeroSectionProps) {
   const availableScenes = useMemo(
     () => sceneUrls.filter((value) => typeof value === 'string' && value.trim().length > 0),
     [sceneUrls]
@@ -44,33 +43,32 @@ export function HeroSection({ memberCount = 0, sceneUrls = [] }: HeroSectionProp
       <div className="mx-auto grid max-w-6xl gap-7 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div>
           <p className="inline-flex rounded-full border border-violet-300/40 bg-violet-400/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-violet-100">
-            태자월드 커뮤니티
+            오늘의 한줄 기사 · 생활정보 · 태국 꿀팁
           </p>
           <h1 className="mt-4 text-2xl font-extrabold leading-tight sm:text-5xl">
-            태국 생활 정보, 아직도 채팅방에서만 찾고 계신가요?
+            오늘 태국 한줄 기사부터 바로 확인하세요
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-slate-200 sm:text-lg">
-            태국에 사는 한국인 <strong className="text-amber-300">{memberCount.toLocaleString('ko-KR')}명</strong>이 비자,
-            병원, 집, 생활 정보를 직접 올리고 검증하는 곳. 흘러가는 채팅방이 아닌, 쌓이고 검색되는 커뮤니티입니다.
+            비자·병원·집·교통, 오늘 필요한 정보를 한줄로 먼저 보고 필요한 메뉴로 바로 이동하세요.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
-              href="/community/trade"
+              href="/tips"
               className="rounded-xl bg-[linear-gradient(120deg,#c4b5fd,#f9a8d4)] px-5 py-2.5 text-sm font-bold text-slate-950 shadow-[0_12px_38px_rgba(196,181,253,0.42)] transition hover:scale-[1.02] hover:brightness-110 sm:px-6 sm:py-3 sm:text-base"
             >
-              오늘 올라온 번개장터 보러가기
+              오늘의 생활꿀팁 보기
             </Link>
             <Link
-              href="/community/boards"
+              href="/community/boards?cat=info"
               className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-sm text-slate-200 no-underline transition hover:bg-white/10"
             >
-              구인구직 · 생활질문 최신글 확인
+              주요 기사 확인하기
             </Link>
           </div>
 
           <p className="mt-8 text-sm text-slate-300">
-            방콕 · 파타야 · 치앙마이 실사용 후기 · 번개장터 · 구인구직 · 당일 예약 배송 가능한 로컬 가게
+            한줄 기사 확인 후 번개장터·구인구직·로컬 메뉴로 바로 연결됩니다.
           </p>
           {!hasScenes ? (
             <p className="mt-3 text-xs text-violet-200/80">
@@ -81,25 +79,25 @@ export function HeroSection({ memberCount = 0, sceneUrls = [] }: HeroSectionProp
 
         <div className="space-y-3">
           <div className="rounded-3xl border border-white/15 bg-white/5 p-4 backdrop-blur">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-100">지금 바로 참여하기</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-100">정보 확인 후 바로 이동</p>
             <div className="mt-3 grid gap-2">
               <Link
                 href="/community/trade"
                 className="rounded-xl border border-violet-300/35 bg-violet-400/10 px-3 py-2.5 text-sm font-semibold text-violet-50 no-underline transition hover:bg-violet-400/20"
               >
-                번개장터에서 바로 거래 시작
+                번개장터 가기
+              </Link>
+              <Link
+                href="/community/boards?cat=job"
+                className="rounded-xl border border-amber-200/30 bg-amber-300/10 px-3 py-2.5 text-sm font-semibold text-amber-100 no-underline transition hover:bg-amber-300/20"
+              >
+                구인구직 보기
               </Link>
               <Link
                 href="/local"
-                className="rounded-xl border border-amber-200/30 bg-amber-300/10 px-3 py-2.5 text-sm font-semibold text-amber-100 no-underline transition hover:bg-amber-300/20"
-              >
-                당일 예약·배송 가능한 가게 찾기
-              </Link>
-              <Link
-                href="/community/boards"
                 className="rounded-xl border border-white/20 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-100 no-underline transition hover:bg-white/10"
               >
-                구인구직·생활질문 글 바로 보기
+                날씨·로컬 정보 보기
               </Link>
             </div>
           </div>

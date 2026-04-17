@@ -17,6 +17,11 @@ const MAX_LEN_BODY = 1200;
 const MAX_LEN_HOT_NOTE = 2000;
 
 type Entry = { key: string; locale: string; value: string };
+const KO_NOISY_HOME_COPY_PATTERNS: RegExp[] = [
+  /태국에\s*사는\s*한국인\s*\d+\s*명/i,
+  /아직도\s*채팅방/i,
+  /채팅방이\s*아닌/i,
+];
 
 function maxLenForKey(key: string): number {
   if (key.startsWith('home_hero_brand_')) return MAX_LEN_BRAND;
@@ -61,6 +66,12 @@ function isAllowedKey(key: string, locale: string): key is SiteCopyHomeKey {
   return locale === 'ko';
 }
 
+function isBlockedCopy(key: string, locale: string, value: string): boolean {
+  if (locale !== 'ko') return false;
+  if (!key.startsWith('home_hero_')) return false;
+  return KO_NOISY_HOME_COPY_PATTERNS.some((pattern) => pattern.test(value));
+}
+
 export async function POST(req: Request) {
   const supabaseAuth = await createServerSupabaseAuthClient();
   const {
@@ -98,6 +109,12 @@ export async function POST(req: Request) {
     const cap = maxLenForKey(key);
     if (trimmed.length > cap) {
       return NextResponse.json({ error: `값은 ${cap}자 이하여야 합니다.` }, { status: 400 });
+    }
+    if (isBlockedCopy(key, locale, trimmed)) {
+      return NextResponse.json(
+        { error: '히어로 문구에 금지된 패턴(근거 없는 인원/채팅방 문구)이 포함되어 저장할 수 없습니다.' },
+        { status: 400 },
+      );
     }
 
     if (trimmed === '') {

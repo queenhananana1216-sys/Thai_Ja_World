@@ -6,10 +6,6 @@ import type { Locale } from './types';
 export type Dictionary = {
   nav: {
     home: string;
-    /** 번개장터 허브(중고) */
-    marketplace: string;
-    /** 구인·구직 허브 */
-    jobs: string;
     /** 공개 꿀팁 허브 (/tips) */
     tips: string;
     local: string;
@@ -33,6 +29,13 @@ export type Dictionary = {
   logoAria: string;
   lang: { ko: string; th: string };
   footer: string;
+  /** 홈 하단·푸터 고정 링크 라벨 */
+  footerNav: {
+    terms: string;
+    privacy: string;
+    contact: string;
+    ads: string;
+  };
   tierPremium: string;
   tierStandard: string;
   home: {
@@ -44,27 +47,10 @@ export type Dictionary = {
     heroLead: string;
     /** 히어로 서브 설명 — 줄바꿈은 \\n */
     heroSub: string;
-    heroPrimaryCta: string;
-    heroSecondaryCta: string;
     /** 홈 최상단 포털형 검색 띠 제목 */
     portalMastTitle: string;
     portalMastSub: string;
     portalMastQuickAria: string;
-    focusGridAria: string;
-    focusTipsTitle: string;
-    focusTipsSummary: string;
-    focusTipsCta: string;
-    focusNewsTitle: string;
-    focusNewsFallback: string;
-    focusNewsCta: string;
-    focusWeatherTitle: string;
-    focusWeatherFallback: string;
-    focusWeatherCta: string;
-    conversionLead: string;
-    conversionMarketCta: string;
-    conversionMarketHint: string;
-    conversionJobsCta: string;
-    conversionJobsHint: string;
     dreamIntro: string;
     dreamMinihome: string;
     dreamMid: string;
@@ -162,16 +148,22 @@ export type Dictionary = {
     newsDetailGuestNote: string;
     /** 비회원 — 본문(요약·편집 노트·원문) 잠금 안내 */
     newsDetailLockedLead: string;
-  };
-  policy: {
-    termsTitle: string;
-    termsBody: string;
-    privacyTitle: string;
-    privacyBody: string;
-    contactTitle: string;
-    contactBody: string;
-    adsTitle: string;
-    adsBody: string;
+    /** /news 허브 — 카드에서 상세로 */
+    newsHubOpenDetail: string;
+    /** /news 허브 상단 — 꿀팁(/tips)과 구분 */
+    newsHubCrossLinkTips: string;
+    /** 플레이스홀더 {n} = 현재 목록 건수 */
+    newsHubListingNote: string;
+    /** 홈 히어로 보조 CTA → /news */
+    newsHubHeroCta: string;
+    /** 홈 속보 블록 «더보기» → /news */
+    newsHubSectionMore: string;
+    /** 뉴스 상세 상단 «목록으로» */
+    newsDetailBackToHub: string;
+    /** /my-local-shop — 연결된 가게 없을 때 안내 문단 */
+    myLocalShopEmptyFollowup: string;
+    /** /my-local-shop — 문의 페이지로 */
+    myLocalShopContactCta: string;
   };
   /** 비회원 공개 꿀팁 허브 — 본문·출처는 로그인 후 광장 */
   tips: {
@@ -184,7 +176,13 @@ export type Dictionary = {
     goLogin: string;
     goSignup: string;
     empty: string;
+    fallbackLead: string;
+    fallbackChecklistTitle: string;
+    fallbackCautionsTitle: string;
+    fallbackSourceLabel: string;
     backToList: string;
+    /** 꿀팁 허브 하단 — 뉴스 스냅샷과 구분 */
+    crossLinkNewsHub: string;
   };
   board: {
     pageTitle: string;
@@ -448,7 +446,12 @@ export type Dictionary = {
     styleShopBalance: string;
     styleShopCatSkin: string;
     styleShopCatMinimi: string;
+    styleShopCatBgm: string;
+    styleShopCatWallpaper: string;
+    styleShopCatFrame: string;
     styleShopBuy: string;
+    styleShopBuyRental: string;
+    styleShopBuyPerm: string;
     styleShopEquip: string;
     styleShopOwned: string;
     styleShopNeedPoints: string;
@@ -456,6 +459,12 @@ export type Dictionary = {
     styleShopEquipped: string;
     styleShopLoadError: string;
     styleShopEmpty: string;
+    styleShopDaysLeft: string;
+    styleShopRentalTag: string;
+    styleShopPermTag: string;
+    styleShopCheckin: string;
+    styleShopCheckedIn: string;
+    dotoriLabel: string;
     styleRpcNotAuth: string;
     styleRpcGreetingDone: string;
     styleRpcGreetingShort: string;
@@ -465,6 +474,26 @@ export type Dictionary = {
     styleRpcPoor: string;
     styleRpcNotOwned: string;
     styleRpcGeneric: string;
+    /** 섹션 잠금 안내 */
+    sectionLockedIlchon: string;
+    sectionLockedPrivate: string;
+    /** 다이어리 */
+    cyMenuDiary: string;
+    cyDiaryTitle: string;
+    cyDiaryEmpty: string;
+    cyDiaryWrite: string;
+    cyDiaryWriting: string;
+    cyDiarySave: string;
+    cyDiarySaved: string;
+    cyDiaryDelete: string;
+    cyDiaryDeleteConfirm: string;
+    cyDiarySecret: string;
+    cyDiaryMoodHappy: string;
+    cyDiaryMoodSad: string;
+    cyDiaryMoodAngry: string;
+    cyDiaryMoodLove: string;
+    cyDiaryMoodTired: string;
+    cyDiaryMoodNeutral: string;
     /** 로딩 자리 표시(한·태 동일 문자 권장) */
     loadingMark: string;
     /** 숫자 없음·대기(한·태 동일 문자 권장) */
@@ -476,6 +505,10 @@ export type Dictionary = {
     pageLead: string;
     needLogin: string;
     goLogin: string;
+    searchTitle: string;
+    searchPlaceholder: string;
+    searchButton: string;
+    searching: string;
     requestButton: string;
     requestTitle: string;
     messageLabel: string;
@@ -501,29 +534,25 @@ export type Dictionary = {
     incomingTitle: string;
     outgoingTitle: string;
     friendsTitle: string;
-    searchTitle: string;
-    searchPlaceholder: string;
-    searchButton: string;
-    searching: string;
-    lastSeenLabel: string;
-    lastSeenUnknown: string;
-    visitMinihome: string;
-    openChat: string;
-    notesTitle: string;
-    notesEmpty: string;
-    notesUnreadPrefix: string;
-    onlineNow: string;
-    chatWithPrefix: string;
-    chatEmpty: string;
-    youLabel: string;
-    dmPlaceholder: string;
-    dmSending: string;
-    dmSend: string;
     incomingEmpty: string;
     outgoingEmpty: string;
     friendsEmpty: string;
     youCallThemLabel: string;
     proposedFromThem: string;
+    visitMinihome: string;
+    lastSeenLabel: string;
+    lastSeenUnknown: string;
+    onlineNow: string;
+    notesTitle: string;
+    notesEmpty: string;
+    notesUnreadPrefix: string;
+    openChat: string;
+    chatWithPrefix: string;
+    chatEmpty: string;
+    youLabel: string;
+    dmPlaceholder: string;
+    dmSend: string;
+    dmSending: string;
     errorGeneric: string;
     errorPendingExists: string;
     errorAlreadyIlchon: string;
@@ -589,6 +618,17 @@ export type Dictionary = {
     /** /community/trade — 메타·OG */
     tradeHubDescription: string;
   };
+  /** 정적 안내 페이지 (/terms, /privacy, /contact, /ads) */
+  policy: {
+    termsTitle: string;
+    termsBody: string;
+    privacyTitle: string;
+    privacyBody: string;
+    contactTitle: string;
+    contactBody: string;
+    adsTitle: string;
+    adsBody: string;
+  };
   /** 일일 뉴스 웹 푸시 옵트인 (로그인·가입 화면) */
   push: {
     optInTitle: string;
@@ -610,8 +650,6 @@ export type Dictionary = {
 const ko: Dictionary = {
   nav: {
     home: '홈',
-    marketplace: '번개장터',
-    jobs: '구인구직',
     tips: '꿀팁',
     local: '로컬',
     community: '광장',
@@ -629,35 +667,24 @@ const ko: Dictionary = {
   lang: { ko: '한국어', th: 'ไทย' },
   footer:
     '© 2026 Thai Ja World · thaijaworld.com | 태국 살이 정보 나눔 — 경험·피하기·정리, 제보·중고·알바·맛집·미니홈',
+  footerNav: {
+    terms: '이용약관',
+    privacy: '개인정보처리방침',
+    contact: '문의하기',
+    ads: '광고 안내',
+  },
   tierPremium: '프리미엄',
   tierStandard: '스탠다드',
   home: {
-    tag: '오늘의 한줄 기사 · 생활정보 · 태국 꿀팁',
-    title: '오늘 태국 한줄 기사부터 확인하세요',
-    heroKicker: '한줄 기사 · 생활정보 · 태국 꿀팁',
-    heroLead: '지금 뜨는 정보만 짧고 빠르게 보여드립니다',
+    tag: 'THAI JA WORLD · 살이 막힐 때 정리',
+    title: '태국 살이, 서로 도와서 넘기는 곳',
+    heroKicker: '경험담 · 제보 · 일자리 · 동네',
+    heroLead: '막히면 여기서부터',
     heroSub:
-      '비자·병원·집·교통, 오늘 필요한 내용을 한줄로 먼저 확인하고 바로 이동하세요.',
-    heroPrimaryCta: '오늘의 생활꿀팁 보기',
-    heroSecondaryCta: '주요 기사 확인하기',
-    portalMastTitle: '오늘 필요한 태국 정보 검색',
-    portalMastSub: '한줄 기사·생활정보·꿀팁·메뉴를 한 번에 찾으세요',
+      '집·비자·병원비처럼 막히는 일, 겪은 걸 나누면 다음 사람한테 닿아요.\n홍보보다 팁·주의·정리를 먼저 — 가볍게 올려도 돼요.\n필요할 때만 들러도 괜찮아요.',
+    portalMastTitle: '통합 검색',
+    portalMastSub: '',
     portalMastQuickAria: '자주 찾는 메뉴',
-    focusGridAria: '첫 화면 핵심 정보 카드',
-    focusTipsTitle: '오늘의 생활꿀팁',
-    focusTipsSummary: '비자·병원·집·교통 핵심만 한줄로 확인',
-    focusTipsCta: '꿀팁 바로 보기',
-    focusNewsTitle: '오늘의 주요 기사',
-    focusNewsFallback: '오늘 주요 기사를 불러오는 중입니다.',
-    focusNewsCta: '기사 더 보기',
-    focusWeatherTitle: '오늘의 날씨/생활 알림',
-    focusWeatherFallback: '현재 날씨·생활 알림을 불러오는 중입니다.',
-    focusWeatherCta: '날씨·로컬 정보 보기',
-    conversionLead: '확인 끝났다면, 지금 필요한 행동으로 바로 이동하세요.',
-    conversionMarketCta: '번개장터 가기',
-    conversionMarketHint: '근처 중고·생활물품 바로 확인',
-    conversionJobsCta: '구인구직 보기',
-    conversionJobsHint: '현지 채용·알바 공고 바로 확인',
     dreamIntro: '지금 쓸 수 있어요 · ',
     dreamMinihome: '미니홈으로 ',
     dreamMid: '내 방, 내 규칙. ',
@@ -673,11 +700,12 @@ const ko: Dictionary = {
     hubTipSoon: '채널만 연결되면 여기서 바로 열려요 · 지금은 연결 준비 중이에요',
     hubMinihome: '미니홈',
     hubMinihomeSub: '배경·소개 글 · 공개 설정',
-    hotLabel: '🔥 오늘 태국 한줄 기사',
+    hotLabel: '🔥 오늘 태국 살이에 닿는 참고 한 줄',
     hotNewsBadge: '브리핑',
     hotNewsEmpty: '아직 조용해요. 곧 태국 살이에 닿는 이야기로 채울게요.',
     hotNewsLoading: '쓸 만한 소식만 고르는 중…',
-    hotFootnote: '제목을 누르면 상세 기사로 이동합니다. 회색 문장은 한줄 요약입니다.',
+    hotFootnote:
+      '제목을 누르면 원문 기사로 이동해요. 회색 한 줄은 요약입니다. 광장 게시판과는 다른 코너예요.',
     shopsTitle: '🏪 동네 가게',
     shopsMore: '더 보기 →',
     shopsEmpty: '아직 소개된 가게가 없어요. 곧 채워 넣을게요.',
@@ -754,34 +782,34 @@ const ko: Dictionary = {
       '요약·편집 노트·원문 링크·댓글은 로그인(또는 가입) 후에 이용할 수 있어요. 광장·거래·미니홈 등도 회원 전용이에요.',
     newsDetailLockedLead:
       '아래부터는 회원에게만 보이는 정리·출처·댓글입니다. 로그인하면 이어서 읽고 참여할 수 있어요.',
-  },
-  policy: {
-    termsTitle: '이용약관',
-    termsBody:
-      '태자월드는 태국 생활 정보 공유를 위한 커뮤니티입니다. 불법·사기·타인 권리 침해 콘텐츠는 금지되며, 운영 정책에 따라 게시물이 제한될 수 있습니다.',
-    privacyTitle: '개인정보처리방침',
-    privacyBody:
-      '서비스 운영에 필요한 최소한의 정보만 수집합니다. 계정 운영, 보안, 문의 대응 목적 외로는 사용하지 않으며 관련 법령에 따라 보호합니다.',
-    contactTitle: '문의하기',
-    contactBody:
-      '서비스 이용 중 문제나 제휴 문의가 있으면 운영팀으로 연락해 주세요. 확인 후 순차적으로 답변드립니다.',
-    adsTitle: '광고 안내',
-    adsBody:
-      '로컬 가게 및 커뮤니티 제휴 광고는 별도 정책에 따라 운영됩니다. 광고 문의는 운영 채널로 접수해 주세요.',
+    newsHubOpenDetail: '스냅샷 열기 →',
+    newsHubCrossLinkTips: '생활 꿀팁 모음은 별도 코너(/tips)에 있어요.',
+    newsHubListingNote: '최근 게시 순 · 지금 {n}건까지 표시합니다.',
+    newsHubHeroCta: '스냅샷·속보 더보기',
+    newsHubSectionMore: '스냅샷 목록 ›',
+    newsDetailBackToHub: '← 스냅샷 목록',
+    myLocalShopEmptyFollowup:
+      '가게 등록·오너 연결은 운영(관리자)에서 진행합니다. 본인 사업장이라면 가입 이메일을 알려 주고 «로컬 스팟»에 오너로 연결해 달라고 요청해 주세요.',
+    myLocalShopContactCta: '문의·연결 요청 →',
   },
   tips: {
     pageTitle: '태국 생활 꿀팁',
     pageLead:
-      '짧은 훅만 미리 보여 드려요. 체크리스트·주의사항·출처 링크는 로그인(또는 가입) 후 광장에서 전체로 열립니다.',
+      '핵심만 먼저 보여 드려요. 체크리스트·주의사항·출처 링크는 로그인(또는 가입) 후 광장에서 전체를 확인할 수 있어요.',
     openCard: '자세히',
     detailLockedLead:
-      '요약·체크리스트·원문 출처는 회원에게만 공개돼요. 가입하면 광장 정보 게시판에서 같은 글을 끝까지 볼 수 있어요.',
-    loginForFull: '로그인하고 전체·출처 보기',
-    signupForFull: '가입하고 전체·출처 보기',
+      '체크리스트·주의사항·출처 링크는 회원에게만 공개돼요. 가입하면 광장 정보 게시판에서 같은 글을 끝까지 볼 수 있어요.',
+    loginForFull: '로그인하고 전체 내용 보기',
+    signupForFull: '가입하고 전체 내용 보기',
     goLogin: '로그인',
     goSignup: '회원가입',
-    empty: '아직 올라온 꿀팁이 없어요. 곧 채워질 거예요.',
+    empty: '아직 등록된 꿀팁이 없어요. 곧 알찬 내용으로 채워 둘게요.',
+    fallbackLead: '그동안 편집팀이 준비한 기본 꿀팁부터 먼저 보여 드릴게요.',
+    fallbackChecklistTitle: '체크리스트',
+    fallbackCautionsTitle: '주의사항',
+    fallbackSourceLabel: '출처',
     backToList: '꿀팁 목록',
+    crossLinkNewsHub: '외부 기사 요약·속보 스냅샷은 /news 에서 보세요.',
   },
   board: {
     pageTitle: '광장 게시판',
@@ -1047,14 +1075,25 @@ const ko: Dictionary = {
     styleShopBalance: '보유 점수',
     styleShopCatSkin: '룸 스킨',
     styleShopCatMinimi: '미니미',
+    styleShopCatBgm: 'BGM',
+    styleShopCatWallpaper: '배경',
+    styleShopCatFrame: '프레임',
     styleShopBuy: '구매',
+    styleShopBuyRental: '{days}일 대여',
+    styleShopBuyPerm: '영구 구매',
     styleShopEquip: '장착',
     styleShopOwned: '보유 중',
-    styleShopNeedPoints: '점수가 부족해요.',
+    styleShopNeedPoints: '옥수수가 부족해요.',
     styleShopPurchased: '구매했어요. 미니홈에서 확인해 보세요.',
     styleShopEquipped: '장착했어요.',
     styleShopLoadError: '상점 목록을 불러오지 못했어요.',
     styleShopEmpty: '이 카테고리에 상품이 아직 없어요.',
+    styleShopDaysLeft: 'D-{n}',
+    styleShopRentalTag: '{days}일',
+    styleShopPermTag: '영구',
+    styleShopCheckin: '출석 체크',
+    styleShopCheckedIn: '오늘 출석 완료!',
+    dotoriLabel: '옥수수',
     styleRpcNotAuth: '로그인이 필요해요.',
     styleRpcGreetingDone: '이미 가입 인사 보상을 받았어요.',
     styleRpcGreetingShort: '인사말을 조금만 더 길게 써 주세요.',
@@ -1064,6 +1103,24 @@ const ko: Dictionary = {
     styleRpcPoor: '스타일 점수가 부족해요.',
     styleRpcNotOwned: '아직 사지 않은 아이템이에요.',
     styleRpcGeneric: '처리 중 문제가 났어요. 잠시 후 다시 시도해 주세요.',
+    sectionLockedIlchon: '일촌에게만 공개된 섹션이에요',
+    sectionLockedPrivate: '비공개 섹션이에요',
+    cyMenuDiary: '다이어리',
+    cyDiaryTitle: '다이어리',
+    cyDiaryEmpty: '아직 쓴 일기가 없어요.',
+    cyDiaryWrite: '일기 쓰기',
+    cyDiaryWriting: '저장 중…',
+    cyDiarySave: '저장',
+    cyDiarySaved: '저장됐어요!',
+    cyDiaryDelete: '삭제',
+    cyDiaryDeleteConfirm: '이 일기를 정말 삭제할까요?',
+    cyDiarySecret: '비밀 일기',
+    cyDiaryMoodHappy: '😊',
+    cyDiaryMoodSad: '😢',
+    cyDiaryMoodAngry: '😠',
+    cyDiaryMoodLove: '❤️',
+    cyDiaryMoodTired: '😩',
+    cyDiaryMoodNeutral: '😐',
     loadingMark: '…',
     emDash: '—',
   },
@@ -1073,6 +1130,10 @@ const ko: Dictionary = {
       '신청을 보내고, 상대가 수락하면 서로 부르는 일촌명이 정해져요. 받은 신청은 여기서 수락·거절할 수 있어요.',
     needLogin: '일촌은 로그인한 뒤 이용할 수 있어요.',
     goLogin: '로그인하기',
+    searchTitle: '닉네임으로 일촌 찾기',
+    searchPlaceholder: '닉네임 검색',
+    searchButton: '검색',
+    searching: '찾는 중…',
     requestButton: '일촌 신청',
     requestTitle: '일촌 신청 보내기',
     messageLabel: '메시지 (선택)',
@@ -1098,29 +1159,25 @@ const ko: Dictionary = {
     incomingTitle: '받은 신청',
     outgoingTitle: '보낸 신청',
     friendsTitle: '내 일촌',
-    searchTitle: '사람 찾기',
-    searchPlaceholder: '닉네임으로 찾기',
-    searchButton: '검색',
-    searching: '검색 중…',
-    lastSeenLabel: '최근 접속',
-    lastSeenUnknown: '접속 정보 없음',
-    visitMinihome: '미니홈 방문',
-    openChat: '쪽지',
-    notesTitle: '쪽지함',
-    notesEmpty: '새 쪽지가 없어요.',
-    notesUnreadPrefix: '안 읽은 쪽지',
-    onlineNow: '방금 접속',
-    chatWithPrefix: '대화 상대',
-    chatEmpty: '아직 대화가 없어요.',
-    youLabel: '나',
-    dmPlaceholder: '쪽지를 입력해 주세요',
-    dmSending: '보내는 중…',
-    dmSend: '쪽지 보내기',
     incomingEmpty: '받은 신청이 없어요.',
     outgoingEmpty: '보낸 대기 중인 신청이 없어요.',
     friendsEmpty: '아직 맺은 일촌이 없어요. 미니홈에서 신청해 보세요.',
     youCallThemLabel: '내가 부르는 이름',
     proposedFromThem: '신청자가 나를 부르고 싶어 하는 이름(제안)',
+    visitMinihome: '미니홈 방문',
+    lastSeenLabel: '마지막 접속',
+    lastSeenUnknown: '접속 기록 없음',
+    onlineNow: '접속 중',
+    notesTitle: '쪽지함',
+    notesEmpty: '읽지 않은 쪽지가 없어요.',
+    notesUnreadPrefix: '안 읽은 쪽지',
+    openChat: '대화 열기',
+    chatWithPrefix: '대화 상대:',
+    chatEmpty: '아직 대화가 없습니다.',
+    youLabel: '나',
+    dmPlaceholder: '쪽지를 입력하세요.',
+    dmSend: '보내기',
+    dmSending: '보내는 중…',
     errorGeneric: '잠시 안 됐어요. 다시 시도해 주세요.',
     errorPendingExists: '이미 진행 중인 신청이 있어요.',
     errorAlreadyIlchon: '이미 일촌이에요.',
@@ -1155,17 +1212,16 @@ const ko: Dictionary = {
     guestbookShowSection: '미니홈에 방명록 칸 표시',
   },
   search: {
-    ariaLabel: '태자 월드 안에서 메뉴·뉴스 검색',
+    ariaLabel: '검색',
     headerBarLabel: '통합 검색',
     heroTitle: '무엇을 찾고 계신가요?',
-    portalLead:
-      '메뉴 경로와 공개 뉴스 제목을 실시간으로 찾아요. 요약·댓글·광장·거래 등 본격적인 읽기와 참여는 로그인 후에만 열려요.',
-    placeholder: '검색… (예: 비자, 맛집, 방콕, /local)',
-    hint: '한글 초성·태국어·주소 일부도 됩니다. 결과에서 «어디가 맞았는지»를 함께 보여 드려요.',
-    noResults: '맞는 메뉴나 뉴스 제목이 없어요. 다른 단어로 해보세요.',
+    portalLead: '',
+    placeholder: '검색어를 입력하세요',
+    hint: '',
+    noResults: '검색 결과가 없습니다.',
     quickHeading: '자주 가는 곳',
     sectionPages: '사이트 메뉴·페이지',
-    sectionNews: '참고 뉴스(제목·정리 문구)',
+    sectionNews: '참고 뉴스',
     badgeMember: '로그인 후 열람·참여',
     badgePublic: '바로 이동',
     searching: '검색 중…',
@@ -1183,6 +1239,20 @@ const ko: Dictionary = {
       '한국어로 나누는 태국 살이 — 후기·정보·거래할 때 조심할 점. 방콕·파타야 동네 이야기.',
     tradeHubDescription:
       '중고·일자리도 후기·주의를 같이 나누는 곳 — 말머리에서 바로 들어가 보세요.',
+  },
+  policy: {
+    termsTitle: '이용약관',
+    termsBody:
+      '태자월드(Thai Ja World)는 태국에 거주하거나 관심 있는 한국어·태국어권을 위한 정보·커뮤니티 서비스입니다.\n\n회원과 방문자 모두 타인을 존중하고, 허위·명예훼손·불법 거래·스팸을 올리지 않기로 합니다. 운영 정책과 법령에 따라 게시물 삭제·계정 제한이 있을 수 있습니다.\n\n세부 약관은 지속적으로 보완되며, 중요한 변경 시 사이트 내 공지를 통해 안내합니다.',
+    privacyTitle: '개인정보처리방침',
+    privacyBody:
+      '회원 가입·로그인, 서비스 제공을 위해 필요한 최소한의 정보(이메일, 닉네임 등)를 처리합니다.\n\n게시글·댓글·미니홈 등 이용자가 직접 입력한 콘텐츠는 해당 기능의 공개 설정에 따릅니다.\n\n통계·보안·알림(선택) 목적의 쿠키·로그는 관련 법령과 운영 정책 범위에서 사용됩니다. 문의는 아래 «문의하기»를 이용해 주세요.',
+    contactTitle: '문의하기',
+    contactBody:
+      '서비스 관련 문의·버그 신고·제휴 제안은 광장 게시판의 안내 말머리를 이용하거나, 사이트 하단 공지·커뮤니티를 통해 연락해 주세요.\n\n계정·결제 등 민감한 내용은 로그인 후 쪽지·관리자 안내에 따르시기 바랍니다.',
+    adsTitle: '광고·제휴 안내',
+    adsBody:
+      '태자월드는 동네 정보·커뮤니티와 조화를 이루는 스폰서·배너를 검토합니다.\n\n로컬 가게·서비스 홍보, 이벤트 제휴 등은 사전 협의 후 노출 형태와 기간을 정합니다. 무관한 스팸성 광고는 받지 않습니다.',
   },
   push: {
     optInTitle: '🛟 막힐 때 열어 보는 짧은 정리',
@@ -1209,8 +1279,6 @@ const ko: Dictionary = {
 const th: Dictionary = {
   nav: {
     home: 'หน้าแรก',
-    marketplace: 'ตลาดด่วน',
-    jobs: 'หางาน',
     tips: 'ทิปส์',
     local: 'ร้านท้องถิ่น',
     community: 'ลานชุมชน',
@@ -1228,35 +1296,24 @@ const th: Dictionary = {
   lang: { ko: '한국어', th: 'ไทย' },
   footer:
     '© 2026 Thai Ja World · thaijaworld.com | แบ่งปันข้อมูลชีวิตในไทย — ประสบการณ์·เลี่ยงปัญหา·สรุป, แจ้งเรื่อง·มือสอง·งาน·ร้าน·มินิโฮม',
+  footerNav: {
+    terms: 'ข้อกำหนดการใช้บริการ',
+    privacy: 'นโยบายความเป็นส่วนตัว',
+    contact: 'ติดต่อ',
+    ads: 'โฆษณา',
+  },
   tierPremium: 'พรีเมียม',
   tierStandard: 'สแตนดาร์ด',
   home: {
     tag: 'THAI JA WORLD · ติดขัดเมื่อไหร่ก็มาอ่าน',
-    title: 'ข้อมูลชีวิตในไทย ที่เห็นภาพในหน้าจอแรก',
-    heroKicker: 'ข่าว · ทิปส์ชีวิต · อากาศ · ข้อมูลท้องถิ่น',
-    heroLead: 'เช็กข้อมูลที่ต้องใช้วันนี้ได้ทันที',
+    title: 'ชีวิตที่ไทย — ช่วยกันผ่านไป',
+    heroKicker: 'ประสบการณ์ · แจ้งเรื่อง · งาน · ท้องถิ่น',
+    heroLead: 'ติดขัดตรงไหน — เริ่มที่นี่',
     heroSub:
-      'หน้าแรกเน้นข่าวและทิปส์ที่ใช้ได้จริงก่อน ไม่วางข้อความยาวเกินจำเป็น\nดูอากาศและข้อมูลชีวิต แล้วไปต่อที่ตลาดด่วนหรือหางานได้ทันที',
-    heroPrimaryCta: 'ดูทิปส์ชีวิตวันนี้',
-    heroSecondaryCta: 'ดูข่าวสำคัญ',
-    portalMastTitle: 'ค้นหาข้อมูลที่ต้องใช้วันนี้',
-    portalMastSub: 'ค้นหาข่าว ทิปส์ อากาศ และเมนูหลักในจุดเดียว',
+      'บ้าน·วีซ่า·ค่ารพ ที่ติดขัด แชร์ประสบการณ์แล้วคนถัดไปได้ประโยชน์\nเน้นช่วยเหลือ·ข้อควรระวัง·สรุป มากกว่าโฆษณา — โพสต์สั้นๆ ก็ได้\nอยากเข้ามาตอนไหนก็ได้',
+    portalMastTitle: 'ค้นหา',
+    portalMastSub: '',
     portalMastQuickAria: 'ทางลัดเมนูยอดนิยม',
-    focusGridAria: 'การ์ดข้อมูลสำคัญหน้าแรก',
-    focusTipsTitle: 'ทิปส์ชีวิตวันนี้',
-    focusTipsSummary: 'วีซ่า โรงพยาบาล ที่พัก เดินทาง และเรื่องใช้ชีวิตที่เจอบ่อย',
-    focusTipsCta: 'ดูทิปส์ทันที',
-    focusNewsTitle: 'ข่าวสำคัญวันนี้',
-    focusNewsFallback: 'กำลังสรุปข่าวสำคัญของวันนี้ โปรดกลับมาตรวจอีกครั้ง',
-    focusNewsCta: 'ดูข่าวเพิ่มเติม',
-    focusWeatherTitle: 'อากาศ/แจ้งเตือนชีวิตประจำวัน',
-    focusWeatherFallback: 'กำลังโหลดข้อมูลอากาศล่าสุด',
-    focusWeatherCta: 'ดูอากาศและข้อมูลท้องถิ่น',
-    conversionLead: 'เมื่อเช็กข้อมูลแล้ว ไปต่อยังสิ่งที่ต้องทำได้ทันที',
-    conversionMarketCta: 'ไปตลาดด่วน',
-    conversionMarketHint: 'ดูของใช้มือสองและประกาศซื้อขาย',
-    conversionJobsCta: 'ดูงานและประกาศจ้าง',
-    conversionJobsHint: 'เช็กงานท้องถิ่นและงานพาร์ทไทม์',
     dreamIntro: 'ใช้ได้แล้วตอนนี้ · ',
     dreamMinihome: 'ไปมินิโฮม ',
     dreamMid: 'ห้องของฉัน กฎของฉัน ',
@@ -1354,34 +1411,34 @@ const th: Dictionary = {
       'สรุปเต็ม·ลิงก์ต้นทาง·ความคิดเห็น — ใช้ได้หลังเข้าสู่ระบบหรือสมัคร บอร์ด·ซื้อขาย·มินิโฮมก็เฉพาะสมาชิก',
     newsDetailLockedLead:
       'ด้านล่างนี้เป็นสรุป·แหล่งที่มา·ความคิดเห็นสำหรับสมาชิก — เข้าสู่ระบบเพื่ออ่านต่อและร่วมพูดคุย',
-  },
-  policy: {
-    termsTitle: 'ข้อกำหนดการใช้งาน',
-    termsBody:
-      'Thai Ja World เป็นชุมชนแชร์ข้อมูลการใช้ชีวิตในไทย ห้ามเนื้อหาผิดกฎหมาย หลอกลวง หรือกระทบสิทธิผู้อื่น และอาจถูกจำกัดตามนโยบายการดูแลชุมชน',
-    privacyTitle: 'นโยบายความเป็นส่วนตัว',
-    privacyBody:
-      'เราเก็บข้อมูลเท่าที่จำเป็นต่อการให้บริการ ความปลอดภัย และการตอบกลับคำขอเท่านั้น และดูแลข้อมูลตามกฎหมายที่เกี่ยวข้อง',
-    contactTitle: 'ติดต่อเรา',
-    contactBody:
-      'หากพบปัญหาการใช้งานหรือมีข้อเสนอแนะ สามารถติดต่อทีมงานได้ตลอดเวลา เราจะตอบกลับตามลำดับ',
-    adsTitle: 'ข้อมูลโฆษณา',
-    adsBody:
-      'โฆษณาสำหรับร้านท้องถิ่นและพันธมิตรดำเนินการตามนโยบายเฉพาะ กรุณาติดต่อทีมงานเพื่อสอบถามรายละเอียด',
+    newsHubOpenDetail: 'เปิดสรุปข่าว →',
+    newsHubCrossLinkTips: 'ทิปส์ชีวิตในไทย (มุมแยก) อยู่ที่ /tips',
+    newsHubListingNote: 'เรียงจากใหม่สุด · แสดง {n} รายการ',
+    newsHubHeroCta: 'ดูสรุปข่าว·ฮอต',
+    newsHubSectionMore: 'รายการสรุปข่าว ›',
+    newsDetailBackToHub: '← กลับรายการสรุปข่าว',
+    myLocalShopEmptyFollowup:
+      'การลงทะเบียนร้าน·เชื่อมเจ้าของทำโดยทีมงาน (แอดมิน) หากเป็นร้านของคุณ แจ้งอีเมลที่สมัครเพื่อให้เชื่อมเป็นเจ้าของใน «จุดท้องถิ่น»',
+    myLocalShopContactCta: 'ติดต่อ·ขอเชื่อมบัญชี →',
   },
   tips: {
     pageTitle: 'ทิปส์ชีวิตในไทย',
     pageLead:
-      'แสดงเฉพาะหัวข้อกับคำโปรยสั้นๆ รายการเช็ก·ข้อควรระวัง·ลิงก์แหล่งข่าว — ดูเต็มได้หลังเข้าสู่ระบบหรือสมัครที่บอร์ดข้อมูลในลานชุมชน',
+      'ตอนนี้จะแสดงเฉพาะประเด็นหลักก่อนนะ รายการเช็ก·ข้อควรระวัง·ลิงก์แหล่งอ้างอิง จะเปิดให้อ่านครบหลังเข้าสู่ระบบหรือสมัครสมาชิก',
     openCard: 'ดูต่อ',
     detailLockedLead:
-      'สรุปเต็ม·เช็กลิสต์·ลิงก์ต้นทาง — สำหรับสมาชิกเท่านั้น สมัครแล้วเปิดโพสต์เดิมในบอร์ดได้ครบ',
-    loginForFull: 'เข้าสู่ระบบเพื่ออ่านเต็ม·ลิงก์',
-    signupForFull: 'สมัครเพื่ออ่านเต็ม·ลิงก์',
+      'เช็กลิสต์·ข้อควรระวัง·ลิงก์ต้นทาง เปิดให้เฉพาะสมาชิก สมัครแล้วจะอ่านโพสต์เดียวกันได้ครบในบอร์ดข้อมูล',
+    loginForFull: 'เข้าสู่ระบบเพื่ออ่านแบบเต็ม',
+    signupForFull: 'สมัครสมาชิกเพื่ออ่านแบบเต็ม',
     goLogin: 'เข้าสู่ระบบ',
     goSignup: 'สมัครสมาชิก',
-    empty: 'ยังไม่มีทิปส์ — เร็วๆ นี้จะเพิ่ม',
+    empty: 'ตอนนี้ยังไม่มีทิปส์ที่เผยแพร่',
+    fallbackLead: 'ระหว่างนี้ดูทิปส์พื้นฐานที่ทีมบรรณาธิการเตรียมไว้ก่อนได้เลย',
+    fallbackChecklistTitle: 'เช็กลิสต์',
+    fallbackCautionsTitle: 'ข้อควรระวัง',
+    fallbackSourceLabel: 'แหล่งอ้างอิง',
     backToList: 'กลับรายการทิปส์',
+    crossLinkNewsHub: 'สรุปข่าวจากสื่อ·ฮอต ไปดูที่ /news',
   },
   board: {
     pageTitle: 'บอร์ดลานชุมชน',
@@ -1644,14 +1701,25 @@ const th: Dictionary = {
     styleShopBalance: 'พอยต์คงเหลือ',
     styleShopCatSkin: 'สกินห้อง',
     styleShopCatMinimi: 'มินิมี',
+    styleShopCatBgm: 'BGM',
+    styleShopCatWallpaper: 'วอลเปเปอร์',
+    styleShopCatFrame: 'เฟรม',
     styleShopBuy: 'ซื้อ',
+    styleShopBuyRental: 'เช่า {days} วัน',
+    styleShopBuyPerm: 'ซื้อถาวร',
     styleShopEquip: 'สวมใส่',
     styleShopOwned: 'มีแล้ว',
-    styleShopNeedPoints: 'พอยต์ไม่พอ',
+    styleShopNeedPoints: 'ข้าวโพดไม่พอ',
     styleShopPurchased: 'ซื้อแล้ว — ดูที่มินิโฮมได้เลย',
     styleShopEquipped: 'สวมใส่แล้ว',
     styleShopLoadError: 'โหลดร้านไม่สำเร็จ',
     styleShopEmpty: 'ยังไม่มีสินค้าในหมวดนี้',
+    styleShopDaysLeft: 'D-{n}',
+    styleShopRentalTag: '{days} วัน',
+    styleShopPermTag: 'ถาวร',
+    styleShopCheckin: 'เช็คอิน',
+    styleShopCheckedIn: 'เช็คอินวันนี้แล้ว!',
+    dotoriLabel: 'ข้าวโพด',
     styleRpcNotAuth: 'ต้องล็อกอินก่อน',
     styleRpcGreetingDone: 'รับรางวัลทักทายไปแล้ว',
     styleRpcGreetingShort: 'พิมพ์ข้อความให้ยาวขึ้นอีกนิด',
@@ -1661,6 +1729,24 @@ const th: Dictionary = {
     styleRpcPoor: 'พอยต์ไม่พอ',
     styleRpcNotOwned: 'ยังไม่ได้ซื้อสินค้านี้',
     styleRpcGeneric: 'มีข้อผิดพลาด ลองใหม่ภายหลัง',
+    sectionLockedIlchon: 'ส่วนนี้เปิดให้เฉพาะเพื่อน (อิลชอน)',
+    sectionLockedPrivate: 'ส่วนนี้ถูกซ่อนไว้',
+    cyMenuDiary: 'ไดอารี่',
+    cyDiaryTitle: 'ไดอารี่',
+    cyDiaryEmpty: 'ยังไม่มีไดอารี่',
+    cyDiaryWrite: 'เขียนไดอารี่',
+    cyDiaryWriting: 'กำลังบันทึก…',
+    cyDiarySave: 'บันทึก',
+    cyDiarySaved: 'บันทึกแล้ว!',
+    cyDiaryDelete: 'ลบ',
+    cyDiaryDeleteConfirm: 'ลบไดอารี่นี้จริงหรือ?',
+    cyDiarySecret: 'ไดอารี่ลับ',
+    cyDiaryMoodHappy: '😊',
+    cyDiaryMoodSad: '😢',
+    cyDiaryMoodAngry: '😠',
+    cyDiaryMoodLove: '❤️',
+    cyDiaryMoodTired: '😩',
+    cyDiaryMoodNeutral: '😐',
     loadingMark: '…',
     emDash: '—',
   },
@@ -1670,6 +1756,10 @@ const th: Dictionary = {
       'ส่งคำขอ — เมื่ออีกฝ่ายยอมรับ จะตั้งชื่อเรียกกันได้สองทาง ดูคำขอที่ได้รับและยอมรับ/ปฏิเสธได้ที่นี่',
     needLogin: 'ล็อกอินก่อนถึงใช้ฟีเจอร์นี้ได้',
     goLogin: 'ไปล็อกอิน',
+    searchTitle: 'ค้นหาเพื่อนด้วยชื่อเล่น',
+    searchPlaceholder: 'ค้นหาชื่อเล่น',
+    searchButton: 'ค้นหา',
+    searching: 'กำลังค้นหา…',
     requestButton: 'ขอเป็นเพื่อน',
     requestTitle: 'ส่งคำขอเป็นเพื่อน',
     messageLabel: 'ข้อความ (ไม่บังคับ)',
@@ -1695,29 +1785,25 @@ const th: Dictionary = {
     incomingTitle: 'คำขอที่ได้รับ',
     outgoingTitle: 'คำขอที่ส่งไป',
     friendsTitle: 'เพื่อนของฉัน',
-    searchTitle: 'ค้นหาผู้ใช้',
-    searchPlaceholder: 'ค้นหาด้วยชื่อเล่น',
-    searchButton: 'ค้นหา',
-    searching: 'กำลังค้นหา…',
-    lastSeenLabel: 'ใช้งานล่าสุด',
-    lastSeenUnknown: 'ไม่มีข้อมูลการใช้งาน',
-    visitMinihome: 'ไปมินิโฮม',
-    openChat: 'ส่งข้อความ',
-    notesTitle: 'กล่องข้อความ',
-    notesEmpty: 'ยังไม่มีข้อความใหม่',
-    notesUnreadPrefix: 'ยังไม่อ่าน',
-    onlineNow: 'ออนไลน์ล่าสุด',
-    chatWithPrefix: 'กำลังคุยกับ',
-    chatEmpty: 'ยังไม่มีบทสนทนา',
-    youLabel: 'ฉัน',
-    dmPlaceholder: 'พิมพ์ข้อความ',
-    dmSending: 'กำลังส่ง…',
-    dmSend: 'ส่งข้อความ',
     incomingEmpty: 'ยังไม่มีคำขอ',
     outgoingEmpty: 'ไม่มีคำขอที่รออยู่',
     friendsEmpty: 'ยังไม่มีเพื่อน — ลองขอจากมินิโฮม',
     youCallThemLabel: 'ชื่อที่ฉันเรียก',
     proposedFromThem: 'ชื่อที่คนขออยากเรียกคุณ (ข้อเสนอ)',
+    visitMinihome: 'ไปมินิโฮม',
+    lastSeenLabel: 'ออนไลน์ล่าสุด',
+    lastSeenUnknown: 'ยังไม่มีสถานะล่าสุด',
+    onlineNow: 'ออนไลน์อยู่',
+    notesTitle: 'กล่องข้อความ',
+    notesEmpty: 'ไม่มีข้อความค้างอ่าน',
+    notesUnreadPrefix: 'ยังไม่อ่าน',
+    openChat: 'เปิดแชต',
+    chatWithPrefix: 'แชตกับ:',
+    chatEmpty: 'ยังไม่มีบทสนทนา',
+    youLabel: 'ฉัน',
+    dmPlaceholder: 'พิมพ์ข้อความ',
+    dmSend: 'ส่ง',
+    dmSending: 'กำลังส่ง…',
     errorGeneric: 'ไม่สำเร็จชั่วคราว ลองอีกครั้ง',
     errorPendingExists: 'มีคำขอค้างอยู่แล้ว',
     errorAlreadyIlchon: 'เป็นเพื่อนกันแล้ว',
@@ -1752,17 +1838,16 @@ const th: Dictionary = {
     guestbookShowSection: 'แสดงบล็อกสมุดในหน้ามินิโฮม',
   },
   search: {
-    ariaLabel: 'ค้นหาเมนูและข่าวใน Thai Ja World',
+    ariaLabel: 'ค้นหา',
     headerBarLabel: 'ค้นหา',
     heroTitle: 'กำลังมองหาอะไรอยู่?',
-    portalLead:
-      'ค้นหาเมนูและหัวข้อข่าวที่เปิดเผยแบบเรียลไทม์ การอ่านเต็ม·สรุป·ลิงก์ต้นทาง·ความคิดเห็น — ต้องเข้าสู่ระบบหลังเข้าร่วม',
-    placeholder: 'ค้นหา… (เช่น วีซ่า, ร้านอาหาร, กรุงเทพ, /local)',
-    hint: 'พิมพ์ไทย·เกาหลี หรือส่วนพาธได้ · แสดงว่าตรงกับส่วนไหน',
-    noResults: 'ไม่พบเมนูหรือข่าว — ลองคำอื่น',
+    portalLead: '',
+    placeholder: 'ค้นหา...',
+    hint: '',
+    noResults: 'ไม่พบผลลัพธ์การค้นหา',
     quickHeading: 'ทางลัด',
     sectionPages: 'เมนู·หน้าเว็บ',
-    sectionNews: 'ข่าวอ้างอิง (หัวข้อ·สรุป)',
+    sectionNews: 'ข่าวอ้างอิง',
     badgeMember: 'เข้าสู่ระบบเพื่ออ่าน·แสดงความคิดเห็น',
     badgePublic: 'ไปทันที',
     searching: 'กำลังค้นหา…',
@@ -1780,6 +1865,20 @@ const th: Dictionary = {
       'แชร์ชีวิตที่ไทย — รีวิว·ข้อมูล·ข้อควรระวังเวลาซื้อขาย กรุงเทพ·พัทยา',
     tradeHubDescription:
       'มือสองและงาน — แนะนำแชร์ประสบการณ์และข้อควรระวัง เข้าจากหมวดในลานชุมชนได้ทันที',
+  },
+  policy: {
+    termsTitle: 'ข้อกำหนดการใช้บริการ',
+    termsBody:
+      'Thai Ja World เป็นบริการข้อมูลและชุมชนสำหรับผู้ที่ใช้ชีวิตหรือสนใจประเทศไทย ทั้งภาษาเกาหลีและไทย\n\nสมาชิกและผู้เยี่ยมชมตกลงที่จะเคารพผู้อื่น ไม่โพสต์ข้อมูลเท็จ หมิ่นประมาท การซื้อขายที่ผิดกฎหมาย หรือสแปม ทีมงานอาจลบเนื้อหาหรือจำกัดบัญชีตามนโยบายและกฎหมาย\n\nรายละเอียดอาจปรับปรุงต่อเนื่อง หากมีการเปลี่ยนแปลงสำคัญจะแจ้งบนเว็บไซต์',
+    privacyTitle: 'นโยบายความเป็นส่วนตัว',
+    privacyBody:
+      'เราประมวลผลข้อมูลขั้นต่ำที่จำเป็น (เช่น อีเมล ชื่อเล่น) เพื่อการสมัคร เข้าสู่ระบบ และให้บริการ\n\nเนื้อหาที่คุณโพสต์ ความคิดเห็น มินิโฮม อยู่ภายใต้การตั้งค่าเปิดเผยของแต่ละฟีเจอร์\n\nคุกกี้ บันทึกระบบ และการแจ้งเตือน (ถ้าเลือก) ใช้ภายในขอบเขตที่กฎหมายและนโยบายอนุญาต หากมีคำถามโปรดใช้หน้า «ติดต่อ»',
+    contactTitle: 'ติดต่อ',
+    contactBody:
+      'คำถามเกี่ยวกับบริการ แจ้งข้อผิดพลาด หรือเสนอความร่วมมือ โปรดใช้ลานชุมชนตามหัวข้อที่เหมาะสม หรือช่องทางที่ประกาศบนเว็บไซต์\n\nเรื่องบัญชีหรือการชำระเงินที่ละเอียดอ่อน โปรดทำตามคำแนะนำหลังเข้าสู่ระบบ',
+    adsTitle: 'โฆษณาและความร่วมมือ',
+    adsBody:
+      'เราพิจารณาสปอนเซอร์และแบนเนอร์ที่เข้ากับข้อมูลท้องถิ่นและชุมชน\n\nร้าน บริการ หรือกิจกรรมที่ต้องการประชาสัมพันธ์ โปรดติดต่อล่วงหน้าเพื่อกำหนดรูปแบบและระยะเวลา เราไม่รับโฆษณาสแปมหรือไม่เกี่ยวข้อง',
   },
   push: {
     optInTitle: '🛟 ติดขัดเมื่อไหร่ — เปิดดูสรุปสั้นๆ',

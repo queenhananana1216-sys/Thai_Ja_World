@@ -230,9 +230,9 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   const focusWeatherFallback = hAny.focusWeatherFallback ?? h.weatherUnavailable;
   const focusWeatherCta = hAny.focusWeatherCta ?? h.shopsMore;
   const conversionLead = hAny.conversionLead ?? h.newsSub;
-  const conversionMarketCta = hAny.conversionMarketCta ?? d.nav.marketplace;
+  const conversionMarketCta = hAny.conversionMarketCta ?? '번개장터';
   const conversionMarketHint = hAny.conversionMarketHint ?? h.newsEmpty;
-  const conversionJobsCta = hAny.conversionJobsCta ?? d.nav.jobs;
+  const conversionJobsCta = hAny.conversionJobsCta ?? '구인구직';
   const conversionJobsHint = hAny.conversionJobsHint ?? h.newsEmpty;
   const tips = useMemo(() => tipEnv(), []);
   const hasTip = Boolean(tips.tg || tips.wa || tips.line || tips.fb || tips.tt);

@@ -31,12 +31,20 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
     const cores = nav.hardwareConcurrency ?? 4;
     const saveData = Boolean(nav.connection?.saveData);
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isMobile = window.innerWidth < 768;
 
-    if (saveData || reducedMotion || memory <= 2 || cores <= 4) {
+    // Desktop/large screens keep full quality by default.
+    if (!isMobile) {
+      setQualityTier('high');
+      return;
+    }
+
+    // Mobile-only downshift for truly constrained devices.
+    if (saveData || reducedMotion || memory <= 2 || cores <= 2) {
       setQualityTier('low');
       return;
     }
-    if (memory <= 4 || cores <= 6) {
+    if (memory <= 4 || cores <= 4) {
       setQualityTier('medium');
       return;
     }
@@ -68,15 +76,39 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
     fontWeight: 700,
     textDecoration: 'none',
     textAlign: 'center',
+    background: 'linear-gradient(120deg,#c4b5fd,#f9a8d4)',
+    color: '#111827',
+    boxShadow: '0 12px 38px rgba(196,181,253,0.42)',
   };
 
   const heroSecondaryCtaStyle: CSSProperties = {
     ...heroPrimaryCtaStyle,
     fontWeight: 600,
+    background: 'rgba(255,255,255,0.12)',
+    color: '#f8fafc',
+    border: '1px solid rgba(255,255,255,0.24)',
+    boxShadow: 'none',
+  };
+
+  const heroPanelCtaStyle: CSSProperties = {
+    ...heroSecondaryCtaStyle,
+    justifyContent: 'flex-start',
+    width: '100%',
+  };
+
+  const sectionStyle: CSSProperties = {
+    background:
+      'linear-gradient(120deg,rgba(9,10,28,0.92),rgba(33,17,52,0.84)), radial-gradient(circle at top right, rgba(196,181,253,0.25), transparent 50%)',
+    border: '1px solid rgba(255,255,255,0.14)',
+    boxShadow: '0 30px 100px rgba(5,8,22,0.6)',
+    color: '#fff',
   };
 
   return (
-    <section className="relative isolate overflow-hidden rounded-3xl border border-white/15 bg-[linear-gradient(120deg,rgba(9,10,28,0.9),rgba(33,17,52,0.78))] px-4 py-8 text-white shadow-[0_30px_100px_rgba(5,8,22,0.6)] backdrop-blur-xl sm:rounded-4xl sm:px-8 sm:py-12">
+    <section
+      className="relative isolate overflow-hidden rounded-3xl border border-white/15 bg-[linear-gradient(120deg,rgba(9,10,28,0.9),rgba(33,17,52,0.78))] px-4 py-8 text-white shadow-[0_30px_100px_rgba(5,8,22,0.6)] backdrop-blur-xl sm:rounded-4xl sm:px-8 sm:py-12"
+      style={sectionStyle}
+    >
       <div
         className="pointer-events-none absolute -right-20 -top-20 -z-10 h-56 w-56 rounded-full bg-violet-300/20 blur-3xl"
         aria-hidden
@@ -132,21 +164,30 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
               <Link
                 href="/community/trade"
                 className="inline-flex min-h-11 items-center rounded-xl border border-violet-300/35 bg-violet-400/10 px-3 py-2.5 text-sm font-semibold text-violet-50 no-underline transition hover:bg-violet-400/20"
-                style={heroSecondaryCtaStyle}
+                style={{
+                  ...heroPanelCtaStyle,
+                  background: 'rgba(139,92,246,0.2)',
+                  border: '1px solid rgba(196,181,253,0.45)',
+                }}
               >
                 번개장터 가기
               </Link>
               <Link
                 href="/community/boards?cat=job"
                 className="inline-flex min-h-11 items-center rounded-xl border border-amber-200/30 bg-amber-300/10 px-3 py-2.5 text-sm font-semibold text-amber-100 no-underline transition hover:bg-amber-300/20"
-                style={heroSecondaryCtaStyle}
+                style={{
+                  ...heroPanelCtaStyle,
+                  background: 'rgba(251,191,36,0.14)',
+                  border: '1px solid rgba(253,230,138,0.35)',
+                  color: '#fef3c7',
+                }}
               >
                 구인구직 보기
               </Link>
               <Link
                 href="/local"
                 className="inline-flex min-h-11 items-center rounded-xl border border-white/20 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-100 no-underline transition hover:bg-white/10"
-                style={heroSecondaryCtaStyle}
+                style={heroPanelCtaStyle}
               >
                 날씨·로컬 정보 보기
               </Link>
@@ -155,7 +196,7 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
 
           <div className="relative">
             <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-100">
-              <span>{qualityTier === 'low' ? '경량 배경 모드' : '브랜드 배경 미리보기'}</span>
+              <span>브랜드 배경 미리보기</span>
               <span className="rounded-full border border-violet-300/30 bg-violet-300/10 px-2 py-0.5 text-[10px]">
                 {qualityTier === 'low'
                   ? '저사양 최적화'

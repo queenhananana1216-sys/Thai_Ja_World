@@ -33,13 +33,12 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isMobile = window.innerWidth < 768;
 
-    // Desktop/large screens keep full quality by default.
+    // Desktop keeps rich visuals by default.
     if (!isMobile) {
       setQualityTier('high');
       return;
     }
 
-    // Mobile-only downshift for truly constrained devices.
     if (saveData || reducedMotion || memory <= 2 || cores <= 2) {
       setQualityTier('low');
       return;
@@ -96,19 +95,8 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
     width: '100%',
   };
 
-  const sectionStyle: CSSProperties = {
-    background:
-      'linear-gradient(120deg,rgba(9,10,28,0.92),rgba(33,17,52,0.84)), radial-gradient(circle at top right, rgba(196,181,253,0.25), transparent 50%)',
-    border: '1px solid rgba(255,255,255,0.14)',
-    boxShadow: '0 30px 100px rgba(5,8,22,0.6)',
-    color: '#fff',
-  };
-
   return (
-    <section
-      className="relative isolate overflow-hidden rounded-3xl border border-white/15 bg-[linear-gradient(120deg,rgba(9,10,28,0.9),rgba(33,17,52,0.78))] px-4 py-8 text-white shadow-[0_30px_100px_rgba(5,8,22,0.6)] backdrop-blur-xl sm:rounded-4xl sm:px-8 sm:py-12"
-      style={sectionStyle}
-    >
+    <section className="relative isolate overflow-hidden rounded-3xl border border-white/15 bg-[linear-gradient(120deg,rgba(9,10,28,0.9),rgba(33,17,52,0.78))] px-4 py-8 text-white shadow-[0_30px_100px_rgba(5,8,22,0.6)] backdrop-blur-xl sm:rounded-4xl sm:px-8 sm:py-12">
       <div
         className="pointer-events-none absolute -right-20 -top-20 -z-10 h-56 w-56 rounded-full bg-violet-300/20 blur-3xl"
         aria-hidden

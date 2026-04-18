@@ -14,12 +14,12 @@ export function SplineHeroCanvas({ sceneUrl }: SplineHeroCanvasProps) {
   }
 
   return (
-    <div className="h-full w-full" aria-hidden>
+    <div className="h-full w-full overflow-hidden" aria-hidden>
       <iframe
         src={sceneUrl}
-        className="h-full w-full border-0"
+        className="pointer-events-none h-full w-full border-0"
         title="Thai Ja World 3D Hero"
-        loading="lazy"
+        loading="eager"
         allow="autoplay; fullscreen"
       />
     </div>

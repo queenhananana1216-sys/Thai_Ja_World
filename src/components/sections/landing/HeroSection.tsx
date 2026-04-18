@@ -96,7 +96,18 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
   };
 
   return (
-    <section className="relative isolate overflow-hidden rounded-3xl border border-white/15 bg-[linear-gradient(120deg,rgba(9,10,28,0.9),rgba(33,17,52,0.78))] px-4 py-8 text-white shadow-[0_30px_100px_rgba(5,8,22,0.6)] backdrop-blur-xl sm:rounded-4xl sm:px-8 sm:py-12">
+    <section className="relative isolate overflow-hidden rounded-3xl border border-white/15 bg-[#090a1c] text-white shadow-[0_30px_100px_rgba(5,8,22,0.6)] sm:rounded-4xl">
+      <div className="pointer-events-none absolute inset-0 -z-20">
+        <SplineHeroCanvas sceneUrl={activeSceneUrl} />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            'linear-gradient(115deg, rgba(7,9,26,0.9) 18%, rgba(20,16,44,0.72) 55%, rgba(38,17,54,0.55) 100%)',
+        }}
+        aria-hidden
+      />
       <div
         className="pointer-events-none absolute -right-20 -top-20 -z-10 h-56 w-56 rounded-full bg-violet-300/20 blur-3xl"
         aria-hidden
@@ -106,8 +117,8 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
         aria-hidden
       />
 
-      <div className="mx-auto grid max-w-6xl gap-7 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-        <div>
+      <div className="mx-auto grid min-h-[500px] max-w-6xl gap-7 px-4 py-8 sm:px-8 sm:py-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        <div className="z-10">
           <p className="inline-flex rounded-full border border-violet-300/40 bg-violet-400/10 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-violet-100 sm:text-xs sm:uppercase sm:tracking-[0.18em]">
             오늘의 한줄 기사 · 생활정보 · 태국 꿀팁
           </p>
@@ -118,7 +129,10 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
             비자·병원·집·교통, 오늘 필요한 정보를 한줄로 먼저 보고 필요한 메뉴로 바로 이동하세요.
           </p>
 
-          <div className="mt-6 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div
+            className="mt-6 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3"
+            style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
+          >
             <Link
               href="/tips"
               className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[linear-gradient(120deg,#c4b5fd,#f9a8d4)] px-5 py-3 text-center text-sm font-bold text-slate-950 no-underline shadow-[0_12px_38px_rgba(196,181,253,0.42)] transition hover:scale-[1.02] hover:brightness-110 sm:min-h-[52px] sm:px-6 sm:text-base"
@@ -145,8 +159,8 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
           ) : null}
         </div>
 
-        <div className="space-y-4">
-          <div className="rounded-3xl border border-white/15 bg-white/5 p-4 backdrop-blur">
+        <div className="z-10 space-y-4">
+          <div className="rounded-3xl border border-white/15 bg-[rgba(13,15,36,0.58)] p-4 backdrop-blur-xl">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-100">정보 확인 후 바로 이동</p>
             <div className="mt-3 grid gap-2">
               <Link
@@ -181,39 +195,12 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
               </Link>
             </div>
           </div>
-
-          <div className="relative">
-            <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-100">
-              <span>브랜드 배경 미리보기</span>
-              <span className="rounded-full border border-violet-300/30 bg-violet-300/10 px-2 py-0.5 text-[10px]">
-                {qualityTier === 'low'
-                  ? '저사양 최적화'
-                  : hasScenes
-                    ? `${activeSceneIndex + 1} / ${availableScenes.length}`
-                    : '배경 준비 중'}
-              </span>
-            </div>
-            <div className="h-[130px] overflow-hidden rounded-2xl border border-white/10 bg-black/20 shadow-[0_14px_35px_rgba(15,23,42,0.45)] sm:h-[220px]">
-              <SplineHeroCanvas sceneUrl={activeSceneUrl} />
-            </div>
-            {qualityTier !== 'low' && availableScenes.length > 1 ? (
-              <div className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
-                {availableScenes.map((_, idx) => (
-                  <button
-                    key={`scene-${idx}`}
-                    type="button"
-                    onClick={() => setActiveSceneIndex(idx)}
-                    className={`rounded-full border px-2 py-1 text-[10px] font-semibold transition sm:px-2.5 sm:text-[11px] ${
-                      idx === activeSceneIndex
-                        ? 'border-violet-200 bg-violet-200/20 text-violet-50'
-                        : 'border-white/25 bg-white/5 text-slate-200 hover:bg-white/10'
-                    }`}
-                  >
-                    배경 {idx + 1}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+          <div className="rounded-2xl border border-white/10 bg-[rgba(8,9,24,0.5)] px-3 py-2 text-[11px] text-violet-100/90">
+            {qualityTier === 'low'
+              ? '저사양 최적화 모드'
+              : hasScenes
+                ? `브랜드 3D 배경 활성화 · ${activeSceneIndex + 1}/${availableScenes.length}`
+                : '브랜드 3D 배경 준비 중'}
           </div>
         </div>
       </div>

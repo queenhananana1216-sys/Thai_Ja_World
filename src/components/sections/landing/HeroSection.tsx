@@ -19,8 +19,7 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
   );
   const [activeSceneIndex, setActiveSceneIndex] = useState<number>(0);
   const hasScenes = availableScenes.length > 0;
-  const activeSceneUrl =
-    hasScenes && qualityTier !== 'low' ? availableScenes[activeSceneIndex % availableScenes.length] : undefined;
+  const activeSceneUrl = hasScenes ? availableScenes[activeSceneIndex % availableScenes.length] : undefined;
 
   useEffect(() => {
     const nav = navigator as Navigator & {
@@ -33,6 +32,19 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
     const saveData = Boolean(nav.connection?.saveData);
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isMobile = window.innerWidth < 768;
+    const params = new URLSearchParams(window.location.search);
+    const forceHighFromQuery = params.get('quality') === 'high' || params.get('spline') === 'on';
+    const savedOverride = window.localStorage.getItem('tj_quality_override') === 'high';
+
+    if (forceHighFromQuery) {
+      window.localStorage.setItem('tj_quality_override', 'high');
+      setQualityTier('high');
+      return;
+    }
+    if (savedOverride) {
+      setQualityTier('high');
+      return;
+    }
 
     // Desktop keeps rich visuals by default.
     if (!isMobile) {
@@ -40,11 +52,15 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
       return;
     }
 
-    if (saveData || reducedMotion || memory <= 2 || cores <= 2) {
+    if (saveData || reducedMotion) {
       setQualityTier('low');
       return;
     }
-    if (memory <= 4 || cores <= 4) {
+    if (memory <= 1 || cores <= 2) {
+      setQualityTier('low');
+      return;
+    }
+    if (memory <= 2 || cores <= 4) {
       setQualityTier('medium');
       return;
     }

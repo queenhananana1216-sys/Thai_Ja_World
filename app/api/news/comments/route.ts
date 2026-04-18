@@ -7,6 +7,8 @@ import { NextResponse } from 'next/server';
 import { createModeratedNewsComment } from '@/lib/moderation/newsCommentSubmissionPipeline';
 import { boardModMessage } from '@/lib/community/moderationMessages';
 import { getDictionary } from '@/i18n/dictionaries';
+import { recordQuestProgress } from '@/lib/quests/progress';
+import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
 export const runtime = 'nodejs';
 
@@ -32,6 +34,24 @@ export async function POST(req: Request) {
 
   const result = await createModeratedNewsComment(token, processedNewsId, content);
   if (result.ok) {
+    try {
+      const sb = createSupabaseWithUserJwt(token);
+      const {
+        data: { user },
+      } = await sb.auth.getUser();
+      if (user?.id) {
+        await recordQuestProgress({
+          profileId: user.id,
+          eventType: 'write_post',
+          amount: 1,
+          source: 'news_comment_create',
+          dedupeKey: `news_comment:${processedNewsId}:${Date.now()}`,
+          metadata: { processed_news_id: processedNewsId, kind: 'news_comment' },
+        });
+      }
+    } catch {
+      // no-op
+    }
     return NextResponse.json({ ok: true });
   }
 

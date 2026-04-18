@@ -51,42 +51,105 @@ export function EntryFlowSection({ flow }: EntryFlowSectionProps) {
   }
 
   return (
-    <section className="bg-[linear-gradient(180deg,#090b1d_0%,#100d28_100%)] py-14 text-slate-100 sm:py-16">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-200/90">Start Here</p>
-            <h2 className="mt-2 text-2xl font-extrabold sm:text-3xl">처음 오셨다면, 이 순서대로 시작하세요</h2>
-            <p className="mt-2 text-sm text-slate-300">
-              필요한 서비스가 섞여 보이지 않도록 거래/구인구직/로컬가게/미니홈을 분리했습니다.
+    <section
+      style={{
+        padding: '46px 0 52px',
+        background: 'linear-gradient(180deg,#090b1d 0%,#0f1024 100%)',
+        color: '#e2e8f0',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+      }}
+    >
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 16px' }}>
+        <div
+          style={{
+            marginBottom: 16,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            justifyContent: 'flex-start',
+            gap: 12,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <p
+              style={{
+                margin: 0,
+                display: 'inline-flex',
+                padding: '4px 10px',
+                borderRadius: 999,
+                border: '1px solid rgba(196,181,253,0.4)',
+                color: '#ddd6fe',
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+              }}
+            >
+              START HERE
+            </p>
+            <h2 style={{ margin: '10px 0 0', fontSize: 'clamp(24px,4.6vw,34px)', lineHeight: 1.25, fontWeight: 800 }}>
+              태자월드 시작 가이드
+            </h2>
+            <p style={{ margin: '10px 0 0', fontSize: 14, color: '#cbd5e1', lineHeight: 1.6 }}>
+              거래, 구인구직, 로컬가게, 미니홈을 한눈에 보고 바로 이동할 수 있게 정리했습니다.
             </p>
           </div>
-          <p className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs text-slate-300">
-            자동 업데이트: {new Date(flow.generatedAt).toLocaleString('ko-KR')}
-          </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {flow.lanes.map((lane, idx) => (
+        <div
+          style={{
+            display: 'grid',
+            gap: 12,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          }}
+        >
+          {flow.lanes.map((lane) => (
             <article
               key={lane.id}
-              className="rounded-3xl border border-white/10 bg-white/4 p-5 shadow-[0_12px_35px_rgba(2,6,23,0.45)] backdrop-blur"
+              style={{
+                borderRadius: 18,
+                border: '1px solid rgba(255,255,255,0.14)',
+                background: 'rgba(255,255,255,0.04)',
+                padding: 16,
+                boxShadow: '0 12px 35px rgba(2,6,23,0.45)',
+                backdropFilter: 'blur(8px)',
+              }}
             >
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-lg font-bold">{lane.title}</p>
-                <span className="rounded-full border border-violet-300/35 bg-violet-300/10 px-2.5 py-1 text-[11px] font-semibold text-violet-100">
-                  추천 {idx + 1}
-                </span>
+              <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <p style={{ margin: 0, fontSize: 19, fontWeight: 800, lineHeight: 1.3 }}>{lane.title}</p>
               </div>
-              <p className="text-sm leading-relaxed text-slate-300">{lane.description}</p>
-              <p className="mt-3 rounded-lg border border-amber-200/20 bg-amber-300/10 px-3 py-2 text-xs text-amber-100">
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#cbd5e1' }}>{lane.description}</p>
+              <p
+                style={{
+                  margin: '12px 0 0',
+                  borderRadius: 10,
+                  border: '1px solid rgba(251,191,36,0.35)',
+                  background: 'rgba(251,191,36,0.12)',
+                  padding: '8px 10px',
+                  fontSize: 12,
+                  color: '#fde68a',
+                  lineHeight: 1.5,
+                }}
+              >
                 {lane.signal}
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 <Link
                   href={lane.primaryHref}
                   onClick={() => void trackLaneClick(lane.id, 'primary')}
-                  className="rounded-xl bg-[linear-gradient(120deg,#c4b5fd,#f9a8d4)] px-4 py-2 text-sm font-bold text-slate-950 no-underline transition hover:brightness-110"
+                  style={{
+                    borderRadius: 12,
+                    minHeight: 44,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '10px 14px',
+                    fontSize: 14,
+                    fontWeight: 800,
+                    color: '#0f172a',
+                    textDecoration: 'none',
+                    background: 'linear-gradient(120deg,#c4b5fd,#f9a8d4)',
+                  }}
                 >
                   {lane.primaryLabel}
                 </Link>
@@ -94,7 +157,20 @@ export function EntryFlowSection({ flow }: EntryFlowSectionProps) {
                   <Link
                     href={lane.secondaryHref}
                     onClick={() => void trackLaneClick(lane.id, 'secondary')}
-                    className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 no-underline transition hover:bg-white/10"
+                    style={{
+                      borderRadius: 12,
+                      minHeight: 44,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '10px 14px',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: '#f1f5f9',
+                      textDecoration: 'none',
+                      border: '1px solid rgba(255,255,255,0.25)',
+                      background: 'rgba(255,255,255,0.06)',
+                    }}
                   >
                     {lane.secondaryLabel}
                   </Link>

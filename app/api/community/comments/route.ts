@@ -5,6 +5,8 @@
  */
 import { NextResponse } from 'next/server';
 import { createModeratedComment } from '@/lib/moderation/commentSubmissionPipeline';
+import { recordQuestProgress } from '@/lib/quests/progress';
+import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
 export const runtime = 'nodejs';
 
@@ -30,6 +32,24 @@ export async function POST(req: Request) {
 
   const result = await createModeratedComment(token, postId, content);
   if (result.ok) {
+    try {
+      const sb = createSupabaseWithUserJwt(token);
+      const {
+        data: { user },
+      } = await sb.auth.getUser();
+      if (user?.id) {
+        await recordQuestProgress({
+          profileId: user.id,
+          eventType: 'write_post',
+          amount: 1,
+          source: 'community_comment_create',
+          dedupeKey: `community_comment:${postId}:${Date.now()}`,
+          metadata: { post_id: postId, kind: 'comment' },
+        });
+      }
+    } catch {
+      // no-op
+    }
     return NextResponse.json({ ok: true });
   }
 

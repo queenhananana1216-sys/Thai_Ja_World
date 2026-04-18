@@ -64,7 +64,7 @@ export default async function LandingPage() {
   );
 
   return (
-    <main className="relative overflow-hidden bg-[#070812] text-slate-100">
+    <main className="tj-landing-root">
       <div
         className="pointer-events-none absolute inset-0 opacity-60"
         aria-hidden

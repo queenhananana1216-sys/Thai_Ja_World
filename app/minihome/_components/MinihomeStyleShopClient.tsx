@@ -19,6 +19,9 @@ type ShopRow = {
   tier: string;
   min_days_since_join: number;
   min_activity_grade: number;
+  source_type: 'platform' | 'local_sponsor';
+  sponsor_name: string | null;
+  sponsor_region: string | null;
 };
 
 type OwnedRow = {
@@ -69,7 +72,7 @@ export default function MinihomeStyleShopClient() {
 
     const [cat, inv, prof] = await Promise.all([
       sb.from('style_shop_items')
-        .select('item_key,category,price_points,rental_days,rental_price,label_ko,label_th,sort_order,preview_url,tier,min_days_since_join,min_activity_grade')
+        .select('item_key,category,price_points,rental_days,rental_price,label_ko,label_th,sort_order,preview_url,tier,min_days_since_join,min_activity_grade,source_type,sponsor_name,sponsor_region')
         .eq('active', true)
         .order('sort_order', { ascending: true }),
       sb.from('active_unlocks')
@@ -156,7 +159,16 @@ export default function MinihomeStyleShopClient() {
     }
     const res = data as { ok: boolean; amount?: number; reason?: string } | null;
     if (res?.ok) {
-      setToast(`+${res.amount} ${m.dotoriLabel}!`);
+      const today = new Date().toISOString().slice(0, 10);
+      await sb.rpc('quest_record_progress', {
+        p_profile_id: (await sb.auth.getUser()).data.user?.id ?? null,
+        p_event_type: 'daily_checkin',
+        p_amount: 1,
+        p_source: 'minihome_shop_checkin',
+        p_dedupe_key: `daily_checkin:${today}`,
+        p_metadata: { source: 'minihome_shop' },
+      });
+      setToast(`🌰 +${res.amount} ${m.dotoriLabel}`);
       setCheckedIn(true);
       await load();
     } else {
@@ -183,7 +195,7 @@ export default function MinihomeStyleShopClient() {
       <div className="dotori-balance-bar">
         <div className="dotori-balance-bar__left">
           <span className="dotori-balance-bar__icon">🌰</span>
-          <strong className="dotori-balance-bar__label">{m.dotoriLabel}</strong>
+          <strong className="dotori-balance-bar__label">{m.styleShopBalance}</strong>
           <span className="dotori-balance-bar__amount">{balance ?? '—'}</span>
           <span className="dotori-grade" title={`활동 등급 ${activityGrade}`}>
             {'★'.repeat(activityGrade)}{'☆'.repeat(5 - activityGrade)}
@@ -242,6 +254,11 @@ export default function MinihomeStyleShopClient() {
                     {row.tier !== 'normal' && (
                       <span className={`dotori-tier-badge dotori-tier-badge--${row.tier}`}>
                         {row.tier === 'legend' ? 'LEGEND' : 'PREMIUM'}
+                      </span>
+                    )}
+                    {row.source_type === 'local_sponsor' && (
+                      <span className="dotori-item__tag" title={row.sponsor_name ?? undefined}>
+                        {row.sponsor_region ? `LOCAL · ${row.sponsor_region}` : 'LOCAL SPONSOR'}
                       </span>
                     )}
                     {row.rental_days ? (

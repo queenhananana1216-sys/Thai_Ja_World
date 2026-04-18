@@ -6,6 +6,8 @@
  */
 import { NextResponse } from 'next/server';
 import { createModeratedPost } from '@/lib/moderation/postSubmissionPipeline';
+import { recordQuestProgress } from '@/lib/quests/progress';
+import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
 export const runtime = 'nodejs';
 
@@ -31,6 +33,24 @@ export async function POST(req: Request) {
   });
 
   if (result.ok) {
+    try {
+      const sb = createSupabaseWithUserJwt(token);
+      const {
+        data: { user },
+      } = await sb.auth.getUser();
+      if (user?.id) {
+        await recordQuestProgress({
+          profileId: user.id,
+          eventType: 'write_post',
+          amount: 1,
+          source: 'community_post_create',
+          dedupeKey: `community_post:${result.postId}`,
+          metadata: { post_id: result.postId },
+        });
+      }
+    } catch {
+      // 퀘스트 누적 실패는 게시글 생성 성공을 막지 않는다.
+    }
     return NextResponse.json({ id: result.postId });
   }
 

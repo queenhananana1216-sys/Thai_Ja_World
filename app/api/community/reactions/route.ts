@@ -5,6 +5,7 @@
  * Authorization: Bearer <access_token> (POST에서 필요)
  */
 import { NextResponse } from 'next/server';
+import { recordQuestProgress } from '@/lib/quests/progress';
 import { createServerClient } from '@/lib/supabase/server';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
@@ -143,6 +144,14 @@ export async function POST(req: Request) {
       kind,
     });
     if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+    await recordQuestProgress({
+      profileId: user.id,
+      eventType: 'send_reaction',
+      amount: 1,
+      source: 'community_reaction',
+      dedupeKey: `post_reaction:${postId}:${kind}:${user.id}`,
+      metadata: { post_id: postId, kind },
+    });
   }
 
   // counts

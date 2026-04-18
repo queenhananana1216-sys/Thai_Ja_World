@@ -25,7 +25,7 @@ export type MinihomePublicRow = {
   visit_count_total?: number;
 };
 
-export const DEFAULT_MINIHOME_MODULES = ['intro', 'guestbook', 'photos'] as const;
+export const DEFAULT_MINIHOME_MODULES = ['intro', 'guestbook', 'photos', 'diary'] as const;
 
 export function parseLayoutModules(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [...DEFAULT_MINIHOME_MODULES];

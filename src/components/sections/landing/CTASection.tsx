@@ -2,30 +2,65 @@ import Link from 'next/link';
 
 export function CTASection() {
   return (
-    <section className="py-24">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="rounded-[2rem] border border-violet-300/30 bg-[linear-gradient(135deg,rgba(40,20,70,0.78),rgba(95,35,90,0.62))] p-8 text-white shadow-[0_20px_55px_rgba(91,33,182,0.26)] backdrop-blur-xl sm:p-10">
-          <h2 className="text-2xl font-extrabold sm:text-4xl">
+    <section style={{ padding: '46px 0 52px' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 16px' }}>
+        <div
+          style={{
+            borderRadius: 24,
+            border: '1px solid rgba(196,181,253,0.35)',
+            background: 'linear-gradient(135deg,rgba(40,20,70,0.78),rgba(95,35,90,0.62))',
+            padding: '24px 20px',
+            color: '#fff',
+            boxShadow: '0 20px 55px rgba(91,33,182,0.26)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <h2 style={{ margin: 0, fontSize: 'clamp(23px,4.6vw,40px)', lineHeight: 1.25, fontWeight: 800 }}>
             오늘 처음 태국에 왔다면, 이미 3년 산 사람의 정보가 여기 있습니다.
           </h2>
-          <p className="mt-4 text-sm leading-relaxed text-violet-100 sm:text-base">
+          <p style={{ margin: '12px 0 0', fontSize: 14, lineHeight: 1.6, color: '#e9d5ff' }}>
             가입비 없음. 월 구독 없음. 이메일 주소 하나로 30초 안에 핵심 기능을 시작할 수 있습니다.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
             <Link
               href="/auth/signup"
-              className="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:scale-[1.02]"
+              style={{
+                borderRadius: 12,
+                background: '#fff',
+                padding: '10px 16px',
+                minHeight: 44,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#0f172a',
+                textDecoration: 'none',
+              }}
             >
               지금 무료 가입하기
             </Link>
             <Link
               href="/news"
-              className="rounded-xl border border-violet-100/60 px-6 py-3 text-sm font-semibold text-violet-50 transition hover:bg-white/10"
+              style={{
+                borderRadius: 12,
+                border: '1px solid rgba(237,233,254,0.6)',
+                padding: '10px 16px',
+                minHeight: 44,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#f5f3ff',
+                textDecoration: 'none',
+                background: 'rgba(255,255,255,0.05)',
+              }}
             >
               게스트로 먼저 구경하기
             </Link>
           </div>
-          <p className="mt-4 text-xs text-violet-100">스팸 메일 없음 · 언제든 탈퇴 가능 · 광고 계정 별도 분리</p>
+          <p style={{ margin: '12px 0 0', fontSize: 12, color: '#e9d5ff' }}>스팸 메일 없음 · 언제든 탈퇴 가능 · 광고 계정 별도 분리</p>
         </div>
       </div>
     </section>

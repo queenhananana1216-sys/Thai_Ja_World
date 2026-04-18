@@ -472,6 +472,10 @@ export type Dictionary = {
     styleRpcNoItem: string;
     styleRpcOwned: string;
     styleRpcPoor: string;
+    styleRpcRentalUnavailable: string;
+    styleRpcTierDays: string;
+    styleRpcTierGrade: string;
+    styleRpcAbuseHold: string;
     styleRpcNotOwned: string;
     styleRpcGeneric: string;
     /** 섹션 잠금 안내 */
@@ -735,7 +739,7 @@ const ko: Dictionary = {
       slotEmpty: '빈 슬롯',
       slotSoon: '추가 버튼 자리 (예: 바로가기)',
       styleHint:
-        '💡 나중에는 모은 포인트로 리모컨과 버튼 꾸미기를 켤 예정이에요. 예전 미니홈 감성, 그대로.',
+        '💡 나중에는 모은 옥수수로 리모컨과 버튼 꾸미기를 켤 예정이에요. 예전 미니홈 감성, 그대로.',
       thb: 'THB',
       krw: 'KRW',
       usd: 'USD',
@@ -1003,7 +1007,7 @@ const ko: Dictionary = {
     fieldTagline: '한 줄 소개',
     fieldIntro: '메인룸 글',
     fieldIntroHint:
-      '글만 입력하면 돼요. 줄바꿈도 가능해요. 나중에 다이어리·BGM도 덧붙일 예정이에요.',
+      '글만 입력하면 돼요. 줄바꿈도 가능하고, 다이어리·BGM은 아래 설정에서 바로 함께 관리할 수 있어요.',
     fieldAccent: '포인트 색',
     fieldWallpaper: '배경 이미지 URL (선택)',
     fieldWallpaperHint: 'HTTPS 이미지 링크. 비우면 기본 배경만 사용해요.',
@@ -1015,8 +1019,8 @@ const ko: Dictionary = {
     sectionIntro: '메인룸',
     sectionGuestbook: '일촌평',
     sectionPhotos: '사진첩',
-    layoutHint: '화면을 맞추는 순서(메인룸 → 일촌평 → 사진첩)는 차례로 열어 갈 예정이에요.',
-    guestbookLocked: '일촌평 — 준비 중이에요. 곧 만나요.',
+    layoutHint: '왼쪽 메뉴를 즉시 열고 닫을 수 있고, 아래 설정 패널에서 모듈 노출도 직접 제어할 수 있어요.',
+    guestbookLocked: '현재 공개 범위 또는 모듈 노출 설정 때문에 이 항목이 보이지 않아요.',
     cyPhotosVisitorHint: '사진은 미니홈 주인만 올릴 수 있어요. 갤러리는 그대로 볼 수 있어요.',
     needsLogin: '미니홈은 로그인 후 이용할 수 있어요.',
     notProvisioned:
@@ -1032,8 +1036,8 @@ const ko: Dictionary = {
     cyPhotosTitle: '사진첩',
     cyGuestbookEmpty: '아직 일촌 글이 없어요.',
     cyVisitorEmpty: '아직 방명이 없어요.',
-    cyGuestbookWriteSoon: '일촌에게 남길 한마디를 적어 주세요.',
-    cyVisitorWriteSoon: '방명록에 남길 인사를 적어 주세요.',
+    cyGuestbookWriteSoon: '일촌에게 남길 메시지를 입력해 주세요.',
+    cyVisitorWriteSoon: '방명록에 남길 메시지를 입력해 주세요.',
     cyIlchonWriteHint: '일촌을 맺은 친구만 일촌평을 남길 수 있어요.',
     cyOpenWriteHint: '로그인한 분이라면 누구나 방명록을 남길 수 있어요.',
     cyPostSubmit: '등록',
@@ -1060,19 +1064,19 @@ const ko: Dictionary = {
     cyIntroEmpty: '메인룸 소개 글이 아직 없어요.',
     previewPanelsHint:
       '미리보기·공개 페이지에서 왼쪽 메뉴로 일촌평·방명록·사진첩 창을 열고 닫을 수 있어요. (싸이 스타일 플로팅 창)',
-    styleScoreLabel: '스타일 점수',
+    styleScoreLabel: '옥수수',
     styleShopNav: '스타일 상점',
     greetCardTitle: '가입 인사 한 줄',
     greetCardLead:
-      '내 미니홈 방명록에 첫 인사를 남기면 스타일 점수를 드려요. 그 점수로 스킨·미니미를 살 수 있어요.',
+      '내 미니홈 방명록에 첫 인사를 남기면 옥수수를 드려요. 받은 옥수수로 스킨·미니미를 살 수 있어요.',
     greetPlaceholder: '예: 태국에서 잘 지낼게요. 반가워요!',
-    greetSubmit: '인사 남기고 점수 받기',
+    greetSubmit: '인사 남기고 옥수수 받기',
     greetSubmitting: '처리 중…',
     greetDone: '가입 인사를 완료했어요.',
-    greetThanks: '스타일 점수가 지급됐어요. 아래 상점에서 꾸밈 아이템을 사 보세요.',
+    greetThanks: '옥수수가 지급됐어요. 아래 상점에서 꾸밈 아이템을 사 보세요.',
     styleShopTitle: '미니홈 스타일 상점',
-    styleShopLead: '스타일 점수로 방 분위기(포인트 색)와 미니미를 살 수 있어요. 구매 즉시 내 미니홈에 적용돼요.',
-    styleShopBalance: '보유 점수',
+    styleShopLead: '옥수수로 방 분위기(포인트 색)와 미니미를 살 수 있어요. 구매 즉시 내 미니홈에 적용돼요.',
+    styleShopBalance: '보유 옥수수',
     styleShopCatSkin: '룸 스킨',
     styleShopCatMinimi: '미니미',
     styleShopCatBgm: 'BGM',
@@ -1100,7 +1104,11 @@ const ko: Dictionary = {
     styleRpcGreetingLong: '인사말이 너무 길어요.',
     styleRpcNoItem: '없는 상품이에요.',
     styleRpcOwned: '이미 구매한 아이템이에요.',
-    styleRpcPoor: '스타일 점수가 부족해요.',
+    styleRpcPoor: '옥수수가 부족해요.',
+    styleRpcRentalUnavailable: '이 아이템은 대여를 지원하지 않아요.',
+    styleRpcTierDays: '가입 기간이 부족해 아직 구매할 수 없어요.',
+    styleRpcTierGrade: '활동 등급이 부족해 아직 구매할 수 없어요.',
+    styleRpcAbuseHold: '보상 점검 중이에요. 잠시 후 다시 확인해 주세요.',
     styleRpcNotOwned: '아직 사지 않은 아이템이에요.',
     styleRpcGeneric: '처리 중 문제가 났어요. 잠시 후 다시 시도해 주세요.',
     sectionLockedIlchon: '일촌에게만 공개된 섹션이에요',
@@ -1364,7 +1372,7 @@ const th: Dictionary = {
       slotEmpty: 'ช่องว่าง',
       slotSoon: 'ปุ่มเพิ่ม (ลัด ฯลฯ)',
       styleHint:
-        '💡 ภายหลังใช้พอยต์แต่งสกินรีโมทและปุ่มได้ — กลิ่นอายมินิโฮมสมัยก่อน ยังอยู่ครบ',
+        '💡 ภายหลังใช้ข้าวโพดแต่งสกินรีโมทและปุ่มได้ — กลิ่นอายมินิโฮมสมัยก่อน ยังอยู่ครบ',
       thb: 'THB',
       krw: 'KRW',
       usd: 'USD',
@@ -1629,7 +1637,7 @@ const th: Dictionary = {
     fieldTagline: 'คำโปรยบรรทัดเดียว',
     fieldIntro: 'ข้อความห้องหลัก',
     fieldIntroHint:
-      'พิมพ์ข้อความธรรมดาได้ ขึ้นบรรทัดใหม่ได้ ภายหลังจะเพิ่มไดอารี่·BGM ได้ตามลำดับ',
+      'พิมพ์ข้อความได้ตามปกติและขึ้นบรรทัดใหม่ได้ โดยสามารถจัดการไดอารี่·BGM เพิ่มเติมได้ทันทีจากด้านล่าง',
     fieldAccent: 'สีเน้น',
     fieldWallpaper: 'URL รูปพื้นหลัง (ไม่บังคับ)',
     fieldWallpaperHint: 'ลิงก์ HTTPS เท่านั้น — ว่าง = พื้นหลังเริ่มต้น',
@@ -1641,8 +1649,8 @@ const th: Dictionary = {
     sectionIntro: 'ห้องหลัก',
     sectionGuestbook: 'ทักทาย',
     sectionPhotos: 'อัลบั้ม',
-    layoutHint: 'ลำดับการแสดง (ห้องหลัก → ทักทาย → อัลบั้ม) จะเปิดทีละส่วนในลำดับถัดไป',
-    guestbookLocked: 'ทักทาย — กำลังเตรียม เร็วๆ นี้เจอกัน',
+    layoutHint: 'เปิด/ปิดเมนูซ้ายได้ทันที และตั้งค่าแสดงผลโมดูลได้เองจากแผงด้านล่าง',
+    guestbookLocked: 'รายการนี้ถูกซ่อนตามการตั้งค่าการเปิดเผยหรือการแสดงโมดูลในตอนนี้',
     cyPhotosVisitorHint: 'เจ้าของมินิโฮมเท่านั้นที่อัปโหลดได้ ดูรูปได้ตามปกติ',
     needsLogin: 'ใช้มินิโฮมได้หลังล็อกอินเท่านั้นนะ',
     notProvisioned:
@@ -1658,7 +1666,7 @@ const th: Dictionary = {
     cyPhotosTitle: 'อัลบั้ม',
     cyGuestbookEmpty: 'ยังไม่มีข้อความทักทาย',
     cyVisitorEmpty: 'ยังไม่มีชื่อผู้เยี่ยม',
-    cyGuestbookWriteSoon: 'พิมพ์ข้อความทักทายให้เพื่อนอิลชอน',
+    cyGuestbookWriteSoon: 'พิมพ์ข้อความสำหรับเพื่อนอิลชอน',
     cyVisitorWriteSoon: 'พิมพ์ข้อความในสมุดเยี่ยม',
     cyIlchonWriteHint: 'เฉพาะเพื่อนอิลชอนที่ผูกแล้วเท่านั้นที่โพสต์ได้',
     cyOpenWriteHint: 'สมาชิกที่ล็อกอินแล้วสามารถเซ็นสมุดเยี่ยมได้',
@@ -1686,19 +1694,19 @@ const th: Dictionary = {
     cyIntroEmpty: 'ยังไม่มีข้อความแนะนำในห้องหลัก',
     previewPanelsHint:
       'ตัวอย่าง/หน้าสาธารณะ — เปิด-ปิด ทักทาย·สมุดเยี่ยม·อัลบั้ม จากเมนูซ้าย (สไตล์หน้าต่างลอยแบบไซเวิลด์)',
-    styleScoreLabel: 'สไตล์พอยต์',
+    styleScoreLabel: 'ข้าวโพด',
     styleShopNav: 'ร้านสไตล์',
     greetCardTitle: 'ทักทายครั้งแรก',
     greetCardLead:
-      'ทิ้งข้อความทักทายในสมุดเยี่ยมมินิโฮมของคุณ รับสไตล์พอยต์ — ใช้ซื้อสกินห้องหรือมินิมีได้',
+      'ทิ้งข้อความทักทายในสมุดเยี่ยมมินิโฮมของคุณ รับข้าวโพด — ใช้ซื้อสกินห้องหรือมินิมีได้',
     greetPlaceholder: 'เช่น สวัสดีค่ะ/ครับ ยินดีที่ได้รู้จัก',
-    greetSubmit: 'ส่งทักทายและรับพอยต์',
+    greetSubmit: 'ส่งทักทายและรับข้าวโพด',
     greetSubmitting: 'กำลังดำเนินการ…',
     greetDone: 'ทักทายต้อนรับเสร็จแล้ว',
-    greetThanks: 'ได้รับสไตล์พอยต์แล้ว ลองซื้อไอเท็มแต่งมินิโฮมได้ด้านล่าง',
+    greetThanks: 'ได้รับข้าวโพดแล้ว ลองซื้อไอเท็มแต่งมินิโฮมได้ด้านล่าง',
     styleShopTitle: 'ร้านสไตล์มินิโฮม',
-    styleShopLead: 'ใช้พอยต์ซื้อโทนสีห้องและมินิมี — ซื้อแล้วใช้กับมินิโฮมทันที',
-    styleShopBalance: 'พอยต์คงเหลือ',
+    styleShopLead: 'ใช้ข้าวโพดซื้อโทนสีห้องและมินิมี — ซื้อแล้วใช้กับมินิโฮมทันที',
+    styleShopBalance: 'ข้าวโพดคงเหลือ',
     styleShopCatSkin: 'สกินห้อง',
     styleShopCatMinimi: 'มินิมี',
     styleShopCatBgm: 'BGM',
@@ -1726,7 +1734,11 @@ const th: Dictionary = {
     styleRpcGreetingLong: 'ข้อความยาวเกินไป',
     styleRpcNoItem: 'ไม่มีสินค้านี้',
     styleRpcOwned: 'ซื้อไปแล้ว',
-    styleRpcPoor: 'พอยต์ไม่พอ',
+    styleRpcPoor: 'ข้าวโพดไม่พอ',
+    styleRpcRentalUnavailable: 'ไอเท็มนี้ไม่รองรับการเช่า',
+    styleRpcTierDays: 'ระยะเวลาบัญชียังไม่ถึงเกณฑ์สำหรับซื้อไอเท็มนี้',
+    styleRpcTierGrade: 'ระดับกิจกรรมยังไม่ถึงเกณฑ์สำหรับซื้อไอเท็มนี้',
+    styleRpcAbuseHold: 'กำลังตรวจสอบความปลอดภัยของรางวัล กรุณาลองใหม่ภายหลัง',
     styleRpcNotOwned: 'ยังไม่ได้ซื้อสินค้านี้',
     styleRpcGeneric: 'มีข้อผิดพลาด ลองใหม่ภายหลัง',
     sectionLockedIlchon: 'ส่วนนี้เปิดให้เฉพาะเพื่อน (อิลชอน)',

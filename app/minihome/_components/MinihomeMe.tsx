@@ -10,7 +10,7 @@ import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { MINIHOME_THEME_PRESETS, themePresetLabel } from '@/lib/minihome/themePresets';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { mapStyleRpcError } from '@/lib/minihome/styleRpcMessages';
-import { parseTheme, safeAccent } from '@/types/minihome';
+import { parseLayoutModules, parseTheme, safeAccent } from '@/types/minihome';
 import { useMinihomeOverlay } from './MinihomeOverlay';
 
 const DEFAULT_ACCENT = '#7c3aed';
@@ -22,6 +22,7 @@ type Row = {
   tagline: string | null;
   intro_body: string | null;
   theme: unknown;
+  layout_modules: unknown;
   is_public: boolean;
   section_visibility: unknown;
 };
@@ -51,6 +52,7 @@ export default function MinihomeMe() {
   const [sectionVis, setSectionVis] = useState<Record<string, string>>({
     intro: 'public', guestbook: 'public', photos: 'ilchon', diary: 'ilchon',
   });
+  const [layoutModules, setLayoutModules] = useState<string[]>(['intro', 'guestbook', 'photos', 'diary']);
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [greetBody, setGreetBody] = useState('');
@@ -70,7 +72,7 @@ export default function MinihomeMe() {
     const q = () =>
       sb
         .from('user_minihomes')
-        .select('owner_id, public_slug, title, tagline, intro_body, theme, is_public, section_visibility')
+        .select('owner_id, public_slug, title, tagline, intro_body, theme, layout_modules, is_public, section_visibility')
         .eq('owner_id', user.id)
         .maybeSingle();
 
@@ -128,6 +130,7 @@ export default function MinihomeMe() {
       setBgmTitle(t.bgm_title?.trim() ?? '');
       setRoomSkin(t.room_skin?.trim() ?? '');
       setIsPublic(data.is_public);
+      setLayoutModules(parseLayoutModules(data.layout_modules));
       const sv = data.section_visibility;
       if (sv && typeof sv === 'object' && !Array.isArray(sv)) {
         setSectionVis({ intro: 'public', guestbook: 'public', photos: 'ilchon', diary: 'ilchon', ...(sv as Record<string, string>) });
@@ -175,6 +178,14 @@ export default function MinihomeMe() {
     if (prev.profile_frame) {
       nextTheme.profile_frame = prev.profile_frame;
     }
+    const normalizedModules = Array.from(
+      new Set(layoutModules.filter((m): m is 'intro' | 'guestbook' | 'photos' | 'diary' =>
+        m === 'intro' || m === 'guestbook' || m === 'photos' || m === 'diary',
+      )),
+    );
+    if (normalizedModules.length === 0) {
+      normalizedModules.push('intro');
+    }
     const { error } = await sb
       .from('user_minihomes')
       .update({
@@ -182,6 +193,7 @@ export default function MinihomeMe() {
         tagline: tagline.trim() || null,
         intro_body: intro.trim() || null,
         theme: nextTheme,
+        layout_modules: normalizedModules,
         is_public: isPublic,
         section_visibility: sectionVis,
       })
@@ -274,6 +286,15 @@ export default function MinihomeMe() {
   const visPublicLabel = isTh ? 'เปิดสาธารณะ' : '전체 공개';
   const visIlchonLabel = isTh ? 'อิลชอนเท่านั้น' : '일촌만';
   const visPrivateLabel = isTh ? 'ส่วนตัว (เฉพาะฉัน)' : '비공개 (나만)';
+  const moduleTitle = isTh ? 'แสดงเมนูโมดูล' : '메뉴 노출 모듈';
+  const moduleHint = isTh
+    ? 'ซ่อนโมดูลที่ยังไม่เปิดใช้งานได้ (ปิดทั้งหมดจะเปิดห้องหลักอัตโนมัติ)'
+    : '아직 쓰지 않는 모듈은 메뉴에서 숨길 수 있어요. (전부 끄면 메인룸은 자동 유지)';
+  const publicPageLabel = row.is_public
+    ? labels.publicPage
+    : isTh
+      ? 'สถานะส่วนตัว (ดูตัวอย่าง)'
+      : '비공개 상태(미리보기)';
   const hasIntro = intro.trim().length > 0;
   const hasThemeDecoration = wallpaperUrl.trim().length > 0 || roomSkin.trim().length > 0 || bgmUrl.trim().length > 0;
   const hasCommunityOpen = ['guestbook', 'photos', 'diary'].some((sec) => (sectionVis[sec] ?? 'private') !== 'private');
@@ -331,17 +352,27 @@ export default function MinihomeMe() {
             </Link>
             <button
               type="button"
-              onClick={() => openOverlay(row.public_slug)}
+              onClick={() => openOverlay(row.public_slug, row.owner_id)}
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800"
             >
               {labels.previewOverlay}
             </button>
-            <Link
-              href={`/minihome/${row.public_slug}`}
-              className="rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 no-underline"
-            >
-              {labels.publicPage}
-            </Link>
+            {row.is_public ? (
+              <Link
+                href={`/minihome/${row.public_slug}`}
+                className="rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 no-underline"
+              >
+                {publicPageLabel}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openOverlay(row.public_slug, row.owner_id)}
+                className="rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700"
+              >
+                {publicPageLabel}
+              </button>
+            )}
           </div>
         </div>
 
@@ -543,6 +574,43 @@ export default function MinihomeMe() {
               </select>
             </div>
           ))}
+        </div>
+        <div className="mh-section-privacy rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4" style={{ marginTop: 10 }}>
+          <p className="mh-section-privacy__title">{moduleTitle}</p>
+          <p style={{ margin: '0 0 8px', fontSize: '0.78rem', color: '#64748b', lineHeight: 1.45 }}>{moduleHint}</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 8 }}>
+            {(['intro', 'guestbook', 'photos', 'diary'] as const).map((moduleId) => {
+              const checked = layoutModules.includes(moduleId);
+              return (
+                <label
+                  key={moduleId}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    border: '1px solid #cbd5e1',
+                    borderRadius: 10,
+                    padding: '8px 10px',
+                    background: checked ? '#eef2ff' : '#fff',
+                    fontSize: '0.82rem',
+                    color: '#1f2937',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => {
+                      const next = e.target.checked
+                        ? Array.from(new Set([...layoutModules, moduleId]))
+                        : layoutModules.filter((m) => m !== moduleId);
+                      setLayoutModules(next);
+                    }}
+                  />
+                  {sectionLabels[moduleId]}
+                </label>
+              );
+            })}
+          </div>
         </div>
 
         <p className="auth-field-hint">{labels.layoutHint}</p>

@@ -15,7 +15,7 @@ function buildLanes(snapshot: EntryFlowSnapshot): EntryFlowLane[] {
       primaryLabel: '번개장터 글 보기',
       secondaryHref: '/community/boards/new?cat=flea',
       secondaryLabel: '판매 글 올리기',
-      signal: `최근 7일 거래 글 ${snapshot.flea7d}건 · 최근 14일 클릭 ${snapshot.tradeClicks14d}회 · 글작성 ${snapshot.tradeConversions14d}건`,
+      signal: '중고 거래 글을 먼저 확인하고, 필요하면 바로 판매 글을 올려보세요.',
       score:
         snapshot.flea7d * 4 +
         snapshot.posts7d * 0.2 +
@@ -30,7 +30,7 @@ function buildLanes(snapshot: EntryFlowSnapshot): EntryFlowLane[] {
       primaryLabel: '구인구직 글 보기',
       secondaryHref: '/community/boards/new?cat=job',
       secondaryLabel: '구인 글 올리기',
-      signal: `최근 7일 구인구직 글 ${snapshot.job7d}건 · 최근 14일 클릭 ${snapshot.jobClicks14d}회 · 글작성 ${snapshot.jobConversions14d}건`,
+      signal: '채용/구직 글만 모아 보고, 조건에 맞는 공고를 빠르게 찾을 수 있어요.',
       score:
         snapshot.job7d * 4 +
         snapshot.posts7d * 0.1 +
@@ -45,7 +45,7 @@ function buildLanes(snapshot: EntryFlowSnapshot): EntryFlowLane[] {
       primaryLabel: '로컬 가게 찾기',
       secondaryHref: '/ads',
       secondaryLabel: '가게 홍보 문의',
-      signal: `당일 예약/배송 대응 ${snapshot.deliveryReadyShops}곳 · 공개 가게 ${snapshot.publishedShops}곳 · 최근 클릭 ${snapshot.localClicks14d}회 · 예약요청 ${snapshot.localConversions14d}건`,
+      signal: '한인 가게 정보를 보고 예약/문의까지 한 번에 이어서 진행할 수 있어요.',
       score:
         snapshot.deliveryReadyShops * 5 +
         snapshot.publishedShops * 1.5 +
@@ -60,7 +60,7 @@ function buildLanes(snapshot: EntryFlowSnapshot): EntryFlowLane[] {
       primaryLabel: '미니홈 둘러보기',
       secondaryHref: '/minihome/shop',
       secondaryLabel: '꾸미기 상점 가기',
-      signal: `공개 미니홈 ${snapshot.minihomePublicRooms}개 · 최근 14일 클릭 ${snapshot.minihomeClicks14d}회 · 방명록/다이어리 ${snapshot.minihomeConversions14d}건`,
+      signal: '내 공간을 꾸미고 일촌/방명록으로 편하게 소통해 보세요.',
       score:
         snapshot.minihomePublicRooms * 3 +
         snapshot.news3d * 0.5 +
@@ -69,7 +69,7 @@ function buildLanes(snapshot: EntryFlowSnapshot): EntryFlowLane[] {
     },
   ];
 
-  return lanes.sort((a, b) => b.score - a.score);
+  return lanes;
 }
 
 export async function getLandingEntryFlow(): Promise<EntryFlowResponse> {

@@ -3,22 +3,29 @@ import { LANDING_TESTIMONIALS } from '@/lib/landing/constants';
 
 export function TestimonialSection() {
   return (
-    <section className="py-24">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <h2 className="text-3xl font-bold text-white sm:text-4xl">실제 교민들이 남긴 이야기</h2>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
+    <section style={{ padding: '52px 0' }}>
+      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 16px' }}>
+        <h2 style={{ margin: 0, color: '#f8fafc', fontSize: 'clamp(24px,4.4vw,36px)', fontWeight: 800 }}>실제 교민들이 남긴 이야기</h2>
+        <div style={{ marginTop: 16, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))' }}>
           {LANDING_TESTIMONIALS.map((testimonial) => (
             <blockquote
               key={testimonial.id}
-              className="rounded-3xl border border-white/15 bg-white/5 p-6 shadow-[0_12px_35px_rgba(2,6,23,0.45)] backdrop-blur-xl"
+              style={{
+                margin: 0,
+                borderRadius: 16,
+                border: '1px solid rgba(255,255,255,0.16)',
+                background: 'rgba(255,255,255,0.06)',
+                padding: 16,
+                boxShadow: '0 12px 35px rgba(2,6,23,0.45)',
+              }}
             >
-              <p className="text-sm leading-relaxed text-slate-100">{testimonial.quote}</p>
-              <cite className="mt-4 block text-xs font-semibold not-italic text-amber-200">{testimonial.author}</cite>
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#f1f5f9' }}>{testimonial.quote}</p>
+              <cite style={{ marginTop: 10, display: 'block', fontSize: 12, fontWeight: 700, fontStyle: 'normal', color: '#fde68a' }}>{testimonial.author}</cite>
             </blockquote>
           ))}
         </div>
 
-        <div className="mt-12">
+        <div style={{ marginTop: 18 }}>
           <StatsBar />
         </div>
       </div>

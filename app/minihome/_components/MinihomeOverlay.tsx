@@ -16,10 +16,16 @@ import type { MinihomePublicRow } from '@/types/minihome';
 import MinihomeRoomView from './MinihomeRoomView';
 
 type OverlayCtx = {
+  openTarget: OpenTarget;
   openSlug: string | null;
-  open: (slug: string) => void;
+  open: (slug: string, ownerId?: string) => void;
   close: () => void;
 };
+
+type OpenTarget = {
+  slug: string;
+  ownerId?: string;
+} | null;
 
 const MinihomeOverlayContext = createContext<OverlayCtx | null>(null);
 
@@ -34,7 +40,8 @@ export function useMinihomeOverlay(): OverlayCtx {
 function MinihomeOverlayPortal() {
   const ctx = useContext(MinihomeOverlayContext);
   if (!ctx) return null;
-  const { openSlug, close } = ctx;
+  const { openTarget, close } = ctx;
+  const openSlug = openTarget?.slug ?? null;
   const { d } = useClientLocaleDictionary();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [data, setData] = useState<MinihomePublicRow | null>(null);
@@ -58,17 +65,22 @@ function MinihomeOverlayPortal() {
       setLoading(true);
       setErr(false);
       const sb = createBrowserClient();
-      const { data: row, error } = await sb
-        .from('user_minihomes')
-        .select(
-          'owner_id, public_slug, title, tagline, intro_body, theme, layout_modules, is_public, visit_count_today, visit_count_total, section_visibility',
-        )
-        .eq('public_slug', openSlug)
-        .maybeSingle();
+      const {
+        data: { user },
+      } = await sb.auth.getUser();
+      const ownerHint = openTarget?.ownerId;
+      const baseSelect =
+        'owner_id, public_slug, title, tagline, intro_body, theme, layout_modules, is_public, visit_count_today, visit_count_total, section_visibility';
+      const queryByOwner = Boolean(ownerHint && user?.id && ownerHint === user.id);
+      const query = queryByOwner
+        ? sb.from('user_minihomes').select(baseSelect).eq('owner_id', ownerHint as string)
+        : sb.from('user_minihomes').select(baseSelect).eq('public_slug', openSlug);
+      const { data: row, error } = await query.maybeSingle();
 
       if (cancelled) return;
       setLoading(false);
-      if (error || !row || !row.is_public) {
+      const canViewPrivateAsOwner = Boolean(row && user?.id && row.owner_id === user.id);
+      if (error || !row || (!row.is_public && !canViewPrivateAsOwner)) {
         setErr(true);
         setData(null);
         return;
@@ -79,7 +91,7 @@ function MinihomeOverlayPortal() {
     return () => {
       cancelled = true;
     };
-  }, [openSlug]);
+  }, [openSlug, openTarget]);
 
   if (!openSlug) return null;
 
@@ -116,10 +128,14 @@ function MinihomeOverlayPortal() {
 }
 
 export function MinihomeOverlayProvider({ children }: { children: ReactNode }) {
-  const [openSlug, setOpenSlug] = useState<string | null>(null);
-  const open = useCallback((slug: string) => setOpenSlug(slug.trim()), []);
-  const close = useCallback(() => setOpenSlug(null), []);
-  const value = useMemo(() => ({ openSlug, open, close }), [openSlug, open, close]);
+  const [openTarget, setOpenTarget] = useState<OpenTarget>(null);
+  const openSlug = openTarget?.slug ?? null;
+  const open = useCallback((slug: string, ownerId?: string) => {
+    const normalized = slug.trim();
+    setOpenTarget(normalized ? { slug: normalized, ownerId } : null);
+  }, []);
+  const close = useCallback(() => setOpenTarget(null), []);
+  const value = useMemo(() => ({ openTarget, openSlug, open, close }), [openTarget, openSlug, open, close]);
 
   return (
     <MinihomeOverlayContext.Provider value={value}>

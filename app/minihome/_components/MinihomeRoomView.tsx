@@ -75,8 +75,8 @@ function CyWindow({
     <div
       className={`minihome-cy-win ${winClass}${variant === 'overlay' ? ' minihome-cy-win--in-overlay' : ''}`}
       style={{ borderColor: accent }}
-      role="dialog"
-      aria-label={title}
+      role={variant === 'page' ? 'dialog' : undefined}
+      aria-label={variant === 'page' ? title : undefined}
     >
       <div className="minihome-cy-win__head" style={{ background: `${accent}18` }}>
         <span className="minihome-cy-win__title">{title}</span>
@@ -144,6 +144,7 @@ export default function MinihomeRoomView({
   const [modBusy, setModBusy] = useState<string | null>(null);
 
   const [photos, setPhotos] = useState<PhotoRow[]>([]);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [photosLoading, setPhotosLoading] = useState(false);
   const [photoUploadBusy, setPhotoUploadBusy] = useState(false);
 
@@ -277,8 +278,21 @@ export default function MinihomeRoomView({
       .order('sort_order', { ascending: true });
     if (pErr || !ph) {
       setPhotos([]);
+      setPhotoUrls({});
     } else {
-      setPhotos(ph as PhotoRow[]);
+      const normalized = ph as PhotoRow[];
+      setPhotos(normalized);
+      const entries = await Promise.all(
+        normalized.map(async (photo) => {
+          const { data } = await sb.storage.from('minihome-photos').createSignedUrl(photo.storage_path, 60 * 30);
+          return [photo.storage_path, data?.signedUrl ?? ''] as const;
+        }),
+      );
+      const map = entries.reduce<Record<string, string>>((acc, [path, url]) => {
+        if (url) acc[path] = url;
+        return acc;
+      }, {});
+      setPhotoUrls(map);
     }
     setPhotosLoading(false);
   }, [data.owner_id]);
@@ -610,12 +624,6 @@ export default function MinihomeRoomView({
     await loadDiary();
   }
 
-  function publicUrl(path: string): string {
-    const sb = createBrowserClient();
-    const { data } = sb.storage.from('minihome-photos').getPublicUrl(path);
-    return data.publicUrl;
-  }
-
   function renderGbList(rows: GbRow[], chronological: boolean) {
     const ordered = chronological ? rows : [...rows].reverse();
     return (
@@ -745,7 +753,7 @@ export default function MinihomeRoomView({
             <span className="minihome-cy-menu__txt">{labels.cyMenuPhotos}</span>
           </button>
         ) : null}
-        {canViewSection('diary') ? (
+        {modules.includes('diary') && canViewSection('diary') ? (
           <button
             type="button"
             className={'minihome-cy-menu__btn' + (winDiary ? ' minihome-cy-menu__btn--active' : '')}
@@ -832,6 +840,12 @@ export default function MinihomeRoomView({
               <span>{sectionVis.photos === 'ilchon' ? labels.sectionLockedIlchon : labels.sectionLockedPrivate}</span>
             </div>
           ) : null}
+        {modules.includes('diary') && !canViewSection('diary') ? (
+          <div className="minihome-section-locked" style={{ marginTop: 10 }}>
+            <span className="minihome-section-locked__icon" aria-hidden>🔒</span>
+            <span>{sectionVis.diary === 'ilchon' ? labels.sectionLockedIlchon : labels.sectionLockedPrivate}</span>
+          </div>
+        ) : null}
 
           {ilchonMode !== 'loading' && ilchonMode !== 'hidden' ? (
             <div className="minihome-room__ilchon">
@@ -932,7 +946,7 @@ export default function MinihomeRoomView({
             </p>
           ) : ilchonMode === 'linked' ? null : (
             <p className="minihome-cy-win__soon" style={{ marginTop: 12 }}>
-              {labels.cyGuestbookWriteSoon}
+              {labels.sectionLockedIlchon}
             </p>
           )}
         </CyWindow>
@@ -1020,12 +1034,16 @@ export default function MinihomeRoomView({
             >
               {photos.map((p) => (
                 <div key={p.id} className="minihome-photo-card">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={publicUrl(p.storage_path)}
-                    alt={p.caption ?? ''}
-                    className="minihome-photo-card__img"
-                  />
+                  {photoUrls[p.storage_path] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={photoUrls[p.storage_path]}
+                      alt={p.caption ?? ''}
+                      className="minihome-photo-card__img"
+                    />
+                  ) : (
+                    <div className="minihome-photo-card__img" aria-hidden />
+                  )}
                   {p.caption ? (
                     <span className="minihome-photo-card__caption">{p.caption}</span>
                   ) : null}
@@ -1181,7 +1199,7 @@ export default function MinihomeRoomView({
         </CyWindow>
       </div>
 
-      {requestOpen ? (
+      {variant === 'page' && requestOpen ? (
         <div
           className="minihome-ilchon-modal"
           role="dialog"

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import MinihomeRoomView from '../_components/MinihomeRoomView';
 import { createServerClient } from '@/lib/supabase/server';
+import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import JsonLd from '@/lib/seo/JsonLd';
@@ -73,7 +74,13 @@ export default async function MinihomePublicPage({
     .eq('public_slug', slug)
     .maybeSingle();
 
-  if (error || !data || !data.is_public) notFound();
+  if (error || !data) notFound();
+  const authSupabase = await createServerSupabaseAuthClient();
+  const {
+    data: { user },
+  } = await authSupabase.auth.getUser();
+  const canViewPrivateAsOwner = Boolean(user?.id && user.id === data.owner_id);
+  if (!data.is_public && !canViewPrivateAsOwner) notFound();
 
   const locale = await getLocale();
   const d = getDictionary(locale);

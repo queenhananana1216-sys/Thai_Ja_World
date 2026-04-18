@@ -10,7 +10,6 @@ const nextConfig: NextConfig = {
    */
   outputFileTracingExcludes: {
     '*': [
-      '02_Workspace/**/*',
       'bestvip77/**/*',
       'my-project/**/*',
       'my-workflow-app/**/*',

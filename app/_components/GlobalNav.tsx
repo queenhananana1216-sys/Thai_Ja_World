@@ -95,7 +95,7 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
             <BrandPhrase variant="light" />
             <span className="global-header__logo-suffix-nate">{dict.brandSuffix}</span>
           </Link>
-          <aside className="global-header__nate-user hidden lg:block">
+          <aside className="global-header__nate-user">
             <AuthBar variant="natePanel" {...authProps} />
           </aside>
         </div>

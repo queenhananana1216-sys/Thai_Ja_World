@@ -14,8 +14,46 @@ import { normalizePhoneToE164 } from '@/lib/auth/normalizePhoneE164';
 import { supabaseAuthCaptchaOptions, verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
 import { tryCreateBrowserClient } from '@/lib/supabase/client';
 import { getTurnstileErrorHint, userFacingCaptchaAuthError } from '@/lib/auth/getTurnstileErrorHint';
+import { featureFlags } from '@/lib/flags';
+import { mapPhoneApiError } from '@/lib/auth/phoneAuthErrors';
 
 const HAS_TURNSTILE_UI = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim());
+
+type PhoneApiSuccess = {
+  ok: true;
+  provider?: 'supabase' | 'twilio';
+  phone?: string;
+};
+
+type PhoneApiError = {
+  code?: string;
+  message?: string;
+  retryAfterSec?: number;
+};
+
+function isSupportedPhoneMarket(phoneE164: string): boolean {
+  return /^\+66\d{8,11}$/.test(phoneE164) || /^\+82\d{8,11}$/.test(phoneE164);
+}
+
+async function postPhoneAuthApi<T>(
+  path: '/api/auth/phone/send' | '/api/auth/phone/verify',
+  payload: Record<string, string>,
+): Promise<{ ok: true; data: T } | { ok: false; status: number; body: PhoneApiError }> {
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const body = (await res.json()) as T & PhoneApiError;
+    if (!res.ok) {
+      return { ok: false, status: res.status, body };
+    }
+    return { ok: true, data: body };
+  } catch {
+    return { ok: false, status: 0, body: { code: 'provider_unavailable', message: 'network_error' } };
+  }
+}
 
 function AuthSuspenseFallback() {
   const { d } = useClientLocaleDictionary();
@@ -46,6 +84,7 @@ function PhoneAuthForm() {
   const turnstileTokenRef = useRef<string | null>(null);
   const smsInFlightRef = useRef(false);
   const resendInFlightRef = useRef(false);
+  const usePhoneApiBridge = featureFlags.phoneApiBridgeV1;
 
   async function sendSms(e: FormEvent) {
     e.preventDefault();
@@ -58,10 +97,8 @@ function PhoneAuthForm() {
     }
 
     const normalized = normalizePhoneToE164(phoneRaw);
-    if (!normalized.ok) {
-      setError(
-        normalized.reason === 'empty' ? a.phoneAuthInvalidPhone : a.phoneAuthInvalidPhone,
-      );
+    if (!normalized.ok || !isSupportedPhoneMarket(normalized.ok ? normalized.e164 : '')) {
+      setError(a.phoneAuthInvalidPhone);
       return;
     }
 
@@ -77,35 +114,46 @@ function PhoneAuthForm() {
       return;
     }
 
-    const sb = tryCreateBrowserClient();
-    if (!sb) {
-      setError(a.phoneAuthNoSupabase);
-      return;
-    }
-
     smsInFlightRef.current = true;
     setLoading(true);
     try {
-      const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
-      const { error: err } = await sb.auth.signInWithOtp({
-        phone: normalized.e164,
-        options: {
-          shouldCreateUser: true,
-          data: {
-            display_name: displayName.trim() || undefined,
-          },
-          ...captchaOpts,
-        },
-      });
-
-      if (err) {
-        const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
-        if (remountTurnstile) {
-          turnstileTokenRef.current = null;
-          setTurnstileKey((k) => k + 1);
+      if (usePhoneApiBridge) {
+        const send = await postPhoneAuthApi<PhoneApiSuccess>('/api/auth/phone/send', {
+          phone: normalized.e164,
+        });
+        if (!send.ok) {
+          const mapped = mapPhoneApiError(send.body.code, a.turnstileVerifyFailed, a);
+          const retryHint = send.body.retryAfterSec ? ` (${send.body.retryAfterSec}s)` : '';
+          setError(`${mapped}${retryHint}`);
+          return;
         }
-        setError(message);
-        return;
+      } else {
+        const sb = tryCreateBrowserClient();
+        if (!sb) {
+          setError(a.phoneAuthNoSupabase);
+          return;
+        }
+        const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
+        const { error: err } = await sb.auth.signInWithOtp({
+          phone: normalized.e164,
+          options: {
+            shouldCreateUser: true,
+            data: {
+              display_name: displayName.trim() || undefined,
+            },
+            ...captchaOpts,
+          },
+        });
+
+        if (err) {
+          const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
+          if (remountTurnstile) {
+            turnstileTokenRef.current = null;
+            setTurnstileKey((k) => k + 1);
+          }
+          setError(message);
+          return;
+        }
       }
       setE164(normalized.e164);
       setStep('otp');
@@ -126,15 +174,28 @@ function PhoneAuthForm() {
       return;
     }
 
-    const sb = tryCreateBrowserClient();
-    if (!sb) {
-      setError(a.phoneAuthNoSupabase);
-      return;
-    }
-
     smsInFlightRef.current = true;
     setLoading(true);
     try {
+      let provider: 'supabase' | 'twilio' | null = null;
+      if (usePhoneApiBridge) {
+        const verify = await postPhoneAuthApi<PhoneApiSuccess>('/api/auth/phone/verify', {
+          phone: e164,
+          code,
+        });
+        if (!verify.ok) {
+          setError(mapPhoneApiError(verify.body.code, a.turnstileVerifyFailed, a));
+          return;
+        }
+        provider = verify.data.provider ?? null;
+      }
+
+      const sb = tryCreateBrowserClient();
+      if (!sb) {
+        setError(a.phoneAuthNoSupabase);
+        return;
+      }
+
       const { error: err } = await sb.auth.verifyOtp({
         phone: e164,
         token: code,
@@ -142,8 +203,17 @@ function PhoneAuthForm() {
       });
 
       if (err) {
+        if (provider === 'twilio') {
+          setError(`${a.phoneAuthNoSupabase} (${err.message})`);
+          return;
+        }
         setError(err.message);
         return;
+      }
+      if (displayName.trim()) {
+        await sb.auth.updateUser({
+          data: { display_name: displayName.trim().slice(0, 40) },
+        });
       }
       router.push(safeNext);
       router.refresh();
@@ -166,26 +236,37 @@ function PhoneAuthForm() {
       setError(hint ? `${a.turnstileVerifyFailed} ${hint}` : a.turnstileVerifyFailed);
       return;
     }
-    const sb = tryCreateBrowserClient();
-    if (!sb) {
-      setError(a.phoneAuthNoSupabase);
-      return;
-    }
     resendInFlightRef.current = true;
     setLoading(true);
     try {
-      const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
-      const { error: err } = await sb.auth.signInWithOtp({
-        phone: e164,
-        options: { shouldCreateUser: true, ...captchaOpts },
-      });
-      if (err) {
-        const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
-        if (remountTurnstile) {
-          turnstileTokenRef.current = null;
-          setTurnstileKey((k) => k + 1);
+      if (usePhoneApiBridge) {
+        const send = await postPhoneAuthApi<PhoneApiSuccess>('/api/auth/phone/send', {
+          phone: e164,
+        });
+        if (!send.ok) {
+          const mapped = mapPhoneApiError(send.body.code, a.turnstileVerifyFailed, a);
+          const retryHint = send.body.retryAfterSec ? ` (${send.body.retryAfterSec}s)` : '';
+          setError(`${mapped}${retryHint}`);
         }
-        setError(message);
+      } else {
+        const sb = tryCreateBrowserClient();
+        if (!sb) {
+          setError(a.phoneAuthNoSupabase);
+          return;
+        }
+        const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
+        const { error: err } = await sb.auth.signInWithOtp({
+          phone: e164,
+          options: { shouldCreateUser: true, ...captchaOpts },
+        });
+        if (err) {
+          const { message, remountTurnstile } = userFacingCaptchaAuthError(err.message, a.turnstileVerifyFailed);
+          if (remountTurnstile) {
+            turnstileTokenRef.current = null;
+            setTurnstileKey((k) => k + 1);
+          }
+          setError(message);
+        }
       }
     } finally {
       resendInFlightRef.current = false;

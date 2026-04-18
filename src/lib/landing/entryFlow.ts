@@ -5,6 +5,31 @@ function asCount(value: number | null): number {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 }
 
+const INTERNAL_COPY_PATTERNS: RegExp[] = [
+  /자동\s*업데이트/gi,
+  /추천\s*\d+/gi,
+  /최근\s*\d+일\s*클릭\s*\d+회/gi,
+  /클릭\s*\d+회/gi,
+  /전환\s*\d+건/gi,
+];
+
+function sanitizeLandingCopy(copy: string): string {
+  const normalized = copy.trim();
+  const removed = INTERNAL_COPY_PATTERNS.reduce((acc, pattern) => acc.replace(pattern, ''), normalized);
+  return removed.replace(/\s{2,}/g, ' ').replace(/\s·\s$/g, '').trim();
+}
+
+function withCopyGuard(lane: EntryFlowLane): EntryFlowLane {
+  return {
+    ...lane,
+    title: sanitizeLandingCopy(lane.title),
+    description: sanitizeLandingCopy(lane.description),
+    signal: sanitizeLandingCopy(lane.signal),
+    primaryLabel: sanitizeLandingCopy(lane.primaryLabel),
+    secondaryLabel: lane.secondaryLabel ? sanitizeLandingCopy(lane.secondaryLabel) : lane.secondaryLabel,
+  };
+}
+
 function buildLanes(snapshot: EntryFlowSnapshot): EntryFlowLane[] {
   const lanes: EntryFlowLane[] = [
     {
@@ -69,7 +94,7 @@ function buildLanes(snapshot: EntryFlowSnapshot): EntryFlowLane[] {
     },
   ];
 
-  return lanes;
+  return lanes.map(withCopyGuard);
 }
 
 export async function getLandingEntryFlow(): Promise<EntryFlowResponse> {

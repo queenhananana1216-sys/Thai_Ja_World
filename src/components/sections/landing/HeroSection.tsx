@@ -12,6 +12,7 @@ interface HeroSectionProps {
 
 export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: HeroSectionProps) {
   const [qualityTier, setQualityTier] = useState<'low' | 'medium' | 'high'>('high');
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
   const availableScenes = useMemo(
     () => sceneUrls.filter((value) => typeof value === 'string' && value.trim().length > 0),
     [sceneUrls]
@@ -65,6 +66,13 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
     return () => window.clearInterval(interval);
   }, [availableScenes.length, qualityTier]);
 
+  useEffect(() => {
+    const updateLayout = () => setIsMobileLayout(window.innerWidth < 1024);
+    updateLayout();
+    window.addEventListener('resize', updateLayout);
+    return () => window.removeEventListener('resize', updateLayout);
+  }, []);
+
   const heroPrimaryCtaStyle: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
@@ -95,77 +103,180 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
     width: '100%',
   };
 
+  const sectionStyle: CSSProperties = {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 24,
+    border: '1px solid rgba(255,255,255,0.18)',
+    background: '#090a1c',
+    color: '#f8fafc',
+    boxShadow: '0 30px 100px rgba(5,8,22,0.6)',
+  };
+
+  const contentWrapStyle: CSSProperties = {
+    position: 'relative',
+    zIndex: 10,
+    display: 'flex',
+    gap: 28,
+    flexDirection: isMobileLayout ? 'column' : 'row',
+    justifyContent: 'space-between',
+    minHeight: isMobileLayout ? 420 : 520,
+    padding: isMobileLayout ? '28px 18px' : '48px 36px',
+  };
+
+  const leftColStyle: CSSProperties = {
+    flex: isMobileLayout ? '1 1 auto' : '1 1 58%',
+    maxWidth: isMobileLayout ? '100%' : 760,
+  };
+
+  const rightColStyle: CSSProperties = {
+    flex: isMobileLayout ? '1 1 auto' : '1 1 38%',
+    maxWidth: isMobileLayout ? '100%' : 420,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 14,
+  };
+
+  const titleStyle: CSSProperties = {
+    marginTop: 14,
+    marginBottom: 0,
+    fontSize: isMobileLayout ? 52 : 60,
+    lineHeight: 1.1,
+    fontWeight: 800,
+    color: '#f8fafc',
+    letterSpacing: '-0.02em',
+    textShadow: '0 8px 24px rgba(1,4,18,0.55)',
+  };
+
+  const bodyTextStyle: CSSProperties = {
+    marginTop: 18,
+    marginBottom: 0,
+    fontSize: isMobileLayout ? 16 : 20,
+    lineHeight: 1.55,
+    color: '#e2e8f0',
+    textShadow: '0 3px 16px rgba(5,8,22,0.4)',
+  };
+
+  const ctaRowStyle: CSSProperties = {
+    marginTop: 24,
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 10,
+  };
+
+  const panelStyle: CSSProperties = {
+    borderRadius: 18,
+    border: '1px solid rgba(255,255,255,0.18)',
+    background: 'rgba(13,15,36,0.6)',
+    padding: isMobileLayout ? '14px' : '16px',
+    backdropFilter: 'blur(10px)',
+  };
+
   return (
-    <section className="relative isolate overflow-hidden rounded-3xl border border-white/15 bg-[#090a1c] text-white shadow-[0_30px_100px_rgba(5,8,22,0.6)] sm:rounded-4xl">
-      <div className="pointer-events-none absolute inset-0 -z-20">
+    <section style={sectionStyle}>
+      <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, zIndex: -20 }}>
         <SplineHeroCanvas sceneUrl={activeSceneUrl} />
       </div>
       <div
-        className="pointer-events-none absolute inset-0 -z-10"
         style={{
+          pointerEvents: 'none',
+          position: 'absolute',
+          inset: 0,
+          zIndex: -10,
           background:
             'linear-gradient(115deg, rgba(7,9,26,0.9) 18%, rgba(20,16,44,0.72) 55%, rgba(38,17,54,0.55) 100%)',
         }}
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -right-20 -top-20 -z-10 h-56 w-56 rounded-full bg-violet-300/20 blur-3xl"
+        style={{
+          pointerEvents: 'none',
+          position: 'absolute',
+          right: -80,
+          top: -80,
+          zIndex: -10,
+          width: 260,
+          height: 260,
+          borderRadius: '50%',
+          background: 'rgba(167,139,250,0.24)',
+          filter: 'blur(64px)',
+        }}
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -bottom-24 left-10 -z-10 h-72 w-72 rounded-full bg-pink-400/20 blur-3xl"
+        style={{
+          pointerEvents: 'none',
+          position: 'absolute',
+          left: 40,
+          bottom: -100,
+          zIndex: -10,
+          width: 320,
+          height: 320,
+          borderRadius: '50%',
+          background: 'rgba(244,114,182,0.2)',
+          filter: 'blur(72px)',
+        }}
         aria-hidden
       />
 
-      <div className="mx-auto grid min-h-[500px] max-w-6xl gap-7 px-4 py-8 sm:px-8 sm:py-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-        <div className="z-10">
-          <p className="inline-flex rounded-full border border-violet-300/40 bg-violet-400/10 px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-violet-100 sm:text-xs sm:uppercase sm:tracking-[0.18em]">
+      <div style={contentWrapStyle}>
+        <div style={leftColStyle}>
+          <p
+            style={{
+              display: 'inline-flex',
+              margin: 0,
+              padding: '6px 12px',
+              borderRadius: 999,
+              border: '1px solid rgba(196,181,253,0.45)',
+              background: 'rgba(139,92,246,0.14)',
+              color: '#e9d5ff',
+              fontSize: isMobileLayout ? 12 : 13,
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+            }}
+          >
             오늘의 한줄 기사 · 생활정보 · 태국 꿀팁
           </p>
-          <h1 className="mt-4 text-3xl font-extrabold leading-tight sm:text-5xl">
+          <h1 style={titleStyle}>
             오늘 태국 한줄 기사부터 바로 확인하세요
           </h1>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-200 sm:mt-6 sm:text-lg">
+          <p style={bodyTextStyle}>
             비자·병원·집·교통, 오늘 필요한 정보를 한줄로 먼저 보고 필요한 메뉴로 바로 이동하세요.
           </p>
 
-          <div
-            className="mt-6 grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3"
-            style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
-          >
+          <div style={ctaRowStyle}>
             <Link
               href="/tips"
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[linear-gradient(120deg,#c4b5fd,#f9a8d4)] px-5 py-3 text-center text-sm font-bold text-slate-950 no-underline shadow-[0_12px_38px_rgba(196,181,253,0.42)] transition hover:scale-[1.02] hover:brightness-110 sm:min-h-[52px] sm:px-6 sm:text-base"
               style={heroPrimaryCtaStyle}
             >
               오늘의 생활꿀팁 보기
             </Link>
             <Link
               href="/community/boards?cat=info"
-              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-center text-sm font-semibold text-slate-100 no-underline transition hover:bg-white/15 sm:min-h-[52px] sm:text-base"
               style={heroSecondaryCtaStyle}
             >
               주요 기사 확인하기
             </Link>
           </div>
 
-          <p className="mt-8 text-sm text-slate-300">
+          <p style={{ ...bodyTextStyle, marginTop: 24, fontSize: isMobileLayout ? 14 : 15 }}>
             한줄 기사 확인 후 번개장터·구인구직·로컬 메뉴로 바로 연결됩니다.
           </p>
           {!hasScenes ? (
-            <p className="mt-3 text-xs text-violet-200/80">
+            <p style={{ marginTop: 8, fontSize: 12, color: 'rgba(221,214,254,0.9)' }}>
               3D 배경 적용: `.env.local`에 `NEXT_PUBLIC_SPLINE_HERO_SCENE_URL` 값을 넣어주세요.
             </p>
           ) : null}
         </div>
 
-        <div className="z-10 space-y-4">
-          <div className="rounded-3xl border border-white/15 bg-[rgba(13,15,36,0.58)] p-4 backdrop-blur-xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-100">정보 확인 후 바로 이동</p>
-            <div className="mt-3 grid gap-2">
+        <div style={rightColStyle}>
+          <div style={panelStyle}>
+            <p style={{ margin: 0, color: '#ddd6fe', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em' }}>
+              정보 확인 후 바로 이동
+            </p>
+            <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
               <Link
                 href="/community/trade"
-                className="inline-flex min-h-11 items-center rounded-xl border border-violet-300/35 bg-violet-400/10 px-3 py-2.5 text-sm font-semibold text-violet-50 no-underline transition hover:bg-violet-400/20"
                 style={{
                   ...heroPanelCtaStyle,
                   background: 'rgba(139,92,246,0.2)',
@@ -176,7 +287,6 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
               </Link>
               <Link
                 href="/community/boards?cat=job"
-                className="inline-flex min-h-11 items-center rounded-xl border border-amber-200/30 bg-amber-300/10 px-3 py-2.5 text-sm font-semibold text-amber-100 no-underline transition hover:bg-amber-300/20"
                 style={{
                   ...heroPanelCtaStyle,
                   background: 'rgba(251,191,36,0.14)',
@@ -188,14 +298,13 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
               </Link>
               <Link
                 href="/local"
-                className="inline-flex min-h-11 items-center rounded-xl border border-white/20 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-100 no-underline transition hover:bg-white/10"
                 style={heroPanelCtaStyle}
               >
                 날씨·로컬 정보 보기
               </Link>
             </div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-[rgba(8,9,24,0.5)] px-3 py-2 text-[11px] text-violet-100/90">
+          <div style={{ ...panelStyle, padding: '8px 12px', fontSize: 12, color: '#ddd6fe' }}>
             {qualityTier === 'low'
               ? '저사양 최적화 모드'
               : hasScenes

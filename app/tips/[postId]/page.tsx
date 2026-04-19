@@ -6,6 +6,7 @@ import { getLocale } from '@/i18n/get-locale';
 import { createServerClient } from '@/lib/supabase/server';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { trimForMetaDescription } from '@/lib/seo/site';
+import { normalizeUserFacingText } from '@/lib/content/humanizeText';
 
 type PageProps = { params: Promise<{ postId: string }> };
 
@@ -21,7 +22,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!row) {
     return { title: d.tips.pageTitle, robots: { index: false, follow: true } };
   }
-  const desc = trimForMetaDescription(row.excerpt || row.title);
+  const desc = trimForMetaDescription(
+    normalizeUserFacingText(row.excerpt || row.title, { maxLen: 500 }),
+  );
   return {
     title: row.title,
     description: desc,
@@ -64,11 +67,11 @@ export default async function TipsTeaserPage({ params }: PageProps) {
       </p>
       <article className="tips-teaser card" style={{ padding: 22, maxWidth: 720 }}>
         <h1 className="board-title" style={{ marginTop: 0 }}>
-          {row.title}
+          {normalizeUserFacingText(row.title, { maxLen: 200 })}
         </h1>
         {row.excerpt ? (
           <p style={{ whiteSpace: 'pre-wrap', lineHeight: 1.65, color: 'var(--tj-ink)', fontSize: '0.95rem' }}>
-            {row.excerpt}
+            {normalizeUserFacingText(row.excerpt, { maxLen: 2000 })}
           </p>
         ) : null}
         <div

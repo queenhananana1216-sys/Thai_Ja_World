@@ -164,6 +164,8 @@ export type Dictionary = {
     title: string;
     body: string;
     imagesHint: string;
+    imageTooLarge: string;
+    imageUploadFailed: string;
     submit: string;
     uploading: string;
     needLogin: string;
@@ -352,8 +354,16 @@ export type Dictionary = {
     cyPhotosTitle: string;
     cyGuestbookEmpty: string;
     cyVisitorEmpty: string;
+    cyGuestbookNeedLogin: string;
+    cyGuestbookOwnerHint: string;
+    cyGuestbookWrite: string;
+    cyGuestbookSubmitting: string;
+    cyGuestbookWritePlaceholder: string;
+    cyGuestbookWriteDone: string;
     cyGuestbookWriteSoon: string;
     cyVisitorWriteSoon: string;
+    cyPhotosEmpty: string;
+    cyPhotosAlbumEmpty: string;
     cyIntroEmpty: string;
     /** 내 미니홈 설정 화면 안내 */
     previewPanelsHint: string;
@@ -389,6 +399,26 @@ export type Dictionary = {
     styleRpcPoor: string;
     styleRpcNotOwned: string;
     styleRpcGeneric: string;
+    albumManagerTitle: string;
+    albumManagerHint: string;
+    albumTitleLabel: string;
+    albumTitlePlaceholder: string;
+    albumCreateButton: string;
+    albumCreateDone: string;
+    albumDeleteButton: string;
+    albumDeleteAsk: string;
+    albumDeleteDone: string;
+    albumEmpty: string;
+    photoAlbumLabel: string;
+    photoUrlLabel: string;
+    photoCaptionLabel: string;
+    photoCaptionPlaceholder: string;
+    photoAddButton: string;
+    photoAddDone: string;
+    photoDeleteButton: string;
+    photoDeleteAsk: string;
+    photoDeleteDone: string;
+    photoEmpty: string;
     /** 로딩 자리 표시(한·태 동일 문자 권장) */
     loadingMark: string;
     /** 숫자 없음·대기(한·태 동일 문자 권장) */
@@ -453,6 +483,8 @@ export type Dictionary = {
     badgeMember: string;
     badgePublic: string;
     searching: string;
+    footerLoginCta: string;
+    footerBoardsCta: string;
   };
   weather: { city: string; condition: string };
   /** 기본·홈 메타 (locale별) */
@@ -500,43 +532,43 @@ const ko: Dictionary = {
     mainNavAria: '주요 메뉴',
   },
   brandSuffix: '월드',
-  logoAria: '태국에 살자 월드 홈',
+  logoAria: '태자월드 홈',
   lang: { ko: '한국어', th: 'ไทย' },
   footer:
-    '© 2026 Thai Ja World · thaijaworld.com | 태국 살이 정보 나눔 — 경험·피하기·정리, 제보·중고·알바·맛집·미니홈',
+    '© 2026 Thai Ja World · thaijaworld.com | 태국 생활 정보·실사용 후기·한줄 브리핑 커뮤니티',
   tierPremium: '프리미엄',
   tierStandard: '스탠다드',
   home: {
-    tag: 'THAI JA WORLD · 살이 막힐 때 정리',
-    title: '태국 살이, 서로 도와서 넘기는 곳',
-    heroKicker: '경험담 · 제보 · 일자리 · 동네',
-    heroLead: '막히면 여기서부터',
+    tag: 'THAI JA WORLD · 태국 생활 한눈 정리',
+    title: '태자월드: 태국 생활 정보를 한눈에 보는 커뮤니티',
+    heroKicker: '한줄 브리핑 · 실사용 후기 · 중고·구인구직',
+    heroLead: '오늘 필요한 정보, 여기서 바로 찾으세요',
     heroSub:
-      '집·비자·병원비처럼 막히는 일, 겪은 걸 나누면 다음 사람한테 닿아요.\n홍보보다 팁·주의·정리를 먼저 — 가볍게 올려도 돼요.\n필요할 때만 들러도 괜찮아요.',
-    portalMastTitle: '태자 월드 통합 검색',
-    portalMastSub: '메뉴·뉴스·경로를 한 번에 — 로컬 포털처럼 쓰는 홈',
+      '태국 생활에서 자주 막히는 주제를 짧고 선명하게 정리해 보여줍니다.\n읽고 끝나는 곳이 아니라, 경험을 남기고 서로 돕는 커뮤니티를 지향합니다.\n한 줄 제보, 짧은 후기, 질문 한 건도 모두 환영합니다.',
+    portalMastTitle: '태자월드 통합 검색',
+    portalMastSub: '한줄 브리핑·생활 팁·게시판을 한 번에 찾으세요',
     portalMastQuickAria: '자주 찾는 메뉴',
     dreamIntro: '지금 쓸 수 있어요 · ',
     dreamMinihome: '미니홈으로 ',
     dreamMid: '내 방, 내 규칙. ',
     dreamPersonal: '배경부터 한 줄 소개까지 꾸미고, ',
     dreamOutro: '공개와 비공개는 손끝에서 정해요.',
-    hubBoard: '광장 수다',
-    hubBoardSub: '잡담 · 생활 정보 · 오늘은 뭐가 올라왔나',
+    hubBoard: '광장 게시판',
+    hubBoardSub: '생활 팁·질문·경험담을 바로 공유',
     hubLocal: '로컬 가게',
     hubLocalSub: '동네 후기 · 찾는 법 · 연락 한곳에',
-    hubNotice: '중고·알바',
-    hubNoticeSub: '닉네임만 보여요 · 짧게 써도 되고 · 바로 작성',
+    hubNotice: '중고·구인구직',
+    hubNoticeSub: '실거래 후기와 주의사항까지 함께 확인하세요',
     hubTip: '제보함',
     hubTipSoon: '채널만 연결되면 여기서 바로 열려요 · 지금은 연결 준비 중이에요',
     hubMinihome: '미니홈',
     hubMinihomeSub: '배경·소개 글 · 공개 설정',
-    hotLabel: '🔥 오늘 태국 살이에 닿는 참고 한 줄',
+    hotLabel: '🔥 오늘 꼭 봐야 할 태국 생활 한줄',
     hotNewsBadge: '브리핑',
-    hotNewsEmpty: '아직 조용해요. 곧 태국 살이에 닿는 이야기로 채울게요.',
-    hotNewsLoading: '쓸 만한 소식만 고르는 중…',
+    hotNewsEmpty: '아직 등록된 한줄 브리핑이 없어요. 첫 제보를 남겨 주세요.',
+    hotNewsLoading: '핵심만 추려 한줄 브리핑을 준비 중입니다…',
     hotFootnote:
-      '제목을 누르면 원문 기사로 이동해요. 회색 한 줄은 요약입니다. 광장 게시판과는 다른 코너예요.',
+      '제목을 누르면 원문·상세 정리로 이동합니다. 회색 한 줄은 지금 바로 읽을 핵심 요약입니다.',
     shopsTitle: '🏪 동네 가게',
     shopsMore: '더 보기 →',
     shopsEmpty: '아직 소개된 가게가 없어요. 곧 채워 넣을게요.',
@@ -588,13 +620,13 @@ const ko: Dictionary = {
     tipFacebook: 'Facebook 제보함',
     tipTiktok: 'TikTok (홍보·소식)',
     tipEnvHint: '운영 쪽에서 링크를 넣어 두면 이 카드에서 바로 열려요.',
-    newsTitle: '태국 살이 참고 스냅샷',
+    newsTitle: '태국 생활 핵심 소식',
     newsSub:
-      '밖에서 나온 기사를 짧게만 정리해 둔 코너예요. 한 줄 훅은 누구나 볼 수 있고, 정리·원문 링크·댓글은 로그인 후에 열려요.',
+      '태국 생활에 바로 필요한 기사·정보를 한줄로 먼저 보여줍니다. 로그인하면 상세 정리·원문·댓글까지 이어서 볼 수 있어요.',
     newsLoading: '스냅샷 불러오는 중…',
     newsCountLine: '총 {n}건 · 여기선 5건만 미리 보기',
-    newsEmpty: '아직 이야기가 없어요. 잠시 후에 다시 들러 주세요.',
-    newsEmptyLink: '광장 보러 가기 →',
+    newsEmpty: '아직 브리핑이 없어요. 광장에서 먼저 실사용 후기를 확인해 보세요.',
+    newsEmptyLink: '광장 최신 글 보러 가기 →',
     newsDetailBack: '← 홈으로',
     newsDetailWitLabel: '태자 한 줄',
     newsDetailSummaryLabel: '정리',
@@ -602,22 +634,22 @@ const ko: Dictionary = {
     newsDetailExternalCta: '원문 기사 열기',
     newsDetailExternalHint: '출처 언론·매체 사이트로 이동해요.',
     newsDetailMissing: '찾으시는 소식이 없거나 기간이 지났어요. 홈으로 돌아가 주세요.',
-    guestHomePublicLabel: '검색·안내 (비회원 OK)',
+    guestHomePublicLabel: '비회원이 바로 볼 수 있는 기능',
     guestHomePublicBody:
-      '홈에서 메뉴·뉴스 제목 검색, 한 줄 스냅샷 미리보기는 가능해요. 기사 전체 요약·편집 노트·원문 링크·댓글은 로그인 후예요.',
-    guestHomeMemberLabel: '참여·이용 (회원)',
+      '통합 검색과 한줄 브리핑 미리보기는 바로 이용할 수 있어요. 상세 정리·원문·댓글은 로그인 후 열려요.',
+    guestHomeMemberLabel: '회원이 참여할 수 있는 기능',
     guestHomeMemberBody:
-      '날씨·로컬 가게·광장·중고·알바·미니홈, 기사 댓글 등 — 로그인(또는 가입) 후에만 가능해요.',
-    guestHomeLoginCta: '로그인 또는 가입하고 전체 열기',
+      '게시글 작성, 댓글, 중고·구인구직 참여, 미니홈 기능은 로그인 후 사용할 수 있어요.',
+    guestHomeLoginCta: '로그인하고 전체 참여 열기',
     newsDetailGuestNote:
-      '요약·편집 노트·원문 링크·댓글은 로그인(또는 가입) 후에 이용할 수 있어요. 광장·거래·미니홈 등도 회원 전용이에요.',
+      '이 아래는 회원 전용 영역입니다. 로그인하면 요약·원문 링크·댓글까지 바로 이어서 볼 수 있어요.',
     newsDetailLockedLead:
-      '아래부터는 회원에게만 보이는 정리·출처·댓글입니다. 로그인하면 이어서 읽고 참여할 수 있어요.',
+      '회원 전용 정리·출처·댓글 구간입니다. 로그인 후 바로 이어서 확인해 주세요.',
   },
   tips: {
     pageTitle: '태국 생활 꿀팁',
     pageLead:
-      '짧은 훅만 미리 보여 드려요. 체크리스트·주의사항·출처 링크는 로그인(또는 가입) 후 광장에서 전체로 열립니다.',
+      '실생활에 바로 쓰는 팁을 한줄로 먼저 보여드립니다. 체크리스트·주의사항·출처는 로그인 후 전체로 확인할 수 있어요.',
     openCard: '자세히',
     detailLockedLead:
       '요약·체크리스트·원문 출처는 회원에게만 공개돼요. 가입하면 광장 정보 게시판에서 같은 글을 끝까지 볼 수 있어요.',
@@ -625,23 +657,25 @@ const ko: Dictionary = {
     signupForFull: '가입하고 전체·출처 보기',
     goLogin: '로그인',
     goSignup: '회원가입',
-    empty: '아직 올라온 꿀팁이 없어요. 곧 채워질 거예요.',
+    empty: '아직 등록된 꿀팁이 없어요. 첫 생활 팁을 남겨 주세요.',
     backToList: '꿀팁 목록',
   },
   board: {
-    pageTitle: '광장 게시판',
+    pageTitle: '태자월드 광장 게시판',
     newPost: '글 올리기',
     login: '로그인',
     signup: '회원가입',
     logout: '로그아웃',
-    empty: '첫 글은 경험이나 피한 방법부터! 맛집·살림 팁도 환영이에요.',
+    empty: '첫 글을 남겨 주세요. 짧은 경험담·질문·주의 공유 모두 환영합니다.',
     category: '말머리',
     title: '제목',
     body: '내용',
     imagesHint: '사진 (최대 3장, JPG/PNG/WebP)',
+    imageTooLarge: '사진은 한 장당 4MB 이하로 올려 주세요.',
+    imageUploadFailed: '이미지 업로드 중 오류가 났어요. 잠시 후 다시 시도해 주세요.',
     submit: '올리기',
     uploading: '올리는 중…',
-    needLogin: '글을 쓰시려면 먼저 로그인해 주세요.',
+    needLogin: '글쓰기와 댓글 참여는 로그인 후 이용할 수 있어요.',
     backToList: '목록으로',
     author: '작성자',
     comments: '댓글',
@@ -660,18 +694,18 @@ const ko: Dictionary = {
     gatedBanner:
       '정식 오픈 전이라 새 글 작성만 잠시 닫아 둔 구역이에요. 목록 보기와 예전 글 읽기는 그대로예요.',
     newPostDisabled: '곧 글쓰기가 열려요',
-    tradeHubTitle: '중고·알바',
+    tradeHubTitle: '중고·구인구직',
     tradeHubIntro:
-      '중고나 일자리도 조심할 점·후기를 같이 적어 주시면 서로 도움이 돼요. 닉네임만 보이며, 목록에서 바로 이어서 쓸 수 있어요.',
+      '중고 거래와 구인구직 정보를 한곳에서 확인하세요. 실제 후기와 주의사항을 함께 남기면 더 안전해집니다.',
     tradeFleaCta: '중고 코너 가기',
-    tradeJobCta: '알바·구인 보러 가기',
-    tradeAllBoards: '광장 전체보기',
+    tradeJobCta: '구인구직 보러 가기',
+    tradeAllBoards: '일반 광장 보기',
     emptyGated: '이 말머리에는 아직 글이 없어요. 열리는 대로 여기서 바로 쓸 수 있어요.',
     mod: {
       nsfw:
-        '올리신 글이나 이미지가 운영 정책에 맞지 않는 것으로 보여요. 내용을 고쳐서 다시 올려 주세요. 같은 일이 반복되면 이용이 제한될 수 있어요.',
+        '글이나 이미지가 운영 정책과 맞지 않아 등록되지 않았어요. 표현을 조금 수정해서 다시 올려 주세요.',
       promo:
-        '홍보만 두껍고 도움 정보는 얇아 보여요. 경험이나 정리 위주로 바꾸시거나 중고·알바 말머리에 맞게 고쳐 주세요. 연락처·오픈채팅 링크는 줄여 주시면 감사하겠어요.',
+        '홍보성 내용이 많아 등록이 보류됐어요. 실제 경험·가격·주의사항 중심으로 고치면 통과 가능성이 높아집니다.',
       banned:
         '지금은 이 계정으로 커뮤니티를 이용하실 수 없는 상태예요. 제한이 풀리면 다시 시도해 주세요.',
       imagePolicy:
@@ -679,10 +713,10 @@ const ko: Dictionary = {
       scam:
         '안전을 위해 사기나 불법적인 금융 내용으로 보이는 부분이 있어 이용을 제한했어요. 잘못된 판단이라고 느끼시면 제보함으로 알려 주세요.',
       server:
-        '잠시 서버 쪽에서 확인이 잘 안 되고 있어요. 잠시 후 다시 시도해 주시면 감사하겠어요.',
+        '지금은 서버 연결이 불안정해요. 잠시 후 다시 시도해 주세요.',
       auth: '로그인이 풀렸거나 만료된 것 같아요. 다시 로그인한 뒤 시도해 주세요.',
       generic:
-        '지금은 등록이 어려워요. 내용을 조금 바꿔서 다시 시도해 보시겠어요?',
+        '지금은 등록이 어려워요. 문구를 조금 다듬어 다시 시도해 주세요.',
     },
   },
   auth: {
@@ -692,7 +726,7 @@ const ko: Dictionary = {
     or: '또는',
     ellipsis: '…',
     loginTitle: '로그인',
-    loginSubtitle: '글쓰기와 댓글은 로그인하신 뒤에 이용하실 수 있어요.',
+    loginSubtitle: '로그인하면 한줄 브리핑 상세 확인, 댓글, 글쓰기까지 바로 참여할 수 있어요.',
     honeypotLogin: '자동으로 시도된 것으로 보여요. 직접 로그인을 다시 시도해 주세요.',
     honeypotSignup: '자동으로 가입을 시도한 것으로 보여요. 직접 다시 시도해 주세요.',
     turnstileIncomplete: '아래 보안 확인을 마친 뒤 다시 시도해 주세요.',
@@ -704,7 +738,7 @@ const ko: Dictionary = {
     signupLink: '회원가입',
     signupTitle: '회원가입',
     signupSubtitle:
-      '비자·생활 막힐 때 서로 정리해 나누는 곳이에요. 이메일 인증을 마치면 글과 댓글을 쓸 수 있어요.',
+      '태국 생활 정보를 함께 쌓는 커뮤니티입니다. 가입하면 글쓰기·댓글·중고·구인구직 참여가 모두 열립니다.',
     nickLabel: '닉네임',
     nickPlaceholder: '프로필에 표시될 이름',
     signupSubmit: '가입하고 이메일 인증하기',
@@ -734,7 +768,7 @@ const ko: Dictionary = {
     footerOtherEmail: '다른 이메일로 가입',
     forgotTitle: '비밀번호 재설정',
     forgotSubtitle:
-      '가입 시 사용한 이메일을 입력하면, 안전하게 비밀번호를 바꿀 수 있는 링크를 보내 드려요.',
+      '가입한 이메일을 입력하면 비밀번호 재설정 링크를 바로 보내 드려요.',
     forgotSendLink: '링크 보내기',
     forgotBackLogin: '로그인으로 돌아가기',
     forgotInfoSent: '재설정 링크를 보냈어요. 메일함과 스팸함을 확인해 주세요.',
@@ -836,8 +870,16 @@ const ko: Dictionary = {
     cyPhotosTitle: '사진첩',
     cyGuestbookEmpty: '아직 일촌 글이 없어요.',
     cyVisitorEmpty: '아직 방명이 없어요.',
+    cyGuestbookNeedLogin: '로그인하면 일촌 글을 남길 수 있어요.',
+    cyGuestbookOwnerHint: '내 미니홈에서는 방문자가 남긴 글을 볼 수 있어요.',
+    cyGuestbookWrite: '일촌 글 남기기',
+    cyGuestbookSubmitting: '남기는 중…',
+    cyGuestbookWritePlaceholder: '따뜻한 한 줄을 남겨 보세요.',
+    cyGuestbookWriteDone: '방명록에 남겼어요.',
     cyGuestbookWriteSoon: '일촌 글 남기기는 곧 열려요.',
     cyVisitorWriteSoon: '방명 남기기는 곧 열려요.',
+    cyPhotosEmpty: '아직 등록된 사진첩이 없어요.',
+    cyPhotosAlbumEmpty: '이 앨범에는 사진이 아직 없어요.',
     cyIntroEmpty: '메인룸 소개 글이 아직 없어요.',
     previewPanelsHint:
       '미리보기·공개 페이지에서 왼쪽 메뉴로 일촌평·방명록·사진첩 창을 열고 닫을 수 있어요. (싸이 스타일 플로팅 창)',
@@ -873,6 +915,26 @@ const ko: Dictionary = {
     styleRpcPoor: '스타일 점수가 부족해요.',
     styleRpcNotOwned: '아직 사지 않은 아이템이에요.',
     styleRpcGeneric: '처리 중 문제가 났어요. 잠시 후 다시 시도해 주세요.',
+    albumManagerTitle: '사진첩 관리',
+    albumManagerHint: '앨범을 만들고 URL 사진을 추가하면 공개 미니홈 사진첩 창에 바로 보여요.',
+    albumTitleLabel: '앨범 제목',
+    albumTitlePlaceholder: '예: 2026 방콕 기록',
+    albumCreateButton: '앨범 만들기',
+    albumCreateDone: '앨범을 만들었어요.',
+    albumDeleteButton: '앨범 삭제',
+    albumDeleteAsk: '앨범을 삭제할까요? 포함된 사진도 함께 삭제돼요.',
+    albumDeleteDone: '앨범을 삭제했어요.',
+    albumEmpty: '아직 만든 앨범이 없어요.',
+    photoAlbumLabel: '추가할 앨범',
+    photoUrlLabel: '사진 URL',
+    photoCaptionLabel: '사진 설명 (선택)',
+    photoCaptionPlaceholder: '한 줄 메모',
+    photoAddButton: '사진 추가',
+    photoAddDone: '사진을 추가했어요.',
+    photoDeleteButton: '사진 삭제',
+    photoDeleteAsk: '이 사진을 삭제할까요?',
+    photoDeleteDone: '사진을 삭제했어요.',
+    photoEmpty: '이 앨범에는 사진이 없어요.',
     loadingMark: '…',
     emDash: '—',
   },
@@ -933,6 +995,8 @@ const ko: Dictionary = {
     badgeMember: '로그인 후 열람·참여',
     badgePublic: '바로 이동',
     searching: '검색 중…',
+    footerLoginCta: '로그인하고 글·댓글 참여하기',
+    footerBoardsCta: '광장 전체 보기',
   },
   weather: { city: '방콕', condition: '맑음' },
   seo: {
@@ -988,40 +1052,40 @@ const th: Dictionary = {
   logoAria: 'Thai Ja World — หน้าแรก',
   lang: { ko: '한국어', th: 'ไทย' },
   footer:
-    '© 2026 Thai Ja World · thaijaworld.com | แบ่งปันข้อมูลชีวิตในไทย — ประสบการณ์·เลี่ยงปัญหา·สรุป, แจ้งเรื่อง·มือสอง·งาน·ร้าน·มินิโฮม',
+    '© 2026 Thai Ja World · thaijaworld.com | ศูนย์รวมข้อมูลชีวิตในไทย·รีวิวใช้งานจริง·สรุปข่าวสั้น',
   tierPremium: 'พรีเมียม',
   tierStandard: 'สแตนดาร์ด',
   home: {
-    tag: 'THAI JA WORLD · ติดขัดเมื่อไหร่ก็มาอ่าน',
-    title: 'ชีวิตที่ไทย — ช่วยกันผ่านไป',
-    heroKicker: 'ประสบการณ์ · แจ้งเรื่อง · งาน · ท้องถิ่น',
-    heroLead: 'ติดขัดตรงไหน — เริ่มที่นี่',
+    tag: 'THAI JA WORLD · ข้อมูลชีวิตในไทยแบบเห็นภาพทันที',
+    title: 'Thai Ja World: เห็นข่าวและทิปส์ชีวิตในไทยได้ในหน้าเดียว',
+    heroKicker: 'สรุปข่าวหนึ่งบรรทัด · รีวิวจริง · มือสอง·หางาน',
+    heroLead: 'ข้อมูลที่ต้องใช้วันนี้ หาได้ทันทีที่นี่',
     heroSub:
-      'บ้าน·วีซ่า·ค่ารพ ที่ติดขัด แชร์ประสบการณ์แล้วคนถัดไปได้ประโยชน์\nเน้นช่วยเหลือ·ข้อควรระวัง·สรุป มากกว่าโฆษณา — โพสต์สั้นๆ ก็ได้\nอยากเข้ามาตอนไหนก็ได้',
-    portalMastTitle: 'ค้นหา Thai Ja World',
-    portalMastSub: 'เมนู·ข่าว·พาธในที่เดียว — หน้าแรกแบบพอร์ทัล',
+      'เราคัดประเด็นที่คนอยู่ไทยใช้จริง แล้วสรุปให้สั้นและชัดเจน\nที่นี่ไม่ใช่แค่ที่อ่านข่าว แต่เป็นชุมชนที่ช่วยกันแชร์ประสบการณ์จริง\nโพสต์สั้นหนึ่งบรรทัดหรือรีวิวสั้นๆ ก็ช่วยคนอื่นได้มาก',
+    portalMastTitle: 'ค้นหาใน Thai Ja World',
+    portalMastSub: 'หาเมนู ทิปส์ และสรุปข่าวสั้นได้ในครั้งเดียว',
     portalMastQuickAria: 'ทางลัดเมนูยอดนิยม',
     dreamIntro: 'ใช้ได้แล้วตอนนี้ · ',
     dreamMinihome: 'ไปมินิโฮม ',
     dreamMid: 'ห้องของฉัน กฎของฉัน ',
     dreamPersonal: 'ตั้งแต่วอลเปเปอร์ถึงคำโปรยบรรทัดเดียว แต่งได้เลย ',
     dreamOutro: 'เปิดเผยหรือส่วนตัว เลือกที่ปลายนิ้ว',
-    hubBoard: 'ลานคุย',
-    hubBoardSub: 'คุยเล่น · ข่าวคราว · วันนี้มีอะไรมาใหม่',
+    hubBoard: 'บอร์ดชุมชน',
+    hubBoardSub: 'ถาม-ตอบ แชร์ประสบการณ์ และอัปเดตชีวิตประจำวัน',
     hubLocal: 'ร้านท้องถิ่น',
     hubLocalSub: 'รีวิว · วิธีหา · ติดต่อในที่เดียว',
-    hubNotice: 'มือสอง · ซื้อขาย·หางาน',
-    hubNoticeSub: 'เห็นแค่ชื่อเล่น · สั้นก็ได้ · โพสต์ได้ทันที',
+    hubNotice: 'มือสอง·หางาน',
+    hubNoticeSub: 'ดูรีวิวจริงและข้อควรระวังก่อนตัดสินใจ',
     hubTip: 'กล่องแจ้งเรื่อง',
     hubTipSoon: 'เชื่อมช่องแล้วเปิดจากตรงนี้ได้เลย · ตอนนี้กำลังเตรียมการ',
     hubMinihome: 'มินิโฮม',
     hubMinihomeSub: 'พื้นหลัง·แนะนำตัว · ตั้งค่าเปิดเผย',
-    hotLabel: '🔥 วันนี้ที่ไทย — บรรทัดเดียวที่ควรรู้',
+    hotLabel: '🔥 หนึ่งบรรทัดที่ควรรู้วันนี้',
     hotNewsBadge: 'สรุป',
-    hotNewsEmpty: 'ยังเงียบอยู่ — เดี๋ยวเติมเรื่องที่คนอยู่ไทยต้องรู้',
-    hotNewsLoading: 'กำลังคัดเฉพาะข่าวที่ใช้ได้…',
+    hotNewsEmpty: 'ยังไม่มีสรุปข่าวสั้น ลองกลับมาอีกครั้ง หรือช่วยแชร์ข้อมูลได้เลย',
+    hotNewsLoading: 'กำลังคัดข่าวที่ใช้ได้จริงมาให้…',
     hotFootnote:
-      'กดหัวข้อเพื่อไปบทความต้นทาง บรรทัดสีเทาคือสรุป — คนละโซนกับบอร์ดลานชุมชน',
+      'กดหัวข้อเพื่ออ่านรายละเอียดและต้นทางได้ทันที ข้อความสีเทาคือสรุปที่อ่านจบในไม่กี่วินาที',
     shopsTitle: '🏪 ร้านแนะนำ',
     shopsMore: 'ดูทั้งหมด →',
     shopsEmpty: 'ยังไม่มีร้านแนะนำตอนนี้ เดี๋ยวค่อยเติมให้',
@@ -1073,13 +1137,13 @@ const th: Dictionary = {
     tipFacebook: 'Facebook — กล่องแจ้งเรื่อง',
     tipTiktok: 'TikTok — โปรโมชัน·อัปเดต',
     tipEnvHint: 'ฝั่งผู้ดูแลใส่ลิงก์ไว้ การ์ดนี้จะเปิดให้ทันที',
-    newsTitle: 'สรุปอ้างอิงชีวิตที่ไทย',
+    newsTitle: 'ข่าวและข้อมูลสำคัญ',
     newsSub:
-      'สรุปจากข่าวภายนอกสั้นๆ บรรทัดเดียวอ่านได้ทุกคน สรุปเต็ม·ลิงก์ต้นทาง·ความคิดเห็น — หลังเข้าสู่ระบบ',
+      'เราย่อยข่าวและข้อมูลที่จำเป็นให้เป็นบรรทัดสั้นอ่านง่าย หลังเข้าสู่ระบบจะเห็นสรุปเต็ม ลิงก์ต้นทาง และคอมเมนต์',
     newsLoading: 'กำลังโหลด…',
     newsCountLine: 'ทั้งหมด {n} รายการ — แสดง 5 รายการที่นี่',
-    newsEmpty: 'ยังไม่มีเรื่องในช่องนี้ แวะใหม่ภายหลังนะ',
-    newsEmptyLink: 'ไปดูลานชุมชน →',
+    newsEmpty: 'ตอนนี้ยังไม่มีสรุปข่าวใหม่ ลองดูโพสต์ล่าสุดในชุมชนก่อน',
+    newsEmptyLink: 'ไปบอร์ดชุมชนล่าสุด →',
     newsDetailBack: '← กลับหน้าแรก',
     newsDetailWitLabel: 'ทีเด็ด Thai Ja',
     newsDetailSummaryLabel: 'สรุป',
@@ -1087,22 +1151,22 @@ const th: Dictionary = {
     newsDetailExternalCta: 'เปิดบทความต้นทาง',
     newsDetailExternalHint: 'จะไปเว็บสื่อต้นทาง',
     newsDetailMissing: 'หาเรื่องนี้ไม่เจอหรือหมดอายุแล้ว กลับหน้าแรกได้เลย',
-    guestHomePublicLabel: 'ค้นหา·ดูตัวอย่าง (ไม่ต้องสมัคร)',
+    guestHomePublicLabel: 'ใช้งานได้ทันที (ยังไม่ต้องสมัคร)',
     guestHomePublicBody:
-      'ค้นหาเมนู·หัวข้อข่าว และดูตัวอย่างบรรทัดเดียวในหน้าแรกได้ สรุปเต็ม·โน้ตบรรณาธิการ·ลิงก์ต้นทาง·ความคิดเห็น — หลังเข้าสู่ระบบ',
-    guestHomeMemberLabel: 'มีส่วนร่วม (สมาชิก)',
+      'ค้นหาเมนูและดูสรุปข่าวหนึ่งบรรทัดได้ทันที ส่วนสรุปเต็มและคอมเมนต์จะเปิดหลังเข้าสู่ระบบ',
+    guestHomeMemberLabel: 'ฟีเจอร์ที่สมาชิกใช้งานได้',
     guestHomeMemberBody:
-      'สภาพอากาศ·ร้านท้องถิ่น·บอร์ด·มือสอง·งานพาร์ทไทม์·มินิโฮม ความคิดเห็นข่าว — ต้องเข้าสู่ระบบหรือสมัครสมาชิก',
-    guestHomeLoginCta: 'เข้าสู่ระบบหรือสมัครเพื่อเปิดทั้งหมด',
+      'โพสต์ เขียนคอมเมนต์ ใช้งานมือสอง·หางาน และมินิโฮมได้หลังเข้าสู่ระบบ',
+    guestHomeLoginCta: 'เข้าสู่ระบบเพื่อเปิดการใช้งานทั้งหมด',
     newsDetailGuestNote:
-      'สรุปเต็ม·ลิงก์ต้นทาง·ความคิดเห็น — ใช้ได้หลังเข้าสู่ระบบหรือสมัคร บอร์ด·ซื้อขาย·มินิโฮมก็เฉพาะสมาชิก',
+      'ส่วนด้านล่างเป็นโซนสมาชิก เข้าสู่ระบบแล้วจะอ่านสรุปเต็ม ลิงก์ต้นทาง และคอมเมนต์ได้ทันที',
     newsDetailLockedLead:
-      'ด้านล่างนี้เป็นสรุป·แหล่งที่มา·ความคิดเห็นสำหรับสมาชิก — เข้าสู่ระบบเพื่ออ่านต่อและร่วมพูดคุย',
+      'เนื้อหาสรุป แหล่งที่มา และคอมเมนต์ด้านล่าง เปิดเฉพาะสมาชิกเท่านั้น',
   },
   tips: {
     pageTitle: 'ทิปส์ชีวิตในไทย',
     pageLead:
-      'แสดงเฉพาะหัวข้อกับคำโปรยสั้นๆ รายการเช็ก·ข้อควรระวัง·ลิงก์แหล่งข่าว — ดูเต็มได้หลังเข้าสู่ระบบหรือสมัครที่บอร์ดข้อมูลในลานชุมชน',
+      'ดูทิปส์สำคัญแบบสั้นก่อนตัดสินใจ รายการเช็กและข้อควรระวังฉบับเต็มเปิดได้หลังเข้าสู่ระบบ',
     openCard: 'ดูต่อ',
     detailLockedLead:
       'สรุปเต็ม·เช็กลิสต์·ลิงก์ต้นทาง — สำหรับสมาชิกเท่านั้น สมัครแล้วเปิดโพสต์เดิมในบอร์ดได้ครบ',
@@ -1110,23 +1174,25 @@ const th: Dictionary = {
     signupForFull: 'สมัครเพื่ออ่านเต็ม·ลิงก์',
     goLogin: 'เข้าสู่ระบบ',
     goSignup: 'สมัครสมาชิก',
-    empty: 'ยังไม่มีทิปส์ — เร็วๆ นี้จะเพิ่ม',
+    empty: 'ยังไม่มีทิปส์ใหม่ ลองเป็นคนแรกที่แชร์เคล็ดลับได้เลย',
     backToList: 'กลับรายการทิปส์',
   },
   board: {
-    pageTitle: 'บอร์ดลานชุมชน',
+    pageTitle: 'บอร์ดชุมชน Thai Ja World',
     newPost: 'โพสต์เลย',
     login: 'เข้าสู่ระบบ',
     signup: 'สมัครสมาชิก',
     logout: 'ออกจากระบบ',
-    empty: 'โพสต์แรกจากประสบการณ์หรือวิธีเลี่ยงปัญหาก็ได้ ร้านเด็ด·ทิปชีวิตยินดี',
+    empty: 'ยังไม่มีโพสต์ใหม่ เริ่มแชร์ประสบการณ์หรือคำถามของคุณได้เลย',
     category: 'หมวด',
     title: 'หัวข้อ',
     body: 'เนื้อหา',
     imagesHint: 'รูปภาพ (สูงสุด 3 รูป, JPG/PNG/WebP)',
+    imageTooLarge: 'รูปภาพแต่ละไฟล์ต้องไม่เกิน 4MB',
+    imageUploadFailed: 'อัปโหลดรูปไม่สำเร็จ ลองใหม่อีกครั้งในอีกสักครู่',
     submit: 'ส่งเลย',
     uploading: 'กำลังอัปโหลด…',
-    needLogin: 'โพสต์ได้หลังเข้าสู่ระบบเท่านั้นนะ',
+    needLogin: 'การโพสต์และคอมเมนต์ใช้งานได้หลังเข้าสู่ระบบ',
     backToList: 'กลับรายการ',
     author: 'ผู้เขียน',
     comments: 'ความคิดเห็น',
@@ -1145,26 +1211,26 @@ const th: Dictionary = {
     gatedBanner:
       'ก่อนเปิดตัวจริง — โพสต์ใหม่ปิดชั่วคราว ดูรายการและโพสต์เดิมได้ตามปกติ',
     newPostDisabled: 'จะเปิดให้โพสต์เร็วๆ นี้',
-    tradeHubTitle: 'มือสอง · ซื้อขาย·หางาน',
+    tradeHubTitle: 'มือสอง·หางาน',
     tradeHubIntro:
-      'มือสองและงาน — แนะนำให้ใส่ข้อควรระวังหรือประสบการณ์ด้วย จะช่วยกันได้มาก เห็นแค่ชื่อเล่น ดูจากรายการหรือกดเขียนต่อได้เลย',
+      'รวมประกาศมือสองและงานในหน้าเดียว พร้อมรีวิวจริงและข้อควรระวังจากผู้ใช้',
     tradeFleaCta: 'ไปโซนมือสอง',
-    tradeJobCta: 'ดูงาน·จ้าง',
-    tradeAllBoards: 'ไปลานทั้งหมด',
+    tradeJobCta: 'ไปโซนหางาน',
+    tradeAllBoards: 'ไปบอร์ดทั่วไป',
     emptyGated: 'หมวดนี้ยังว่าง — พอเปิดแล้วโพสต์ที่นี่ได้เลย',
     mod: {
       nsfw:
-        'ข้อความหรือรูปนี้ยังไม่ตรงกฎของเรา ลองแก้แล้วโพสต์ใหม่นะ ทำซ้ำหลายครั้งอาจถูกจำกัดบัญชี',
+        'ข้อความหรือรูปยังไม่ตรงตามกติกา ลองแก้ให้เหมาะสมแล้วโพสต์อีกครั้ง',
       promo:
-        'โฆษณาหนาแน่นกว่าข้อมูลที่ช่วยเหลือ ลองเขียนแบบประสบการณ์หรือสรุป หรือย้ายไปหมวดมือสอง/หางาน ลดลิงก์ติดต่อลงหน่อย ขอบคุณที่ช่วยกันรักษาบรรยากาศ',
+        'เนื้อหาเชิงโปรโมตมากเกินไป จึงยังไม่ผ่าน ลองเพิ่มข้อมูลใช้งานจริง ราคา และข้อควรระวัง แล้วส่งใหม่ได้เลย',
       banned: 'บัญชีนี้ใช้บอร์ดไม่ได้ชั่วคราว พอครบกำหนดแล้วลองใหม่ได้',
       imagePolicy:
         'ตอนนี้ยังแนบรูปพร้อมโพสต์ยากอยู่ ลองโพสต์แค่ข้อความก่อน หรือทักกล่องแจ้งเรื่องถ้าต้องการความช่วยเหลือ',
       scam:
         'เพื่อความปลอดภัย เราจำกัดบัญชีไว้ก่อนเพราะเนื้อหาคล้ายหลอกลวงหรือการเงินผิดกฎ ถ้าคิดว่าเข้าใจผิด แจ้งที่กล่องแจ้งเรื่องได้เลย',
-      server: 'ฝั่งเซิร์ฟเวอร์ขัดข้องชั่วคราว รอสักครู่แล้วลองใหม่อีกทีนะ',
+      server: 'เซิร์ฟเวอร์ขัดข้องชั่วคราว รอสักครู่แล้วลองใหม่อีกครั้ง',
       auth: 'เซสชันหมดหรือล็อกเอาต์ไปแล้ว ล็อกอินใหม่แล้วลองอีกครั้ง',
-      generic: 'โพสต์ไม่สำเร็จตอนนี้ ลองปรับเนื้อหานิดหน่อยแล้วลองใหม่นะ',
+      generic: 'โพสต์ยังไม่สำเร็จ ลองปรับเนื้อหาเล็กน้อยแล้วส่งใหม่',
     },
   },
   auth: {
@@ -1174,7 +1240,7 @@ const th: Dictionary = {
     or: 'หรือ',
     ellipsis: '…',
     loginTitle: 'เข้าสู่ระบบ',
-    loginSubtitle: 'โพสต์และคอมเมนต์ — เข้าสู่ระบบก่อนแล้วค่อยใช้งานได้เต็มที่',
+    loginSubtitle: 'เข้าสู่ระบบเพื่ออ่านสรุปเต็ม คอมเมนต์ และร่วมโพสต์กับชุมชนได้ทันที',
     honeypotLogin: 'ตรวจพบการล็อกอินอัตโนมัติ ลองล็อกอินเองอีกครั้งนะ',
     honeypotSignup: 'ตรวจพบการสมัครอัตโนมัติ ถ้าเป็นคนจริงลองสมัครใหม่ได้เลย',
     turnstileIncomplete: 'ทำการยืนยันความปลอดภัยด้านล่างให้ครบ แล้วลองอีกครั้ง',
@@ -1186,7 +1252,7 @@ const th: Dictionary = {
     signupLink: 'สมัครสมาชิก',
     signupTitle: 'สมัครสมาชิก',
     signupSubtitle:
-      'วีซ่า·ชีวิตติดขัด มาแชร์สรุปกัน ยืนยันอีเมลแล้วโพสต์และคอมเมนต์ได้เต็มที่',
+      'ชุมชนนี้ช่วยกันสะสมข้อมูลชีวิตในไทย สมัครแล้วจะโพสต์ คอมเมนต์ และร่วมมือสอง·หางานได้ครบ',
     nickLabel: 'ชื่อที่โชว์',
     nickPlaceholder: 'ชื่อบนโปรไฟล์',
     signupSubmit: 'สมัครและยืนยันอีเมล',
@@ -1216,7 +1282,7 @@ const th: Dictionary = {
     footerOtherEmail: 'สมัครด้วยอีเมลอื่น',
     forgotTitle: 'รีเซ็ตรหัสผ่าน',
     forgotSubtitle:
-      'ใส่อีเมลที่สมัคร เราจะส่งลิงก์ปลอดภัยเพื่อตั้งรหัสใหม่',
+      'กรอกอีเมลที่ใช้สมัคร แล้วเราจะส่งลิงก์สำหรับตั้งรหัสผ่านใหม่ทันที',
     forgotSendLink: 'ส่งลิงก์',
     forgotBackLogin: 'กลับไปเข้าสู่ระบบ',
     forgotInfoSent: 'ส่งลิงก์แล้ว — เช็กอีเมลและสแปม',
@@ -1318,8 +1384,16 @@ const th: Dictionary = {
     cyPhotosTitle: 'อัลบั้ม',
     cyGuestbookEmpty: 'ยังไม่มีข้อความทักทาย',
     cyVisitorEmpty: 'ยังไม่มีชื่อผู้เยี่ยม',
+    cyGuestbookNeedLogin: 'เข้าสู่ระบบก่อน จึงจะเขียนข้อความทักทายได้',
+    cyGuestbookOwnerHint: 'ในมินิโฮมของฉัน จะเห็นข้อความที่ผู้เยี่ยมเขียนไว้',
+    cyGuestbookWrite: 'เขียนข้อความทักทาย',
+    cyGuestbookSubmitting: 'กำลังบันทึก…',
+    cyGuestbookWritePlaceholder: 'ฝากข้อความสั้นๆ ที่อบอุ่น',
+    cyGuestbookWriteDone: 'บันทึกลงสมุดเยี่ยมแล้ว',
     cyGuestbookWriteSoon: 'โพสต์ทักทายจะเปิดเร็วๆ นี้',
     cyVisitorWriteSoon: 'ลงชื่อเยี่ยมจะเปิดเร็วๆ นี้',
+    cyPhotosEmpty: 'ยังไม่มีอัลบั้มรูปที่ลงทะเบียน',
+    cyPhotosAlbumEmpty: 'อัลบั้มนี้ยังไม่มีรูป',
     cyIntroEmpty: 'ยังไม่มีข้อความแนะนำในห้องหลัก',
     previewPanelsHint:
       'ตัวอย่าง/หน้าสาธารณะ — เปิด-ปิด ทักทาย·สมุดเยี่ยม·อัลบั้ม จากเมนูซ้าย (สไตล์หน้าต่างลอยแบบไซเวิลด์)',
@@ -1355,6 +1429,26 @@ const th: Dictionary = {
     styleRpcPoor: 'พอยต์ไม่พอ',
     styleRpcNotOwned: 'ยังไม่ได้ซื้อสินค้านี้',
     styleRpcGeneric: 'มีข้อผิดพลาด ลองใหม่ภายหลัง',
+    albumManagerTitle: 'จัดการอัลบั้มรูป',
+    albumManagerHint: 'สร้างอัลบั้มและเพิ่มรูปด้วย URL แล้วจะแสดงทันทีในหน้ารูปของมินิโฮมสาธารณะ',
+    albumTitleLabel: 'ชื่ออัลบั้ม',
+    albumTitlePlaceholder: 'เช่น Bangkok 2026',
+    albumCreateButton: 'สร้างอัลบั้ม',
+    albumCreateDone: 'สร้างอัลบั้มแล้ว',
+    albumDeleteButton: 'ลบอัลบั้ม',
+    albumDeleteAsk: 'ลบอัลบั้มนี้ไหม? รูปในอัลบั้มจะถูกลบด้วย',
+    albumDeleteDone: 'ลบอัลบั้มแล้ว',
+    albumEmpty: 'ยังไม่มีอัลบั้มที่สร้างไว้',
+    photoAlbumLabel: 'เลือกอัลบั้ม',
+    photoUrlLabel: 'URL รูปภาพ',
+    photoCaptionLabel: 'คำบรรยายรูป (ไม่บังคับ)',
+    photoCaptionPlaceholder: 'บันทึกสั้นๆ',
+    photoAddButton: 'เพิ่มรูป',
+    photoAddDone: 'เพิ่มรูปแล้ว',
+    photoDeleteButton: 'ลบรูป',
+    photoDeleteAsk: 'ลบรูปนี้ไหม?',
+    photoDeleteDone: 'ลบรูปแล้ว',
+    photoEmpty: 'อัลบั้มนี้ยังไม่มีรูป',
     loadingMark: '…',
     emDash: '—',
   },
@@ -1415,6 +1509,8 @@ const th: Dictionary = {
     badgeMember: 'เข้าสู่ระบบเพื่ออ่าน·แสดงความคิดเห็น',
     badgePublic: 'ไปทันที',
     searching: 'กำลังค้นหา…',
+    footerLoginCta: 'เข้าสู่ระบบเพื่ออ่านและแสดงความคิดเห็น',
+    footerBoardsCta: 'ดูบอร์ดทั้งหมด',
   },
   weather: { city: 'กรุงเทพฯ', condition: 'แจ่มใส' },
   seo: {

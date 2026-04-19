@@ -136,7 +136,7 @@ function rowToForm(row: LocalSpotRow): FormState {
     minihome_intro: row.minihome_intro ?? '',
     minihome_theme_json: jsonPretty(row.minihome_theme, '{}'),
     minihome_menu_json: jsonPretty(row.minihome_menu, '[]'),
-    minihome_layout_json: jsonPretty(row.minihome_layout_modules, '["intro","menu","line","photos"]'),
+    minihome_layout_json: jsonPretty(row.minihome_layout_modules, '["intro","menu","line","photos","guestbook"]'),
     minihome_extra_json: jsonPretty(row.minihome_extra, '{}'),
   };
 }
@@ -160,7 +160,7 @@ const emptyForm: FormState = {
   minihome_intro: '',
   minihome_theme_json: '{}',
   minihome_menu_json: '[]',
-  minihome_layout_json: '["intro","menu","line","photos"]',
+  minihome_layout_json: '["intro","menu","line","photos","guestbook"]',
   minihome_extra_json: '{}',
 };
 
@@ -344,9 +344,9 @@ export default function LocalSpotsClient({ spots }: { spots: LocalSpotRow[] }) {
         사진은 <strong>한 줄에 URL 하나</strong> 또는 파일 업로드(Storage 공개 URL 자동 추가). LINE은 고객용 링크만
         넣으면 됩니다. <strong>승인 대기</strong> 행은 «승인·공개»만 눌러도 목록에 올라가고, 이후 «수정»으로
         상호·주소·문구를 다듬으면 됩니다. 공개 여부는 RLS로 비공개 시 사용자에게 안 보입니다.{' '}
-        <strong>오너 이메일</strong>을 넣으면 해당 계정이 <code>/my-local-shop</code>에서 소개·메뉴·영업시간·BGM·테마 등을 (공지·이벤트·사진 일부는
-        준비 중) 수정할 수
-        있습니다. 미니홈 URL은 <code>/shop/공개슬러그</code> 입니다.
+        <strong>오너 이메일</strong>을 넣으면 해당 계정이 <code>/my-local-shop</code>에서 소개·메뉴·갤러리·영업시간·BGM·테마·방명록 관리 등을
+        수정할 수 있습니다. 공개 미니홈은 <code>/shop/공개슬러그</code> 이며, 레이아웃 JSON에 <code>guestbook</code> 모듈을 넣으면 방명록 블록이
+        보입니다.
       </p>
 
       {pendingCount > 0 ? (

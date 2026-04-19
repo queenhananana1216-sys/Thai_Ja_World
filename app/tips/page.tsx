@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerClient } from '@/lib/supabase/server';
+import { normalizeUserFacingText } from '@/lib/content/humanizeText';
 
 export async function generateMetadata(): Promise<Metadata> {
   const loc = await getLocale();
@@ -47,9 +48,13 @@ export default async function TipsHubPage() {
         {rows.map((r) => (
           <li key={r.id} className="tips-hub-card card">
             <h2 className="tips-hub-card__title">
-              <Link href={`/tips/${r.id}`}>{r.title}</Link>
+              <Link href={`/tips/${r.id}`}>{normalizeUserFacingText(r.title, { maxLen: 200 })}</Link>
             </h2>
-            {r.excerpt ? <p className="tips-hub-card__excerpt">{r.excerpt}</p> : null}
+            {r.excerpt ? (
+              <p className="tips-hub-card__excerpt">
+                {normalizeUserFacingText(r.excerpt, { maxLen: 500 })}
+              </p>
+            ) : null}
             <Link href={`/tips/${r.id}`} className="tips-hub-card__cta">
               {t.openCard} →
             </Link>

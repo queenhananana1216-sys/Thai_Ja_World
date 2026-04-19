@@ -120,6 +120,7 @@ export default function KnowledgeQueueClient({
   const [ensureBulkBusy, setEnsureBulkBusy] = useState(false);
   const [reprocessBusyId, setReprocessBusyId] = useState<string | null>(null);
   const [bulkReprocessRunning, setBulkReprocessRunning] = useState(false);
+  const [cleanupRunning, setCleanupRunning] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function submit(
@@ -334,6 +335,45 @@ export default function KnowledgeQueueClient({
     }
   }
 
+  async function runAiToneCleanup() {
+    if (
+      !window.confirm(
+        '지식 관련 공개 텍스트(게시글/요약/clean_body)를 전수 스캔해 AI 티 문구(운영 샘플, 자동 초안, 이스케이프 줄바꿈)를 정리할까요?',
+      )
+    ) {
+      return;
+    }
+    setCleanupRunning(true);
+    setMsg(null);
+    try {
+      const res = await fetch('/api/admin/knowledge-cleanup-ai-tone', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dry_run: false }),
+      });
+      const j = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        posts_scanned?: number;
+        posts_updated?: number;
+        processed_scanned?: number;
+        processed_updated?: number;
+        summaries_scanned?: number;
+        summaries_updated?: number;
+      };
+      if (!res.ok) {
+        setMsg(j.error ?? `오류 (${res.status})`);
+        return;
+      }
+      setMsg(
+        `AI 톤 정리 완료 — posts ${j.posts_updated ?? 0}/${j.posts_scanned ?? 0}, clean_body ${j.processed_updated ?? 0}/${j.processed_scanned ?? 0}, summaries ${j.summaries_updated ?? 0}/${j.summaries_scanned ?? 0}`,
+      );
+      router.refresh();
+    } finally {
+      setCleanupRunning(false);
+    }
+  }
+
   const orphanPanel =
     orphanRawKnowledge.length > 0 ? (
       <div
@@ -429,7 +469,11 @@ export default function KnowledgeQueueClient({
       <button
         type="button"
         disabled={
-          bulkReprocessRunning || ensureBulkBusy || Boolean(busyId) || Boolean(reprocessBusyId)
+          bulkReprocessRunning ||
+          cleanupRunning ||
+          ensureBulkBusy ||
+          Boolean(busyId) ||
+          Boolean(reprocessBusyId)
         }
         onClick={() => void runBulkReprocessAll()}
         style={{
@@ -444,6 +488,30 @@ export default function KnowledgeQueueClient({
         }}
       >
         {bulkReprocessRunning ? '일괄 재가공 진행 중…' : '미게시 초안 전부 재가공 시작'}
+      </button>
+      <button
+        type="button"
+        disabled={
+          cleanupRunning ||
+          bulkReprocessRunning ||
+          ensureBulkBusy ||
+          Boolean(busyId) ||
+          Boolean(reprocessBusyId)
+        }
+        onClick={() => void runAiToneCleanup()}
+        style={{
+          marginLeft: 8,
+          padding: '10px 16px',
+          background: '#fff',
+          color: '#4c1d95',
+          border: '1px solid #c4b5fd',
+          borderRadius: 8,
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: cleanupRunning ? 'wait' : 'pointer',
+        }}
+      >
+        {cleanupRunning ? 'AI 톤 전수 정리 중…' : 'AI 톤 전수 스캔·정리'}
       </button>
     </div>
   ) : null;

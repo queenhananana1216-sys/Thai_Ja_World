@@ -98,16 +98,16 @@ export default async function AdminDashboardPage() {
 
   return (
     <main className="admin-page">
-      <h1 className="admin-dash__title">관리자 개요</h1>
+      <h1 className="admin-dash__title">운영센터 대시보드</h1>
       <p className="admin-dash__lead">
-        태자 월드 회원·접속·뉴스 초안 지표입니다. <strong>마지막 접속</strong>은 사이트 하트비트로 갱신되는{' '}
-        <code>profiles.last_seen_at</code> 기준이며, Supabase Auth의 “최종 로그인”과는 다를 수 있습니다.
+        태자월드 회원·활동·콘텐츠 현황을 한 번에 보는 화면입니다. <strong>마지막 접속</strong>은 사이트 하트비트로
+        갱신되는 <code>profiles.last_seen_at</code> 기준이며, Supabase Auth의 “최종 로그인”과는 다를 수 있습니다.
       </p>
 
       {dbNote && <div className="admin-dash__alert">{dbNote}</div>}
 
       <section className="admin-dash__pipeline" aria-label="게시 파이프라인">
-        <h2>뉴스·지식이 «승인 대기»에 안 보일 때</h2>
+        <h2>뉴스·지식 초안이 승인 대기에서 보이지 않을 때</h2>
         <div className="admin-dash__pipeline-grid">
           <div className="admin-dash__pipeline-block">
             <strong>뉴스 (RSS → 요약)</strong>
@@ -127,7 +127,7 @@ export default async function AdminDashboardPage() {
           </div>
         </div>
         <p style={{ margin: '16px 0 0', fontSize: 13, color: '#64748b', lineHeight: 1.55 }}>
-          <strong>아침 루틴:</strong> 크론이 돌면 뉴스·지식 초안이 쌓입니다.{' '}
+          <strong>운영 기본 루틴:</strong> 크론이 돌면 뉴스·지식 초안이 쌓입니다.{' '}
           <Link href="/admin/news">뉴스 큐</Link>·<Link href="/admin/knowledge">지식 큐</Link>에서 승인하면 홈·광장에
           반영됩니다. 맛집·마사지 초안은{' '}
           <Link href="/admin/local-spots">로컬 가게</Link>에서 «승인·공개» 후 문구만 손보면 됩니다. 수동으로 봇을 돌릴
@@ -135,7 +135,7 @@ export default async function AdminDashboardPage() {
           (로컬에서 시크릿 미설정이면 검증 생략).
         </p>
         <p style={{ margin: '12px 0 0', fontSize: 12, color: '#64748b', lineHeight: 1.55 }}>
-          <strong>관리자 계정 추가:</strong> Supabase 대시보드가 아니라 <strong>Vercel(배포) 환경 변수</strong>{' '}
+          <strong>관리자 계정 추가:</strong> Supabase 대시보드가 아니라 <strong>Vercel 배포 환경 변수</strong>{' '}
           <code>ADMIN_ALLOWED_EMAILS</code>에 이메일을 쉼표·세미콜론·공백으로 구분해 넣으세요. 그 이메일로{' '}
           <strong>Supabase Auth에 가입·로그인</strong>된 사용자만 /admin 과 관리자 API를 쓸 수 있습니다.
         </p>
@@ -183,7 +183,7 @@ export default async function AdminDashboardPage() {
         <li>
           <Link href="/admin/home-hero">
             홈 메인 문구
-            <span>히어로·비회원 안내·한 줄 제보 띠 — 한·태 각각 수정</span>
+            <span>히어로·비회원 안내·한줄 브리핑 띠 문구를 한·태 각각 수정</span>
           </Link>
         </li>
         <li>
@@ -195,13 +195,13 @@ export default async function AdminDashboardPage() {
         <li>
           <Link href="/admin/news">
             뉴스 초안 큐
-            <span>번역·요약 후 게시</span>
+            <span>검수 후 게시까지 한 번에 처리</span>
           </Link>
         </li>
         <li>
           <Link href="/admin/knowledge">
             지식 큐
-            <span>RSS·지식 파이프라인 초안 승인</span>
+            <span>RSS·지식 파이프라인 초안 검수·승인</span>
           </Link>
         </li>
         <li>

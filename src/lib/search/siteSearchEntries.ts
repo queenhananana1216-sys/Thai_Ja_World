@@ -55,7 +55,7 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thBlob: 'ลานคุย บอร์ด ชุมชน ทั่วไป คุย โพสต์ รายการ',
   },
   {
-    href: '/community/boards?cat=info',
+    href: '/community/boards?scope=general&cat=info',
     koTitle: '정보 게시판 (비자 등)',
     thTitle: 'บอร์ดข้อมูล (วีซ่า ฯลฯ)',
     koHint: '예: ㅂㅈ → 비자',
@@ -66,7 +66,7 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
       'วีซ่า ข้อมูล ต่ออายุ ตม. TM30 รายงาน 90 วัน คู่มือ บอร์ดข้อมูล visa stay',
   },
   {
-    href: '/community/boards?cat=restaurant',
+    href: '/community/boards?scope=general&cat=restaurant',
     koTitle: '맛집 게시판',
     thTitle: 'บอร์ดร้านแนะนำ',
     koHint: '/community/boards?cat=restaurant',
@@ -75,7 +75,7 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thBlob: 'ร้านอาหาร แนะนำ คาเฟ่ อร่อย บอร์ดร้านอาหาร',
   },
   {
-    href: '/community/boards?cat=free',
+    href: '/community/boards?scope=general&cat=free',
     koTitle: '자유 게시판',
     thTitle: 'บอร์ดทั่วไป',
     koHint: '/community/boards?cat=free',
@@ -84,7 +84,7 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thBlob: 'ทั่วไป คุย บอร์ด',
   },
   {
-    href: '/community/boards?cat=flea',
+    href: '/community/boards?scope=trade&cat=flea',
     koTitle: '익명 한줄장 · 중고',
     thTitle: 'ตลาดบรรทัดเดียว · มือสอง',
     koHint: '/community/boards?cat=flea',
@@ -93,7 +93,7 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thBlob: 'มือสอง ขาย ซื้อ ตลาด บรรทัดเดียว',
   },
   {
-    href: '/community/boards?cat=job',
+    href: '/community/boards?scope=trade&cat=job',
     koTitle: '구인구직 · 알바',
     thTitle: 'หางาน · พาร์ทไทม์',
     koHint: '/community/boards?cat=job',

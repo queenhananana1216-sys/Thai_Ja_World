@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import {
+  categoriesForScope,
   categoryLabel,
   parseBoardListCategoryParam,
+  parseBoardScopeParam,
 } from '@/lib/community/postCategories';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
@@ -49,7 +51,7 @@ async function profileNames(ids: string[]): Promise<Record<string, string>> {
 export default async function BoardsListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cat?: string }>;
+  searchParams: Promise<{ cat?: string; scope?: string }>;
 }) {
   const locale = await getLocale();
   const d = getDictionary(locale);
@@ -57,9 +59,10 @@ export default async function BoardsListPage({
   const catFilter = parseBoardListCategoryParam(
     typeof sp.cat === 'string' ? sp.cat : undefined,
   );
+  const scope = parseBoardScopeParam(typeof sp.scope === 'string' ? sp.scope : undefined);
   const newPostHref = catFilter
-    ? `/community/boards/new?cat=${catFilter}`
-    : '/community/boards/new';
+    ? `/community/boards/new?cat=${catFilter}${scope ? `&scope=${scope}` : ''}`
+    : `/community/boards/new${scope ? `?scope=${scope}` : ''}`;
 
   const supabase = await createServerSupabaseAuthClient();
   const {
@@ -78,6 +81,8 @@ export default async function BoardsListPage({
 
   if (catFilter) {
     query = query.eq('category', catFilter);
+  } else {
+    query = query.in('category', categoriesForScope(scope));
   }
 
   const { data: posts, error } = await query;
@@ -85,7 +90,11 @@ export default async function BoardsListPage({
   const list = posts ?? [];
   const names = await profileNames(list.map((p) => p.author_id as string));
 
-  const listTitle = catFilter ? categoryLabel(catFilter, locale) : d.board.pageTitle;
+  const listTitle = catFilter
+    ? categoryLabel(catFilter, locale)
+    : scope === 'trade'
+      ? d.board.tradeHubTitle
+      : d.board.pageTitle;
 
   // 리액션 카운트(좋아요/공감) — 목록에는 버튼 없이 숫자만 표시
   const postIds = (list ?? []).map((p) => String(p.id));

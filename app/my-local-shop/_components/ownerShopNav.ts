@@ -7,5 +7,5 @@ export const OWNER_SHOP_NAV = [
   { segment: 'menu', label: '메뉴 수정' },
   { segment: 'intro', label: '소개글 수정' },
   { segment: 'hours', label: '영업시간' },
-  { segment: 'comments', label: '댓글 보기' },
+  { segment: 'comments', label: '방명록 관리' },
 ] as const;

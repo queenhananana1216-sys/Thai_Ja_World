@@ -18,6 +18,20 @@ type GbRow = {
   author_id: string;
 };
 
+type AlbumRow = {
+  id: string;
+  title: string;
+  sort_order: number;
+};
+
+type PhotoRow = {
+  id: string;
+  album_id: string;
+  storage_path: string;
+  caption: string | null;
+  sort_order: number;
+};
+
 type Props = {
   data: MinihomePublicRow;
   labels: Dictionary['minihome'];
@@ -96,6 +110,12 @@ export default function MinihomeRoomView({
   const [gbRows, setGbRows] = useState<GbRow[] | null>(null);
   const [names, setNames] = useState<Record<string, string>>({});
   const [gbLoading, setGbLoading] = useState(false);
+  const [gbDraft, setGbDraft] = useState('');
+  const [gbBusy, setGbBusy] = useState(false);
+  const [gbFormMsg, setGbFormMsg] = useState<string | null>(null);
+  const [viewerId, setViewerId] = useState<string | null>(null);
+  const [photosLoading, setPhotosLoading] = useState(false);
+  const [albums, setAlbums] = useState<(AlbumRow & { photos: PhotoRow[] })[]>([]);
 
   const [ilchonMode, setIlchonMode] = useState<IlchonMode>('loading');
   const [ilchonToast, setIlchonToast] = useState<string | null>(null);
@@ -159,9 +179,11 @@ export default function MinihomeRoomView({
       } = await sb.auth.getUser();
       if (cancelled) return;
       if (!user) {
+        setViewerId(null);
         setIlchonMode('anon');
         return;
       }
+      setViewerId(user.id);
       if (user.id === data.owner_id) {
         setIlchonMode('hidden');
         return;
@@ -205,6 +227,46 @@ export default function MinihomeRoomView({
       cancelled = true;
     };
   }, [data.owner_id]);
+
+  const loadAlbums = useCallback(async () => {
+    if (!data.owner_id) return;
+    setPhotosLoading(true);
+    const sb = createBrowserClient();
+    const { data: albumRows, error: albumErr } = await sb
+      .from('minihome_photo_albums')
+      .select('id, title, sort_order')
+      .eq('owner_id', data.owner_id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (albumErr || !albumRows?.length) {
+      setAlbums([]);
+      setPhotosLoading(false);
+      return;
+    }
+
+    const albumList = albumRows as AlbumRow[];
+    const albumIds = albumList.map((a) => a.id);
+    const { data: photoRows } = await sb
+      .from('minihome_photos')
+      .select('id, album_id, storage_path, caption, sort_order')
+      .in('album_id', albumIds)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    const photos = (photoRows ?? []) as PhotoRow[];
+    const merged = albumList.map((a) => ({
+      ...a,
+      photos: photos.filter((p) => p.album_id === a.id),
+    }));
+    setAlbums(merged);
+    setPhotosLoading(false);
+  }, [data.owner_id]);
+
+  useEffect(() => {
+    if (!winPhotos) return;
+    void loadAlbums();
+  }, [winPhotos, loadAlbums]);
 
   const visitorOrder = useMemo(() => {
     if (!gbRows?.length) return [];
@@ -253,6 +315,28 @@ export default function MinihomeRoomView({
     setReqMessage('');
     setReqNick('');
     setIlchonMode('out');
+  }
+
+  async function submitGuestbook() {
+    if (!viewerId || !data.owner_id || viewerId === data.owner_id || gbBusy) return;
+    const body = gbDraft.trim();
+    if (!body) return;
+    setGbBusy(true);
+    setGbFormMsg(null);
+    const sb = createBrowserClient();
+    const { error } = await sb.from('minihome_guestbook_entries').insert({
+      minihome_owner_id: data.owner_id,
+      author_id: viewerId,
+      body,
+    });
+    setGbBusy(false);
+    if (error) {
+      setGbFormMsg(error.message);
+      return;
+    }
+    setGbDraft('');
+    setGbFormMsg(labels.cyGuestbookWriteDone);
+    await loadGuestbook();
   }
 
   return (
@@ -413,10 +497,7 @@ export default function MinihomeRoomView({
           {gbLoading ? (
             <p className="minihome-cy-win__muted">{labels.loadingMark}</p>
           ) : !gbRows?.length ? (
-            <>
-              <p className="minihome-cy-win__muted">{labels.cyGuestbookEmpty}</p>
-              <p className="minihome-cy-win__soon">{labels.cyGuestbookWriteSoon}</p>
-            </>
+            <p className="minihome-cy-win__muted">{labels.cyGuestbookEmpty}</p>
           ) : (
             <ul className="minihome-cy-win__list">
               {gbRows.map((r) => (
@@ -428,6 +509,27 @@ export default function MinihomeRoomView({
                 </li>
               ))}
             </ul>
+          )}
+          {viewerId ? (
+            viewerId === data.owner_id ? (
+              <p className="minihome-cy-win__soon">{labels.cyGuestbookOwnerHint}</p>
+            ) : (
+              <div className="minihome-cy-win__compose">
+                <textarea
+                  value={gbDraft}
+                  onChange={(e) => setGbDraft(e.target.value)}
+                  rows={3}
+                  maxLength={2000}
+                  placeholder={labels.cyGuestbookWritePlaceholder}
+                />
+                {gbFormMsg ? <p className="minihome-cy-win__soon">{gbFormMsg}</p> : null}
+                <button type="button" className="ilchon-btn" disabled={gbBusy} onClick={() => void submitGuestbook()}>
+                  {gbBusy ? labels.cyGuestbookSubmitting : labels.cyGuestbookWrite}
+                </button>
+              </div>
+            )
+          ) : (
+            <p className="minihome-cy-win__soon">{labels.cyGuestbookNeedLogin}</p>
           )}
         </CyWindow>
 
@@ -470,7 +572,31 @@ export default function MinihomeRoomView({
           winClass="minihome-cy-win--photos"
           closeLabel={labels.cyWindowClose}
         >
-          <p className="minihome-cy-win__muted">{labels.albumLocked}</p>
+          {photosLoading ? (
+            <p className="minihome-cy-win__muted">{labels.loadingMark}</p>
+          ) : !albums.length ? (
+            <p className="minihome-cy-win__muted">{labels.cyPhotosEmpty}</p>
+          ) : (
+            <div className="minihome-cy-win__albums">
+              {albums.map((album) => (
+                <section key={album.id} className="minihome-cy-win__album">
+                  <h4 className="minihome-cy-win__album-title">{album.title}</h4>
+                  {!album.photos.length ? (
+                    <p className="minihome-cy-win__muted">{labels.cyPhotosAlbumEmpty}</p>
+                  ) : (
+                    <div className="minihome-cy-win__photo-grid">
+                      {album.photos.map((photo) => (
+                        <figure key={photo.id} className="minihome-cy-win__photo-item">
+                          <img src={photo.storage_path} alt={photo.caption ?? album.title} loading="lazy" />
+                          {photo.caption ? <figcaption>{photo.caption}</figcaption> : null}
+                        </figure>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              ))}
+            </div>
+          )}
         </CyWindow>
       </div>
 

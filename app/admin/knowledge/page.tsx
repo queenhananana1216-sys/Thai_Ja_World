@@ -149,6 +149,10 @@ export default async function AdminKnowledgeQueuePage() {
         <br />
         <br />
         <strong>일괄 재가공:</strong> 목록 상단 보라색 칸에서 미게시 초안을 제미나이(현재 서버 키)로 한꺼번에 다시 만들 수 있어요.{' '}
+        <strong>AI 톤 전수 스캔·정리</strong> 버튼은 이미 공개된 꿀팁 글까지 포함해 «운영 샘플», «자동 초안», 깨진 줄바꿈 표기를
+        자동 정리합니다.
+        <br />
+        <br />
         <strong>뉴스 승인 큐(/admin/news)</strong>는 여기와 별도입니다.
         <br />
         <br />

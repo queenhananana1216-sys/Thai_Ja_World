@@ -12,7 +12,7 @@ import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import './admin-shell.css';
 
 export const metadata = {
-  title: '태자 월드 — 관리자',
+  title: '태자월드 — 운영센터',
 };
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
@@ -22,9 +22,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <div className="admin-shell">
-      <nav className="admin-shell__nav" aria-label="관리자 하위 메뉴">
+      <nav className="admin-shell__nav" aria-label="운영센터 하위 메뉴">
         <a href="/admin" className="admin-shell__nav-brand">
-          태자 월드 · 개요
+          태자월드 · 운영 개요
         </a>
         <a href="/admin/users">이용자</a>
         <a href="/admin/bot-actions">봇 기록</a>
@@ -33,7 +33,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         <a href="/admin/local-spots">로컬 가게</a>
         <a href="/admin/premium-banners">프리미엄 배너</a>
         <a href="/admin/home-hero">홈 메인 문구</a>
-        <span className="admin-shell__nav-hint">운영 데이터 — 인가된 접근만 허용</span>
+        <span className="admin-shell__nav-hint">운영 데이터 보호 구간 · 권한 사용자만 접근 가능</span>
       </nav>
       <div className="admin-shell__viewport">{children}</div>
     </div>

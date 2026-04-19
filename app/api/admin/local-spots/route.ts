@@ -206,7 +206,7 @@ export async function POST(req: Request) {
     );
     minihome_theme = parseJsonObject(body.minihome_theme_json, {});
     minihome_menu = parseJsonArray(body.minihome_menu_json, []);
-    minihome_layout = parseJsonArray(body.minihome_layout_json, ['intro', 'menu', 'line', 'photos']);
+    minihome_layout = parseJsonArray(body.minihome_layout_json, ['intro', 'menu', 'line', 'photos', 'guestbook']);
     minihome_extra = parseJsonObject(body.minihome_extra_json, {});
   } catch (e) {
     const code = e instanceof Error ? e.message : '';

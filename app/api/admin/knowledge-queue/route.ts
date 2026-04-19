@@ -14,6 +14,10 @@ import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import type { KnowledgeLlmOutput } from '@/bots/actions/processAndPersistKnowledge';
 import { KNOWLEDGE_STUB_SUMMARY_SNIPPET } from '@/lib/knowledge/knowledgeStubConstants';
+import {
+  containsAiLikeMarker,
+  normalizeUserFacingText,
+} from '@/lib/content/humanizeText';
 
 export const runtime = 'nodejs';
 
@@ -64,17 +68,17 @@ function mergeKnowledgeCleanBody(
     // 기존 clean_body 없으면 최소 구조 생성
     return JSON.stringify({
       ko: {
-        title: patch.ko_title ?? '',
-        summary: patch.ko_summary ?? '',
-        editorial_note: (patch.ko_editorial_note ?? '').trim(),
+        title: normalizeUserFacingText(patch.ko_title ?? '', { maxLen: 200 }),
+        summary: normalizeUserFacingText(patch.ko_summary ?? '', { maxLen: 7000 }),
+        editorial_note: normalizeUserFacingText(patch.ko_editorial_note ?? '', { maxLen: 2000 }),
         checklist: [],
         cautions: [],
         tags: [],
       },
       th: {
-        title: patch.th_title ?? '',
-        summary: patch.th_summary ?? '',
-        editorial_note: (patch.th_editorial_note ?? '').trim(),
+        title: normalizeUserFacingText(patch.th_title ?? '', { maxLen: 200 }),
+        summary: normalizeUserFacingText(patch.th_summary ?? '', { maxLen: 7000 }),
+        editorial_note: normalizeUserFacingText(patch.th_editorial_note ?? '', { maxLen: 2000 }),
         checklist: [],
         cautions: [],
         tags: [],
@@ -82,17 +86,25 @@ function mergeKnowledgeCleanBody(
     });
   }
 
-  if (patch.ko_title !== undefined && parsed.ko) parsed.ko.title = patch.ko_title.trim();
-  if (patch.ko_summary !== undefined && parsed.ko) parsed.ko.summary = patch.ko_summary.trim();
+  if (patch.ko_title !== undefined && parsed.ko) {
+    parsed.ko.title = normalizeUserFacingText(patch.ko_title, { maxLen: 200 });
+  }
+  if (patch.ko_summary !== undefined && parsed.ko) {
+    parsed.ko.summary = normalizeUserFacingText(patch.ko_summary, { maxLen: 7000 });
+  }
   if (patch.ko_editorial_note !== undefined && parsed.ko) {
-    const t = patch.ko_editorial_note.trim();
+    const t = normalizeUserFacingText(patch.ko_editorial_note, { maxLen: 2000 });
     if (t) parsed.ko.editorial_note = t;
     else delete parsed.ko.editorial_note;
   }
-  if (patch.th_title !== undefined && parsed.th) parsed.th.title = patch.th_title.trim();
-  if (patch.th_summary !== undefined && parsed.th) parsed.th.summary = patch.th_summary.trim();
+  if (patch.th_title !== undefined && parsed.th) {
+    parsed.th.title = normalizeUserFacingText(patch.th_title, { maxLen: 200 });
+  }
+  if (patch.th_summary !== undefined && parsed.th) {
+    parsed.th.summary = normalizeUserFacingText(patch.th_summary, { maxLen: 7000 });
+  }
   if (patch.th_editorial_note !== undefined && parsed.th) {
-    const t = patch.th_editorial_note.trim();
+    const t = normalizeUserFacingText(patch.th_editorial_note, { maxLen: 2000 });
     if (t) parsed.th.editorial_note = t;
     else delete parsed.th.editorial_note;
   }
@@ -123,7 +135,7 @@ function bullets(items: string[]): string {
 
 /** 비회원 /tips 허브용 짧은 훅 — 한국어 요약 앞부분 우선 */
 function excerptFromKoSummary(summary: string): string {
-  const t = summary.trim();
+  const t = normalizeUserFacingText(summary, { maxLen: 1000 });
   if (!t) return '';
   const firstBlock = t.split(/\n{2,}/)[0]?.trim() ?? t;
   const oneLine = firstBlock.split('\n')[0]?.trim() ?? firstBlock;
@@ -137,8 +149,8 @@ function isStubLikeKoSummary(summary: string): boolean {
 
 /** 스텁·짧은 LLM 요약이면 편집팀 안내를 훅으로 우선 */
 function excerptFromKnowledgeKo(ko: { summary: string; editorial_note?: string }): string {
-  const ed = ko.editorial_note?.trim() ?? '';
-  const sum = ko.summary?.trim() ?? '';
+  const ed = normalizeUserFacingText(ko.editorial_note, { maxLen: 2000 });
+  const sum = normalizeUserFacingText(ko.summary, { maxLen: 7000 });
   if (ed && isStubLikeKoSummary(sum)) return excerptFromKoSummary(ed);
   if (ed && sum) return excerptFromKoSummary(`${sum}\n\n${ed}`);
   if (ed) return excerptFromKoSummary(ed);
@@ -146,8 +158,13 @@ function excerptFromKnowledgeKo(ko: { summary: string; editorial_note?: string }
 }
 
 function validateKnowledgePublish(ko_summary: string, ko_editorial_note: string): string | null {
-  const sum = ko_summary.trim();
-  const ed = ko_editorial_note.trim();
+  const sum = normalizeUserFacingText(ko_summary, { maxLen: 7000 });
+  const ed = normalizeUserFacingText(ko_editorial_note, { maxLen: 2000 });
+  if (containsAiLikeMarker(ko_summary) || containsAiLikeMarker(ko_editorial_note)) {
+    if (sum.length < 10 && ed.length < 25) {
+      return 'AI 템플릿 문구를 자동 정리했지만 본문이 너무 짧아요. 요약 또는 안내를 조금 더 보강해 주세요.';
+    }
+  }
   if (isStubLikeKoSummary(sum)) {
     if (ed.length < 25) {
       return '원문 요약이 비어 있을 때는 「태자 편집팀·이용자 안내」에 25자 이상 적어 주시면 게시할 수 있어요.';
@@ -172,9 +189,9 @@ function buildPostContent(llm: KnowledgeLlmOutput, fallbackSourceUrl?: string): 
   const sourceLines = bullets(sources.map((s) => s.external_url).filter(Boolean));
 
   const koLines = [
-    `요약\n${ko.summary}`,
-    ko.editorial_note?.trim()
-      ? `\n태자 편집팀·이용자 안내\n${ko.editorial_note.trim()}`
+    `요약\n${normalizeUserFacingText(ko.summary, { maxLen: 7000 })}`,
+    normalizeUserFacingText(ko.editorial_note, { maxLen: 2000 })
+      ? `\n태자 편집팀·이용자 안내\n${normalizeUserFacingText(ko.editorial_note, { maxLen: 2000 })}`
       : '',
     `\n체크리스트\n${bullets(ko.checklist)}`,
     `\n주의사항\n${bullets(ko.cautions)}`,
@@ -183,8 +200,10 @@ function buildPostContent(llm: KnowledgeLlmOutput, fallbackSourceUrl?: string): 
   ].filter(Boolean);
 
   const thLines = [
-    `\n---\nไทย 요약\n${th.summary}`,
-    th.editorial_note?.trim() ? `\nหมายเหตุทีมบรรณาธิการ\n${th.editorial_note.trim()}` : '',
+    `\n---\nไทย 요약\n${normalizeUserFacingText(th.summary, { maxLen: 7000 })}`,
+    normalizeUserFacingText(th.editorial_note, { maxLen: 2000 })
+      ? `\nหมายเหตุทีมบรรณาธิการ\n${normalizeUserFacingText(th.editorial_note, { maxLen: 2000 })}`
+      : '',
     `\n체็กลิสต์\n${bullets(th.checklist)}`,
     `\nข้อควรระวัง\n${bullets(th.cautions)}`,
     th.tags.length ? `\nแท็ก\n${th.tags.map((t) => `#${t}`).join(' ')}` : '',
@@ -285,8 +304,11 @@ export async function POST(req: Request) {
   const rawExternalUrl =
     (row.raw_knowledge as unknown as { external_url?: string } | null)?.external_url ?? undefined;
 
-  const postTitle = llm?.ko?.title?.trim() || (body.ko_title ?? '').trim() || '(제목 없음)';
-  const postContent = llm ? buildPostContent(llm, rawExternalUrl) : (body.ko_summary?.trim() ?? '').trim() || '';
+  const postTitle =
+    normalizeUserFacingText(llm?.ko?.title || body.ko_title || '', { maxLen: 200 }) || '(제목 없음)';
+  const postContent = llm
+    ? buildPostContent(llm, rawExternalUrl)
+    : normalizeUserFacingText(body.ko_summary, { maxLen: 7000 }) || '';
   const postExcerpt = llm?.ko
     ? excerptFromKnowledgeKo({
         summary: (body.ko_summary ?? llm.ko.summary ?? '').trim(),
@@ -349,7 +371,13 @@ export async function POST(req: Request) {
   }
 
   // knowledge_summaries 동기화 (편집팀 안내는 검색·노출용 텍스트에 합침)
-  const koSummarySync = [body.ko_summary?.trim(), body.ko_editorial_note?.trim()].filter(Boolean).join('\n\n').trim();
+  const koSummarySync = [
+    normalizeUserFacingText(body.ko_summary, { maxLen: 7000 }),
+    normalizeUserFacingText(body.ko_editorial_note, { maxLen: 2000 }),
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
   if (koSummarySync) {
     await admin
       .from('knowledge_summaries')
@@ -357,7 +385,13 @@ export async function POST(req: Request) {
       .eq('processed_knowledge_id', id)
       .eq('model', 'ko');
   }
-  const thSummarySync = [body.th_summary?.trim(), body.th_editorial_note?.trim()].filter(Boolean).join('\n\n').trim();
+  const thSummarySync = [
+    normalizeUserFacingText(body.th_summary, { maxLen: 7000 }),
+    normalizeUserFacingText(body.th_editorial_note, { maxLen: 2000 }),
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
   if (thSummarySync) {
     await admin
       .from('knowledge_summaries')

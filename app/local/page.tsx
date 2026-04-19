@@ -1,9 +1,8 @@
 /**
  * app/local/page.tsx — 로컬 가게 디렉터리 목록
  *
- * 서버 컴포넌트: Supabase anon key 로 local_businesses 읽기.
- * tier 순(premium > standard > basic), is_recommended 우선 정렬.
- * RLS: businesses_select_all 정책으로 공개 SELECT 허용.
+ * - local_spots: 운영 등록 + 미니홈(/shop/슬러그) 링크
+ * - local_businesses: 기존 큐레이션 카드(/local/슬러그)
  */
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -12,12 +11,47 @@ import type { LocalBusiness } from '@/types/taeworld';
 
 export const metadata: Metadata = {
   title: '로컬 가게 — 태자 월드',
-  description: '태국 한인·현지 로컬 가게 디렉터리. 가게 멤버 정보, 공지, 특별 메뉴.',
+  description: '태국 한인·현지 로컬 가게 디렉터리. 미니홈, 메뉴, 방명록, 공지 안내.',
 };
 
 // ── 데이터 패치 ────────────────────────────────────────────────────────────
 
 const TIER_RANK: Record<string, number> = { premium: 0, standard: 1, basic: 2 };
+
+const SPOT_CATEGORY_LABEL: Record<string, string> = {
+  restaurant: '맛집·식당',
+  cafe: '카페',
+  night_market: '야시장·길거리',
+  massage: '마사지·스파',
+  service: '서비스',
+  shopping: '쇼핑',
+  other: '기타',
+};
+
+type PublishedLocalSpot = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  photo_urls: unknown;
+  minihome_public_slug: string | null;
+};
+
+async function fetchPublishedLocalSpots(): Promise<PublishedLocalSpot[]> {
+  try {
+    const supabase = createServerClient();
+    const { data } = await supabase
+      .from('local_spots')
+      .select('id, name, description, category, photo_urls, minihome_public_slug')
+      .eq('is_published', true)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false })
+      .limit(48);
+    return (data ?? []) as PublishedLocalSpot[];
+  } catch {
+    return [];
+  }
+}
 
 async function fetchBusinesses(): Promise<{
   businesses: LocalBusiness[];
@@ -60,6 +94,61 @@ function TierBadge({ tier }: { tier: LocalBusiness['tier'] }) {
     <span className={`badge badge-${tier}`}>
       {tier === 'premium' ? '⭐ 프리미엄' : '스탠다드'}
     </span>
+  );
+}
+
+function firstSpotPhoto(photo_urls: unknown): string | null {
+  if (!Array.isArray(photo_urls) || photo_urls.length === 0) return null;
+  const u = String(photo_urls[0]).trim();
+  return u || null;
+}
+
+function LocalSpotMinihomeCard({ spot }: { spot: PublishedLocalSpot }) {
+  const img = firstSpotPhoto(spot.photo_urls);
+  const catLabel = SPOT_CATEGORY_LABEL[spot.category] ?? spot.category;
+  const href = spot.minihome_public_slug ? `/shop/${spot.minihome_public_slug}` : null;
+
+  const body = (
+    <>
+      <div
+        className="shop-card__image"
+        style={
+          img
+            ? {
+                backgroundImage: `url(${img})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }
+            : {}
+        }
+      >
+        {!img ? '🏪' : null}
+      </div>
+      <div className="shop-card__body">
+        <span className="shop-card__name">{spot.name}</span>
+        <span className="shop-card__category">{catLabel}</span>
+        {spot.description ? <p className="shop-card__desc">{spot.description}</p> : null}
+        {!href ? (
+          <span className="badge" style={{ marginTop: 6, display: 'inline-block' }}>
+            미니홈 주소 준비 중
+          </span>
+        ) : (
+          <span style={{ marginTop: 8, display: 'block', fontSize: '0.78rem', color: '#7c3aed', fontWeight: 600 }}>
+            미니홈 보기 →
+          </span>
+        )}
+      </div>
+    </>
+  );
+
+  return href ? (
+    <Link href={href} className="shop-card">
+      {body}
+    </Link>
+  ) : (
+    <div className="shop-card" style={{ cursor: 'default' }}>
+      {body}
+    </div>
   );
 }
 
@@ -186,7 +275,10 @@ function RegionGroup({
 // ── 페이지 ─────────────────────────────────────────────────────────────────
 
 export default async function LocalPage() {
-  const { businesses, regions } = await fetchBusinesses();
+  const [{ businesses, regions }, spots] = await Promise.all([
+    fetchBusinesses(),
+    fetchPublishedLocalSpots(),
+  ]);
 
   return (
     <div className="page-body">
@@ -209,13 +301,14 @@ export default async function LocalPage() {
           🏪 로컬 가게
         </h1>
         <p style={{ margin: 0, color: '#64748b', fontSize: '0.88rem' }}>
-          태국 현지 한인·로컬 가게 디렉터리 — 공지, 특별 메뉴, 영업시간 안내
+          태국 현지 한인·로컬 가게 — 미니홈·메뉴·방명록과 큐레이션 가게 목록
         </p>
 
         {/* 통계 바 */}
         <div
           style={{
             display: 'flex',
+            flexWrap: 'wrap',
             gap: '20px',
             marginTop: '16px',
             fontSize: '0.82rem',
@@ -223,7 +316,11 @@ export default async function LocalPage() {
           }}
         >
           <span>
-            🏪 전체{' '}
+            🌐 미니홈 가게{' '}
+            <strong style={{ color: '#1a2025' }}>{spots.length}</strong>곳
+          </span>
+          <span>
+            🏪 디렉터리 카드{' '}
             <strong style={{ color: '#1a2025' }}>{businesses.length}</strong>개
           </span>
           <span>
@@ -243,34 +340,98 @@ export default async function LocalPage() {
         </div>
       </div>
 
-      {/* 가게 목록 */}
-      {businesses.length > 0 ? (
-        regions.length > 1 ? (
-          // 지역이 2개 이상이면 지역별 그룹
-          regions.map((region) => {
-            const regionShops = businesses.filter((b) => b.region === region);
-            if (regionShops.length === 0) return null;
-            return (
-              <RegionGroup key={region} region={region} shops={regionShops} />
-            );
-          })
-        ) : (
-          // 지역이 1개 이하면 단순 그리드
+      {/* 운영 등록 미니홈 (local_spots) */}
+      {spots.length > 0 ? (
+        <section style={{ marginBottom: '40px' }}>
+          <h2
+            style={{
+              fontSize: '1rem',
+              fontWeight: 700,
+              color: 'var(--tj-link)',
+              borderLeft: '4px solid #7c3aed',
+              paddingLeft: '10px',
+              margin: '0 0 14px',
+            }}
+          >
+            🌐 가게 미니홈
+            <span
+              style={{
+                marginLeft: '8px',
+                fontWeight: 400,
+                fontSize: '0.82rem',
+                color: '#94a3b8',
+              }}
+            >
+              {spots.length}곳
+            </span>
+          </h2>
+          <p style={{ margin: '0 0 16px', fontSize: '0.82rem', color: '#64748b' }}>
+            사장님이 소개·메뉴·사진·방명록을 관리하는 공개 페이지입니다. 가게마다 주소가 다릅니다.
+          </p>
           <div className="shop-grid">
-            {businesses.map((shop) => (
-              <ShopCard key={shop.id} shop={shop} />
+            {spots.map((s) => (
+              <LocalSpotMinihomeCard key={s.id} spot={s} />
             ))}
           </div>
+        </section>
+      ) : null}
+
+      {/* 큐레이션 가게 (local_businesses) */}
+      {businesses.length > 0 ? (
+        regions.length > 1 ? (
+          <>
+            <h2
+              style={{
+                fontSize: '1rem',
+                fontWeight: 700,
+                color: 'var(--tj-link)',
+                borderLeft: '4px solid #e8a838',
+                paddingLeft: '10px',
+                margin: '0 0 14px',
+              }}
+            >
+              📋 지역별 가게 카드
+            </h2>
+            {regions.map((region) => {
+              const regionShops = businesses.filter((b) => b.region === region);
+              if (regionShops.length === 0) return null;
+              return (
+                <RegionGroup key={region} region={region} shops={regionShops} />
+              );
+            })}
+          </>
+        ) : (
+          <>
+            <h2
+              style={{
+                fontSize: '1rem',
+                fontWeight: 700,
+                color: 'var(--tj-link)',
+                borderLeft: '4px solid #e8a838',
+                paddingLeft: '10px',
+                margin: '0 0 14px',
+              }}
+            >
+              📋 디렉터리 가게
+            </h2>
+            <div className="shop-grid">
+              {businesses.map((shop) => (
+                <ShopCard key={shop.id} shop={shop} />
+              ))}
+            </div>
+          </>
         )
-      ) : (
+      ) : null}
+
+      {spots.length === 0 && businesses.length === 0 ? (
         <div className="card empty-state">
           <p style={{ fontSize: '2rem', marginBottom: '8px' }}>🏪</p>
-          <p>아직 등록된 가게가 없습니다.</p>
+          <p>아직 목록에 올라온 가게가 없습니다.</p>
           <p style={{ marginTop: '8px', fontSize: '0.8rem', color: '#cbd5e1' }}>
-            가게 등록 기능은 Phase 2에서 오픈될 예정입니다.
+            미니홈 가게는 운영 승인 후 이 페이지에 표시됩니다.
           </p>
         </div>
-      )}
+      ) : null}
 
       {/* 가게 등록 안내 */}
       <div
@@ -303,8 +464,11 @@ export default async function LocalPage() {
               color: '#475569',
             }}
           >
-            내 가게를 태자 월드에 등록하고 싶으신가요? 공지·특별 메뉴·영업시간을  
-            직접 올릴 수 있는 미니홈 기능이 곧 오픈됩니다.
+            입점 문의는 운영진에게 연락해 주세요. 승인되면 대표 계정으로{' '}
+            <Link href="/my-local-shop" style={{ color: 'var(--tj-link)', fontWeight: 600 }}>
+              내 가게 관리
+            </Link>
+            에서 미니홈·메뉴·갤러리·방명록을 다룰 수 있습니다.
           </p>
         </div>
       </div>

@@ -5,6 +5,10 @@
  * 게시글은 service role로만 INSERT (모더레이션·벤 후)
  */
 import { NextResponse } from 'next/server';
+import {
+  isCategoryAllowedInScope,
+  parseBoardScopeParam,
+} from '@/lib/community/postCategories';
 import { createModeratedPost } from '@/lib/moderation/postSubmissionPipeline';
 
 export const runtime = 'nodejs';
@@ -22,8 +26,17 @@ export async function POST(req: Request) {
   }
 
   const b = body as Record<string, unknown>;
+  const scope = parseBoardScopeParam(typeof b.scope === 'string' ? b.scope : undefined);
+  const category = typeof b.category === 'string' ? b.category : '';
+  if (!isCategoryAllowedInScope(category, scope)) {
+    return NextResponse.json(
+      { code: 'invalid', message: '선택한 게시판 구역에서 사용할 수 없는 말머리예요. 다른 말머리로 다시 선택해 주세요.' },
+      { status: 400 },
+    );
+  }
+
   const result = await createModeratedPost(token, {
-    category: typeof b.category === 'string' ? b.category : '',
+    category,
     title: typeof b.title === 'string' ? b.title : '',
     content: typeof b.content === 'string' ? b.content : '',
     image_urls: Array.isArray(b.image_urls) ? b.image_urls.map((x) => String(x)) : [],

@@ -36,7 +36,10 @@ export default async function TradeHubPage() {
     <div className="page-body board-page">
       <div className="board-toolbar">
         <h1 className="board-title">{b.tradeHubTitle}</h1>
-        <Link href="/community/boards" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
+        <Link
+          href="/community/boards?scope=general"
+          style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}
+        >
           {b.tradeAllBoards}
         </Link>
       </div>
@@ -44,10 +47,18 @@ export default async function TradeHubPage() {
         <p style={{ margin: 0, fontSize: '0.92rem', lineHeight: 1.55 }}>{b.tradeHubIntro}</p>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <Link href="/community/boards?cat=flea" className="board-post" style={{ display: 'block' }}>
+        <Link
+          href="/community/boards?scope=trade&cat=flea"
+          className="board-post"
+          style={{ display: 'block' }}
+        >
           <span className="board-post__title">{b.tradeFleaCta}</span>
         </Link>
-        <Link href="/community/boards?cat=job" className="board-post" style={{ display: 'block' }}>
+        <Link
+          href="/community/boards?scope=trade&cat=job"
+          className="board-post"
+          style={{ display: 'block' }}
+        >
           <span className="board-post__title">{b.tradeJobCta}</span>
         </Link>
       </div>

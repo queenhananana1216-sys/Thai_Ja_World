@@ -15,6 +15,22 @@ export type {
   MergedHeroSiteCopy,
   SiteCopyHomeKey,
 } from '@/lib/siteCopy/heroCopyDefaults';
+
+const AI_STYLE_BLOCK_PATTERNS = [
+  /for\s+local\s+partners/i,
+  /광고\s*상품/i,
+  /광고\s*문의/i,
+  /광고주\s*qr/i,
+  /브랜드\s*신뢰/i,
+  /qr\s*유입/i,
+];
+
+function sanitizeHomeCopy(value: string | undefined, fallback: string): string {
+  const text = value?.trim();
+  if (!text) return fallback;
+  if (AI_STYLE_BLOCK_PATTERNS.some((re) => re.test(text))) return fallback;
+  return text;
+}
 export {
   DREAM_HOME_SITE_COPY_KEYS,
   HERO_SITE_COPY_KEYS,
@@ -37,47 +53,47 @@ export async function fetchMergedHeroSiteCopy(): Promise<MergedHeroSiteCopy> {
       return defaults;
     }
 
-    const row = (k: string, loc: string) =>
-      data.find((r) => r.key === k && r.locale === loc)?.value?.trim();
+    const row = (k: string, loc: string, fallback: string) =>
+      sanitizeHomeCopy(data.find((r) => r.key === k && r.locale === loc)?.value, fallback);
 
     return {
-      brandTai: row('home_hero_brand_tai', 'ko') || defaults.brandTai,
-      brandMid: row('home_hero_brand_mid', 'ko') || defaults.brandMid,
-      brandSuffix: row('home_hero_brand_suffix', 'ko') || defaults.brandSuffix,
-      titleKo: row('home_hero_title', 'ko') || defaults.titleKo,
-      titleTh: row('home_hero_title', 'th') || defaults.titleTh,
-      tagKo: row('home_hero_tag', 'ko') || defaults.tagKo,
-      tagTh: row('home_hero_tag', 'th') || defaults.tagTh,
-      heroKickerKo: row('home_hero_kicker', 'ko') || defaults.heroKickerKo,
-      heroKickerTh: row('home_hero_kicker', 'th') || defaults.heroKickerTh,
-      heroLeadKo: row('home_hero_lead', 'ko') || defaults.heroLeadKo,
-      heroLeadTh: row('home_hero_lead', 'th') || defaults.heroLeadTh,
-      heroSubKo: row('home_hero_sub', 'ko') || defaults.heroSubKo,
-      heroSubTh: row('home_hero_sub', 'th') || defaults.heroSubTh,
-      guestPublicLabelKo: row('home_guest_public_label', 'ko') || defaults.guestPublicLabelKo,
-      guestPublicLabelTh: row('home_guest_public_label', 'th') || defaults.guestPublicLabelTh,
-      guestPublicBodyKo: row('home_guest_public_body', 'ko') || defaults.guestPublicBodyKo,
-      guestPublicBodyTh: row('home_guest_public_body', 'th') || defaults.guestPublicBodyTh,
-      guestMemberLabelKo: row('home_guest_member_label', 'ko') || defaults.guestMemberLabelKo,
-      guestMemberLabelTh: row('home_guest_member_label', 'th') || defaults.guestMemberLabelTh,
-      guestMemberBodyKo: row('home_guest_member_body', 'ko') || defaults.guestMemberBodyKo,
-      guestMemberBodyTh: row('home_guest_member_body', 'th') || defaults.guestMemberBodyTh,
-      guestLoginCtaKo: row('home_guest_login_cta', 'ko') || defaults.guestLoginCtaKo,
-      guestLoginCtaTh: row('home_guest_login_cta', 'th') || defaults.guestLoginCtaTh,
-      hotLabelKo: row('home_hot_label', 'ko') || defaults.hotLabelKo,
-      hotLabelTh: row('home_hot_label', 'th') || defaults.hotLabelTh,
-      hotFootnoteKo: row('home_hot_footnote', 'ko') || defaults.hotFootnoteKo,
-      hotFootnoteTh: row('home_hot_footnote', 'th') || defaults.hotFootnoteTh,
-      dreamIntroKo: row('home_dream_intro', 'ko') || defaults.dreamIntroKo,
-      dreamIntroTh: row('home_dream_intro', 'th') || defaults.dreamIntroTh,
-      dreamMinihomeKo: row('home_dream_minihome', 'ko') || defaults.dreamMinihomeKo,
-      dreamMinihomeTh: row('home_dream_minihome', 'th') || defaults.dreamMinihomeTh,
-      dreamMidKo: row('home_dream_mid', 'ko') || defaults.dreamMidKo,
-      dreamMidTh: row('home_dream_mid', 'th') || defaults.dreamMidTh,
-      dreamPersonalKo: row('home_dream_personal', 'ko') || defaults.dreamPersonalKo,
-      dreamPersonalTh: row('home_dream_personal', 'th') || defaults.dreamPersonalTh,
-      dreamOutroKo: row('home_dream_outro', 'ko') || defaults.dreamOutroKo,
-      dreamOutroTh: row('home_dream_outro', 'th') || defaults.dreamOutroTh,
+      brandTai: row('home_hero_brand_tai', 'ko', defaults.brandTai),
+      brandMid: row('home_hero_brand_mid', 'ko', defaults.brandMid),
+      brandSuffix: row('home_hero_brand_suffix', 'ko', defaults.brandSuffix),
+      titleKo: row('home_hero_title', 'ko', defaults.titleKo),
+      titleTh: row('home_hero_title', 'th', defaults.titleTh),
+      tagKo: row('home_hero_tag', 'ko', defaults.tagKo),
+      tagTh: row('home_hero_tag', 'th', defaults.tagTh),
+      heroKickerKo: row('home_hero_kicker', 'ko', defaults.heroKickerKo),
+      heroKickerTh: row('home_hero_kicker', 'th', defaults.heroKickerTh),
+      heroLeadKo: row('home_hero_lead', 'ko', defaults.heroLeadKo),
+      heroLeadTh: row('home_hero_lead', 'th', defaults.heroLeadTh),
+      heroSubKo: row('home_hero_sub', 'ko', defaults.heroSubKo),
+      heroSubTh: row('home_hero_sub', 'th', defaults.heroSubTh),
+      guestPublicLabelKo: row('home_guest_public_label', 'ko', defaults.guestPublicLabelKo),
+      guestPublicLabelTh: row('home_guest_public_label', 'th', defaults.guestPublicLabelTh),
+      guestPublicBodyKo: row('home_guest_public_body', 'ko', defaults.guestPublicBodyKo),
+      guestPublicBodyTh: row('home_guest_public_body', 'th', defaults.guestPublicBodyTh),
+      guestMemberLabelKo: row('home_guest_member_label', 'ko', defaults.guestMemberLabelKo),
+      guestMemberLabelTh: row('home_guest_member_label', 'th', defaults.guestMemberLabelTh),
+      guestMemberBodyKo: row('home_guest_member_body', 'ko', defaults.guestMemberBodyKo),
+      guestMemberBodyTh: row('home_guest_member_body', 'th', defaults.guestMemberBodyTh),
+      guestLoginCtaKo: row('home_guest_login_cta', 'ko', defaults.guestLoginCtaKo),
+      guestLoginCtaTh: row('home_guest_login_cta', 'th', defaults.guestLoginCtaTh),
+      hotLabelKo: row('home_hot_label', 'ko', defaults.hotLabelKo),
+      hotLabelTh: row('home_hot_label', 'th', defaults.hotLabelTh),
+      hotFootnoteKo: row('home_hot_footnote', 'ko', defaults.hotFootnoteKo),
+      hotFootnoteTh: row('home_hot_footnote', 'th', defaults.hotFootnoteTh),
+      dreamIntroKo: row('home_dream_intro', 'ko', defaults.dreamIntroKo),
+      dreamIntroTh: row('home_dream_intro', 'th', defaults.dreamIntroTh),
+      dreamMinihomeKo: row('home_dream_minihome', 'ko', defaults.dreamMinihomeKo),
+      dreamMinihomeTh: row('home_dream_minihome', 'th', defaults.dreamMinihomeTh),
+      dreamMidKo: row('home_dream_mid', 'ko', defaults.dreamMidKo),
+      dreamMidTh: row('home_dream_mid', 'th', defaults.dreamMidTh),
+      dreamPersonalKo: row('home_dream_personal', 'ko', defaults.dreamPersonalKo),
+      dreamPersonalTh: row('home_dream_personal', 'th', defaults.dreamPersonalTh),
+      dreamOutroKo: row('home_dream_outro', 'ko', defaults.dreamOutroKo),
+      dreamOutroTh: row('home_dream_outro', 'th', defaults.dreamOutroTh),
     };
   } catch {
     return defaults;

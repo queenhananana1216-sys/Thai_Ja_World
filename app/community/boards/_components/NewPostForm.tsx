@@ -6,7 +6,8 @@ import type { Locale } from '@/i18n/types';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { boardModMessage } from '@/lib/community/moderationMessages';
 import {
-  categoryOptionsForPosting,
+  categoryOptionsForPostingByScope,
+  type BoardScope,
   type PostCategorySlug,
 } from '@/lib/community/postCategories';
 import { createBrowserClient } from '@/lib/supabase/client';
@@ -19,13 +20,15 @@ export default function NewPostForm({
   locale,
   board,
   defaultCategory,
+  scope,
 }: {
   locale: Locale;
   board: Dictionary['board'];
   defaultCategory?: PostCategorySlug | null;
+  scope: BoardScope | null;
 }) {
   const router = useRouter();
-  const cats = categoryOptionsForPosting(locale);
+  const cats = categoryOptionsForPostingByScope(locale, scope);
   const initialCat =
     defaultCategory && cats.some((c) => c.value === defaultCategory)
       ? defaultCategory
@@ -46,9 +49,12 @@ export default function NewPostForm({
       data: { user },
       error: userErr,
     } = await sb.auth.getUser();
+    const loginNext = scope
+      ? `/community/boards/new?scope=${scope}`
+      : '/community/boards/new';
     if (userErr || !user) {
       setLoading(false);
-      router.push('/auth/login?next=/community/boards/new');
+      router.push(`/auth/login?next=${encodeURIComponent(loginNext)}`);
       return;
     }
 
@@ -56,7 +62,7 @@ export default function NewPostForm({
     const list = files ? Array.from(files).slice(0, 3) : [];
     for (const file of list) {
       if (file.size > 4 * 1024 * 1024) {
-        setError('각 사진은 4MB 이하로 올려 주세요.');
+        setError(board.imageTooLarge);
         setLoading(false);
         return;
       }
@@ -66,7 +72,7 @@ export default function NewPostForm({
         upsert: false,
       });
       if (upErr) {
-        setError(`이미지 업로드 실패: ${upErr.message} (Supabase에 post-images 버킷·정책·컬럼 image_urls 적용 여부 확인)`);
+        setError(board.imageUploadFailed);
         setLoading(false);
         return;
       }
@@ -79,7 +85,7 @@ export default function NewPostForm({
     if (!accessToken) {
       setLoading(false);
       setError(board.mod.auth);
-      router.push('/auth/login?next=/community/boards/new');
+      router.push(`/auth/login?next=${encodeURIComponent(loginNext)}`);
       return;
     }
 
@@ -90,6 +96,7 @@ export default function NewPostForm({
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
+        scope,
         category,
         title: title.trim(),
         content: content.trim(),

@@ -17,7 +17,7 @@ const QUICK_HREFS = [
   '/',
   '/local',
   '/community/boards',
-  '/community/boards?cat=info',
+  '/community/boards?scope=general&cat=info',
   '/community/trade',
   '/ilchon',
   '/minihome',
@@ -342,10 +342,10 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
 
           <div className="global-header__search-footer">
             <Link href="/auth/login" className="global-header__search-footer-link" onClick={close}>
-              {locale === 'th' ? 'เข้าสู่ระบบเพื่ออ่านและแสดงความคิดเห็น' : '로그인하고 글·댓글 열기'}
+              {s.footerLoginCta}
             </Link>
             <Link href="/community/boards" className="global-header__search-footer-link" onClick={close}>
-              {locale === 'th' ? 'ดูบอร์ดทั้งหมด' : '광장 전체 보기'}
+              {s.footerBoardsCta}
             </Link>
           </div>
         </div>

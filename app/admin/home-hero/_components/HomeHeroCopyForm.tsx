@@ -109,13 +109,13 @@ export function HomeHeroCopyForm({
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
-        setErr(data.error ?? '저장에 실패했습니다.');
+        setErr(data.error ?? '저장에 실패했어요. 잠시 후 다시 시도해 주세요.');
         return;
       }
-      setMsg('저장했습니다. 레이아웃 캐시를 갱신했어요 — 홈(/)을 새로고침하면 히어로·안내 문구가 바뀐 걸 볼 수 있어요.');
+      setMsg('저장 완료. 레이아웃 캐시도 갱신했어요. 홈(/) 새로고침 시 변경 문구가 바로 반영됩니다.');
       router.refresh();
     } catch {
-      setErr('네트워크 오류입니다.');
+      setErr('네트워크 연결이 불안정해요. 잠시 후 다시 시도해 주세요.');
     } finally {
       setBusy(false);
     }

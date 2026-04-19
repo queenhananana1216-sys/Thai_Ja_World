@@ -29,6 +29,20 @@ type ProfileRow = {
   signup_greeting_done: boolean;
 };
 
+type AlbumRow = {
+  id: string;
+  title: string;
+  sort_order: number;
+};
+
+type PhotoRow = {
+  id: string;
+  album_id: string;
+  storage_path: string;
+  caption: string | null;
+  sort_order: number;
+};
+
 export default function MinihomeMe() {
   const { d } = useClientLocaleDictionary();
   const labels = d.minihome;
@@ -49,6 +63,13 @@ export default function MinihomeMe() {
   const [greetBusy, setGreetBusy] = useState(false);
   const [greetErr, setGreetErr] = useState<string | null>(null);
   const [greetJustDone, setGreetJustDone] = useState(false);
+  const [albums, setAlbums] = useState<(AlbumRow & { photos: PhotoRow[] })[]>([]);
+  const [albumTitle, setAlbumTitle] = useState('');
+  const [photoAlbumId, setPhotoAlbumId] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [photoCaption, setPhotoCaption] = useState('');
+  const [albumBusy, setAlbumBusy] = useState(false);
+  const [albumMsg, setAlbumMsg] = useState<string | null>(null);
 
   const loadRow = useCallback(async () => {
     const sb = createBrowserClient();
@@ -124,6 +145,49 @@ export default function MinihomeMe() {
     };
   }, [loadRow, loadProfile]);
 
+  const loadAlbums = useCallback(async () => {
+    const sb = createBrowserClient();
+    const {
+      data: { user },
+    } = await sb.auth.getUser();
+    if (!user) return;
+
+    const { data: albumRows, error: albumErr } = await sb
+      .from('minihome_photo_albums')
+      .select('id, title, sort_order')
+      .eq('owner_id', user.id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (albumErr || !albumRows?.length) {
+      setAlbums([]);
+      setPhotoAlbumId('');
+      return;
+    }
+
+    const list = albumRows as AlbumRow[];
+    const ids = list.map((a) => a.id);
+    const { data: photoRows } = await sb
+      .from('minihome_photos')
+      .select('id, album_id, storage_path, caption, sort_order')
+      .in('album_id', ids)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    const photos = (photoRows ?? []) as PhotoRow[];
+    const merged = list.map((a) => ({
+      ...a,
+      photos: photos.filter((p) => p.album_id === a.id),
+    }));
+
+    setAlbums(merged);
+    setPhotoAlbumId((prev) => (prev && merged.some((m) => m.id === prev) ? prev : merged[0]?.id ?? ''));
+  }, []);
+
+  useEffect(() => {
+    void loadAlbums();
+  }, [loadAlbums]);
+
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
     if (!row) return;
@@ -185,6 +249,87 @@ export default function MinihomeMe() {
     setProf(p);
     const next = await loadRow();
     if (next) setRow(next);
+  }
+
+  async function onAddAlbum(e: React.FormEvent) {
+    e.preventDefault();
+    const title = albumTitle.trim();
+    if (!title) return;
+    setAlbumBusy(true);
+    setAlbumMsg(null);
+    const sb = createBrowserClient();
+    const {
+      data: { user },
+    } = await sb.auth.getUser();
+    if (!user) {
+      setAlbumBusy(false);
+      return;
+    }
+    const { error } = await sb.from('minihome_photo_albums').insert({
+      owner_id: user.id,
+      title,
+      sort_order: albums.length,
+    });
+    setAlbumBusy(false);
+    if (error) {
+      setAlbumMsg(error.message);
+      return;
+    }
+    setAlbumTitle('');
+    setAlbumMsg(labels.albumCreateDone);
+    await loadAlbums();
+  }
+
+  async function onAddPhoto(e: React.FormEvent) {
+    e.preventDefault();
+    const url = photoUrl.trim();
+    if (!photoAlbumId || !url) return;
+    setAlbumBusy(true);
+    setAlbumMsg(null);
+    const target = albums.find((a) => a.id === photoAlbumId);
+    const { error } = await createBrowserClient().from('minihome_photos').insert({
+      album_id: photoAlbumId,
+      storage_path: url,
+      caption: photoCaption.trim() || null,
+      sort_order: target?.photos.length ?? 0,
+    });
+    setAlbumBusy(false);
+    if (error) {
+      setAlbumMsg(error.message);
+      return;
+    }
+    setPhotoUrl('');
+    setPhotoCaption('');
+    setAlbumMsg(labels.photoAddDone);
+    await loadAlbums();
+  }
+
+  async function onDeletePhoto(photoId: string) {
+    if (!confirm(labels.photoDeleteAsk)) return;
+    setAlbumBusy(true);
+    setAlbumMsg(null);
+    const { error } = await createBrowserClient().from('minihome_photos').delete().eq('id', photoId);
+    setAlbumBusy(false);
+    if (error) {
+      setAlbumMsg(error.message);
+      return;
+    }
+    setAlbumMsg(labels.photoDeleteDone);
+    await loadAlbums();
+  }
+
+  async function onDeleteAlbum(albumId: string) {
+    if (!confirm(labels.albumDeleteAsk)) return;
+    setAlbumBusy(true);
+    setAlbumMsg(null);
+    const { error } = await createBrowserClient().from('minihome_photo_albums').delete().eq('id', albumId);
+    setAlbumBusy(false);
+    if (error) {
+      setAlbumMsg(error.message);
+      return;
+    }
+    setAlbumMsg(labels.albumDeleteDone);
+    await loadAlbums();
   }
 
   if (loading) {
@@ -337,6 +482,103 @@ export default function MinihomeMe() {
         <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.55, color: 'var(--tj-muted)' }}>
           {labels.previewPanelsHint}
         </p>
+      </div>
+
+      <div className="card" style={{ padding: 18, marginTop: 22 }}>
+        <h2 className="minihome-edit-form__h" style={{ marginTop: 0 }}>
+          {labels.albumManagerTitle}
+        </h2>
+        <p className="minihome-edit-form__hint">{labels.albumManagerHint}</p>
+        {albumMsg ? (
+          <p className={albumMsg.includes('Done') || albumMsg.includes('완료') ? 'auth-field-hint' : 'auth-inline-error'}>
+            {albumMsg}
+          </p>
+        ) : null}
+
+        <form className="board-form" onSubmit={(e) => void onAddAlbum(e)} style={{ gap: 10 }}>
+          <label htmlFor="mh-album-title">{labels.albumTitleLabel}</label>
+          <input
+            id="mh-album-title"
+            value={albumTitle}
+            onChange={(e) => setAlbumTitle(e.target.value)}
+            maxLength={80}
+            placeholder={labels.albumTitlePlaceholder}
+          />
+          <button type="submit" className="board-form__submit" disabled={albumBusy}>
+            {labels.albumCreateButton}
+          </button>
+        </form>
+
+        <form className="board-form" onSubmit={(e) => void onAddPhoto(e)} style={{ gap: 10, marginTop: 16 }}>
+          <label htmlFor="mh-photo-album">{labels.photoAlbumLabel}</label>
+          <select
+            id="mh-photo-album"
+            value={photoAlbumId}
+            onChange={(e) => setPhotoAlbumId(e.target.value)}
+            disabled={albumBusy || albums.length === 0}
+          >
+            {albums.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.title}
+              </option>
+            ))}
+          </select>
+          <label htmlFor="mh-photo-url">{labels.photoUrlLabel}</label>
+          <input
+            id="mh-photo-url"
+            type="url"
+            value={photoUrl}
+            onChange={(e) => setPhotoUrl(e.target.value)}
+            placeholder="https://"
+          />
+          <label htmlFor="mh-photo-caption">{labels.photoCaptionLabel}</label>
+          <input
+            id="mh-photo-caption"
+            value={photoCaption}
+            onChange={(e) => setPhotoCaption(e.target.value)}
+            maxLength={200}
+            placeholder={labels.photoCaptionPlaceholder}
+          />
+          <button type="submit" className="board-form__submit" disabled={albumBusy || !albums.length}>
+            {labels.photoAddButton}
+          </button>
+        </form>
+
+        <div style={{ marginTop: 16, display: 'grid', gap: 12 }}>
+          {albums.length === 0 ? (
+            <p className="auth-field-hint">{labels.albumEmpty}</p>
+          ) : (
+            albums.map((album) => (
+              <section key={album.id} style={{ border: '1px solid var(--tj-line)', borderRadius: 10, padding: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <strong>{album.title}</strong>
+                  <button type="button" className="board-form__submit" onClick={() => void onDeleteAlbum(album.id)} disabled={albumBusy}>
+                    {labels.albumDeleteButton}
+                  </button>
+                </div>
+                {album.photos.length === 0 ? (
+                  <p className="auth-field-hint" style={{ marginTop: 8 }}>
+                    {labels.photoEmpty}
+                  </p>
+                ) : (
+                  <ul style={{ margin: '10px 0 0', padding: 0, listStyle: 'none', display: 'grid', gap: 8 }}>
+                    {album.photos.map((p) => (
+                      <li key={p.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 12, wordBreak: 'break-all' }}>{p.storage_path}</div>
+                          {p.caption ? <div style={{ fontSize: 12, color: 'var(--tj-muted)' }}>{p.caption}</div> : null}
+                        </div>
+                        <button type="button" className="board-form__submit" onClick={() => void onDeletePhoto(p.id)} disabled={albumBusy}>
+                          {labels.photoDeleteButton}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

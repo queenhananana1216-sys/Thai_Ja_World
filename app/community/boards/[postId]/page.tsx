@@ -11,6 +11,7 @@ import { getLocale } from '@/i18n/get-locale';
 import JsonLd from '@/lib/seo/JsonLd';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { formatDate } from '@/lib/utils/formatDate';
+import { normalizeUserFacingText } from '@/lib/content/humanizeText';
 
 type PageProps = { params: Promise<{ postId: string }> };
 
@@ -31,11 +32,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const noIndex = Boolean(post.author_hidden);
-  const description = trimForMetaDescription(String(post.content ?? ''));
+  const description = trimForMetaDescription(
+    normalizeUserFacingText(String(post.content ?? ''), { maxLen: 8000 }),
+  );
   const url = absoluteUrl(`/community/boards/${postId}`);
   const images = Array.isArray(post.image_urls) ? (post.image_urls as string[]) : [];
   const ogImage = typeof images[0] === 'string' ? images[0] : undefined;
-  const titleStr = String(post.title ?? '');
+  const titleStr = normalizeUserFacingText(String(post.title ?? ''), { maxLen: 200 });
 
   return {
     title: titleStr,
@@ -132,9 +135,14 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
         data={{
           '@context': 'https://schema.org',
           '@type': 'DiscussionForumPosting',
-          headline: post.title as string,
+          headline: normalizeUserFacingText(post.title as string, { maxLen: 200 }),
           ...(post.content
-            ? { text: trimForMetaDescription(post.content as string, 8000) }
+            ? {
+                text: trimForMetaDescription(
+                  normalizeUserFacingText(post.content as string, { maxLen: 8000 }),
+                  8000,
+                ),
+              }
             : {}),
           datePublished: post.created_at as string,
           url: pageUrl,
@@ -173,10 +181,10 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
         ) : null}
         <PostReactionsPanel postId={postId} loginNextPath={path} />
         <h1 className="board-title" style={{ margin: '12px 0 16px' }}>
-          {post.title as string}
+          {normalizeUserFacingText(post.title as string, { maxLen: 200 })}
         </h1>
         <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.95rem', lineHeight: 1.65 }}>
-          {post.content as string}
+          {normalizeUserFacingText(post.content as string, { maxLen: 20000 })}
         </div>
         {images.map((url) => (
           // eslint-disable-next-line @next/next/no-img-element

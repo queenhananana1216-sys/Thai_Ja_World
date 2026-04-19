@@ -43,6 +43,12 @@ type PhotoRow = {
   sort_order: number;
 };
 
+function looksLikeMissingColumnError(message: string | undefined): boolean {
+  if (!message) return false;
+  const m = message.toLowerCase();
+  return m.includes('column') && m.includes('does not exist');
+}
+
 export default function MinihomeMe() {
   const { d } = useClientLocaleDictionary();
   const labels = d.minihome;
@@ -87,13 +93,45 @@ export default function MinihomeMe() {
         .eq('owner_id', user.id)
         .maybeSingle();
 
+    const qLegacy = () =>
+      sb
+        .from('user_minihomes')
+        .select('owner_id, public_slug, title, tagline, theme, is_public')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+
     let { data, error } = await q();
+    if (error && looksLikeMissingColumnError(error.message)) {
+      // 운영 DB 마이그레이션이 늦게 반영된 경우를 대비한 레거시 폴백
+      const legacy = await qLegacy();
+      if (!legacy.error && legacy.data) {
+        return { ...(legacy.data as Omit<Row, 'intro_body'>), intro_body: null };
+      }
+      return null;
+    }
     if (error) return null;
 
     if (!data) {
       const { error: rpcErr } = await sb.rpc('ensure_my_minihome');
-      if (rpcErr) return null;
+      if (rpcErr) {
+        // RPC가 아직 배포되지 않았어도 기존 row가 있으면 다시 읽어본다.
+        const retry = await q();
+        if (!retry.error && retry.data) return retry.data as Row;
+        if (retry.error && looksLikeMissingColumnError(retry.error.message)) {
+          const legacyRetry = await qLegacy();
+          if (!legacyRetry.error && legacyRetry.data) {
+            return { ...(legacyRetry.data as Omit<Row, 'intro_body'>), intro_body: null };
+          }
+        }
+        return null;
+      }
       ({ data, error } = await q());
+      if (error && looksLikeMissingColumnError(error.message)) {
+        const legacyRetry = await qLegacy();
+        if (!legacyRetry.error && legacyRetry.data) {
+          return { ...(legacyRetry.data as Omit<Row, 'intro_body'>), intro_body: null };
+        }
+      }
       if (error || !data) return null;
     }
 

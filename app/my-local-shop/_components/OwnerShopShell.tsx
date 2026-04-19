@@ -22,30 +22,21 @@ export default function OwnerShopShell({
   const base = `/my-local-shop/${spot.id}`;
 
   return (
-    <div
-      style={{
-        maxWidth: 960,
-        margin: '0 auto',
-        padding: '20px 16px 48px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 20,
-      }}
-    >
-      <header>
-        <p style={{ margin: '0 0 8px' }}>
-          <Link href="/my-local-shop" style={{ fontSize: 13, color: 'var(--tj-link, #7c3aed)' }}>
+    <div className="owner-shop-shell">
+      <header className="owner-shop-shell__header">
+        <p className="owner-shop-shell__back-wrap">
+          <Link href="/my-local-shop" className="owner-shop-shell__back">
             ← 내 가게 목록
           </Link>
         </p>
-        <h1 style={{ fontSize: '1.35rem', margin: '0 0 6px' }}>{spot.name}</h1>
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--tj-muted, #64748b)' }}>
+        <h1 className="owner-shop-shell__title">{spot.name}</h1>
+        <p className="owner-shop-shell__meta">
           내 가게 관리
           {spot.minihome_public_slug ? (
             <>
               {' '}
               ·{' '}
-              <Link href={`/shop/${spot.minihome_public_slug}`} style={{ color: 'var(--tj-link, #7c3aed)' }}>
+              <Link href={`/shop/${spot.minihome_public_slug}`} className="owner-shop-shell__public-link">
                 공개 미니홈 보기
               </Link>
             </>
@@ -55,17 +46,7 @@ export default function OwnerShopShell({
         </p>
       </header>
 
-      <nav
-        aria-label="가게 관리 메뉴"
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 8,
-          padding: '10px 0',
-          borderTop: '1px solid var(--tj-border, #e2e8f0)',
-          borderBottom: '1px solid var(--tj-border, #e2e8f0)',
-        }}
-      >
+      <nav aria-label="가게 관리 메뉴" className="owner-shop-shell__nav">
         {OWNER_SHOP_NAV.map(({ segment, label }) => {
           const href = segment ? `${base}/${segment}` : base;
           const active =
@@ -76,15 +57,10 @@ export default function OwnerShopShell({
             <Link
               key={segment || 'overview'}
               href={href}
-              style={{
-                fontSize: 13,
-                fontWeight: active ? 700 : 500,
-                padding: '6px 12px',
-                borderRadius: 999,
-                textDecoration: 'none',
-                background: active ? 'rgba(124, 58, 237, 0.12)' : 'rgba(148, 163, 184, 0.12)',
-                color: active ? 'var(--tj-link, #6d28d9)' : 'var(--tj-ink, #334155)',
-              }}
+              className={
+                'owner-shop-shell__nav-link' +
+                (active ? ' owner-shop-shell__nav-link--active' : '')
+              }
             >
               {label}
             </Link>
@@ -92,7 +68,7 @@ export default function OwnerShopShell({
         })}
       </nav>
 
-      <main>{children}</main>
+      <main className="owner-shop-shell__main">{children}</main>
     </div>
   );
 }

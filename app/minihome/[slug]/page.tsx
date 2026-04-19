@@ -6,6 +6,12 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import type { MinihomePublicRow } from '@/types/minihome';
 
+function looksLikeMissingColumnError(message: string | undefined): boolean {
+  if (!message) return false;
+  const m = message.toLowerCase();
+  return m.includes('column') && m.includes('does not exist');
+}
+
 export default async function MinihomePublicPage({
   params,
 }: {
@@ -23,11 +29,29 @@ export default async function MinihomePublicPage({
     .eq('public_slug', slug)
     .maybeSingle();
 
-  if (error || !data || !data.is_public) notFound();
+  let resolved = data;
+  let resolvedError = error;
+  if (resolvedError && looksLikeMissingColumnError(resolvedError.message)) {
+    const legacy = await supabase
+      .from('user_minihomes')
+      .select('owner_id, public_slug, title, tagline, theme, is_public')
+      .eq('public_slug', slug)
+      .maybeSingle();
+    resolved = legacy.data
+      ? {
+          ...legacy.data,
+          intro_body: null,
+          layout_modules: ['intro', 'guestbook', 'photos'],
+        }
+      : null;
+    resolvedError = legacy.error;
+  }
+
+  if (resolvedError || !resolved || !resolved.is_public) notFound();
 
   const locale = await getLocale();
   const d = getDictionary(locale);
-  const row = data as MinihomePublicRow;
+  const row = resolved as MinihomePublicRow;
 
   return (
     <div className="page-body board-page minihome-public-page">

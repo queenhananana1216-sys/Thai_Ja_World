@@ -3726,6 +3726,215 @@ a:hover {
 }
 
 /* -------------------------------------------------------------------------- */
+/* 로컬 미니홈 오너 관리 (/my-local-shop) — 개인 미니홈 톤과 통일 */
+/* -------------------------------------------------------------------------- */
+
+.owner-shop-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.owner-shop-page__title {
+  font-size: 1.32rem;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+
+.owner-shop-page__lead {
+  margin: 0 0 20px;
+  font-size: 0.9rem;
+  color: var(--tj-muted);
+  line-height: 1.6;
+}
+
+.owner-shop-hub {
+  display: grid;
+  gap: 12px;
+}
+
+.owner-shop-hub__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.owner-shop-hub__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.owner-shop-hub__item-main {
+  min-width: 0;
+}
+
+.owner-shop-hub__name {
+  display: block;
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--tj-ink);
+}
+
+.owner-shop-hub__meta {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--tj-muted);
+}
+
+.owner-shop-hub__manage {
+  text-decoration: none;
+}
+
+.owner-shop-hub__manage:hover {
+  text-decoration: none;
+}
+
+.owner-shop-hub__link {
+  color: var(--tj-link);
+  font-weight: 600;
+}
+
+.owner-shop-hub__link:hover {
+  text-decoration: underline;
+}
+
+.owner-shop-hub__gate {
+  padding: 20px;
+}
+
+.owner-shop-hub__gate-msg {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+}
+
+.owner-shop-hub__muted {
+  margin: 0;
+  color: var(--tj-muted);
+  font-size: 0.88rem;
+}
+
+.owner-shop-hub__error {
+  margin: 0;
+  color: #be123c;
+  font-size: 0.86rem;
+}
+
+.owner-shop-shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+  display: grid;
+  gap: 16px;
+}
+
+.owner-shop-shell__header {
+  display: grid;
+  gap: 6px;
+}
+
+.owner-shop-shell__back-wrap {
+  margin: 0;
+}
+
+.owner-shop-shell__back {
+  font-size: 0.8rem;
+  color: var(--tj-link);
+}
+
+.owner-shop-shell__title {
+  margin: 0;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+.owner-shop-shell__meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--tj-muted);
+  line-height: 1.5;
+}
+
+.owner-shop-shell__public-link {
+  color: var(--tj-link);
+  font-weight: 600;
+}
+
+.owner-shop-shell__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--tj-line);
+  border-bottom: 1px solid var(--tj-line);
+}
+
+.owner-shop-shell__nav-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  text-decoration: none;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--tj-ink);
+}
+
+.owner-shop-shell__nav-link:hover {
+  text-decoration: none;
+  background: rgba(124, 58, 237, 0.12);
+}
+
+.owner-shop-shell__nav-link--active {
+  background: rgba(124, 58, 237, 0.18);
+  color: var(--tj-link);
+  font-weight: 800;
+}
+
+.owner-shop-shell__main {
+  display: grid;
+  gap: 14px;
+}
+
+.owner-shop-overview {
+  display: grid;
+  gap: 12px;
+}
+
+.owner-shop-overview__lead {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--tj-muted);
+  line-height: 1.6;
+}
+
+.owner-shop-overview__list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.86rem;
+  line-height: 1.65;
+  color: #475569;
+}
+
+.owner-shop-overview__advanced {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.owner-shop-overview__advanced-link {
+  color: var(--tj-link);
+  font-weight: 700;
+}
+
+.owner-shop-overview__advanced-hint {
+  color: #94a3b8;
+}
+
+/* -------------------------------------------------------------------------- */
 /* 일촌 (/ilchon) + 미니홈 일촌 신청 모달 */
 /* -------------------------------------------------------------------------- */
 

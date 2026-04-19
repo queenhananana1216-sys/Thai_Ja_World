@@ -200,7 +200,7 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
           inset: 0,
           zIndex: -10,
           background:
-            'linear-gradient(115deg, rgba(7,9,26,0.9) 18%, rgba(20,16,44,0.72) 55%, rgba(38,17,54,0.55) 100%)',
+            'linear-gradient(115deg, rgba(9,10,28,0.88) 0%, rgba(16,14,36,0.72) 48%, rgba(38,17,54,0.52) 100%)',
         }}
         aria-hidden
       />

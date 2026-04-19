@@ -116,10 +116,10 @@ a:hover {
 }
 
 .global-header__nate-band {
-  background: #ffffff;
-  color: #1a1625;
-  border-bottom: 2px solid #e60012;
-  box-shadow: 0 4px 18px rgba(13, 13, 15, 0.08);
+  background: linear-gradient(180deg, #14121f 0%, var(--tj-landing-canvas) 100%);
+  color: #f8fafc;
+  border-bottom: 1px solid rgba(230, 163, 3, 0.42);
+  box-shadow: 0 18px 40px rgba(3, 4, 14, 0.4);
 }
 
 .global-header__nate-band-inner {
@@ -141,7 +141,7 @@ a:hover {
   display: inline-flex;
   align-items: baseline;
   gap: 0.15em;
-  color: #1a1625;
+  color: #f8fafc;
 }
 
 .global-header__logo-nate:hover {
@@ -152,9 +152,73 @@ a:hover {
 .global-header__logo-suffix-nate {
   font-size: 0.78em;
   font-weight: 600;
-  color: #e60012;
+  color: #fbcfe8;
   letter-spacing: 0.02em;
 }
+
+/* 네이트 띠 다크: 브랜드 가운데 글자·로그인 패널 대비 */
+.global-header__nate-band .brand-phrase__mid {
+  color: #e2e8f0;
+  opacity: 1;
+}
+
+.global-header__nate-band .nate-user-panel {
+  background: rgba(5, 4, 14, 0.72);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 32px rgba(2, 3, 10, 0.55);
+}
+
+.global-header__nate-band .nate-user-panel__name {
+  color: #f1f5f9;
+}
+
+.global-header__nate-band .nate-user-panel__logout {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #e2e8f0;
+}
+
+.global-header__nate-band .nate-user-panel__logout:hover {
+  color: #fecdd3;
+  border-color: rgba(254, 205, 211, 0.45);
+}
+
+.global-header__nate-band .nate-user-panel__subnav-link {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #e2e8f0;
+}
+
+.global-header__nate-band .nate-user-panel__subnav-link:hover {
+  color: #fecdd3;
+  border-color: rgba(254, 205, 211, 0.45);
+}
+
+.global-header__nate-band .nate-user-panel__btn--outline {
+  background: rgba(255, 255, 255, 0.04);
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.global-header__nate-band .nate-user-panel__btn--outline:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.global-header__nate-band .nate-user-panel--loading {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(8, 6, 18, 0.65);
+}
+
+.global-header__nate-band .nate-user-panel__skeleton-line {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.06)
+  );
+}
+
 
 .global-header__nate-search {
   flex: 1 1 240px;
@@ -191,7 +255,7 @@ a:hover {
   background: linear-gradient(180deg, var(--tj-landing-canvas) 0%, var(--tj-hero-panel) 100%);
   color: #f8f8fa;
   padding: 8px 0 10px;
-  box-shadow: 0 3px 0 var(--tj-museum-saffron), 0 8px 24px rgba(13, 13, 15, 0.35);
+  box-shadow: 0 1px 0 rgba(230, 163, 3, 0.45), 0 16px 40px rgba(3, 4, 14, 0.5);
 }
 
 /* 주 메뉴 줄: 탭 + 통합 검색(로그인 여부와 무관하게 항상 표시) */

@@ -101,13 +101,14 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
         </div>
       </div>
 
-      <nav className="site-container global-header__main-nav" aria-label={dict.nav.mainNavAria}>
-        <div
-          className={
-            'global-header__main-nav-bar' +
-            (hideHeaderSearch ? ' global-header__main-nav-bar--nav-only' : '')
-          }
-        >
+      <nav className="global-header__main-nav" aria-label={dict.nav.mainNavAria}>
+        <div className="site-container">
+          <div
+            className={
+              'global-header__main-nav-bar' +
+              (hideHeaderSearch ? ' global-header__main-nav-bar--nav-only' : '')
+            }
+          >
           {/* 모바일: Sheet 메뉴 + (비홈일 때) 헤더 검색 */}
           <div className="flex w-full items-center gap-2 md:hidden">
             <Sheet>
@@ -193,6 +194,7 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
               </div>
             ) : null}
           </div>
+        </div>
         </div>
       </nav>
     </header>

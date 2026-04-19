@@ -21,7 +21,16 @@ const cardVariants = {
 
 export function ProblemSection() {
   return (
-    <section className="relative overflow-hidden py-24" style={{ position: 'relative', overflow: 'hidden', padding: '52px 0' }}>
+    <section
+      className="relative overflow-hidden py-24"
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        padding: '52px 0',
+        background: 'linear-gradient(180deg, #0b0c18 0%, #111225 52%, #15172e 100%)',
+        color: '#e2e8f0',
+      }}
+    >
       <div
         className="pointer-events-none absolute inset-0 opacity-80"
         aria-hidden

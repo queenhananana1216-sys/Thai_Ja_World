@@ -65,6 +65,13 @@ export default async function LandingPage() {
 
   return (
     <main className="tj-landing-root">
+      {/* 랜딩에서만: 좌우 크림 바디·패턴이 비치지 않도록 (전역 body) */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html:
+            'body:has(main.tj-landing-root){background-color:#090a1c!important;background-image:none!important;}',
+        }}
+      />
       <div
         className="pointer-events-none absolute inset-0 opacity-60"
         aria-hidden

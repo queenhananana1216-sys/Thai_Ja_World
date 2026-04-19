@@ -3,7 +3,13 @@ import { LANDING_TESTIMONIALS } from '@/lib/landing/constants';
 
 export function TestimonialSection() {
   return (
-    <section style={{ padding: '52px 0' }}>
+    <section
+      style={{
+        padding: '52px 0',
+        background: 'linear-gradient(180deg, #101125 0%, #0c0e1c 100%)',
+        color: '#e2e8f0',
+      }}
+    >
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 16px' }}>
         <h2 style={{ margin: 0, color: '#f8fafc', fontSize: 'clamp(24px,4.4vw,36px)', fontWeight: 800 }}>실제 교민들이 남긴 이야기</h2>
         <div style={{ marginTop: 16, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))' }}>

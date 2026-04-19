@@ -2,7 +2,13 @@ import Link from 'next/link';
 
 export function CTASection() {
   return (
-    <section style={{ padding: '46px 0 52px' }}>
+    <section
+      style={{
+        padding: '46px 0 52px',
+        background: 'linear-gradient(180deg, #0c0e1c 0%, #090a16 100%)',
+        color: '#e2e8f0',
+      }}
+    >
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 16px' }}>
         <div
           style={{

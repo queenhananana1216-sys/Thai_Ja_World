@@ -21,7 +21,9 @@
   --tj-lilac-soft: #e8d4f5;
   --tj-rose: #e63946;
   --tj-peach: #ffb703;
-  --tj-header: #0d0d0f;
+  --tj-landing-canvas: #070812;
+  --tj-hero-panel: #090a1c;
+  --tj-header: var(--tj-landing-canvas);
   --tj-header-muted: #c4c8d4;
   --tj-link: #3a56e0;
   --tj-link-hover: #2845c7;
@@ -186,7 +188,7 @@ a:hover {
 }
 
 .global-header__main-nav {
-  background: var(--tj-header);
+  background: linear-gradient(180deg, var(--tj-landing-canvas) 0%, var(--tj-hero-panel) 100%);
   color: #f8f8fa;
   padding: 8px 0 10px;
   box-shadow: 0 3px 0 var(--tj-museum-saffron), 0 8px 24px rgba(13, 13, 15, 0.35);
@@ -2155,7 +2157,7 @@ a:hover {
 .tj-landing-root {
   position: relative;
   overflow: hidden;
-  background: #070812;
+  background: var(--tj-hero-panel);
   color: #f1f5f9;
 }
 

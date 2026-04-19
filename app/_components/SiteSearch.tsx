@@ -14,13 +14,11 @@ import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
 import { sitePathRequiresMemberContent } from '@/lib/search/sitePathAccess';
 
 const QUICK_HREFS = [
-  '/',
-  '/local',
-  '/community/boards',
+  '/hot-issues',
   '/community/boards?scope=general&cat=info',
-  '/community/trade',
-  '/ilchon',
-  '/minihome',
+  '/community/boards?scope=trade&cat=flea',
+  '/community/boards?scope=trade&cat=job',
+  '/community/boards?scope=general',
 ] as const;
 
 type ApiPageHit = {
@@ -344,7 +342,7 @@ export default function SiteSearch({ variant = 'header' }: SiteSearchProps) {
             <Link href="/auth/login" className="global-header__search-footer-link" onClick={close}>
               {s.footerLoginCta}
             </Link>
-            <Link href="/community/boards" className="global-header__search-footer-link" onClick={close}>
+            <Link href="/community/boards?scope=general" className="global-header__search-footer-link" onClick={close}>
               {s.footerBoardsCta}
             </Link>
           </div>

@@ -12,8 +12,6 @@ import { BrandPhrase } from './BrandPhrase';
 import LanguageSwitch from './LanguageSwitch';
 import SiteSearch from './SiteSearch';
 
-const HREFS = ['/', '/tips', '/local', '/community/boards', '/ilchon'] as const;
-
 type Props = {
   dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board'>;
   /** 관리자 화이트리스트(또는 개발용 허용 세션)일 때만 표시 */
@@ -22,7 +20,22 @@ type Props = {
 
 export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
   const pathname = usePathname();
-  const labels = [dict.nav.home, dict.nav.tips, dict.nav.local, dict.nav.community, dict.nav.ilchon];
+  const isThai = dict.lang.th === 'ไทย';
+  const navItems = isThai
+    ? [
+        { href: '/hot-issues', label: 'Thai Ja World ประเด็นร้อน' },
+        { href: '/community/boards?scope=general&cat=info', label: 'Thai Ja World ทิปส์' },
+        { href: '/community/boards?scope=trade&cat=flea', label: 'Thai Ja World ตลาดมือสอง' },
+        { href: '/community/boards?scope=trade&cat=job', label: 'Thai Ja World หางาน' },
+        { href: '/community/boards?scope=general', label: 'Thai Ja World บอร์ดชุมชน' },
+      ]
+    : [
+        { href: '/hot-issues', label: '태자월드 핫 이슈' },
+        { href: '/community/boards?scope=general&cat=info', label: '태자월드 꿀팁' },
+        { href: '/community/boards?scope=trade&cat=flea', label: '태자월드 번개장터' },
+        { href: '/community/boards?scope=trade&cat=job', label: '태자월드 구인구직' },
+        { href: '/community/boards?scope=general', label: '태자월드 게시판' },
+      ];
 
   const authProps = {
     memberNav: {
@@ -74,17 +87,13 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
 
       <nav className="site-container global-header__main-nav" aria-label={dict.nav.mainNavAria}>
         <div className="global-header__nav">
-          {HREFS.map((href, i) => {
+          {navItems.map(({ href, label }) => {
             const isActive =
-              href === '/'
-                ? pathname === '/'
-                : href === '/tips'
-                  ? pathname === '/tips' || pathname.startsWith('/tips/')
-                  : href === '/community/boards'
-                    ? pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade')
-                    : href === '/ilchon'
-                      ? pathname.startsWith('/ilchon')
-                      : pathname.startsWith(href);
+              href === '/hot-issues'
+                ? pathname.startsWith('/hot-issues') || pathname.startsWith('/news/')
+                : href.includes('/community/boards')
+                  ? pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade')
+                  : pathname.startsWith(href);
             return (
               <Link
                 key={href}
@@ -93,7 +102,7 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
                   'global-header__link' + (isActive ? ' global-header__link--active' : '')
                 }
               >
-                {labels[i]}
+                {label}
               </Link>
             );
           })}

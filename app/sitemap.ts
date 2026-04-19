@@ -35,6 +35,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 0.93,
     },
+    {
+      url: `${base}/hot-issues`,
+      lastModified: fallback,
+      changeFrequency: 'daily',
+      priority: 0.92,
+    },
     { url: `${base}/local`, lastModified: fallback, changeFrequency: 'weekly', priority: 0.78 },
     { url: `${base}/minihome`, lastModified: fallback, changeFrequency: 'weekly', priority: 0.62 },
   ];

@@ -16,6 +16,15 @@ export type SiteSearchEntryDef = {
 
 export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
   {
+    href: '/hot-issues',
+    koTitle: '태자월드 핫 이슈',
+    thTitle: 'Thai Ja World ประเด็นร้อน',
+    koHint: '/hot-issues',
+    thHint: '/hot-issues',
+    koBlob: '태자월드 핫 이슈 뉴스 기사 속보 요약 브리핑',
+    thBlob: 'thai ja world ประเด็นร้อน ข่าว สรุปด่วน บทความ',
+  },
+  {
     href: '/',
     koTitle: '홈',
     thTitle: 'หน้าแรก',
@@ -56,8 +65,8 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
   },
   {
     href: '/community/boards?scope=general&cat=info',
-    koTitle: '정보 게시판 (비자 등)',
-    thTitle: 'บอร์ดข้อมูล (วีซ่า ฯลฯ)',
+    koTitle: '태자월드 꿀팁',
+    thTitle: 'Thai Ja World ทิปส์',
     koHint: '예: ㅂㅈ → 비자',
     thHint: 'เช่น พิมพ์ วีซ่า',
     koBlob:
@@ -85,8 +94,8 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
   },
   {
     href: '/community/boards?scope=trade&cat=flea',
-    koTitle: '익명 한줄장 · 중고',
-    thTitle: 'ตลาดบรรทัดเดียว · มือสอง',
+    koTitle: '태자월드 번개장터',
+    thTitle: 'Thai Ja World ตลาดมือสอง',
     koHint: '/community/boards?cat=flea',
     thHint: '/community/boards?cat=flea',
     koBlob: '중고 나눔 장터 플리마켓 한줄장 익명 거래 판매 구매 flea market',
@@ -94,8 +103,8 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
   },
   {
     href: '/community/boards?scope=trade&cat=job',
-    koTitle: '구인구직 · 알바',
-    thTitle: 'หางาน · พาร์ทไทม์',
+    koTitle: '태자월드 구인구직',
+    thTitle: 'Thai Ja World หางาน',
     koHint: '/community/boards?cat=job',
     thHint: '/community/boards?cat=job',
     koBlob: '알바 구인 구직 채용 일자리 아르바이트 job part time',
@@ -118,6 +127,15 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thHint: '/community/boards/new',
     koBlob: '글쓰기 새글 등록 작성 포스트 올리기',
     thBlob: 'โพสต์ เขียน สร้างโพสต์ ใหม่',
+  },
+  {
+    href: '/community/boards?scope=general',
+    koTitle: '태자월드 게시판',
+    thTitle: 'Thai Ja World บอร์ดชุมชน',
+    koHint: '/community/boards?scope=general',
+    thHint: '/community/boards?scope=general',
+    koBlob: '태자월드 게시판 커뮤니티 광장 자유글 생활글 질문',
+    thBlob: 'thai ja world บอร์ดชุมชน ลานคุย โพสต์ทั่วไป',
   },
   {
     href: '/minihome',

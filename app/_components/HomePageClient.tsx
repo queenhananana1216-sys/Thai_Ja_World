@@ -16,23 +16,10 @@ import type { NewsItem, LocalBusiness } from '@/types/taeworld';
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate, extractHostname } from '@/lib/utils/formatDate';
-import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
 
 const HOME_FETCH_BUDGET_MS = 12_000;
 
-const PORTAL_QUICK_HREFS = [
-  '/',
-  '/tips',
-  '/local',
-  '/community/boards',
-  '/community/boards?cat=info',
-  '/community/trade',
-  '/ilchon',
-  '/minihome',
-] as const;
-
-type PortalQuickHref = (typeof PORTAL_QUICK_HREFS)[number];
-type PortalQuickLink = { href: string; label: string; key: PortalQuickHref };
+type PortalQuickLink = { href: string; label: string; key: string };
 
 function loginNextHref(path: string): string {
   return `/auth/login?next=${encodeURIComponent(path)}`;
@@ -257,15 +244,43 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   const hotNewsItems = newsLocalized.slice(0, 5);
   const newsShow = newsLocalized.slice(0, 5);
 
-  const portalQuickLinks = useMemo(() => {
-    return PORTAL_QUICK_HREFS.map((href) => {
-      const e = SITE_SEARCH_ENTRIES.find((x) => x.href === href);
-      if (!e) return null;
-      const label = locale === 'th' ? e.thTitle : e.koTitle;
-      const target =
-        href === '/' || href === '/tips' ? href : isLoggedIn ? href : loginNextHref(href);
-      return { href: target, label, key: href };
-    }).filter((x): x is PortalQuickLink => x !== null);
+  const portalQuickLinks = useMemo<PortalQuickLink[]>(() => {
+    const defs =
+      locale === 'th'
+        ? [
+            { href: '/hot-issues', label: 'Thai Ja World ประเด็นร้อน', key: 'hot' },
+            {
+              href: '/community/boards?scope=general&cat=info',
+              label: 'Thai Ja World ทิปส์',
+              key: 'tips',
+            },
+            {
+              href: '/community/boards?scope=trade&cat=flea',
+              label: 'Thai Ja World ตลาดมือสอง',
+              key: 'flea',
+            },
+            {
+              href: '/community/boards?scope=trade&cat=job',
+              label: 'Thai Ja World หางาน',
+              key: 'job',
+            },
+            {
+              href: '/community/boards?scope=general',
+              label: 'Thai Ja World บอร์ดชุมชน',
+              key: 'board',
+            },
+          ]
+        : [
+            { href: '/hot-issues', label: '태자월드 핫 이슈', key: 'hot' },
+            { href: '/community/boards?scope=general&cat=info', label: '태자월드 꿀팁', key: 'tips' },
+            { href: '/community/boards?scope=trade&cat=flea', label: '태자월드 번개장터', key: 'flea' },
+            { href: '/community/boards?scope=trade&cat=job', label: '태자월드 구인구직', key: 'job' },
+            { href: '/community/boards?scope=general', label: '태자월드 게시판', key: 'board' },
+          ];
+    return defs.map((item) => ({
+      ...item,
+      href: isLoggedIn ? item.href : loginNextHref(item.href),
+    }));
   }, [isLoggedIn, locale]);
 
   useEffect(() => {

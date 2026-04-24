@@ -24,10 +24,20 @@ const SIDE_OFFSETS: Record<Position, CSSProperties> = {
   'bottom-right': { bottom: -80, right: -40 },
 };
 
-export function LandingSplineAccent({ scene, position = 'top-right', height = 220 }: Props) {
+const ACCENT_DIM: Record<Position, { height: number; opacity: number }> = {
+  'top-left': { height: 220, opacity: 0.45 },
+  'top-right': { height: 220, opacity: 0.45 },
+  'bottom-left': { height: 220, opacity: 0.45 },
+  /** 우하단 퍼플 “덩어리”로 읽히지 않게 살짝 낮은 높이·투명도 */
+  'bottom-right': { height: 176, opacity: 0.28 },
+};
+
+export function LandingSplineAccent({ scene, position = 'top-right', height }: Props) {
   if (!scene.isEnabled) return null;
   const hasAny = Boolean(scene.sceneCodeUrl || scene.publishedUrl);
   if (!hasAny) return null;
+  const dim = ACCENT_DIM[position];
+  const h = height ?? dim.height;
 
   return (
     <div
@@ -44,8 +54,8 @@ export function LandingSplineAccent({ scene, position = 'top-right', height = 22
         style={{
           position: 'absolute',
           width: 320,
-          height,
-          opacity: 0.45,
+          height: h,
+          opacity: dim.opacity,
           filter: 'blur(0.5px)',
           ...SIDE_OFFSETS[position],
         }}

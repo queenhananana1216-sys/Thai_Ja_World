@@ -1,5 +1,8 @@
 'use client';
 
+/**
+ * @deprecated 루트 `app/layout.tsx`는 `GlobalNav`를 씁니다. 내보내기·문서용일 뿐 런타임에서 쓰지 않습니다.
+ */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';

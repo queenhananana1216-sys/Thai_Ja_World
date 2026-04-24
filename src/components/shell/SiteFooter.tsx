@@ -9,7 +9,7 @@ const FOOTER_LINKS = {
     { href: '/news', labelKo: '뉴스 스냅샷', labelTh: 'สรุปข่าว' },
     { href: '/tips', labelKo: '꿀팁', labelTh: 'เคล็ดลับ' },
     { href: '/local', labelKo: '로컬', labelTh: 'ท้องถิ่น' },
-    { href: '/community/boards', labelKo: '커뮤니티', labelTh: 'ชุมชน' },
+    { href: '/community/boards', labelKo: '광장', labelTh: 'ลานชุมชน' },
   ],
   social: [
     { href: '/minihome', labelKo: '미니홈', labelTh: 'มินิโฮม' },

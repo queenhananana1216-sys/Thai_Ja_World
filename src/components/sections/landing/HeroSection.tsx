@@ -9,6 +9,18 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { readLocaleCookie } from '@/i18n/readLocaleCookie';
 import { TJ_LOCALE_CHANGE_EVENT, type Locale } from '@/i18n/types';
 import type { SplineSceneRecord } from '@/lib/spline/types';
+import type { OpenMeteoCityPayload } from '@/lib/weather/openMeteoThailand';
+
+export interface HeroPipeData {
+  weather: {
+    /** SSR에서 채움. 비어 있거나 오류면 degraded. */
+    cities: OpenMeteoCityPayload[];
+    /** ISO 시간 또는 null(실패) */
+    updatedAt: string | null;
+    degraded: boolean;
+  };
+  localPublicSpotCount: number;
+}
 
 interface HeroSectionProps {
   memberCount?: number;
@@ -16,6 +28,8 @@ interface HeroSectionProps {
   sceneUrls?: string[];
   /** 신규: spline_scenes 파이프라인의 `hero` 슬롯 레코드 (우선 적용) */
   heroScene?: SplineSceneRecord;
+  /** 랜딩 SSR: 날씨(방콕) + 공개 로컬 가게 수 */
+  pipe?: HeroPipeData;
 }
 
 /** 카피가 비었을 때의 i18n 기본값(빈 페이지 방지) */
@@ -24,7 +38,12 @@ const HARDCODED_TITLE_FALLBACK = '오늘 태국 한줄 기사부터 바로 확�
 const HARDCODED_BODY_FALLBACK =
   '비자·병원·집·교통, 오늘 필요한 정보를 한줄로 먼저 보고 필요한 메뉴로 바로 이동하세요.';
 
-export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], heroScene }: HeroSectionProps) {
+export function HeroSection({
+  memberCount: _memberCount = 0,
+  sceneUrls = [],
+  heroScene,
+  pipe,
+}: HeroSectionProps) {
   const [locale, setLocale] = useState<Locale>('ko');
 
   useLayoutEffect(() => {
@@ -55,6 +74,31 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], her
   const copyPanelTrade = hAny.heroPanelTrade?.trim() || '번개장터 가기';
   const copyPanelJob = hAny.heroPanelJob?.trim() || '구인구직 보기';
   const copyPanelLocal = hAny.heroPanelLocal?.trim() || '날씨·로컬 정보 보기';
+  const weatherLine = useMemo(() => {
+    if (!pipe?.weather) return null;
+    if (pipe.weather.degraded || pipe.weather.cities.length === 0) {
+      return h.heroPipeWeatherFallback;
+    }
+    const first = pipe.weather.cities[0];
+    if (!first) return h.heroPipeWeatherFallback;
+    const label =
+      first.key === 'pattaya'
+        ? h.weatherPattaya
+        : first.key === 'chiang_mai'
+          ? h.weatherChiangMai
+          : h.weatherBangkok;
+    const t =
+      first.temperature_c !== null && first.temperature_c !== undefined
+        ? `${first.temperature_c}°C`
+        : '—';
+    return `${label} ${t} · ${first.condition}`;
+  }, [pipe, h]);
+
+  const localShopsLine = useMemo(() => {
+    if (!pipe) return null;
+    return h.heroPipeLocalShops.replace('{n}', String(Math.max(0, pipe.localPublicSpotCount)));
+  }, [pipe, h]);
+
   const [qualityTier, setQualityTier] = useState<'low' | 'medium' | 'high'>('high');
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const availableScenes = useMemo(
@@ -340,6 +384,54 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], her
             <p style={{ margin: 0, color: '#ddd6fe', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em' }}>
               {copyPanelTitle}
             </p>
+            {pipe && (weatherLine || localShopsLine) ? (
+              <div
+                style={{
+                  marginTop: 8,
+                  padding: '8px 10px',
+                  borderRadius: 12,
+                  background: 'rgba(15,16,32,0.5)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}
+              >
+                {weatherLine ? (
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                      color: '#e2e8f0',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {weatherLine}
+                  </p>
+                ) : null}
+                {localShopsLine ? (
+                  <p
+                    style={{
+                      margin: weatherLine ? '4px 0 0' : 0,
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                      color: '#cbd5e1',
+                    }}
+                  >
+                    {localShopsLine}
+                  </p>
+                ) : null}
+                {!pipe.weather.degraded && pipe.weather.updatedAt && (
+                  <p
+                    style={{
+                      margin: '4px 0 0',
+                      fontSize: 9,
+                      color: 'rgba(148,163,184,0.9)',
+                    }}
+                  >
+                    {h.weatherAttribution}
+                  </p>
+                )}
+              </div>
+            ) : null}
             <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
               <Link
                 href="/community/trade"

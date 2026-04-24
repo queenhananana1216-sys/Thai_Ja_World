@@ -10,7 +10,7 @@ export const RENEWAL_WAVE_FILES: Record<RolloutWave, string[]> = {
   waveA: [
     'app/page.tsx',
     'app/layout.tsx',
-    'app/_components/HomePageClient.tsx',
+    'app/landing/page.tsx',
     'app/globals.css',
   ],
   waveB: [

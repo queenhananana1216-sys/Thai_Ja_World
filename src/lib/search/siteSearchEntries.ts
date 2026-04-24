@@ -18,11 +18,11 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
   {
     href: '/',
     koTitle: '홈',
-    thTitle: 'หน้าแรก',
+    thTitle: 'หน้าแรก (ลาน · ร้าน · ข่าวสรุป)',
     koHint: '/',
     thHint: '/',
     koBlob: '홈 메인 대시보드 피드 태자월드 thai ja',
-    thBlob: 'หน้าแรก โฮม ฟีด แดชบอร์ด ไทยจา',
+    thBlob: 'หน้าแรก โฮม กระดาน ชุมชน ร้าน มือสอง งาน ข่าวสรุป ไทย เกา',
   },
   {
     href: '/my-local-shop',
@@ -47,13 +47,13 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
   {
     href: '/help/emergency',
     koTitle: '긴급 연락·제보 (태국)',
-    thTitle: 'ฉุกเฉิน·ติดต่อ (ไทย)',
+    thTitle: 'เบอร์ฉุกเฉิน · อ่านฉบับรวม (ทีมอัปเดต)',
     koHint: '대사관 191 1669',
-    thHint: 'ฉุกเฉิน สำนักทูต 191',
+    thHint: 'ฉุกเฉิน สนง. ฯ 191 0404',
     koBlob:
       '긴급 연락 대사관 응급 191 1669 199 영사 0404 실종 제보 광장 정보 help emergency 태국',
     thBlob:
-      'ฉุกเฉิน สำนักทูต 191 1669 199 กงสล 0404 รายงาน หาย บอร์ด emergency',
+      'ฉุกเฉิน สถานฯ ตำรวจ 191 1669 199 0404 รายงาน หาเพื่อน หน้าเว็บทีมกำหนด ไม่ใช่บอต แจ้ง บอร์ด',
   },
   {
     href: '/community/boards',

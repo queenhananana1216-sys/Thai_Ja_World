@@ -18,11 +18,11 @@ function telHref(value: string): string {
 export function LandingEmergencyStrip({ locale, items }: Props) {
   if (items.length === 0) return null;
 
-  const title = locale === 'th' ? 'เบอร์ฉุกเฉิน·ติดต่อสำคัญ' : '긴급·공식 연락';
-  const more = locale === 'th' ? 'รายละเอียด·อัปเดต' : '자세히·출처';
+  const title = locale === 'th' ? 'เบอร์ฉุกเฉิน (อ้างอิง) · อ่านรายละเอียดด้านล่าง' : '긴급·공식 연락';
+  const more = locale === 'th' ? 'หน้าเต็ม · อัปเดตจากทีม' : '자세히·출처';
   const tipLine =
     locale === 'th'
-      ? 'หายตัว/อันตราย — แจ้ง 191/1669 ก่อน แล้วค่อยแจ้งบอร์ด/ทีม'
+      ? 'ถ้าเป็นหาย / ฉุกเฉินจริง — โทร 191/1669 ฯลฯ ก่อน มาลงกระทู้/แจ้งเว็บตามหลังได้ (รายละเอียดอ่านบนหน้าเฉพาะ) กันข้อมูลส่วนตัวนะ'
       : '행방·위급은 191/1669 등을 먼저. 광장·제보는 보조(개인정보·허위 주의)';
 
   return (

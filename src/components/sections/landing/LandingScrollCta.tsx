@@ -51,7 +51,9 @@ export function LandingScrollCta() {
   if (!visible) return null;
 
   const d = getDictionary(locale);
-  const text = d.home.scrollCta;
+  const h = d.home;
+  const text = h.scrollCta;
+  const linkLabel = h.scrollCtaLink;
 
   return (
     <div
@@ -68,7 +70,7 @@ export function LandingScrollCta() {
           href="/community/boards?cat=intro"
           className="font-bold text-fuchsia-300 underline decoration-fuchsia-400/50 underline-offset-2 hover:text-fuchsia-200"
         >
-          {locale === 'th' ? 'ไปลาน' : '광장으로'}
+          {linkLabel}
         </Link>
       </p>
     </div>

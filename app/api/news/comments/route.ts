@@ -45,7 +45,7 @@ export async function POST(req: Request) {
           eventType: 'write_post',
           amount: 1,
           source: 'news_comment_create',
-          dedupeKey: `news_comment:${processedNewsId}:${Date.now()}`,
+          dedupeKey: `news_comment:${processedNewsId}`,
           metadata: { processed_news_id: processedNewsId, kind: 'news_comment' },
         });
       }

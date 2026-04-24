@@ -19,6 +19,9 @@ import { getLocale } from '@/i18n/get-locale';
 import { resolveSplineScenes } from '@/lib/spline/resolver';
 import type { SplineScenesBySlot } from '@/lib/spline/types';
 
+/** 뉴스/광장/홈카피 크론과 맞춰 5분마다 fresh SSR (내부 `unstable_cache` 는 제거되지 않음) */
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: '태자월드 — 태국 사는 한국인 커뮤니티 | 비자·생활정보·한인업체',
   description:

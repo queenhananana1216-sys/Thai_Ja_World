@@ -33,6 +33,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/ux-aggregate-5m",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/local-shop-template-pipeline",
       "schedule": "10 */3 * * *"
     },

@@ -9,6 +9,7 @@ import {
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { formatDate } from '@/lib/utils/formatDate';
+import { isCommunityPublicViewCountsEnabled } from '@/lib/community/publicViewCounts';
 import { absoluteUrl } from '@/lib/seo/site';
 import PostAuthorMenu from './_components/PostAuthorMenu';
 
@@ -90,6 +91,7 @@ export default async function BoardsListPage({
   const listTitle = catFilter ? categoryLabel(catFilter, locale) : d.board.pageTitle;
 
   const allCategories = POST_CATEGORY_SLUGS;
+  const showViewCounts = isCommunityPublicViewCountsEnabled();
 
   // 리액션 카운트(좋아요/공감) — 목록에는 버튼 없이 숫자만 표시
   const postIds = (list ?? []).map((p) => String(p.id));
@@ -127,6 +129,49 @@ export default async function BoardsListPage({
             className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white no-underline transition hover:bg-slate-700"
           >
             {d.board.newPost}
+          </Link>
+        </div>
+      </div>
+
+      <div className="mb-5 rounded-2xl border border-violet-200/60 bg-gradient-to-r from-violet-50/90 to-slate-50 p-4 text-sm text-slate-800 shadow-sm sm:p-5">
+        <p className="m-0 font-semibold text-slate-900">
+          {locale === 'th' ? 'ศูนย์กลางชุมชน' : '태국 사는 한국인 커뮤니티 허브'}
+        </p>
+        <p className="mt-1.5 m-0 leading-relaxed text-slate-600">
+          {locale === 'th'
+            ? 'ข่าว ทิป ร้าน กระดาน — ลิงก์สำคัญด้านล่าง'
+            : '뉴스·꿀팁·로컬·광장·제보(사람 찾기/행불)까지 한 흐름으로 이어집니다. (조회수 공개는 트래픽 늘면 켤 예정)'}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            href="/"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 no-underline hover:border-violet-400"
+          >
+            {locale === 'th' ? 'หน้าแรก' : '홈'}
+          </Link>
+          <Link
+            href="/news"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 no-underline hover:border-violet-400"
+          >
+            {locale === 'th' ? 'ข่าว' : '뉴스'}
+          </Link>
+          <Link
+            href="/tips"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 no-underline hover:border-violet-400"
+          >
+            {locale === 'th' ? 'เคล็ดลับ' : '꿀팁'}
+          </Link>
+          <Link
+            href="/local"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 no-underline hover:border-violet-400"
+          >
+            {locale === 'th' ? 'ร้าน/ท้องถิ่น' : '로컬'}
+          </Link>
+          <Link
+            href="/community/boards?cat=report_find"
+            className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900 no-underline hover:border-amber-400"
+          >
+            {locale === 'th' ? 'รายงาน · ตามหา' : '제보 · 사람 찾기'}
           </Link>
         </div>
       </div>
@@ -192,8 +237,15 @@ export default async function BoardsListPage({
             <Link href={`/community/boards/${pid}`} className="block no-underline hover:no-underline">
               <div className="text-xs font-medium text-slate-500">
                 {cat} · {author} · {formatDate(p.created_at as string | null)} · {d.board.comments}{' '}
-                {p.comment_count ?? 0} · {d.board.views} {p.view_count ?? 0} · 좋아요 {counts.like} · 공감{' '}
-                {counts.heart}
+                {p.comment_count ?? 0}
+                {showViewCounts ? (
+                  <>
+                    {' '}
+                    · {d.board.views} {p.view_count ?? 0}
+                  </>
+                ) : null}
+                {' '}
+                · 좋아요 {counts.like} · 공감 {counts.heart}
                 {authorHidden ? (
                   <>
                     {' '}

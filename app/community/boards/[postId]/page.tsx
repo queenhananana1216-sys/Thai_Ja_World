@@ -10,6 +10,7 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import JsonLd from '@/lib/seo/JsonLd';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
+import { isCommunityPublicViewCountsEnabled } from '@/lib/community/publicViewCounts';
 import { formatDate } from '@/lib/utils/formatDate';
 
 type PageProps = { params: Promise<{ postId: string }> };
@@ -125,6 +126,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const pageUrl = absoluteUrl(path);
   const isAuthor = viewerId !== null && viewerId === (post.author_id as string);
   const authorHidden = Boolean(post.author_hidden);
+  const showViewCounts = isCommunityPublicViewCountsEnabled();
   const [{ data: relatedPostsRaw }, { data: relatedNewsRaw }] = await Promise.all([
     supabase
       .from('posts')
@@ -156,29 +158,29 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
     };
   });
 
+  const threadLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'DiscussionForumPosting',
+    headline: post.title as string,
+    ...(post.content ? { text: trimForMetaDescription(post.content as string, 8000) } : {}),
+    datePublished: post.created_at as string,
+    dateModified: post.created_at as string,
+    url: pageUrl,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': pageUrl },
+    author: { '@type': 'Person', name: authorName },
+    commentCount: Number(post.comment_count ?? 0),
+  };
+  if (showViewCounts) {
+    threadLd.interactionStatistic = {
+      '@type': 'InteractionCounter',
+      interactionType: { '@type': 'http://schema.org/ViewAction' },
+      userInteractionCount: Number(post.view_count ?? 0),
+    };
+  }
+
   return (
     <main className="mx-auto max-w-[1100px] px-4 pb-16 pt-8">
-      <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': 'DiscussionForumPosting',
-          headline: post.title as string,
-          ...(post.content
-            ? { text: trimForMetaDescription(post.content as string, 8000) }
-            : {}),
-          datePublished: post.created_at as string,
-          dateModified: post.created_at as string,
-          url: pageUrl,
-          mainEntityOfPage: { '@type': 'WebPage', '@id': pageUrl },
-          author: { '@type': 'Person', name: authorName },
-          commentCount: Number(post.comment_count ?? 0),
-          interactionStatistic: {
-            '@type': 'InteractionCounter',
-            interactionType: { '@type': 'http://schema.org/ViewAction' },
-            userInteractionCount: Number(post.view_count ?? 0),
-          },
-        }}
-      />
+      <JsonLd data={threadLd} />
       <JsonLd
         data={{
           '@context': 'https://schema.org',
@@ -219,8 +221,13 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
 
       <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
         <div className="text-xs font-medium text-slate-500">
-          {cat} · {d.board.author} {authorName} · {formatDate(post.created_at as string | null)} ·{' '}
-          {d.board.views} {post.view_count ?? 0}
+          {cat} · {d.board.author} {authorName} · {formatDate(post.created_at as string | null)}
+          {showViewCounts ? (
+            <>
+              {' '}
+              · {d.board.views} {post.view_count ?? 0}
+            </>
+          ) : null}
           {authorHidden ? (
             <>
               {' '}

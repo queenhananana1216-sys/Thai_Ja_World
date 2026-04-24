@@ -45,8 +45,8 @@ export function LandingSplineAccent({ scene, position = 'top-right', height = 22
           position: 'absolute',
           width: 320,
           height,
-          opacity: 0.6,
-          filter: 'blur(0.4px)',
+          opacity: 0.45,
+          filter: 'blur(0.5px)',
           ...SIDE_OFFSETS[position],
         }}
       >

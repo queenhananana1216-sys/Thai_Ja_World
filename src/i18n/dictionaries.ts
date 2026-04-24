@@ -53,6 +53,8 @@ export type Dictionary = {
     portalMastTitle: string;
     portalMastSub: string;
     portalMastQuickAria: string;
+    /** 랜딩 2줄 텍스트 메뉴(필고식 밀도) */
+    portalTextNavAria: string;
     dreamIntro: string;
     dreamMinihome: string;
     dreamMid: string;
@@ -696,6 +698,7 @@ const ko: Dictionary = {
     portalMastSub:
       '태국에 사는 데 막힌 일, 비자·꿀팁·광장·뉴스·로컬·미니홈까지—사람이 운영하는 이웃 사이트처럼, 여기서 먼저 찾아보세요.',
     portalMastQuickAria: '자주 찾는 메뉴',
+    portalTextNavAria: '주요 메뉴(텍스트)',
     dreamIntro: '지금 쓸 수 있어요 · ',
     dreamMinihome: '미니홈으로 ',
     dreamMid: '내 방, 내 규칙. ',
@@ -1334,6 +1337,7 @@ const th: Dictionary = {
     portalMastSub:
       'เวลาติดขัดเรื่องบ้าน·วีซ่า·ร้าน·ชุมชน·ข่าว·มินิโฮม ค้นได้ที่นี่ก่อน — ชุมชนคนไทย–เกาหลีที่นี่',
     portalMastQuickAria: 'ทางลัดเมนูยอดนิยม',
+    portalTextNavAria: 'เมนูหลัก (แบบข้อความ)',
     dreamIntro: 'ใช้ได้แล้วตอนนี้ · ',
     dreamMinihome: 'ไปมินิโฮม ',
     dreamMid: 'ห้องของฉัน กฎของฉัน ',

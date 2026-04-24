@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import SiteSearch from '../../../../app/_components/SiteSearch';
 import { getDictionary, type Dictionary } from '@/i18n/dictionaries';
 import { LANDING_PORTAL_QUICK_HREFS, type LandingPortalQuickHref } from '@/lib/landing/portalQuickHrefs';
+import { LANDING_TEXT_NAV_ROW_A, LANDING_TEXT_NAV_ROW_B } from '@/lib/landing/landingTextNavRows';
 import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 
@@ -12,6 +13,14 @@ type QuickLink = { href: string; label: string; key: LandingPortalQuickHref };
 
 function loginNextHref(path: string): string {
   return `/auth/login?next=${encodeURIComponent(path)}`;
+}
+
+const PUBLIC_LANDING_HREFS = new Set(['/', '/tips', '/news']);
+
+function resolveTextNavHref(href: string, isLoggedIn: boolean): string {
+  if (href === '/auth/login' || href === '/auth/signup') return href;
+  if (PUBLIC_LANDING_HREFS.has(href)) return href;
+  return isLoggedIn ? href : loginNextHref(href);
 }
 
 /**
@@ -31,6 +40,44 @@ export function LandingPortalStrip({ isLoggedIn }: { isLoggedIn: boolean }) {
       return { href: target, label, key: href };
     }).filter((x): x is QuickLink => x !== null);
   }, [isLoggedIn, locale]);
+
+  const textNavA = useMemo(() => {
+    const out: { href: string; label: string; key: string }[] = [];
+    for (const href of LANDING_TEXT_NAV_ROW_A) {
+      const e = SITE_SEARCH_ENTRIES.find((x) => x.href === href);
+      if (!e) continue;
+      out.push({
+        href: resolveTextNavHref(href, isLoggedIn),
+        label: locale === 'th' ? e.thTitle : e.koTitle,
+        key: href,
+      });
+    }
+    return out;
+  }, [isLoggedIn, locale]);
+
+  const textNavB = useMemo(() => {
+    const out: { href: string; label: string; key: string }[] = [];
+    for (const href of LANDING_TEXT_NAV_ROW_B) {
+      const e = SITE_SEARCH_ENTRIES.find((x) => x.href === href);
+      if (!e) continue;
+      out.push({
+        href: resolveTextNavHref(href, isLoggedIn),
+        label: locale === 'th' ? e.thTitle : e.koTitle,
+        key: href,
+      });
+    }
+    return out;
+  }, [isLoggedIn, locale]);
+
+  const textLinkStyle: CSSProperties = {
+    fontSize: 'clamp(0.7rem, 2.1vw, 0.8rem)',
+    fontWeight: 600,
+    color: '#c4b5fd',
+    textDecoration: 'none',
+    lineHeight: 1.5,
+    whiteSpace: 'nowrap',
+    borderBottom: '1px solid transparent',
+  };
 
   return (
     <section
@@ -60,6 +107,46 @@ export function LandingPortalStrip({ isLoggedIn }: { isLoggedIn: boolean }) {
       >
         {h.portalMastTitle}
       </h2>
+      <nav
+        aria-label={h.portalTextNavAria}
+        style={{
+          margin: '0 0 10px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            columnGap: 10,
+            rowGap: 4,
+          }}
+        >
+          {textNavA.map((item) => (
+            <Link key={item.key} href={item.href} prefetch={false} style={textLinkStyle}>
+              {item.label}
+            </Link>
+          ))}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            columnGap: 10,
+            rowGap: 4,
+          }}
+        >
+          {textNavB.map((item) => (
+            <Link key={item.key} href={item.href} prefetch={false} style={textLinkStyle}>
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
       {h.portalMastSub ? (
         <p
           style={{

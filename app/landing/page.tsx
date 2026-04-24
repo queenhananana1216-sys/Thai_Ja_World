@@ -6,15 +6,13 @@ import { HeroSection } from '@/components/sections/landing/HeroSection';
 import { ProblemSection } from '@/components/sections/landing/ProblemSection';
 import { ServiceSection } from '@/components/sections/landing/ServiceSection';
 import { TestimonialSection } from '@/components/sections/landing/TestimonialSection';
+import { LandingSplineAccent } from '@/components/sections/landing/LandingSplineAccent';
 import { LANDING_DEFAULT_STATS } from '@/lib/landing/constants';
 import { getLandingEntryFlow } from '@/lib/landing/entryFlow';
-import type { StatsResponse } from '@/lib/landing/types';
-
-const SPLINE_SCENE_CANDIDATES = [
-  'https://my.spline.design/genspl/Wm9vreE2cXA8gSf5DRDnOKgr/',
-  'https://my.spline.design/genspl/Zv0JLuq3qSHEAAXrGJoknVqx/',
-  'https://my.spline.design/genspl/plOUCcLaDdzgdU55p6Owb8Ra/',
-];
+import type { EntryFlowResponse } from '@/lib/landing/types';
+import { fetchLandingStatsSSR } from '@/lib/stats/fetchStatsSSR';
+import { resolveSplineScenes } from '@/lib/spline/resolver';
+import type { SplineScenesBySlot } from '@/lib/spline/types';
 
 export const metadata: Metadata = {
   title: '태자월드 — 태국 사는 한국인 커뮤니티 | 비자·생활정보·한인업체',
@@ -22,45 +20,113 @@ export const metadata: Metadata = {
     '태국 거주 한국인을 위한 커뮤니티. 비자 연장, TM30, 병원, 한인 마트 정보부터 AI 뉴스 요약, 환율 계산기, 미니홈피까지. 흘러가는 채팅방이 아닌, 정보가 쌓이는 공간.',
 };
 
-function normalizeStats(payload: Partial<StatsResponse> | null): StatsResponse {
-  if (!payload) {
-    return LANDING_DEFAULT_STATS;
-  }
-
-  return {
-    postCount: typeof payload.postCount === 'number' ? payload.postCount : 0,
-    spotCount: typeof payload.spotCount === 'number' ? payload.spotCount : 0,
-    newsCount: typeof payload.newsCount === 'number' ? payload.newsCount : 0,
-    memberCount: typeof payload.memberCount === 'number' ? payload.memberCount : 0,
-    lastUpdatedAt: typeof payload.lastUpdatedAt === 'string' ? payload.lastUpdatedAt : null,
-  };
-}
-
-async function getInitialStats(): Promise<StatsResponse> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-
-  try {
-    const response = await fetch(`${siteUrl}/api/stats`, { next: { revalidate: 600 } });
-    if (!response.ok) {
-      return LANDING_DEFAULT_STATS;
-    }
-    const payload = (await response.json()) as Partial<StatsResponse> | null;
-    return normalizeStats(payload);
-  } catch {
-    return LANDING_DEFAULT_STATS;
-  }
-}
-
+/**
+ * 랜딩 페이지는 절대 throw 하지 않는다.
+ * 서버 호출(stats·entry flow·spline 장면)은 각각 자체 try/catch 폴백을 가지며,
+ * 이 SSR 함수에서 한 번 더 `Promise.allSettled` 로 감싸 한 소스만 죽어도 다른 섹션은 렌더.
+ *
+ * 하드코딩된 3D 배열 / self-fetch / 하드코딩 카피 모두 제거됨:
+ *  - 카피: i18n 기본값 + `site_copy` (Provider 통해) 파이프라인
+ *  - 통계: Supabase 직접 집계 (`fetchLandingStatsSSR`)
+ *  - Spline: `resolveSplineScenes()` 로 DB/ENV/시드 우선순위 병합
+ */
 export default async function LandingPage() {
-  const stats = await getInitialStats();
-  const entryFlow = await getLandingEntryFlow();
-  const splineSceneUrl = process.env.NEXT_PUBLIC_SPLINE_HERO_SCENE_URL;
-  const sceneUrls = Array.from(
-    new Set(
-      [splineSceneUrl, ...SPLINE_SCENE_CANDIDATES]
-        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
-        .map((value) => value.trim())
-    )
+  const fallbackEntryFlow: EntryFlowResponse = {
+    generatedAt: new Date().toISOString(),
+    lanes: [],
+    snapshot: {
+      posts7d: 0,
+      flea7d: 0,
+      job7d: 0,
+      publishedShops: 0,
+      deliveryReadyShops: 0,
+      minihomePublicRooms: 0,
+      news3d: 0,
+      tradeClicks14d: 0,
+      jobClicks14d: 0,
+      localClicks14d: 0,
+      minihomeClicks14d: 0,
+      tradeConversions14d: 0,
+      jobConversions14d: 0,
+      localConversions14d: 0,
+      minihomeConversions14d: 0,
+    },
+  };
+
+  const fallbackScenes: SplineScenesBySlot = {
+    logo: {
+      slot: 'logo',
+      sourceFileId: null,
+      publishedUrl: null,
+      sceneCodeUrl: null,
+      isEnabled: true,
+      qualityTier: 'high',
+      placementHint: null,
+    },
+    hero: {
+      slot: 'hero',
+      sourceFileId: null,
+      publishedUrl: null,
+      sceneCodeUrl: null,
+      isEnabled: true,
+      qualityTier: 'high',
+      placementHint: null,
+    },
+    accent1: {
+      slot: 'accent1',
+      sourceFileId: null,
+      publishedUrl: null,
+      sceneCodeUrl: null,
+      isEnabled: true,
+      qualityTier: 'medium',
+      placementHint: null,
+    },
+    accent2: {
+      slot: 'accent2',
+      sourceFileId: null,
+      publishedUrl: null,
+      sceneCodeUrl: null,
+      isEnabled: true,
+      qualityTier: 'medium',
+      placementHint: null,
+    },
+    accent3: {
+      slot: 'accent3',
+      sourceFileId: null,
+      publishedUrl: null,
+      sceneCodeUrl: null,
+      isEnabled: true,
+      qualityTier: 'medium',
+      placementHint: null,
+    },
+    accent4: {
+      slot: 'accent4',
+      sourceFileId: null,
+      publishedUrl: null,
+      sceneCodeUrl: null,
+      isEnabled: true,
+      qualityTier: 'medium',
+      placementHint: null,
+    },
+  };
+
+  const [statsSettled, entryFlowSettled, scenesSettled] = await Promise.allSettled([
+    fetchLandingStatsSSR(),
+    getLandingEntryFlow(),
+    resolveSplineScenes(),
+  ]);
+
+  const stats =
+    statsSettled.status === 'fulfilled'
+      ? statsSettled.value
+      : { ...LANDING_DEFAULT_STATS, degraded: true };
+  const entryFlow =
+    entryFlowSettled.status === 'fulfilled' ? entryFlowSettled.value : fallbackEntryFlow;
+  const scenes = scenesSettled.status === 'fulfilled' ? scenesSettled.value : fallbackScenes;
+
+  const heroScene = scenes.hero;
+  const heroSceneUrls = [heroScene.sceneCodeUrl, heroScene.publishedUrl].filter(
+    (v): v is string => typeof v === 'string' && v.length > 0,
   );
 
   return (
@@ -81,12 +147,20 @@ export default async function LandingPage() {
         }}
       />
       <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6">
-        <HeroSection memberCount={stats.memberCount} sceneUrls={sceneUrls} />
+        <HeroSection
+          memberCount={stats.memberCount}
+          sceneUrls={heroSceneUrls}
+          heroScene={heroScene}
+        />
       </div>
+      <LandingSplineAccent scene={scenes.accent1} position="top-right" />
       <EntryFlowSection flow={entryFlow} />
+      <LandingSplineAccent scene={scenes.accent2} position="bottom-left" />
       <ProblemSection />
       <ServiceSection />
+      <LandingSplineAccent scene={scenes.accent3} position="top-left" />
       <TestimonialSection />
+      <LandingSplineAccent scene={scenes.accent4} position="bottom-right" />
       <CTASection />
       <FooterSection />
     </main>

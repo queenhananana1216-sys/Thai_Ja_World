@@ -1,16 +1,60 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
+import { SplineCanvas } from '@/components/3d/SplineCanvas';
 import { SplineHeroCanvas } from '@/components/3d/SplineHeroCanvas';
+import { getDictionary } from '@/i18n/dictionaries';
+import { readLocaleCookie } from '@/i18n/readLocaleCookie';
+import { TJ_LOCALE_CHANGE_EVENT, type Locale } from '@/i18n/types';
+import type { SplineSceneRecord } from '@/lib/spline/types';
 
 interface HeroSectionProps {
   memberCount?: number;
+  /** 레거시: 랜덤 로테이션용 scene URL 배열 */
   sceneUrls?: string[];
+  /** 신규: spline_scenes 파이프라인의 `hero` 슬롯 레코드 (우선 적용) */
+  heroScene?: SplineSceneRecord;
 }
 
-export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: HeroSectionProps) {
+/** 카피가 비었을 때의 i18n 기본값(빈 페이지 방지) */
+const HARDCODED_KICKER_FALLBACK = '오늘의 한줄 기사 · 생활정보 · 태국 꿀팁';
+const HARDCODED_TITLE_FALLBACK = '오늘 태국 한줄 기사부터 바로 확인하세요';
+const HARDCODED_BODY_FALLBACK =
+  '비자·병원·집·교통, 오늘 필요한 정보를 한줄로 먼저 보고 필요한 메뉴로 바로 이동하세요.';
+
+export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], heroScene }: HeroSectionProps) {
+  const [locale, setLocale] = useState<Locale>('ko');
+
+  useLayoutEffect(() => {
+    setLocale(readLocaleCookie());
+  }, []);
+
+  useEffect(() => {
+    function onLocaleChange(e: Event) {
+      const ce = e as CustomEvent<Locale>;
+      if (ce.detail === 'ko' || ce.detail === 'th') setLocale(ce.detail);
+    }
+    window.addEventListener(TJ_LOCALE_CHANGE_EVENT, onLocaleChange);
+    return () => window.removeEventListener(TJ_LOCALE_CHANGE_EVENT, onLocaleChange);
+  }, []);
+
+  const d = useMemo(() => getDictionary(locale), [locale]);
+  const h = d.home;
+  const hAny = h as typeof h & Record<string, string>;
+  // 어느 하나라도 실제 텍스트가 비면 하드코딩 폴백을 써서 히어로가 "비어 보이는" 일을 막는다.
+  const copyKicker = (h.heroKicker?.trim() || HARDCODED_KICKER_FALLBACK);
+  const copyLead = (h.heroLead?.trim() || HARDCODED_TITLE_FALLBACK);
+  const copyBody = (h.heroSub?.trim().replace(/\\n/g, ' ') || HARDCODED_BODY_FALLBACK);
+  const copyPrimaryCta = (hAny.heroPrimaryCta?.trim() || h.tipDigestTitle || '오늘의 생활꿀팁 보기');
+  const copySecondaryCta = (hAny.heroSecondaryCta?.trim() || h.newsTitle || '주요 기사 확인하기');
+  const copyBridgeHint =
+    hAny.heroBridgeHint?.trim() || '한줄 기사 확인 후 번개장터·구인구직·로컬 메뉴로 바로 연결됩니다.';
+  const copyPanelTitle = hAny.heroPanelTitle?.trim() || '정보 확인 후 바로 이동';
+  const copyPanelTrade = hAny.heroPanelTrade?.trim() || '번개장터 가기';
+  const copyPanelJob = hAny.heroPanelJob?.trim() || '구인구직 보기';
+  const copyPanelLocal = hAny.heroPanelLocal?.trim() || '날씨·로컬 정보 보기';
   const [qualityTier, setQualityTier] = useState<'low' | 'medium' | 'high'>('high');
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const availableScenes = useMemo(
@@ -191,7 +235,17 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
   return (
     <section style={sectionStyle}>
       <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, zIndex: -20 }}>
-        <SplineHeroCanvas sceneUrl={activeSceneUrl} />
+        {heroScene && (heroScene.sceneCodeUrl || heroScene.publishedUrl) ? (
+          <SplineCanvas
+            slot="hero"
+            publishedUrl={heroScene.publishedUrl}
+            sceneCodeUrl={heroScene.sceneCodeUrl}
+            quality={qualityTier === 'low' ? 'low' : heroScene.qualityTier}
+            title="Thai Ja World Hero 3D"
+          />
+        ) : (
+          <SplineHeroCanvas sceneUrl={activeSceneUrl} />
+        )}
       </div>
       <div
         style={{
@@ -251,13 +305,13 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
               letterSpacing: '0.05em',
             }}
           >
-            오늘의 한줄 기사 · 생활정보 · 태국 꿀팁
+            {copyKicker}
           </p>
           <h1 style={titleStyle}>
-            오늘 태국 한줄 기사부터 바로 확인하세요
+            {copyLead}
           </h1>
           <p style={bodyTextStyle}>
-            비자·병원·집·교통, 오늘 필요한 정보를 한줄로 먼저 보고 필요한 메뉴로 바로 이동하세요.
+            {copyBody}
           </p>
 
           <div style={ctaRowStyle}>
@@ -265,30 +319,26 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
               href="/tips"
               style={heroPrimaryCtaStyle}
             >
-              오늘의 생활꿀팁 보기
+              {copyPrimaryCta}
             </Link>
             <Link
               href="/community/boards?cat=info"
               style={heroSecondaryCtaStyle}
             >
-              주요 기사 확인하기
+              {copySecondaryCta}
             </Link>
           </div>
 
           <p style={{ ...bodyTextStyle, marginTop: 24, fontSize: isMobileLayout ? 14 : 15 }}>
-            한줄 기사 확인 후 번개장터·구인구직·로컬 메뉴로 바로 연결됩니다.
+            {copyBridgeHint}
           </p>
-          {!hasScenes ? (
-            <p style={{ marginTop: 8, fontSize: 12, color: 'rgba(221,214,254,0.9)' }}>
-              3D 배경 적용: `.env.local`에 `NEXT_PUBLIC_SPLINE_HERO_SCENE_URL` 값을 넣어주세요.
-            </p>
-          ) : null}
+          {/* 3D 장면 적용 안내(하드코딩된 기술 문구) 는 운영자 공간으로 이동 — 일반 사용자에겐 노출 금지 */}
         </div>
 
         <div style={rightColStyle}>
           <div style={panelStyle}>
             <p style={{ margin: 0, color: '#ddd6fe', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em' }}>
-              정보 확인 후 바로 이동
+              {copyPanelTitle}
             </p>
             <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
               <Link
@@ -299,7 +349,7 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
                   border: '1px solid rgba(196,181,253,0.45)',
                 }}
               >
-                번개장터 가기
+                {copyPanelTrade}
               </Link>
               <Link
                 href="/community/boards?cat=job"
@@ -310,23 +360,17 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [] }: H
                   color: '#fef3c7',
                 }}
               >
-                구인구직 보기
+                {copyPanelJob}
               </Link>
               <Link
                 href="/local"
                 style={heroPanelCtaStyle}
               >
-                날씨·로컬 정보 보기
+                {copyPanelLocal}
               </Link>
             </div>
           </div>
-          <div style={{ ...panelStyle, padding: '8px 12px', fontSize: 12, color: '#ddd6fe' }}>
-            {qualityTier === 'low'
-              ? '저사양 최적화 모드'
-              : hasScenes
-                ? `브랜드 3D 배경 활성화 · ${activeSceneIndex + 1}/${availableScenes.length}`
-                : '브랜드 3D 배경 준비 중'}
-          </div>
+          {/* 디버그성 3D 상태 라벨은 일반 사용자에 노출하지 않음 (히어로 카드가 비어보이지 않게 상단 패널이 이미 내용 채움) */}
         </div>
       </div>
     </section>

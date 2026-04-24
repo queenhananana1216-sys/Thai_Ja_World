@@ -50,11 +50,11 @@ export default async function PremiumTopBanner() {
                 justifyContent: 'center',
               }}
             >
-              {b.image_url ? (
+              {b.image_url && /^(https?:\/\/|\/\/|\/)/i.test(b.image_url.trim()) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={b.image_url}
-                  alt=""
+                  alt={b.title ?? ''}
                   width={40}
                   height={40}
                   style={{ borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}

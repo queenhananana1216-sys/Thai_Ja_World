@@ -29,6 +29,7 @@
     "@github/copilot-sdk": "^0.2.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@splinetool/react-spline": "^4.1.0",
+    "@splinetool/runtime": "^1.12.88",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.103.0",
     "@tailwindcss/postcss": "^4.2.2",

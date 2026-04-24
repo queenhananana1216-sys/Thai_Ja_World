@@ -59,10 +59,32 @@ export async function GET() {
       }
     );
   } catch (error) {
-    console.error('[/api/stats] 집계 오류:', error);
+    // 환경변수·네트워크·RLS 문제 시에도 홈이 비어보이지 않도록 200 + degraded 플래그로 응답.
+    // 호출측은 `degraded=true` 로 fallback UI 를 유지하면 되며 500 으로 인한 상위 페이지 throw 는 사라진다.
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[/api/stats] 집계 오류 — degraded fallback 반환:', error);
+    } else {
+      console.warn(
+        '[/api/stats] aggregation failed — returning degraded fallback:',
+        error instanceof Error ? error.message : String(error),
+      );
+    }
     return NextResponse.json(
-      { memberCount: 0, postCount: 0, spotCount: 0, newsCount: 0, lastUpdatedAt: null },
-      { status: 500 }
+      {
+        memberCount: 0,
+        postCount: 0,
+        spotCount: 0,
+        newsCount: 0,
+        lastUpdatedAt: null,
+        degraded: true,
+      },
+      {
+        status: 200,
+        headers: {
+          // degraded 상태는 캐시 짧게 — 복구되면 바로 갱신되도록
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        },
+      }
     );
   }
 }

@@ -1,9 +1,16 @@
-# 수동 실행: 프로덕션 스모크 + (선택) /news 엄격 검사
+# 프로덕션 스모크 + 공개 라우트 + 크론 보호 검사
+# - main 푸시가 Vercel 에 배포 완료되면 최대 5분 대기 후 자동 검증
+# - 수동 실행도 유지 (workflow_dispatch)
 # 저장소 루트가 이 Next 앱( package.json = taeja-world )일 때 사용합니다.
 
 name: Verify production
 
 on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   workflow_dispatch:
     inputs:
       strict_news:
@@ -11,10 +18,14 @@ on:
         type: boolean
         default: false
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,10 +34,31 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm install --legacy-peer-deps
+      # push 이벤트면 Vercel 빌드·전환 시간을 감안해 대기
+      - name: Wait for Vercel deploy propagation
+        if: github.event_name == 'push'
+        run: |
+          echo "Waiting 150s for Vercel production to propagate..."
+          sleep 150
       - name: Production verify (smoke + cron check)
+        env:
+          BASE_URL: https://www.thaijaworld.com
         run: |
           if [ "${{ inputs.strict_news }}" = "true" ]; then
             npx tsx scripts/verify-production-pipeline.ts --strict
           else
             npx tsx scripts/verify-production-pipeline.ts
+          fi
+      - name: Post-deploy smoke ping
+        if: always()
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -n "$CRON_SECRET" ]; then
+            echo "Pinging /api/cron/post-deploy-smoke..."
+            curl -sS -f -H "Authorization: Bearer $CRON_SECRET" \
+              https://www.thaijaworld.com/api/cron/post-deploy-smoke \
+              | head -c 2000
+          else
+            echo "CRON_SECRET not set — skipping authenticated smoke ping"
           fi

@@ -20,6 +20,8 @@ import AuthBar from './AuthBar';
 import { BrandPhrase } from './BrandPhrase';
 import LanguageSwitch from './LanguageSwitch';
 import SiteSearch from './SiteSearch';
+import { SplineCanvas } from '@/components/3d/SplineCanvas';
+import type { SplineSceneRecord } from '@/lib/spline/types';
 
 const HREFS = ['/', '/tips', '/local', '/community/boards', '/ilchon', '/minihome'] as const;
 
@@ -27,9 +29,11 @@ type Props = {
   dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board' | 'search'>;
   /** 관리자 화이트리스트(또는 개발용 허용 세션)일 때만 표시 */
   showAdminConsole?: boolean;
+  /** 로고 자리에 얹을 Spline 3D 장면 (없으면 텍스트만) */
+  logoScene?: SplineSceneRecord | null;
 };
 
-export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
+export default function GlobalNav({ dict, showAdminConsole = false, logoScene = null }: Props) {
   const pathname = usePathname() ?? '/';
   /** 홈은 본문 포털 마스트에 통합 검색이 있어 헤더 검색을 숨겨 세로 중복·겹침을 줄임 */
   const hideHeaderSearch = pathname === '/';
@@ -91,7 +95,35 @@ export default function GlobalNav({ dict, showAdminConsole = false }: Props) {
 
       <div className="global-header__nate-band">
         <div className="site-container global-header__nate-band-inner">
-          <Link href="/" className="global-header__logo-nate" aria-label={dict.logoAria}>
+          <Link
+            href="/"
+            className="global-header__logo-nate"
+            aria-label={dict.logoAria}
+            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+          >
+            {logoScene && logoScene.isEnabled && (logoScene.sceneCodeUrl || logoScene.publishedUrl) ? (
+              <span
+                aria-hidden
+                style={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  width: 40,
+                  height: 40,
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                  borderRadius: 10,
+                }}
+              >
+                <SplineCanvas
+                  slot="logo"
+                  publishedUrl={logoScene.publishedUrl}
+                  sceneCodeUrl={logoScene.sceneCodeUrl}
+                  quality={logoScene.qualityTier}
+                  placeholderTone="light"
+                  title="Thai Ja World Logo 3D"
+                />
+              </span>
+            ) : null}
             <BrandPhrase variant="light" />
             <span className="global-header__logo-suffix-nate">{dict.brandSuffix}</span>
           </Link>

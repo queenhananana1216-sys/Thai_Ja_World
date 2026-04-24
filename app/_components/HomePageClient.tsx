@@ -149,6 +149,18 @@ function NewsCardCompact({ item }: { item: NewsItem }) {
   );
 }
 
+/** 허용되는 이미지 URL 인지 검증 — 파일명만 들어 있는 레거시 row 가 화면에 텍스트로 노출되는 것 방지. */
+function isSafeImageUrl(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const v = value.trim();
+  if (!v) return false;
+  // https / protocol-relative / 같은 오리진 절대경로만 허용
+  if (/^https?:\/\//i.test(v)) return true;
+  if (v.startsWith('//')) return true;
+  if (v.startsWith('/')) return true;
+  return false;
+}
+
 function ShopMiniCard({
   shop,
   tierPremium,
@@ -158,21 +170,24 @@ function ShopMiniCard({
   tierPremium: string;
   tierStandard: string;
 }) {
+  const safeImage = isSafeImageUrl(shop.image_url) ? shop.image_url : null;
   return (
     <Link href={`/local/${shop.slug}`} className="shop-card">
       <div
         className="shop-card__image"
+        role="img"
+        aria-label={shop.name}
         style={
-          shop.image_url
+          safeImage
             ? {
-                backgroundImage: `url(${shop.image_url})`,
+                backgroundImage: `url(${safeImage})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
               }
             : {}
         }
       >
-        {!shop.image_url && shop.emoji}
+        {!safeImage && shop.emoji}
       </div>
       <div className="shop-card__body">
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>

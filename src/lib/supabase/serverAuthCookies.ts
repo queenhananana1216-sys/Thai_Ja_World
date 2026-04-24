@@ -33,3 +33,20 @@ export async function createServerSupabaseAuthClient() {
     },
   });
 }
+
+/**
+ * 루트 레이아웃 등에서 env/쿠키 이슈 시에도 전체가 죽지 않도록 쓰는 변형.
+ * 실패하면 null 을 반환 — 호출부에서 "세션 없음" 으로 처리.
+ *
+ * 반드시 Server Component 에서만 사용 ( `cookies()` 가 필요 ).
+ */
+export async function tryCreateServerSupabaseAuthClient() {
+  try {
+    return await createServerSupabaseAuthClient();
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[serverAuthCookies] tryCreate... 실패 — null 반환', err);
+    }
+    return null;
+  }
+}

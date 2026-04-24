@@ -5,6 +5,7 @@
  * 게시글은 service role로만 INSERT (모더레이션·벤 후)
  */
 import { NextResponse } from 'next/server';
+import { applyIntroSignupGreetingReward } from '@/lib/community/applyIntroSignupGreetingReward';
 import { createModeratedPost } from '@/lib/moderation/postSubmissionPipeline';
 import { recordQuestProgress } from '@/lib/quests/progress';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
@@ -33,23 +34,28 @@ export async function POST(req: Request) {
   });
 
   if (result.ok) {
+    const bcat = typeof b.category === 'string' ? b.category : '';
     try {
       const sb = createSupabaseWithUserJwt(token);
       const {
         data: { user },
       } = await sb.auth.getUser();
       if (user?.id) {
-        await recordQuestProgress({
-          profileId: user.id,
-          eventType: 'write_post',
-          amount: 1,
-          source: 'community_post_create',
-          dedupeKey: `community_post:${result.postId}`,
-          metadata: { post_id: result.postId },
-        });
+        if (bcat === 'intro') {
+          await applyIntroSignupGreetingReward({ postId: result.postId, profileId: user.id });
+        } else {
+          await recordQuestProgress({
+            profileId: user.id,
+            eventType: 'write_post',
+            amount: 1,
+            source: 'community_post_create',
+            dedupeKey: `community_post:${result.postId}`,
+            metadata: { post_id: result.postId },
+          });
+        }
       }
     } catch {
-      // 퀘스트 누적 실패는 게시글 생성 성공을 막지 않는다.
+      // 퀘스트·인사 보상 누적 실패는 게시글 생성 성공을 막지 않는다.
     }
     return NextResponse.json({ id: result.postId });
   }

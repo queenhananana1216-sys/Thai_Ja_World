@@ -6,6 +6,7 @@ import { HomeBannerGrid } from '@/components/sections/landing/HomeBannerGrid';
 import { RecentPostsFeed } from '@/components/sections/landing/RecentPostsFeed';
 import { FooterSection } from '@/components/sections/landing/FooterSection';
 import { HeroSection } from '@/components/sections/landing/HeroSection';
+import { LandingScrollCta } from '@/components/sections/landing/LandingScrollCta';
 import { ProblemSection } from '@/components/sections/landing/ProblemSection';
 import { ServiceSection } from '@/components/sections/landing/ServiceSection';
 import { TestimonialSection } from '@/components/sections/landing/TestimonialSection';
@@ -182,7 +183,9 @@ export default async function LandingPage() {
       <TestimonialSection />
       <LandingSplineAccent scene={scenes.accent4} position="bottom-right" />
       <CTASection />
+      <div id="tj-landing-scroll-cta-anchor" className="h-px w-full" aria-hidden />
       <FooterSection />
+      <LandingScrollCta />
     </main>
   );
 }

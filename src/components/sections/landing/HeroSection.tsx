@@ -200,12 +200,14 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], her
   const titleStyle: CSSProperties = {
     marginTop: 14,
     marginBottom: 0,
-    fontSize: isMobileLayout ? 52 : 60,
-    lineHeight: 1.1,
+    fontSize: isMobileLayout ? 'clamp(1.85rem, 7.2vw, 3.25rem)' : 60,
+    lineHeight: 1.12,
     fontWeight: 800,
     color: '#f8fafc',
     letterSpacing: '-0.02em',
     textShadow: '0 8px 24px rgba(1,4,18,0.55)',
+    textWrap: 'balance',
+    wordBreak: isMobileLayout ? 'keep-all' : 'normal',
   };
 
   const bodyTextStyle: CSSProperties = {
@@ -307,7 +309,7 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], her
           >
             {copyKicker}
           </p>
-          <h1 style={titleStyle}>
+          <h1 className="tj-hero-title" style={titleStyle}>
             {copyLead}
           </h1>
           <p style={bodyTextStyle}>

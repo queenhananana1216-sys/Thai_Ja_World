@@ -136,6 +136,14 @@ export async function createModeratedPost(
   if (title.length < 1 || title.length > 200 || content.length < 2) {
     return { ok: false, status: 400, code: 'invalid' };
   }
+  if (category === 'intro' && content.length < 4) {
+    return {
+      ok: false,
+      status: 400,
+      code: 'invalid',
+      message: '가입 인사는 4자 이상 적어 주세요.',
+    };
+  }
   if (image_urls.length > 3) {
     return { ok: false, status: 400, code: 'invalid' };
   }

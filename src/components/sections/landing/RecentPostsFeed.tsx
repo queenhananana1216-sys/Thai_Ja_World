@@ -39,6 +39,7 @@ const CATEGORY_COLOR: Record<string, { color: string; bg: string }> = {
   restaurant: { color: '#d9f99d', bg: 'rgba(190,242,100,0.14)' },
   flea: { color: '#fde68a', bg: 'rgba(251,191,36,0.14)' },
   job: { color: '#c4b5fd', bg: 'rgba(196,181,253,0.18)' },
+  intro: { color: '#fef08a', bg: 'rgba(250,204,21,0.16)' },
 };
 
 export async function RecentPostsFeed({ locale }: Props) {
@@ -104,6 +105,9 @@ export async function RecentPostsFeed({ locale }: Props) {
             }
             @media (min-width: 768px) {
               .tj-recent-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            }
+            @media (max-width: 767px) {
+              .tj-recent-row { font-size: 15.5px !important; }
             }
             .tj-recent-row { text-decoration: none; color: inherit; }
             .tj-recent-row:hover { background: rgba(255,255,255,0.06); }

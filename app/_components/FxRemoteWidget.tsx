@@ -6,7 +6,7 @@ import type { Locale } from '@/i18n/types';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { useStyleScorePreview } from '@/contexts/StyleScorePreviewContext';
 import { amountToUsd, usdToCurrency } from '@/lib/fx/convert';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { tryCreateBrowserClient } from '@/lib/supabase/client';
 import type { FxCurrency, FxSnapshot } from '@/lib/fx/types';
 
 type Labels = Dictionary['home']['fxRemote'];
@@ -174,7 +174,11 @@ export default function FxRemoteWidget({
   }, [menuOpen]);
 
   const refreshStyleScore = useCallback(async () => {
-    const sb = createBrowserClient();
+    const sb = tryCreateBrowserClient();
+    if (!sb) {
+      setStyleBalance(null);
+      return;
+    }
     const {
       data: { user },
     } = await sb.auth.getUser();
@@ -191,7 +195,11 @@ export default function FxRemoteWidget({
   }, []);
 
   useEffect(() => {
-    const sb = createBrowserClient();
+    const sb = tryCreateBrowserClient();
+    if (!sb) {
+      setStyleBalance(null);
+      return;
+    }
     let cancelled = false;
     let ch: ReturnType<typeof sb.channel> | null = null;
 

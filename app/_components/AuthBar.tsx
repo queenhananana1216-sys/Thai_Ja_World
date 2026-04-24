@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { tryCreateBrowserClient } from '@/lib/supabase/client';
 
 type Labels = { login: string; signup: string; logout: string };
 
@@ -40,7 +40,12 @@ export default function AuthBar({
   const greetingSuffix = locale === 'ko' ? '님' : '';
 
   useEffect(() => {
-    const sb = createBrowserClient();
+    const sb = tryCreateBrowserClient();
+    if (!sb) {
+      setEmail(null);
+      setLoading(false);
+      return;
+    }
     const safety = setTimeout(() => setLoading(false), 12_000);
     void sb.auth
       .getSession()
@@ -65,8 +70,8 @@ export default function AuthBar({
   }, []);
 
   async function logout() {
-    const sb = createBrowserClient();
-    await sb.auth.signOut();
+    const sb = tryCreateBrowserClient();
+    if (sb) await sb.auth.signOut();
     setEmail(null);
     router.refresh();
   }

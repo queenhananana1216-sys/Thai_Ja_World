@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { createBrowserClient } from '@/lib/supabase/client';
+import { tryCreateBrowserClient } from '@/lib/supabase/client';
 
 const INTERVAL_MS = 120_000;
 
@@ -16,7 +16,8 @@ export default function LastSeenHeartbeat() {
     async function touch() {
       if (cancelled || typeof document === 'undefined') return;
       if (document.visibilityState !== 'visible') return;
-      const sb = createBrowserClient();
+      const sb = tryCreateBrowserClient();
+      if (!sb) return;
       const {
         data: { user },
       } = await sb.auth.getUser();

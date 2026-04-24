@@ -9,13 +9,18 @@ import { HeroSection } from '@/components/sections/landing/HeroSection';
 import { ProblemSection } from '@/components/sections/landing/ProblemSection';
 import { ServiceSection } from '@/components/sections/landing/ServiceSection';
 import { TestimonialSection } from '@/components/sections/landing/TestimonialSection';
-import { LandingSplineAccent } from '@/components/sections/landing/LandingSplineAccent';
+import { PortalHomeShell } from '@/components/sections/landing/PortalHomeShell';
+import { WidgetGrid } from '@/components/sections/landing/WidgetGrid';
+import { PortalNewsTeaser } from '@/components/sections/landing/PortalNewsTeaser';
+import { PortalStatsWidget } from '@/components/sections/landing/PortalStatsWidget';
 import { LANDING_DEFAULT_STATS } from '@/lib/landing/constants';
 import { getLandingEntryFlow } from '@/lib/landing/entryFlow';
 import type { EntryFlowResponse } from '@/lib/landing/types';
 import { fetchCommunityPulse, type CommunityPulse } from '@/lib/landing/fetchCommunityPulse';
+import { fetchNewsTeaserForHome, type NewsTeaserItem } from '@/lib/landing/fetchNewsTeaser';
 import { fetchLandingStatsSSR } from '@/lib/stats/fetchStatsSSR';
 import { getLocale } from '@/i18n/get-locale';
+import { getDictionary } from '@/i18n/dictionaries';
 import { resolveSplineScenes } from '@/lib/spline/resolver';
 import type { SplineScenesBySlot } from '@/lib/spline/types';
 
@@ -30,10 +35,9 @@ export const metadata: Metadata = {
  * 서버 호출(stats·entry flow·spline 장면)은 각각 자체 try/catch 폴백을 가지며,
  * 이 SSR 함수에서 한 번 더 `Promise.allSettled` 로 감싸 한 소스만 죽어도 다른 섹션은 렌더.
  *
- * 하드코딩된 3D 배열 / self-fetch / 하드코딩 카피 모두 제거됨:
- *  - 카피: i18n 기본값 + `site_copy` (Provider 통해) 파이프라인
- *  - 통계: Supabase 직접 집계 (`fetchLandingStatsSSR`)
- *  - Spline: `resolveSplineScenes()` 로 DB/ENV/시드 우선순위 병합
+ * - 카피: i18n `getDictionary` + (향후) site_copy와 동일 키
+ * - 통계: `fetchLandingStatsSSR`
+ * - 뉴스 티저: `fetchNewsTeaserForHome` (news 허브와 동일 processed_news 파이프)
  */
 export default async function LandingPage() {
   const fallbackEntryFlow: EntryFlowResponse = {
@@ -116,6 +120,7 @@ export default async function LandingPage() {
   };
 
   const locale = await getLocale().catch(() => 'ko' as const);
+  const dictionary = getDictionary(locale);
 
   const fallbackPulse: CommunityPulse = {
     columns: [],
@@ -123,12 +128,14 @@ export default async function LandingPage() {
     generatedAt: new Date().toISOString(),
   };
 
-  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled] = await Promise.allSettled([
-    fetchLandingStatsSSR(),
-    getLandingEntryFlow(),
-    resolveSplineScenes(),
-    fetchCommunityPulse(locale),
-  ]);
+  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled, newsSettled] =
+    await Promise.allSettled([
+      fetchLandingStatsSSR(),
+      getLandingEntryFlow(),
+      resolveSplineScenes(),
+      fetchCommunityPulse(locale),
+      fetchNewsTeaserForHome(locale),
+    ]);
 
   const stats =
     statsSettled.status === 'fulfilled'
@@ -138,6 +145,8 @@ export default async function LandingPage() {
     entryFlowSettled.status === 'fulfilled' ? entryFlowSettled.value : fallbackEntryFlow;
   const scenes = scenesSettled.status === 'fulfilled' ? scenesSettled.value : fallbackScenes;
   const pulse = pulseSettled.status === 'fulfilled' ? pulseSettled.value : fallbackPulse;
+  const newsTeaser: NewsTeaserItem[] =
+    newsSettled.status === 'fulfilled' ? newsSettled.value : [];
 
   const heroScene = scenes.hero;
   const heroSceneUrls = [heroScene.sceneCodeUrl, heroScene.publishedUrl].filter(
@@ -145,44 +154,64 @@ export default async function LandingPage() {
   );
 
   return (
-    <main className="tj-landing-root">
-      {/* 랜딩에서만: 좌우 크림 바디·패턴이 비치지 않도록 (전역 body) */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html:
-            'body:has(main.tj-landing-root){background-color:#090a1c!important;background-image:none!important;}',
-        }}
-      />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-60"
-        aria-hidden
-        style={{
-          background:
-            'radial-gradient(ellipse at top, rgba(196,181,253,0.28), transparent 45%), radial-gradient(ellipse at 25% 60%, rgba(249,168,212,0.2), transparent 55%), radial-gradient(ellipse at 85% 70%, rgba(251,191,36,0.14), transparent 60%)',
-        }}
-      />
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6">
+    <PortalHomeShell
+      hero={
         <HeroSection
           memberCount={stats.memberCount}
           sceneUrls={heroSceneUrls}
           heroScene={heroScene}
+          variant="portal"
         />
+      }
+    >
+      <div className="mt-1 space-y-4 sm:mt-2 sm:space-y-5" data-landing="portal-3col">
+        <WidgetGrid
+          left={
+            <>
+              <PortalStatsWidget
+                locale={locale}
+                d={dictionary}
+                memberCount={stats.memberCount}
+                postCount={stats.postCount}
+                newsCount={stats.newsCount}
+                spotCount={stats.spotCount}
+                lastUpdatedAt={stats.lastUpdatedAt}
+                degraded={stats.degraded}
+              />
+              <HomeBannerGrid locale={locale} variant="light" dictionary={dictionary} />
+            </>
+          }
+          main={
+            <>
+              {pulse.columns.some((c) => c.items.length > 0) ? (
+                <CommunityPulseSection pulse={pulse} locale={locale} variant="light" />
+              ) : null}
+              <RecentPostsFeed locale={locale} variant="light" dictionary={dictionary} />
+              <EntryFlowSection
+                flow={entryFlow}
+                variant="portal"
+                portalHead={{
+                  kicker: dictionary.home.entryFlowKicker,
+                  title: dictionary.home.entryFlowTitle,
+                  sub: dictionary.home.entryFlowSub,
+                }}
+              />
+            </>
+          }
+          right={<PortalNewsTeaser locale={locale} d={dictionary} items={newsTeaser} />}
+        />
+        <ServiceSection
+          variant="portal"
+          serviceHub={{
+            title: dictionary.home.serviceHubTitle,
+            sub: dictionary.home.serviceHubSub,
+          }}
+        />
+        <ProblemSection variant="portal" />
+        <TestimonialSection variant="portal" />
+        <CTASection variant="portal" />
+        <FooterSection variant="portal" />
       </div>
-      <LandingSplineAccent scene={scenes.accent1} position="top-right" />
-      <EntryFlowSection flow={entryFlow} />
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
-        <CommunityPulseSection pulse={pulse} locale={locale} />
-        <HomeBannerGrid locale={locale} />
-        <RecentPostsFeed locale={locale} />
-      </div>
-      <LandingSplineAccent scene={scenes.accent2} position="bottom-left" />
-      <ProblemSection />
-      <ServiceSection />
-      <LandingSplineAccent scene={scenes.accent3} position="top-left" />
-      <TestimonialSection />
-      <LandingSplineAccent scene={scenes.accent4} position="bottom-right" />
-      <CTASection />
-      <FooterSection />
-    </main>
+    </PortalHomeShell>
   );
 }

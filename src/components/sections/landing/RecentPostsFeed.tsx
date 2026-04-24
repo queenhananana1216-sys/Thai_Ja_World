@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { portAccentLink, portListRow, portPill, portWidgetCard, portWidgetHeaderSub, portWidgetHeaderTitle } from '@/lib/landing/portalWidgetStyle';
 import { fetchRecentPosts } from '@/lib/landing/fetchRecentPosts';
 import { categoryLabel } from '@/lib/community/postCategories';
 import type { Locale } from '@/i18n/types';
+import { getDictionary } from '@/i18n/dictionaries';
 
 /**
  * Philgo "최신 게시글" 라인에 대응 — 카테고리 무관 최신 12건을 한 리스트로.
@@ -12,6 +14,9 @@ import type { Locale } from '@/i18n/types';
 
 type Props = {
   locale: Locale;
+  variant?: 'dark' | 'light';
+  /** `light`일 때: 서버에서 getDictionary로 합친 객체 */
+  dictionary?: ReturnType<typeof getDictionary>;
 };
 
 function relTime(iso: string | null, locale: Locale): string {
@@ -41,12 +46,97 @@ const CATEGORY_COLOR: Record<string, { color: string; bg: string }> = {
   job: { color: '#c4b5fd', bg: 'rgba(196,181,253,0.18)' },
 };
 
-export async function RecentPostsFeed({ locale }: Props) {
+const CATEGORY_COLOR_LIGHT: Record<string, { color: string; bg: string }> = {
+  free: { color: '#9d174d', bg: 'rgba(251,113,133,0.12)' },
+  info: { color: '#075985', bg: 'rgba(14,165,233,0.1)' },
+  restaurant: { color: '#3f6212', bg: 'rgba(163,230,53,0.14)' },
+  flea: { color: '#92400e', bg: 'rgba(245,158,11,0.12)' },
+  job: { color: '#5b21b6', bg: 'rgba(167,139,250,0.12)' },
+};
+
+export async function RecentPostsFeed({ locale, variant = 'dark', dictionary }: Props) {
   const items = await fetchRecentPosts(12);
   if (items.length === 0) return null;
 
-  const title = locale === 'th' ? 'โพสต์ล่าสุด' : '최신 게시글';
-  const moreLabel = locale === 'th' ? 'ดูเพิ่ม →' : '전체 보기 →';
+  const d = dictionary ?? getDictionary(locale);
+  const title = d.home.recentPostsTitle?.trim() || (locale === 'th' ? 'โพสต์ล่าสุด' : '최신 게시글');
+  const subLine = d.home.recentPostsSub?.trim() || d.home.hubBoardSub;
+  const moreLabel =
+    d.home.newsHubSectionMore?.trim() || (locale === 'th' ? 'ดูเพิ่ม →' : '전체 보기 →');
+  const isLight = variant === 'light';
+
+  if (isLight) {
+    return (
+      <section
+        aria-labelledby="tj-recent-posts"
+        className="tj-recent-wrap tj-recent-wrap--light"
+        style={{ marginTop: 0, marginBottom: 8 }}
+      >
+        <div className={portWidgetCard + ' p-4'}>
+          <div className="mb-1 flex items-baseline justify-between gap-2">
+            <h2 id="tj-recent-posts" className={portWidgetHeaderTitle + ' m-0'}>
+              {title}
+            </h2>
+            <Link href="/community/boards" prefetch={false} className={portAccentLink}>
+              {moreLabel}
+            </Link>
+          </div>
+          <p className={portWidgetHeaderSub + ' mb-2.5'}>{subLine}</p>
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
+            .tj-recent-wrap--light .tj-recent-grid {
+              display: grid;
+              gap: 2px;
+              grid-template-columns: minmax(0, 1fr);
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 12px;
+              padding: 4px;
+            }
+            .tj-recent-wrap--light .tj-recent-row--light { text-decoration: none; color: inherit; }
+            .tj-recent-wrap--light .tj-recent-row--light:hover { background: #f1f5f9; }
+            .tj-recent-wrap--light .tj-recent-row--light:focus-visible {
+              outline: 2px solid #7c3aed;
+              outline-offset: 2px;
+              background: #f1f5f9;
+            }
+          `,
+            }}
+          />
+          <div className="tj-recent-grid">
+            {items.map((p) => {
+              const tone =
+                CATEGORY_COLOR_LIGHT[p.category] ?? { color: '#0f172a', bg: '#e2e8f0' };
+              return (
+                <Link
+                  key={p.id}
+                  href={hrefForPost(p)}
+                  prefetch={false}
+                  className={portListRow + ' tj-recent-row--light min-w-0 font-medium'}
+                >
+                  <span
+                    aria-hidden
+                    className={portPill}
+                    style={{ color: tone.color, background: tone.bg, fontSize: 10, letterSpacing: '0.04em' }}
+                  >
+                    {p.isKnowledgeTip ? (locale === 'th' ? 'เคล็ดลับ' : '꿀팁') : categoryLabel(p.category, locale)}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-slate-800">{p.title}</span>
+                  <span className="ml-auto flex shrink-0 items-baseline gap-1.5 text-slate-400 [font-size:11px] tabular-nums">
+                    {p.commentCount > 0 ? (
+                      <span>{locale === 'th' ? '💬' : '댓'} {p.commentCount}</span>
+                    ) : null}
+                    <time dateTime={p.createdAt ?? undefined}>{relTime(p.createdAt, locale)}</time>
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section

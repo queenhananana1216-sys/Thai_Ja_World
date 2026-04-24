@@ -16,6 +16,8 @@ interface HeroSectionProps {
   sceneUrls?: string[];
   /** 신규: spline_scenes 파이프라인의 `hero` 슬롯 레코드 (우선 적용) */
   heroScene?: SplineSceneRecord;
+  /** `portal`: 밝은 흰 카드 히어로(3D/absolute 장식 없음). 기본 `legacy`는 기존 다크 풀비주얼 */
+  variant?: 'legacy' | 'portal';
 }
 
 /** 카피가 비었을 때의 i18n 기본값(빈 페이지 방지) */
@@ -24,7 +26,12 @@ const HARDCODED_TITLE_FALLBACK = '오늘 태국 한줄 기사부터 바로 확�
 const HARDCODED_BODY_FALLBACK =
   '비자·병원·집·교통, 오늘 필요한 정보를 한줄로 먼저 보고 필요한 메뉴로 바로 이동하세요.';
 
-export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], heroScene }: HeroSectionProps) {
+export function HeroSection({
+  memberCount: _memberCount = 0,
+  sceneUrls = [],
+  heroScene,
+  variant = 'legacy',
+}: HeroSectionProps) {
   const [locale, setLocale] = useState<Locale>('ko');
 
   useLayoutEffect(() => {
@@ -231,6 +238,75 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], her
     padding: isMobileLayout ? '14px' : '16px',
     backdropFilter: 'blur(10px)',
   };
+
+  if (variant === 'portal') {
+    return (
+      <section
+        className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-slate-800 shadow-sm shadow-slate-200/40"
+        data-variant="hero-portal"
+      >
+        <div
+          className="flex flex-col justify-between gap-5 px-4 py-5 sm:min-h-[200px] sm:flex-row sm:items-stretch sm:gap-6 sm:px-6 sm:py-6"
+        >
+          <div className="min-w-0 flex-1">
+            <p
+              className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-violet-800"
+            >
+              {copyKicker}
+            </p>
+            <h1
+              className="mt-2.5 text-balance text-[1.4rem] font-extrabold leading-snug tracking-tight text-slate-900 sm:text-3xl"
+            >
+              {copyLead}
+            </h1>
+            <p className="mt-2.5 text-sm leading-relaxed text-slate-600 sm:text-[0.9rem]">{copyBody}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/tips"
+                className="inline-flex min-h-9 items-center justify-center rounded-xl bg-violet-600 px-3.5 text-xs font-bold text-white no-underline shadow-sm hover:bg-violet-700"
+              >
+                {copyPrimaryCta}
+              </Link>
+              <Link
+                href="/community/boards?cat=info"
+                className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-800 no-underline hover:bg-slate-50"
+              >
+                {copySecondaryCta}
+              </Link>
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-slate-500">{copyBridgeHint}</p>
+          </div>
+          <div className="flex w-full min-w-0 flex-col sm:max-w-[20rem]">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3.5 sm:p-4">
+              <p className="m-0 text-[10px] font-extrabold uppercase tracking-[0.1em] text-violet-800">
+                {copyPanelTitle}
+              </p>
+              <div className="mt-2.5 flex flex-col gap-2">
+                <Link
+                  href="/community/trade"
+                  className="inline-flex w-full min-h-9 items-center justify-start rounded-xl border border-violet-200/80 bg-violet-50 px-3 text-xs font-bold text-slate-900 no-underline hover:bg-violet-100"
+                >
+                  {copyPanelTrade}
+                </Link>
+                <Link
+                  href="/community/boards?cat=job"
+                  className="inline-flex w-full min-h-9 items-center justify-start rounded-xl border border-amber-200/80 bg-amber-50 px-3 text-xs font-bold text-amber-950 no-underline hover:bg-amber-100"
+                >
+                  {copyPanelJob}
+                </Link>
+                <Link
+                  href="/local"
+                  className="inline-flex w-full min-h-9 items-center justify-start rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 no-underline hover:bg-slate-100"
+                >
+                  {copyPanelLocal}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section style={sectionStyle}>

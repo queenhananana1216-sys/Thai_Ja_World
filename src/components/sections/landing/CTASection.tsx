@@ -1,6 +1,34 @@
 import Link from 'next/link';
+import { portWidgetCard, portPrimaryBtn, portSecondaryBtn } from '@/lib/landing/portalWidgetStyle';
 
-export function CTASection() {
+type Props = { variant?: 'legacy' | 'portal' };
+
+export function CTASection({ variant = 'legacy' }: Props) {
+  if (variant === 'portal') {
+    return (
+      <section className="border-t border-slate-200/80 bg-slate-100/50 py-8" data-variant="cta-portal">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+          <div className={portWidgetCard + ' border-violet-200/90 bg-violet-50/40 p-5 sm:p-6'}>
+            <h2 className="m-0 text-balance text-lg font-extrabold leading-snug text-slate-900 sm:text-xl">
+              오늘 처음 태국에 왔다면, 이미 3년 산 사람의 정보가 여기 있습니다.
+            </h2>
+            <p className="mt-2.5 m-0 text-sm leading-relaxed text-slate-600">
+              가입비 없음. 월 구독 없음. 이메일 주소 하나로 30초 안에 핵심 기능을 시작할 수 있습니다.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Link href="/auth/signup" className={portPrimaryBtn + ' min-h-10 text-[0.8125rem]'}>
+                지금 무료 가입하기
+              </Link>
+              <Link href="/news" className={portSecondaryBtn + ' min-h-10 text-[0.8125rem]'}>
+                게스트로 먼저 구경하기
+              </Link>
+            </div>
+            <p className="mt-2.5 m-0 text-xs text-slate-500">스팸 메일 없음 · 언제든 탈퇴 가능 · 광고 계정 별도 분리</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
   return (
     <section
       style={{

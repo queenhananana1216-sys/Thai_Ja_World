@@ -1,13 +1,23 @@
 'use client';
 
 import Link from 'next/link';
+import { portBodyText, portPrimaryBtn, portSecondaryBtn, portWidgetCard, portWidgetKicker } from '@/lib/landing/portalWidgetStyle';
 import type { EntryFlowResponse } from '@/lib/landing/types';
+
+type PortalHead = { kicker: string; title: string; sub: string };
 
 interface EntryFlowSectionProps {
   flow: EntryFlowResponse;
+  variant?: 'legacy' | 'portal';
+  /** `portal`에서만: i18n에서 합쳐진 머릿말(서버에서 props로) */
+  portalHead?: PortalHead;
 }
 
-export function EntryFlowSection({ flow }: EntryFlowSectionProps) {
+export function EntryFlowSection({
+  flow,
+  variant = 'legacy',
+  portalHead,
+}: EntryFlowSectionProps) {
   function getSessionId(): string {
     try {
       const key = 'tj_ux_session_id';
@@ -48,6 +58,55 @@ export function EntryFlowSection({ flow }: EntryFlowSectionProps) {
     } catch {
       // tracking failure should not interrupt navigation
     }
+  }
+
+  if (variant === 'portal' && portalHead) {
+    return (
+      <section className="pt-0" data-variant="entry-flow-portal" aria-labelledby="tj-entry-flow-portal-title">
+        <div className="mb-3 min-w-0 sm:mb-4">
+          <p className={`m-0 inline-block rounded-md border border-violet-200 bg-violet-50 px-2 py-0.5 ${portWidgetKicker}`}>
+            {portalHead.kicker}
+          </p>
+          <h2
+            id="tj-entry-flow-portal-title"
+            className="mt-2 text-sm font-extrabold text-slate-800 sm:text-base"
+          >
+            {portalHead.title}
+          </h2>
+          <p className="mt-1.5 text-xs leading-relaxed text-slate-500 sm:text-[0.8125rem]">{portalHead.sub}</p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2.5 min-[500px]:grid-cols-2 min-[500px]:gap-3">
+          {flow.lanes.map((lane) => (
+            <article key={lane.id} className={portWidgetCard + ' p-3.5 sm:p-4'}>
+              <p className="m-0 text-sm font-extrabold leading-tight text-slate-800">{lane.title}</p>
+              <p className={'mt-1.5 m-0 ' + portBodyText + ' line-clamp-2'}>{lane.description}</p>
+              <p className="mt-2.5 rounded-lg border border-amber-200/60 bg-amber-50/80 px-2.5 py-1.5 text-[11px] font-medium leading-snug text-amber-950 line-clamp-2">
+                {lane.signal}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link
+                  href={lane.primaryHref}
+                  className={portPrimaryBtn + ' min-h-9 min-w-0 flex-1 basis-[9rem]'}
+                  onClick={() => void trackLaneClick(lane.id, 'primary')}
+                >
+                  {lane.primaryLabel}
+                </Link>
+                {lane.secondaryHref && lane.secondaryLabel ? (
+                  <Link
+                    href={lane.secondaryHref}
+                    className={portSecondaryBtn + ' min-h-9 min-w-0 flex-1 basis-[9rem]'}
+                    onClick={() => void trackLaneClick(lane.id, 'secondary')}
+                  >
+                    {lane.secondaryLabel}
+                  </Link>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    );
   }
 
   return (

@@ -13,9 +13,11 @@ import type { Locale } from '@/i18n/types';
 type Props = {
   pulse: CommunityPulse;
   locale: Locale;
+  variant?: 'dark' | 'light';
 };
 
-export function CommunityPulseSection({ pulse, locale }: Props) {
+export function CommunityPulseSection({ pulse, locale, variant = 'dark' }: Props) {
+  const light = variant === 'light';
   const nonEmpty = pulse.columns.filter((c) => c.items.length > 0);
   if (nonEmpty.length === 0) return null;
 
@@ -31,19 +33,20 @@ export function CommunityPulseSection({ pulse, locale }: Props) {
   return (
     <section
       aria-labelledby="tj-pulse-title"
+      className={light ? 'tj-pulse-section tj-pulse-section--light' : 'tj-pulse-section'}
       style={{
-        marginTop: 40,
+        marginTop: light ? 0 : 40,
         marginBottom: 8,
       }}
     >
-      <div style={{ textAlign: 'left', marginBottom: 18 }}>
+      <div style={{ textAlign: 'left', marginBottom: light ? 12 : 18 }}>
         <p
           style={{
             margin: 0,
             fontSize: 11,
             letterSpacing: '0.12em',
             fontWeight: 700,
-            color: '#f9a8d4',
+            color: light ? '#6d28d9' : '#f9a8d4',
             textTransform: 'uppercase',
           }}
         >
@@ -53,15 +56,15 @@ export function CommunityPulseSection({ pulse, locale }: Props) {
           id="tj-pulse-title"
           style={{
             margin: '6px 0 4px',
-            fontSize: 26,
+            fontSize: light ? 18 : 26,
             lineHeight: 1.25,
             fontWeight: 800,
-            color: '#f8fafc',
+            color: light ? '#0f172a' : '#f8fafc',
           }}
         >
           {title}
         </h2>
-        <p style={{ margin: 0, color: '#94a3b8', fontSize: 13 }}>{sub}</p>
+        <p style={{ margin: 0, color: light ? '#64748b' : '#94a3b8', fontSize: 13 }}>{sub}</p>
       </div>
 
       <style
@@ -76,8 +79,14 @@ export function CommunityPulseSection({ pulse, locale }: Props) {
               }
               .tj-pulse-mobile-tabs { display: none; }
             }
-            .tj-pulse-row:hover { background: rgba(255,255,255,0.06); }
-            .tj-pulse-row:focus-visible {
+            .tj-pulse-section--light .tj-pulse-row:hover { background: #f1f5f9; }
+            .tj-pulse-section--light .tj-pulse-row:focus-visible {
+              outline: 2px solid #7c3aed;
+              outline-offset: 2px;
+              background: #f1f5f9;
+            }
+            .tj-pulse-section:not(.tj-pulse-section--light) .tj-pulse-row:hover { background: rgba(255,255,255,0.06); }
+            .tj-pulse-section:not(.tj-pulse-section--light) .tj-pulse-row:focus-visible {
               outline: 2px solid #c4b5fd;
               outline-offset: 2px;
               background: rgba(255,255,255,0.06);
@@ -89,12 +98,22 @@ export function CommunityPulseSection({ pulse, locale }: Props) {
       {/* 데스크톱 ≥1024px 전용 그리드 */}
       <div className="tj-pulse-grid">
         {pulse.columns.map((col) => (
-          <PulseCard key={col.label} col={col} locale={locale} variant="grid" />
+          <PulseCard
+            key={col.label}
+            col={col}
+            locale={locale}
+            variant="grid"
+            appearance={light ? 'light' : 'dark'}
+          />
         ))}
       </div>
 
       {/* 모바일 <1024px 전용 탭 */}
-      <PulseColumnTabs columns={pulse.columns} locale={locale} />
+      <PulseColumnTabs
+        columns={pulse.columns}
+        locale={locale}
+        appearance={light ? 'light' : 'dark'}
+      />
     </section>
   );
 }

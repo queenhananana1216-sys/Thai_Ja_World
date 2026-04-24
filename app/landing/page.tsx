@@ -18,6 +18,8 @@ import { fetchLandingStatsSSR } from '@/lib/stats/fetchStatsSSR';
 import { getLocale } from '@/i18n/get-locale';
 import { resolveSplineScenes } from '@/lib/spline/resolver';
 import type { SplineScenesBySlot } from '@/lib/spline/types';
+import { fetchLandingWeatherSSR } from '@/lib/weather/fetchLandingWeatherSSR';
+import type { OpenMeteoCityPayload } from '@/lib/weather/openMeteoThailand';
 
 export const metadata: Metadata = {
   title: '태자월드 — 태국 사는 한국인 커뮤니티 | 비자·생활정보·한인업체',
@@ -123,12 +125,14 @@ export default async function LandingPage() {
     generatedAt: new Date().toISOString(),
   };
 
-  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled] = await Promise.allSettled([
-    fetchLandingStatsSSR(),
-    getLandingEntryFlow(),
-    resolveSplineScenes(),
-    fetchCommunityPulse(locale),
-  ]);
+  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled, weatherSettled] =
+    await Promise.allSettled([
+      fetchLandingStatsSSR(),
+      getLandingEntryFlow(),
+      resolveSplineScenes(),
+      fetchCommunityPulse(locale),
+      fetchLandingWeatherSSR(locale),
+    ]);
 
   const stats =
     statsSettled.status === 'fulfilled'
@@ -138,6 +142,10 @@ export default async function LandingPage() {
     entryFlowSettled.status === 'fulfilled' ? entryFlowSettled.value : fallbackEntryFlow;
   const scenes = scenesSettled.status === 'fulfilled' ? scenesSettled.value : fallbackScenes;
   const pulse = pulseSettled.status === 'fulfilled' ? pulseSettled.value : fallbackPulse;
+  const weatherData =
+    weatherSettled.status === 'fulfilled'
+      ? weatherSettled.value
+      : { cities: [] as OpenMeteoCityPayload[], updatedAt: null, degraded: true as const };
 
   const heroScene = scenes.hero;
   const heroSceneUrls = [heroScene.sceneCodeUrl, heroScene.publishedUrl].filter(
@@ -166,6 +174,14 @@ export default async function LandingPage() {
           memberCount={stats.memberCount}
           sceneUrls={heroSceneUrls}
           heroScene={heroScene}
+          pipe={{
+            weather: {
+              cities: weatherData.cities,
+              updatedAt: weatherData.updatedAt,
+              degraded: weatherData.degraded,
+            },
+            localPublicSpotCount: stats.spotCount,
+          }}
         />
       </div>
       <LandingSplineAccent scene={scenes.accent1} position="top-right" />

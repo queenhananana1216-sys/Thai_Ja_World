@@ -26,12 +26,18 @@ const ALL_PATHS = [
 const skipNews = process.argv.includes('--skip-news') || process.env.SMOKE_SKIP_NEWS === '1';
 const paths = skipNews ? ALL_PATHS.filter((p) => p !== '/news') : [...ALL_PATHS];
 
+/** API는 페이지와 분리(502 시 업스트림·쿼터 — 경고만) */
+const API_PATHS = ['/api/weather', '/api/stats'] as const;
+
+const EXTRA_PAGE_PATHS = ['/community/boards'] as const;
+
 async function main() {
   if (skipNews) {
     console.log('[smoke-public-routes] /news 검사 생략 (--skip-news 또는 SMOKE_SKIP_NEWS=1)');
   }
   const failures: string[] = [];
-  for (const p of paths) {
+  const allPaths = [...paths, ...EXTRA_PAGE_PATHS];
+  for (const p of allPaths) {
     const url = `${base}${p}`;
     try {
       const res = await fetch(url, { redirect: 'follow' });
@@ -41,11 +47,28 @@ async function main() {
       failures.push(`${url} → ${e instanceof Error ? e.message : String(e)}`);
     }
   }
+  const apiWarnings: string[] = [];
+  for (const p of API_PATHS) {
+    const url = `${base}${p}`;
+    try {
+      const res = await fetch(url, { redirect: 'follow' });
+      if (res.status === 404) apiWarnings.push(`${url} → 404`);
+      else if (res.status === 502) apiWarnings.push(`${url} → 502 (upstream, non-fatal)`);
+      else if (!res.ok) apiWarnings.push(`${url} → ${res.status}`);
+    } catch (e) {
+      apiWarnings.push(`${url} → ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
   if (failures.length) {
     console.error('[smoke-public-routes] 실패:\n', failures.join('\n'));
     process.exit(1);
   }
-  console.log(`[smoke-public-routes] OK (${paths.length} path(s)) @ ${base}`);
+  for (const w of apiWarnings) {
+    console.warn('[smoke-public-routes] API', w);
+  }
+  console.log(
+    `[smoke-public-routes] OK (${allPaths.length} page(s), ${API_PATHS.length} API check(s)) @ ${base}`,
+  );
 }
 
 void main();

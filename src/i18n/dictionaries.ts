@@ -84,6 +84,10 @@ export type Dictionary = {
     weatherChiangMai: string;
     weatherLoading: string;
     weatherUnavailable: string;
+    /** 랜딩 히어로 파이프 — 공개 local_spots 건수. 플레이스홀더 {n} */
+    heroPipeLocalShops: string;
+    /** 날씨 미수신·에러 시 한 줄(히어로 미리보기) */
+    heroPipeWeatherFallback: string;
     fxTitle: string;
     fxMock: string;
     fxRemote: {
@@ -722,6 +726,8 @@ const ko: Dictionary = {
     weatherChiangMai: '치앙마이',
     weatherLoading: '날씨 불러오는 중…',
     weatherUnavailable: '날씨를 불러오지 못했어요. 잠시 후에 다시 확인해 주세요.',
+    heroPipeLocalShops: '공개 로컬 {n}곳',
+    heroPipeWeatherFallback: '날씨·시간: 잠시 후에 다시 확인',
     fxTitle: '환율 리모컨',
     fxMock: 'Frankfurter(ECB) · 새로고침으로 갱신',
     fxRemote: {
@@ -1355,6 +1361,8 @@ const th: Dictionary = {
     weatherChiangMai: 'เชียงใหม่',
     weatherLoading: 'กำลังโหลดสภาพอากาศ…',
     weatherUnavailable: 'โหลดสภาพอากาศไม่ได้ ลองใหม่ในอีกสักครู่นะ',
+    heroPipeLocalShops: 'ร้านท้องถิ่นเปิด {n} ร้าน',
+    heroPipeWeatherFallback: 'สภาพอากาศ — ลองใหม่อีกครั้ง',
     fxTitle: 'รีโมทเรท',
     fxMock: 'Frankfurter(ECB) · กดรีเฟรช',
     fxRemote: {

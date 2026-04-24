@@ -1,6 +1,6 @@
 import type { Locale } from '@/i18n/types';
 
-export type PostCategorySlug = 'free' | 'restaurant' | 'info' | 'flea' | 'job';
+export type PostCategorySlug = 'free' | 'restaurant' | 'info' | 'flea' | 'job' | 'intro';
 
 export const POST_CATEGORY_SLUGS: PostCategorySlug[] = [
   'free',
@@ -8,6 +8,7 @@ export const POST_CATEGORY_SLUGS: PostCategorySlug[] = [
   'info',
   'flea',
   'job',
+  'intro',
 ];
 
 /**
@@ -29,6 +30,7 @@ const labels: Record<
   info: { ko: '정보', th: 'ข้อมูล' },
   flea: { ko: '중고·거래', th: 'มือสอง' },
   job: { ko: '알바·구인', th: 'งาน·จ้าง' },
+  intro: { ko: '가입 인사', th: 'ทักทาย' },
 };
 
 export function categoryLabel(slug: string, locale: Locale): string {

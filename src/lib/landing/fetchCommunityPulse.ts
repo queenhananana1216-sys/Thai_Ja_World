@@ -137,7 +137,7 @@ type PostsQuery = {
   label: string;
   accent: PulseColumn['accent'];
   moreHref: string;
-  category: 'free' | 'restaurant' | 'info' | 'flea' | 'job';
+  category: 'free' | 'restaurant' | 'info' | 'flea' | 'job' | 'intro';
   isKnowledgeTip: boolean | 'any';
   /** 'info'+is_knowledge_tip=true 인 꿀팁은 /tips/[id] 로 보내야 한다 */
   itemHrefBase: '/community/boards/' | '/tips/';

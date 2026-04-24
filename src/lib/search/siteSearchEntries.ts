@@ -18,11 +18,11 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
   {
     href: '/',
     koTitle: '홈',
-    thTitle: 'หน้าแรก',
+    thTitle: 'หน้าแรก (ลาน · ร้าน · ข่าวสรุป)',
     koHint: '/',
     thHint: '/',
     koBlob: '홈 메인 대시보드 피드 태자월드 thai ja',
-    thBlob: 'หน้าแรก โฮม ฟีด แดชบอร์ด ไทยจา',
+    thBlob: 'หน้าแรก โฮม กระดาน ชุมชน ร้าน มือสอง งาน ข่าวสรุป ไทย เกา',
   },
   {
     href: '/my-local-shop',
@@ -43,6 +43,17 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
       '로컬 맛집 배달 음식점 가게 일촌 검증 딜리버리 방콕 파타야 치앙마이 식당 추천',
     thBlob:
       'ร้านท้องถิ่น เดลิเวอรี่ อาหาร สั่งอาหาร แนะนำ กรุงเทพ พัทยา เชียงใหม่ ร้านอาหาร',
+  },
+  {
+    href: '/help/emergency',
+    koTitle: '긴급 연락·제보 (태국)',
+    thTitle: 'เบอร์ฉุกเฉิน · อ่านฉบับรวม (ทีมอัปเดต)',
+    koHint: '대사관 191 1669',
+    thHint: 'ฉุกเฉิน สนง. ฯ 191 0404',
+    koBlob:
+      '긴급 연락 대사관 응급 191 1669 199 영사 0404 실종 제보 광장 정보 help emergency 태국',
+    thBlob:
+      'ฉุกเฉิน สถานฯ ตำรวจ 191 1669 199 0404 รายงาน หาเพื่อน หน้าเว็บทีมกำหนด ไม่ใช่บอต แจ้ง บอร์ด',
   },
   {
     href: '/community/boards',
@@ -82,6 +93,15 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thHint: '/community/boards?cat=free',
     koBlob: '자유 잡담 수다 일상 TMI 게시판',
     thBlob: 'ทั่วไป คุย บอร์ด',
+  },
+  {
+    href: '/community/boards?cat=intro',
+    koTitle: '가입 인사',
+    thTitle: 'กระทู้ทักทาย',
+    koHint: '/community/boards?cat=intro',
+    thHint: '/community/boards?cat=intro',
+    koBlob: '가입인사 인사말 환영 신입 첫인사',
+    thBlob: 'ทักทาย สมาชิกใหม่ กระทู้แรก ทัก​ทาย',
   },
   {
     href: '/community/boards?cat=flea',

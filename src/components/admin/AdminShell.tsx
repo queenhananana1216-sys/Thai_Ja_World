@@ -15,6 +15,7 @@ import {
   Megaphone,
   Activity,
   Gauge,
+  Phone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { href: '/admin/bot-actions', icon: Bot, label: 'Bot Actions' },
   { href: '/admin/ux-bot', icon: Activity, label: 'UX Bot' },
   { href: '/admin/ops-center', icon: Gauge, label: 'Ops Center' },
+  { href: '/admin/safety-contacts', icon: Phone, label: 'Safety' },
 ];
 
 type Props = {

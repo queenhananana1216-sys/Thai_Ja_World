@@ -13,7 +13,7 @@ export type RecentPostItem = {
   id: string;
   title: string;
   excerpt: string | null;
-  category: 'free' | 'restaurant' | 'info' | 'flea' | 'job' | string;
+  category: 'free' | 'restaurant' | 'info' | 'flea' | 'job' | 'intro' | string;
   isKnowledgeTip: boolean;
   createdAt: string | null;
   commentCount: number;

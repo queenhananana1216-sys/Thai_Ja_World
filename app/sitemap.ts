@@ -38,6 +38,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/news`, lastModified: fallback, changeFrequency: 'daily', priority: 0.82 },
     { url: `${base}/tips`, lastModified: fallback, changeFrequency: 'daily', priority: 0.81 },
     { url: `${base}/local`, lastModified: fallback, changeFrequency: 'weekly', priority: 0.78 },
+    {
+      url: `${base}/help/emergency`,
+      lastModified: fallback,
+      changeFrequency: 'weekly',
+      priority: 0.72,
+    },
     { url: `${base}/minihome`, lastModified: fallback, changeFrequency: 'weekly', priority: 0.62 },
     { url: `${base}/terms`, lastModified: fallback, changeFrequency: 'yearly', priority: 0.35 },
     { url: `${base}/privacy`, lastModified: fallback, changeFrequency: 'yearly', priority: 0.35 },

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { CTASection } from '@/components/sections/landing/CTASection';
+import { CommunityPulseSection } from '@/components/sections/landing/CommunityPulseSection';
 import { EntryFlowSection } from '@/components/sections/landing/EntryFlowSection';
 import { FooterSection } from '@/components/sections/landing/FooterSection';
 import { HeroSection } from '@/components/sections/landing/HeroSection';
@@ -10,7 +11,9 @@ import { LandingSplineAccent } from '@/components/sections/landing/LandingSpline
 import { LANDING_DEFAULT_STATS } from '@/lib/landing/constants';
 import { getLandingEntryFlow } from '@/lib/landing/entryFlow';
 import type { EntryFlowResponse } from '@/lib/landing/types';
+import { fetchCommunityPulse, type CommunityPulse } from '@/lib/landing/fetchCommunityPulse';
 import { fetchLandingStatsSSR } from '@/lib/stats/fetchStatsSSR';
+import { getLocale } from '@/i18n/get-locale';
 import { resolveSplineScenes } from '@/lib/spline/resolver';
 import type { SplineScenesBySlot } from '@/lib/spline/types';
 
@@ -110,10 +113,19 @@ export default async function LandingPage() {
     },
   };
 
-  const [statsSettled, entryFlowSettled, scenesSettled] = await Promise.allSettled([
+  const locale = await getLocale().catch(() => 'ko' as const);
+
+  const fallbackPulse: CommunityPulse = {
+    columns: [],
+    degraded: true,
+    generatedAt: new Date().toISOString(),
+  };
+
+  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled] = await Promise.allSettled([
     fetchLandingStatsSSR(),
     getLandingEntryFlow(),
     resolveSplineScenes(),
+    fetchCommunityPulse(locale),
   ]);
 
   const stats =
@@ -123,6 +135,7 @@ export default async function LandingPage() {
   const entryFlow =
     entryFlowSettled.status === 'fulfilled' ? entryFlowSettled.value : fallbackEntryFlow;
   const scenes = scenesSettled.status === 'fulfilled' ? scenesSettled.value : fallbackScenes;
+  const pulse = pulseSettled.status === 'fulfilled' ? pulseSettled.value : fallbackPulse;
 
   const heroScene = scenes.hero;
   const heroSceneUrls = [heroScene.sceneCodeUrl, heroScene.publishedUrl].filter(
@@ -155,6 +168,9 @@ export default async function LandingPage() {
       </div>
       <LandingSplineAccent scene={scenes.accent1} position="top-right" />
       <EntryFlowSection flow={entryFlow} />
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        <CommunityPulseSection pulse={pulse} locale={locale} />
+      </div>
       <LandingSplineAccent scene={scenes.accent2} position="bottom-left" />
       <ProblemSection />
       <ServiceSection />

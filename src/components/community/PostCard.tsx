@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { MessageCircle, Heart, Eye } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { RetroBadge } from '@/components/ui/retro-badge';
+import { isCommunityPublicViewCountsEnabled } from '@/lib/community/publicViewCounts';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -33,6 +34,7 @@ export function PostCard({
   date,
   pinned,
 }: Props) {
+  const showViews = isCommunityPublicViewCountsEnabled();
   return (
     <Link
       href={`/community/boards/${id}`}
@@ -69,7 +71,8 @@ export function PostCard({
             <span className="font-medium text-tj-muted">{author}</span>
             <span>{date}</span>
             <div className="ml-auto flex items-center gap-2">
-              {viewCount > 0 && (
+              {/* 조회수: DB `view_count` 는 유지. 공개는 NEXT_PUBLIC_COMMUNITY_PUBLIC_VIEW_COUNTS=true 일 때만 */}
+              {showViews && viewCount > 0 && (
                 <span className="flex items-center gap-0.5">
                   <Eye className="h-3 w-3" /> {viewCount}
                 </span>

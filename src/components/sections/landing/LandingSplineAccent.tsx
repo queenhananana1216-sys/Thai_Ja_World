@@ -32,20 +32,21 @@ export function LandingSplineAccent({ scene, position = 'top-right', height = 22
   return (
     <div
       aria-hidden
+      className="tj-landing-spline-accent"
       style={{
         position: 'relative',
         height: 0,
         overflow: 'visible',
-        zIndex: 1,
+        zIndex: 0,
         pointerEvents: 'none',
       }}
     >
       <div
         style={{
           position: 'absolute',
-          width: 320,
-          height,
-          opacity: 0.45,
+          width: 280,
+          height: Math.min(height, 160),
+          opacity: 0.14,
           filter: 'blur(0.5px)',
           ...SIDE_OFFSETS[position],
         }}

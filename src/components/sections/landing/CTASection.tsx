@@ -3,6 +3,7 @@ import Link from 'next/link';
 export function CTASection() {
   return (
     <section
+      className="relative z-10"
       style={{
         padding: '46px 0 52px',
         background: 'linear-gradient(180deg, #0c0e1c 0%, #090a16 100%)',

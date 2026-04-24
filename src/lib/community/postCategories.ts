@@ -1,6 +1,13 @@
 import type { Locale } from '@/i18n/types';
 
-export type PostCategorySlug = 'free' | 'restaurant' | 'info' | 'flea' | 'job';
+export type PostCategorySlug =
+  | 'free'
+  | 'restaurant'
+  | 'info'
+  | 'flea'
+  | 'job'
+  | 'report_find'
+  | 'report_missing';
 
 export const POST_CATEGORY_SLUGS: PostCategorySlug[] = [
   'free',
@@ -8,6 +15,8 @@ export const POST_CATEGORY_SLUGS: PostCategorySlug[] = [
   'info',
   'flea',
   'job',
+  'report_find',
+  'report_missing',
 ];
 
 /**
@@ -29,6 +38,8 @@ const labels: Record<
   info: { ko: '정보', th: 'ข้อมูล' },
   flea: { ko: '중고·거래', th: 'มือสอง' },
   job: { ko: '알바·구인', th: 'งาน·จ้าง' },
+  report_find: { ko: '제보함 · 사람 찾기', th: 'รายงาน · ตามหา' },
+  report_missing: { ko: '제보함 · 연락 안 됨', th: 'รายงาน · ติดต่อไม่ได้' },
 };
 
 export function categoryLabel(slug: string, locale: Locale): string {

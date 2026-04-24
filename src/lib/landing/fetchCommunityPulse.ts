@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { isCommunityPublicViewCountsEnabled } from '@/lib/community/publicViewCounts';
 import { createServerClient } from '@/lib/supabase/server';
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import type { Locale } from '@/i18n/types';
@@ -137,7 +138,7 @@ type PostsQuery = {
   label: string;
   accent: PulseColumn['accent'];
   moreHref: string;
-  category: 'free' | 'restaurant' | 'info' | 'flea' | 'job';
+  category: 'free' | 'restaurant' | 'info' | 'flea' | 'job' | 'report_find' | 'report_missing';
   isKnowledgeTip: boolean | 'any';
   /** 'info'+is_knowledge_tip=true 인 꿀팁은 /tips/[id] 로 보내야 한다 */
   itemHrefBase: '/community/boards/' | '/tips/';
@@ -184,6 +185,7 @@ async function fetchPostsColumn(
     const { count: todayCount } = await countQuery;
 
     column.todayCount = todayCount ?? 0;
+    const showViewBadges = isCommunityPublicViewCountsEnabled();
     column.items = (data ?? []).map((row) => {
       const id = String(row.id);
       return {
@@ -194,7 +196,8 @@ async function fetchPostsColumn(
         createdAt: (row.created_at as string | null) ?? null,
         commentCount:
           typeof row.comment_count === 'number' ? (row.comment_count as number) : null,
-        viewCount: typeof row.view_count === 'number' ? (row.view_count as number) : null,
+        /* select 는 view_count 유지; 공개 뱃지는 env 로만 */
+        viewCount: showViewBadges && typeof row.view_count === 'number' ? (row.view_count as number) : null,
       };
     });
     return { column, degraded: false };

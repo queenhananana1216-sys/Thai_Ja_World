@@ -1,9 +1,22 @@
 import { StatsBar } from '@/components/ui/landing/StatsBar';
-import { LANDING_TESTIMONIALS } from '@/lib/landing/constants';
+import { DEFAULT_MERGED_LANDING_PAGE_COPY } from '@/lib/landing/landingPageCopyDefaultPayload';
+import { pickBilingual } from '@/lib/landing/landingPageCopyShared';
+import type { TestimonialSectionCopy } from '@/lib/landing/landingPageCopyTypes';
+import type { Locale } from '@/i18n/types';
 
-export function TestimonialSection() {
+export function TestimonialSection({
+  copy,
+  locale,
+  degraded,
+}: {
+  copy?: TestimonialSectionCopy;
+  locale: Locale;
+  degraded?: boolean;
+}) {
+  const c = copy ?? DEFAULT_MERGED_LANDING_PAGE_COPY.testimonial;
   return (
     <section
+      className="relative z-10"
       style={{
         padding: '52px 0',
         background: 'linear-gradient(180deg, #101125 0%, #0c0e1c 100%)',
@@ -11,9 +24,14 @@ export function TestimonialSection() {
       }}
     >
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 16px' }}>
-        <h2 style={{ margin: 0, color: '#f8fafc', fontSize: 'clamp(24px,4.4vw,36px)', fontWeight: 800 }}>실제 교민들이 남긴 이야기</h2>
+        <h2 style={{ margin: 0, color: '#f8fafc', fontSize: 'clamp(24px,4.4vw,36px)', fontWeight: 800 }}>{pickBilingual(c.title, locale)}</h2>
+        {degraded ? (
+          <p className="mt-2 text-xs text-amber-200/80">
+            {locale === 'th' ? 'โหลดคำรับรองล้มเหลว — แสดงตัวอย่าง' : '후기 섹션 문구를 DB에서 읽지 못했습니다.'}
+          </p>
+        ) : null}
         <div style={{ marginTop: 16, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))' }}>
-          {LANDING_TESTIMONIALS.map((testimonial) => (
+          {c.items.map((testimonial) => (
             <blockquote
               key={testimonial.id}
               style={{

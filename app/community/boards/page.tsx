@@ -4,10 +4,12 @@ import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies
 import {
   categoryLabel,
   parseBoardListCategoryParam,
+  POST_CATEGORY_SLUGS,
 } from '@/lib/community/postCategories';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { formatDate } from '@/lib/utils/formatDate';
+import { isCommunityPublicViewCountsEnabled } from '@/lib/community/publicViewCounts';
 import { absoluteUrl } from '@/lib/seo/site';
 import PostAuthorMenu from './_components/PostAuthorMenu';
 
@@ -88,6 +90,9 @@ export default async function BoardsListPage({
 
   const listTitle = catFilter ? categoryLabel(catFilter, locale) : d.board.pageTitle;
 
+  const allCategories = POST_CATEGORY_SLUGS;
+  const showViewCounts = isCommunityPublicViewCountsEnabled();
+
   // 리액션 카운트(좋아요/공감) — 목록에는 버튼 없이 숫자만 표시
   const postIds = (list ?? []).map((p) => String(p.id));
   const countsByPostId: Record<string, { like: number; heart: number }> = {};
@@ -128,6 +133,76 @@ export default async function BoardsListPage({
         </div>
       </div>
 
+      <div className="mb-5 rounded-2xl border border-violet-200/60 bg-gradient-to-r from-violet-50/90 to-slate-50 p-4 text-sm text-slate-800 shadow-sm sm:p-5">
+        <p className="m-0 font-semibold text-slate-900">
+          {locale === 'th' ? 'ศูนย์กลางชุมชน' : '태국 사는 한국인 커뮤니티 허브'}
+        </p>
+        <p className="mt-1.5 m-0 leading-relaxed text-slate-600">
+          {locale === 'th'
+            ? 'ข่าว ทิป ร้าน กระดาน — ลิงก์สำคัญด้านล่าง'
+            : '뉴스·꿀팁·로컬·광장·제보(사람 찾기/행불)까지 한 흐름으로 이어집니다. (조회수 공개는 트래픽 늘면 켤 예정)'}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            href="/"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 no-underline hover:border-violet-400"
+          >
+            {locale === 'th' ? 'หน้าแรก' : '홈'}
+          </Link>
+          <Link
+            href="/news"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 no-underline hover:border-violet-400"
+          >
+            {locale === 'th' ? 'ข่าว' : '뉴스'}
+          </Link>
+          <Link
+            href="/tips"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 no-underline hover:border-violet-400"
+          >
+            {locale === 'th' ? 'เคล็ดลับ' : '꿀팁'}
+          </Link>
+          <Link
+            href="/local"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 no-underline hover:border-violet-400"
+          >
+            {locale === 'th' ? 'ร้าน/ท้องถิ่น' : '로컬'}
+          </Link>
+          <Link
+            href="/community/boards?cat=report_find"
+            className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900 no-underline hover:border-amber-400"
+          >
+            {locale === 'th' ? 'รายงาน · ตามหา' : '제보 · 사람 찾기'}
+          </Link>
+        </div>
+      </div>
+
+      <div className="mb-5 flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-slate-500">{locale === 'th' ? 'หมวด' : '말머리'}</span>
+        <Link
+          href="/community/boards"
+          className={
+            !catFilter
+              ? 'rounded-full bg-slate-900 px-3 py-1 font-semibold text-white no-underline'
+              : 'rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 no-underline hover:border-violet-300'
+          }
+        >
+          {locale === 'th' ? 'ทั้งหมด' : '전체'}
+        </Link>
+        {allCategories.map((c) => (
+          <Link
+            key={c}
+            href={`/community/boards?cat=${c}`}
+            className={
+              catFilter === c
+                ? 'rounded-full bg-violet-700 px-3 py-1 font-semibold text-white no-underline'
+                : 'rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 no-underline hover:border-violet-300'
+            }
+          >
+            {categoryLabel(c, locale)}
+          </Link>
+        ))}
+      </div>
+
       {error && (
         <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           게시글을 불러오지 못했습니다. posts.image_urls 컬럼과 RLS를 확인하세요. ({error.message})
@@ -160,10 +235,17 @@ export default async function BoardsListPage({
         return (
           <article key={pid} className="mb-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-violet-300 hover:shadow-md">
             <Link href={`/community/boards/${pid}`} className="block no-underline hover:no-underline">
-              <div className="text-xs font-medium text-slate-500">
+              <div className="break-words text-xs font-medium leading-relaxed text-slate-500">
                 {cat} · {author} · {formatDate(p.created_at as string | null)} · {d.board.comments}{' '}
-                {p.comment_count ?? 0} · {d.board.views} {p.view_count ?? 0} · 좋아요 {counts.like} · 공감{' '}
-                {counts.heart}
+                {p.comment_count ?? 0}
+                {showViewCounts ? (
+                  <>
+                    {' '}
+                    · {d.board.views} {p.view_count ?? 0}
+                  </>
+                ) : null}
+                {' '}
+                · 좋아요 {counts.like} · 공감 {counts.heart}
                 {authorHidden ? (
                   <>
                     {' '}

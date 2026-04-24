@@ -113,19 +113,10 @@ export default function FxRemoteWidget({
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [styleBalance, setStyleBalance] = useState<number | null>(null);
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
-
-  useEffect(() => {
-    function updateViewportFlag() {
-      setIsMobileViewport(window.innerWidth < 1024);
-    }
-    updateViewportFlag();
-    window.addEventListener('resize', updateViewportFlag);
-    return () => window.removeEventListener('resize', updateViewportFlag);
-  }, []);
 
   const isLandingRoute = pathname === '/' || pathname === '/landing';
-  const shouldHideOnMobileLanding = isLandingRoute && isMobileViewport;
+  /** 랜딩 포털에 SSR 환율 카드가 있어 FAB 중복을 피함 */
+  const shouldHideOnLanding = isLandingRoute;
 
   useEffect(() => {
     setSnap(initial);
@@ -412,7 +403,7 @@ export default function FxRemoteWidget({
     });
   }
 
-  if (shouldHideOnMobileLanding) {
+  if (shouldHideOnLanding) {
     return null;
   }
 

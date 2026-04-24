@@ -84,6 +84,15 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thBlob: 'ทั่วไป คุย บอร์ด',
   },
   {
+    href: '/community/boards?cat=intro',
+    koTitle: '가입 인사',
+    thTitle: 'กระทู้ทักทาย',
+    koHint: '/community/boards?cat=intro',
+    thHint: '/community/boards?cat=intro',
+    koBlob: '가입인사 인사말 환영 신입 첫인사',
+    thBlob: 'ทักทาย สมาชิกใหม่ กระทู้แรก ทัก​ทาย',
+  },
+  {
     href: '/community/boards?cat=flea',
     koTitle: '익명 한줄장 · 중고',
     thTitle: 'ตลาดบรรทัดเดียว · มือสอง',

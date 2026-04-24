@@ -47,10 +47,14 @@ export type Dictionary = {
     heroLead: string;
     /** 히어로 서브 설명 — 줄바꿈은 \\n */
     heroSub: string;
+    /** 홈 — 스크롤 후 보이는 한 줄 안내(광장·가입인사) */
+    scrollCta: string;
     /** 홈 최상단 포털형 검색 띠 제목 */
     portalMastTitle: string;
     portalMastSub: string;
     portalMastQuickAria: string;
+    /** 랜딩 2줄 텍스트 메뉴(필고식 밀도) */
+    portalTextNavAria: string;
     dreamIntro: string;
     dreamMinihome: string;
     dreamMid: string;
@@ -234,6 +238,8 @@ export type Dictionary = {
     newPostDisabled: string;
     /** /community/trade 허브 */
     tradeHubTitle: string;
+    /** 가입 인사(말머리) 안내 */
+    introGreetingHint: string;
     tradeHubIntro: string;
     tradeFleaCta: string;
     tradeJobCta: string;
@@ -686,9 +692,13 @@ const ko: Dictionary = {
     heroLead: '막히면 여기서부터',
     heroSub:
       '집·비자·병원비처럼 막히는 일, 겪은 걸 나누면 다음 사람한테 닿아요.\n홍보보다 팁·주의·정리를 먼저 — 가볍게 올려도 돼요.\n필요할 때만 들러도 괜찮아요.',
-    portalMastTitle: '통합 검색',
-    portalMastSub: '',
+    scrollCta:
+      '광고만 두꺼운 곳이 아니라, 막힌 일은 여기서 나누면 이어져요. 가입 인사 한 번은 광장 (가입 인사) 말머리에서 — 스타일 점수 1회 지급.',
+    portalMastTitle: '태자월드 통합 검색',
+    portalMastSub:
+      '태국에 사는 데 막힌 일, 비자·꿀팁·광장·뉴스·로컬·미니홈까지—사람이 운영하는 이웃 사이트처럼, 여기서 먼저 찾아보세요.',
     portalMastQuickAria: '자주 찾는 메뉴',
+    portalTextNavAria: '주요 메뉴(텍스트)',
     dreamIntro: '지금 쓸 수 있어요 · ',
     dreamMinihome: '미니홈으로 ',
     dreamMid: '내 방, 내 규칙. ',
@@ -861,6 +871,8 @@ const ko: Dictionary = {
       '정식 오픈 전이라 새 글 작성만 잠시 닫아 둔 구역이에요. 목록 보기와 예전 글 읽기는 그대로예요.',
     newPostDisabled: '곧 글쓰기가 열려요',
     tradeHubTitle: '중고·알바',
+    introGreetingHint:
+      '「가입 인사」 말머리 — 첫 글 한 번(4자 이상)에 가입 환영 스타일 점수 1회 지급(미니홤 인사와 중복 없음).',
     tradeHubIntro:
       '중고나 일자리도 조심할 점·후기를 같이 적어 주시면 서로 도움이 돼요. 닉네임만 보이며, 목록에서 바로 이어서 쓸 수 있어요.',
     tradeFleaCta: '중고 코너 가기',
@@ -1319,9 +1331,13 @@ const th: Dictionary = {
     heroLead: 'ติดขัดตรงไหน — เริ่มที่นี่',
     heroSub:
       'บ้าน·วีซ่า·ค่ารพ ที่ติดขัด แชร์ประสบการณ์แล้วคนถัดไปได้ประโยชน์\nเน้นช่วยเหลือ·ข้อควรระวัง·สรุป มากกว่าโฆษณา — โพสต์สั้นๆ ก็ได้\nอยากเข้ามาตอนไหนก็ได้',
-    portalMastTitle: 'ค้นหา',
-    portalMastSub: '',
+    scrollCta:
+      'แค่โฆษณาเต็มไปหมดไม่ใช่ — งานติดๆ แบ่งกันที่นี่ แล้วก็ต่อถึงคนถัดไป. สวัสดีครั้งแรก: กระทู้ทักทาย ที่ลาน → รับสไตล์แต้มครั้งเดียว',
+    portalMastTitle: 'Thai Ja World — ค้นหา',
+    portalMastSub:
+      'เวลาติดขัดเรื่องบ้าน·วีซ่า·ร้าน·ชุมชน·ข่าว·มินิโฮม ค้นได้ที่นี่ก่อน — ชุมชนคนไทย–เกาหลีที่นี่',
     portalMastQuickAria: 'ทางลัดเมนูยอดนิยม',
+    portalTextNavAria: 'เมนูหลัก (แบบข้อความ)',
     dreamIntro: 'ใช้ได้แล้วตอนนี้ · ',
     dreamMinihome: 'ไปมินิโฮม ',
     dreamMid: 'ห้องของฉัน กฎของฉัน ',
@@ -1494,6 +1510,8 @@ const th: Dictionary = {
       'ก่อนเปิดตัวจริง — โพสต์ใหม่ปิดชั่วคราว ดูรายการและโพสต์เดิมได้ตามปกติ',
     newPostDisabled: 'จะเปิดให้โพสต์เร็วๆ นี้',
     tradeHubTitle: 'มือสอง · ซื้อขาย·หางาน',
+    introGreetingHint:
+      'หมวด "ทักทาย" — โพสต์แรก 1 ครั้ง (อย่างน้อย 4 ตัวอักษร) รับสไตล์แต้มเดินสมัคร 1 ครั้ง (ไม่ซ้ำกับมินิโฮม)',
     tradeHubIntro:
       'มือสองและงาน — แนะนำให้ใส่ข้อควรระวังหรือประสบการณ์ด้วย จะช่วยกันได้มาก เห็นแค่ชื่อเล่น ดูจากรายการหรือกดเขียนต่อได้เลย',
     tradeFleaCta: 'ไปโซนมือสอง',

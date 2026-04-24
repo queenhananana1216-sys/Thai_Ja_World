@@ -14,22 +14,13 @@ import type { NewsItem, LocalBusiness } from '@/types/taeworld';
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate, extractHostname } from '@/lib/utils/formatDate';
+import { LANDING_PORTAL_QUICK_HREFS, type LandingPortalQuickHref } from '@/lib/landing/portalQuickHrefs';
 import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
 
 const HOME_FETCH_BUDGET_MS = 12_000;
 
-const PORTAL_QUICK_HREFS = [
-  '/',
-  '/tips',
-  '/local',
-  '/community/boards',
-  '/community/boards?cat=info',
-  '/community/trade',
-  '/ilchon',
-  '/minihome',
-] as const;
-
-type PortalQuickHref = (typeof PORTAL_QUICK_HREFS)[number];
+const PORTAL_QUICK_HREFS = LANDING_PORTAL_QUICK_HREFS;
+type PortalQuickHref = LandingPortalQuickHref;
 type PortalQuickLink = { href: string; label: string; key: PortalQuickHref };
 
 function loginNextHref(path: string): string {

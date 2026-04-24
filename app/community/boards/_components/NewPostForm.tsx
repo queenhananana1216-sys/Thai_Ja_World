@@ -31,6 +31,8 @@ export default function NewPostForm({
       ? defaultCategory
       : cats[0]?.value ?? 'free';
   const [category, setCategory] = useState<PostCategorySlug>(initialCat);
+  const minBody =
+    category === 'intro' ? 4 : 2;
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [files, setFiles] = useState<FileList | null>(null);
@@ -151,6 +153,11 @@ export default function NewPostForm({
           </option>
         ))}
       </select>
+      {category === 'intro' && (
+        <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: 'var(--tj-muted)' }}>
+          {board.introGreetingHint}
+        </p>
+      )}
 
       <label htmlFor="ptitle">{board.title}</label>
       <input
@@ -168,7 +175,7 @@ export default function NewPostForm({
         value={content}
         onChange={(e) => setContent(e.target.value)}
         required
-        minLength={2}
+        minLength={minBody}
       />
 
       <label htmlFor="pimg">{board.imagesHint}</label>

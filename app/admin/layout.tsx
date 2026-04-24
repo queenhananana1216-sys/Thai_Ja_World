@@ -15,6 +15,11 @@ export const metadata = {
   title: '태자 월드 — 관리자',
 };
 
+// 관리자 트리 전체는 동적 렌더 — Supabase service role 클라이언트가 빌드 시점에
+// throw 하면 정적 프리렌더 실패로 배포가 깨진다. 이 플래그는 하위 page.tsx 모두에 전파.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   if (!(await resolveAdminAccess())) {
     notFound();

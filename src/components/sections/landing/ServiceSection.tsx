@@ -1,9 +1,22 @@
 import { ExchangeRateFloat } from '@/components/ui/landing/ExchangeRateFloat';
-import { LANDING_FEATURES } from '@/lib/landing/constants';
+import { DEFAULT_MERGED_LANDING_PAGE_COPY } from '@/lib/landing/landingPageCopyDefaultPayload';
+import { pickBilingual } from '@/lib/landing/landingPageCopyShared';
+import type { ServiceSectionCopy } from '@/lib/landing/landingPageCopyTypes';
+import type { Locale } from '@/i18n/types';
 
-export function ServiceSection() {
+export function ServiceSection({
+  copy,
+  locale,
+  degraded,
+}: {
+  copy?: ServiceSectionCopy;
+  locale: Locale;
+  degraded?: boolean;
+}) {
+  const c = copy ?? DEFAULT_MERGED_LANDING_PAGE_COPY.service;
   return (
     <section
+      className="relative z-10"
       style={{
         padding: '52px 0',
         background: 'linear-gradient(180deg,#080a1a 0%,#120f2d 100%)',
@@ -12,14 +25,19 @@ export function ServiceSection() {
     >
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 16px' }}>
         <div style={{ marginBottom: 18, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0, fontSize: 'clamp(24px,4.4vw,36px)', lineHeight: 1.2, fontWeight: 800 }}>태자월드에서 바로 쓸 수 있는 것들</h2>
-          <p style={{ margin: 0, borderRadius: 999, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)', padding: '6px 10px', fontSize: 12, color: '#cbd5e1' }}>
-            새 기능은 배열에 항목을 추가하면 섹션이 자동 확장됩니다.
+          <h2 style={{ margin: 0, fontSize: 'clamp(24px,4.4vw,36px)', lineHeight: 1.2, fontWeight: 800 }}>{pickBilingual(c.title, locale)}</h2>
+          <p style={{ margin: 0, maxWidth: 480, borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)', padding: '8px 12px', fontSize: 12, lineHeight: 1.5, color: '#cbd5e1' }}>
+            {pickBilingual(c.subtitle, locale)}
+            {degraded ? (
+              <span style={{ display: 'block', marginTop: 6, color: 'rgba(253,230,138,0.95)' }}>
+                {locale === 'th' ? ' (แสดงค่าเริ่มต้น — DB ล้มเหลว)' : ' (DB 연결 실패 — 기본 문구 표시)'}
+              </span>
+            ) : null}
           </p>
         </div>
         <ExchangeRateFloat />
         <div style={{ position: 'relative', marginTop: 16, display: 'grid', gap: 12 }}>
-          {LANDING_FEATURES.map((feature) => (
+          {c.features.map((feature) => (
             <article
               key={feature.id}
               style={{

@@ -52,6 +52,7 @@ export function EntryFlowSection({ flow }: EntryFlowSectionProps) {
 
   return (
     <section
+      className="relative z-10"
       style={{
         padding: '46px 0 52px',
         background: 'linear-gradient(180deg,#090b1d 0%,#0f1024 100%)',

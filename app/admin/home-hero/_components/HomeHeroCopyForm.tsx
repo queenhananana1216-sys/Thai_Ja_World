@@ -9,9 +9,11 @@ type Initial = Record<string, string>;
 export function HomeHeroCopyForm({
   initial,
   defaultsHint,
+  defaultLandingPageCopyJson,
 }: {
   initial: Initial;
   defaultsHint: MergedHeroSiteCopy;
+  defaultLandingPageCopyJson: string;
 }) {
   const router = useRouter();
   const [brandTai, setBrandTai] = useState(initial['home_hero_brand_tai:ko'] ?? '');
@@ -51,6 +53,10 @@ export function HomeHeroCopyForm({
   const [dreamPersTh, setDreamPersTh] = useState(initial['home_dream_personal:th'] ?? '');
   const [dreamOutKo, setDreamOutKo] = useState(initial['home_dream_outro:ko'] ?? '');
   const [dreamOutTh, setDreamOutTh] = useState(initial['home_dream_outro:th'] ?? '');
+  const [landingJson, setLandingJson] = useState(
+    (initial['home_landing_sections:ko']?.trim() ? initial['home_landing_sections:ko'] : null) ??
+      defaultLandingPageCopyJson,
+  );
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -104,6 +110,7 @@ export function HomeHeroCopyForm({
             { key: 'home_dream_personal', locale: 'th', value: dreamPersTh },
             { key: 'home_dream_outro', locale: 'ko', value: dreamOutKo },
             { key: 'home_dream_outro', locale: 'th', value: dreamOutTh },
+            { key: 'home_landing_sections', locale: 'ko', value: landingJson },
           ],
         }),
       });
@@ -382,6 +389,27 @@ export function HomeHeroCopyForm({
         <label>
           ปุ่มเข้าสู่ระบบ/สมัคร · ไทย
           <input value={gCtaTh} onChange={(e) => setGCtaTh(e.target.value)} maxLength={200} />
+        </label>
+      </fieldset>
+
+      <fieldset className="admin-home-hero-form__fieldset">
+        <legend>랜딩 하단 — 고민(Problem) · 서비스(Service) · 리뷰(Testimonial) JSON</legend>
+        <p className="admin-home-hero-form__hint" style={{ marginTop: 0 }}>
+          <code>public.site_copy</code> key <code>home_landing_sections</code> (로케일{' '}
+          <code>ko</code> 한 행)에 저장됩니다. 유효한 JSON 오브젝트여야 하며, 비우고 저장하면 i18n·코드 기본값이
+          적용됩니다. problem.title / service.title 등은 <code>ko</code>·<code>th</code> 문자열만
+          쓰면 됩니다. points·features·items 배열의 항목 필드(id 등)는 고정 권장입니다.
+        </p>
+        <label>
+          JSON
+          <textarea
+            value={landingJson}
+            onChange={(e) => setLandingJson(e.target.value)}
+            maxLength={24000}
+            rows={18}
+            className="admin-home-hero-form__textarea"
+            style={{ fontFamily: 'ui-monospace,monospace', fontSize: 12 }}
+          />
         </label>
       </fieldset>
 

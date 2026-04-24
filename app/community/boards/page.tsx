@@ -4,6 +4,7 @@ import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies
 import {
   categoryLabel,
   parseBoardListCategoryParam,
+  POST_CATEGORY_SLUGS,
 } from '@/lib/community/postCategories';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
@@ -88,6 +89,8 @@ export default async function BoardsListPage({
 
   const listTitle = catFilter ? categoryLabel(catFilter, locale) : d.board.pageTitle;
 
+  const allCategories = POST_CATEGORY_SLUGS;
+
   // 리액션 카운트(좋아요/공감) — 목록에는 버튼 없이 숫자만 표시
   const postIds = (list ?? []).map((p) => String(p.id));
   const countsByPostId: Record<string, { like: number; heart: number }> = {};
@@ -126,6 +129,33 @@ export default async function BoardsListPage({
             {d.board.newPost}
           </Link>
         </div>
+      </div>
+
+      <div className="mb-5 flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-slate-500">{locale === 'th' ? 'หมวด' : '말머리'}</span>
+        <Link
+          href="/community/boards"
+          className={
+            !catFilter
+              ? 'rounded-full bg-slate-900 px-3 py-1 font-semibold text-white no-underline'
+              : 'rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 no-underline hover:border-violet-300'
+          }
+        >
+          {locale === 'th' ? 'ทั้งหมด' : '전체'}
+        </Link>
+        {allCategories.map((c) => (
+          <Link
+            key={c}
+            href={`/community/boards?cat=${c}`}
+            className={
+              catFilter === c
+                ? 'rounded-full bg-violet-700 px-3 py-1 font-semibold text-white no-underline'
+                : 'rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 no-underline hover:border-violet-300'
+            }
+          >
+            {categoryLabel(c, locale)}
+          </Link>
+        ))}
       </div>
 
       {error && (

@@ -4,7 +4,11 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
-import { SITE_COPY_HOME_KEYS, type SiteCopyHomeKey } from '@/lib/siteCopy/heroCopyDefaults';
+import {
+  LANDING_PAGE_COPY_JSON_KEY,
+  SITE_COPY_HOME_KEYS,
+  type SiteCopyHomeKey,
+} from '@/lib/siteCopy/heroCopyDefaults';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
@@ -15,6 +19,7 @@ const MAX_LEN_BRAND = 160;
 const MAX_LEN_SUB = 3000;
 const MAX_LEN_BODY = 1200;
 const MAX_LEN_HOT_NOTE = 2000;
+const MAX_LEN_LANDING_JSON = 24000;
 
 type Entry = { key: string; locale: string; value: string };
 const KO_NOISY_HOME_COPY_PATTERNS: RegExp[] = [
@@ -28,6 +33,8 @@ function maxLenForKey(key: string): number {
   if (key === 'home_hero_sub') return MAX_LEN_SUB;
   if (key === 'home_hot_footnote') return MAX_LEN_HOT_NOTE;
   if (key === 'home_guest_public_body' || key === 'home_guest_member_body') return MAX_LEN_BODY;
+  if (key === 'home_guest_member_body') return MAX_LEN_BODY;
+  if (key === LANDING_PAGE_COPY_JSON_KEY) return MAX_LEN_LANDING_JSON;
   if (key.startsWith('home_dream_')) return MAX_LEN_BODY;
   return MAX_LEN_SHORT;
 }
@@ -42,6 +49,9 @@ function allowedActor(email: string | undefined): boolean {
 
 function isAllowedKey(key: string, locale: string): key is SiteCopyHomeKey {
   if (!SITE_COPY_HOME_KEYS.includes(key as SiteCopyHomeKey)) return false;
+  if (key === LANDING_PAGE_COPY_JSON_KEY) {
+    return locale === 'ko';
+  }
   if (
     key === 'home_hero_title' ||
     key === 'home_hero_tag' ||
@@ -115,6 +125,19 @@ export async function POST(req: Request) {
         { error: '히어로 문구에 금지된 패턴(근거 없는 인원/채팅방 문구)이 포함되어 저장할 수 없습니다.' },
         { status: 400 },
       );
+    }
+    if (key === LANDING_PAGE_COPY_JSON_KEY && trimmed) {
+      try {
+        const parsed: unknown = JSON.parse(trimmed);
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+          return NextResponse.json(
+            { error: 'home_landing_sections 값은 JSON 오브젝트여야 합니다.' },
+            { status: 400 },
+          );
+        }
+      } catch {
+        return NextResponse.json({ error: 'home_landing_sections JSON 파싱에 실패했습니다.' }, { status: 400 });
+      }
     }
 
     if (trimmed === '') {

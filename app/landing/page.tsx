@@ -10,10 +10,13 @@ import { ProblemSection } from '@/components/sections/landing/ProblemSection';
 import { ServiceSection } from '@/components/sections/landing/ServiceSection';
 import { TestimonialSection } from '@/components/sections/landing/TestimonialSection';
 import { LandingSplineAccent } from '@/components/sections/landing/LandingSplineAccent';
+import { ReportBoxSection } from '@/components/sections/landing/ReportBoxSection';
 import { LANDING_DEFAULT_STATS } from '@/lib/landing/constants';
 import { getLandingEntryFlow } from '@/lib/landing/entryFlow';
 import type { EntryFlowResponse } from '@/lib/landing/types';
 import { fetchCommunityPulse, type CommunityPulse } from '@/lib/landing/fetchCommunityPulse';
+import { fetchMergedLandingPageCopy } from '@/lib/landing/landingPageCopy';
+import { fetchReportBoxPreview } from '@/lib/landing/fetchReportBoxPreview';
 import { fetchLandingStatsSSR } from '@/lib/stats/fetchStatsSSR';
 import { getLocale } from '@/i18n/get-locale';
 import { resolveSplineScenes } from '@/lib/spline/resolver';
@@ -30,10 +33,10 @@ export const metadata: Metadata = {
  * 서버 호출(stats·entry flow·spline 장면)은 각각 자체 try/catch 폴백을 가지며,
  * 이 SSR 함수에서 한 번 더 `Promise.allSettled` 로 감싸 한 소스만 죽어도 다른 섹션은 렌더.
  *
- * 하드코딩된 3D 배열 / self-fetch / 하드코딩 카피 모두 제거됨:
- *  - 카피: i18n 기본값 + `site_copy` (Provider 통해) 파이프라인
- *  - 통계: Supabase 직접 집계 (`fetchLandingStatsSSR`)
- *  - Spline: `resolveSplineScenes()` 로 DB/ENV/시드 우선순위 병합
+ * 랜딩 하단 섹션(고민/서비스/리뷰)은 `site_copy` 키 `home_landing_sections` JSON + 코드 기본값.
+ *  - 히어로: i18n + `site_copy` (Layout Provider)
+ *  - 통계: `fetchLandingStatsSSR`
+ *  - Spline 액센트: `resolveSplineScenes()` (배치는 z-index로 본문 아래 유지)
  */
 export default async function LandingPage() {
   const fallbackEntryFlow: EntryFlowResponse = {
@@ -123,12 +126,15 @@ export default async function LandingPage() {
     generatedAt: new Date().toISOString(),
   };
 
-  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled] = await Promise.allSettled([
-    fetchLandingStatsSSR(),
-    getLandingEntryFlow(),
-    resolveSplineScenes(),
-    fetchCommunityPulse(locale),
-  ]);
+  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled, landingCopySettled, reportBoxSettled] =
+    await Promise.allSettled([
+      fetchLandingStatsSSR(),
+      getLandingEntryFlow(),
+      resolveSplineScenes(),
+      fetchCommunityPulse(locale),
+      fetchMergedLandingPageCopy(),
+      fetchReportBoxPreview(),
+    ]);
 
   const stats =
     statsSettled.status === 'fulfilled'
@@ -138,6 +144,11 @@ export default async function LandingPage() {
     entryFlowSettled.status === 'fulfilled' ? entryFlowSettled.value : fallbackEntryFlow;
   const scenes = scenesSettled.status === 'fulfilled' ? scenesSettled.value : fallbackScenes;
   const pulse = pulseSettled.status === 'fulfilled' ? pulseSettled.value : fallbackPulse;
+  const landingCopy = landingCopySettled.status === 'fulfilled' ? landingCopySettled.value : null;
+  const reportBox =
+    reportBoxSettled.status === 'fulfilled'
+      ? reportBoxSettled.value
+      : { find: [], missing: [], degraded: true, generatedAt: new Date().toISOString() };
 
   const heroScene = scenes.hero;
   const heroSceneUrls = [heroScene.sceneCodeUrl, heroScene.publishedUrl].filter(
@@ -161,7 +172,7 @@ export default async function LandingPage() {
             'radial-gradient(ellipse at top, rgba(196,181,253,0.28), transparent 45%), radial-gradient(ellipse at 25% 60%, rgba(249,168,212,0.2), transparent 55%), radial-gradient(ellipse at 85% 70%, rgba(251,191,36,0.14), transparent 60%)',
         }}
       />
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6">
         <HeroSection
           memberCount={stats.memberCount}
           sceneUrls={heroSceneUrls}
@@ -170,16 +181,29 @@ export default async function LandingPage() {
       </div>
       <LandingSplineAccent scene={scenes.accent1} position="top-right" />
       <EntryFlowSection flow={entryFlow} />
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+      <ReportBoxSection preview={reportBox} locale={locale} />
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6">
         <CommunityPulseSection pulse={pulse} locale={locale} />
         <HomeBannerGrid locale={locale} />
         <RecentPostsFeed locale={locale} />
       </div>
       <LandingSplineAccent scene={scenes.accent2} position="bottom-left" />
-      <ProblemSection />
-      <ServiceSection />
+      <ProblemSection
+        copy={landingCopy?.problem}
+        locale={locale}
+        degraded={!landingCopy || landingCopy.sectionsDegraded}
+      />
+      <ServiceSection
+        copy={landingCopy?.service}
+        locale={locale}
+        degraded={!landingCopy || landingCopy.sectionsDegraded}
+      />
       <LandingSplineAccent scene={scenes.accent3} position="top-left" />
-      <TestimonialSection />
+      <TestimonialSection
+        copy={landingCopy?.testimonial}
+        locale={locale}
+        degraded={!landingCopy || landingCopy.sectionsDegraded}
+      />
       <LandingSplineAccent scene={scenes.accent4} position="bottom-right" />
       <CTASection />
       <FooterSection />

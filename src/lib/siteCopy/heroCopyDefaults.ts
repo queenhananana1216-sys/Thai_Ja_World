@@ -31,10 +31,14 @@ export const DREAM_HOME_SITE_COPY_KEYS = [
   'home_dream_outro',
 ] as const;
 
+/** 랜딩 Problem / Service / Testimonial — `site_copy` 한 행(ko)에 JSON */
+export const LANDING_PAGE_COPY_JSON_KEY = 'home_landing_sections' as const;
+
 export const SITE_COPY_HOME_KEYS = [
   ...HERO_SITE_COPY_KEYS,
   ...MAIN_HOME_SITE_COPY_KEYS,
   ...DREAM_HOME_SITE_COPY_KEYS,
+  LANDING_PAGE_COPY_JSON_KEY,
 ] as const;
 
 export type HeroSiteCopyKey = (typeof HERO_SITE_COPY_KEYS)[number];

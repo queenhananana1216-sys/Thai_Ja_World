@@ -3,7 +3,7 @@ import Link from 'next/link';
 export function FooterSection() {
   return (
     <section
-      className="border-t border-white/10 bg-[#040816] py-14"
+      className="relative z-10 border-t border-white/10 bg-[#040816] py-14"
       style={{ borderTop: '1px solid rgba(255,255,255,0.12)', background: '#040816', padding: '46px 0 52px' }}
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6" style={{ maxWidth: 1180, margin: '0 auto', padding: '0 16px' }}>

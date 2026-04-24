@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from '@/lib/supabase/admin';
+import { defaultLandingPageCopyJsonString } from '@/lib/landing/landingPageCopyDefaultPayload';
 import {
   adminHomeSiteCopyInitialRecord,
   getMergedDefaultsFromI18n,
@@ -9,6 +10,8 @@ import { HomeHeroCopyForm } from './_components/HomeHeroCopyForm';
 export default async function AdminHomeHeroPage() {
   const defaults = getMergedDefaultsFromI18n();
   const initial = adminHomeSiteCopyInitialRecord(defaults);
+  const landingJsonDefault = defaultLandingPageCopyJsonString();
+  initial['home_landing_sections:ko'] = landingJsonDefault;
 
   try {
     const admin = createServiceRoleClient();
@@ -19,7 +22,7 @@ export default async function AdminHomeHeroPage() {
 
     for (const row of data ?? []) {
       const k = `${row.key}:${row.locale}`;
-      if (k in initial && typeof row.value === 'string') {
+      if (k in initial && typeof row.value === 'string' && row.value.trim()) {
         initial[k] = row.value;
       }
     }
@@ -37,7 +40,11 @@ export default async function AdminHomeHeroPage() {
         저장은 <code>public.site_copy</code> 테이블에 반영됩니다(마이그레이션 <code>035_site_copy_public_strings</code>).
         저장 직후 서버 캐시를 무효화하므로, 홈을 새로고침하면 바로 보여야 합니다.
       </p>
-      <HomeHeroCopyForm initial={initial} defaultsHint={defaults} />
+      <HomeHeroCopyForm
+        initial={initial}
+        defaultsHint={defaults}
+        defaultLandingPageCopyJson={landingJsonDefault}
+      />
     </main>
   );
 }

@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { CTASection } from '@/components/sections/landing/CTASection';
 import { CommunityPulseSection } from '@/components/sections/landing/CommunityPulseSection';
 import { EntryFlowSection } from '@/components/sections/landing/EntryFlowSection';
+import { HomeBannerGrid } from '@/components/sections/landing/HomeBannerGrid';
+import { RecentPostsFeed } from '@/components/sections/landing/RecentPostsFeed';
 import { FooterSection } from '@/components/sections/landing/FooterSection';
 import { HeroSection } from '@/components/sections/landing/HeroSection';
 import { ProblemSection } from '@/components/sections/landing/ProblemSection';
@@ -170,6 +172,8 @@ export default async function LandingPage() {
       <EntryFlowSection flow={entryFlow} />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
         <CommunityPulseSection pulse={pulse} locale={locale} />
+        <HomeBannerGrid locale={locale} />
+        <RecentPostsFeed locale={locale} />
       </div>
       <LandingSplineAccent scene={scenes.accent2} position="bottom-left" />
       <ProblemSection />

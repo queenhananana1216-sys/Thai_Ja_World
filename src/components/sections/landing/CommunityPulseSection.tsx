@@ -16,8 +16,7 @@ type Props = {
 };
 
 export function CommunityPulseSection({ pulse, locale }: Props) {
-  const nonEmpty = pulse.columns.filter((c) => c.items.length > 0);
-  if (nonEmpty.length === 0) return null;
+  const hasAnyItems = pulse.columns.some((c) => c.items.length > 0);
 
   const kicker = 'COMMUNITY PULSE';
   const title = locale === 'th' ? 'ตอนนี้ในชุมชนคุยอะไรกัน' : '지금 광장에서 오가는 이야기';
@@ -62,6 +61,26 @@ export function CommunityPulseSection({ pulse, locale }: Props) {
           {title}
         </h2>
         <p style={{ margin: 0, color: '#94a3b8', fontSize: 13 }}>{sub}</p>
+        {pulse.degraded && hasAnyItems ? (
+          <p style={{ margin: '8px 0 0', color: '#f87171', fontSize: 12 }}>{locale === 'th' ? 'ดึงข้อมูลบางส่วนล้มเหลว' : '일부 컬럼만 갱신됐을 수 있어요.'}</p>
+        ) : null}
+        {!hasAnyItems ? (
+          <div
+            style={{
+              marginTop: 12,
+              padding: '12px 14px',
+              borderRadius: 14,
+              border: '1px dashed rgba(255,255,255,0.1)',
+              background: 'rgba(15,17,40,0.4)',
+            }}
+          >
+            <p style={{ margin: 0, color: '#cbd5e1', fontSize: 13, lineHeight: 1.5 }}>
+              {locale === 'th'
+                ? 'รอ pipeline เติม — อีกสักครู่จะมีรายการข่าว/โพสต์'
+                : '아직 뉴스·광장 파이프라인에서 쌓인 공개 글이 없습니다. 수집·봇이 채우면 이 섹션이 함께 갱신됩니다.'}
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <style
@@ -86,15 +105,19 @@ export function CommunityPulseSection({ pulse, locale }: Props) {
         }}
       />
 
-      {/* 데스크톱 ≥1024px 전용 그리드 */}
-      <div className="tj-pulse-grid">
-        {pulse.columns.map((col) => (
-          <PulseCard key={col.label} col={col} locale={locale} variant="grid" />
-        ))}
-      </div>
+      {hasAnyItems ? (
+        <>
+          {/* 데스크톱 ≥1024px 전용 그리드 */}
+          <div className="tj-pulse-grid">
+            {pulse.columns.map((col) => (
+              <PulseCard key={col.label} col={col} locale={locale} variant="grid" />
+            ))}
+          </div>
 
-      {/* 모바일 <1024px 전용 탭 */}
-      <PulseColumnTabs columns={pulse.columns} locale={locale} />
+          {/* 모바일 <1024px 전용 탭 */}
+          <PulseColumnTabs columns={pulse.columns} locale={locale} />
+        </>
+      ) : null}
     </section>
   );
 }

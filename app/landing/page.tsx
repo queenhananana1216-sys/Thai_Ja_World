@@ -10,10 +10,13 @@ import { ProblemSection } from '@/components/sections/landing/ProblemSection';
 import { ServiceSection } from '@/components/sections/landing/ServiceSection';
 import { TestimonialSection } from '@/components/sections/landing/TestimonialSection';
 import { LandingSplineAccent } from '@/components/sections/landing/LandingSplineAccent';
+import { LandingPortalHighlights } from '@/components/sections/landing/LandingPortalHighlights';
 import { LANDING_DEFAULT_STATS } from '@/lib/landing/constants';
 import { getLandingEntryFlow } from '@/lib/landing/entryFlow';
 import type { EntryFlowResponse } from '@/lib/landing/types';
 import { fetchCommunityPulse, type CommunityPulse } from '@/lib/landing/fetchCommunityPulse';
+import { fetchRecentPosts } from '@/lib/landing/fetchRecentPosts';
+import { fetchLandingQuestStrip, type LandingQuestStrip } from '@/lib/landing/fetchLandingQuestStrip';
 import { fetchLandingStatsSSR } from '@/lib/stats/fetchStatsSSR';
 import { getLocale } from '@/i18n/get-locale';
 import { resolveSplineScenes } from '@/lib/spline/resolver';
@@ -126,12 +129,15 @@ export default async function LandingPage() {
     generatedAt: new Date().toISOString(),
   };
 
-  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled] = await Promise.allSettled([
-    fetchLandingStatsSSR(),
-    getLandingEntryFlow(),
-    resolveSplineScenes(),
-    fetchCommunityPulse(locale),
-  ]);
+  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled, recentSettled, questSettled] =
+    await Promise.allSettled([
+      fetchLandingStatsSSR(),
+      getLandingEntryFlow(),
+      resolveSplineScenes(),
+      fetchCommunityPulse(locale),
+      fetchRecentPosts(12),
+      fetchLandingQuestStrip(locale),
+    ]);
 
   const stats =
     statsSettled.status === 'fulfilled'
@@ -141,6 +147,9 @@ export default async function LandingPage() {
     entryFlowSettled.status === 'fulfilled' ? entryFlowSettled.value : fallbackEntryFlow;
   const scenes = scenesSettled.status === 'fulfilled' ? scenesSettled.value : fallbackScenes;
   const pulse = pulseSettled.status === 'fulfilled' ? pulseSettled.value : fallbackPulse;
+  const recentForPortal = recentSettled.status === 'fulfilled' ? recentSettled.value : [];
+  const questStrip: LandingQuestStrip =
+    questSettled.status === 'fulfilled' ? questSettled.value : { kind: 'ok' as const, items: [], degraded: true };
 
   const heroScene = scenes.hero;
   const heroSceneUrls = [heroScene.sceneCodeUrl, heroScene.publishedUrl].filter(
@@ -171,12 +180,20 @@ export default async function LandingPage() {
           heroScene={heroScene}
         />
       </div>
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        <LandingPortalHighlights
+          locale={locale}
+          pulse={pulse}
+          recent={recentForPortal}
+          questStrip={questStrip}
+        />
+      </div>
       <LandingSplineAccent scene={scenes.accent1} position="top-right" />
       <EntryFlowSection flow={entryFlow} />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
         <CommunityPulseSection pulse={pulse} locale={locale} />
         <HomeBannerGrid locale={locale} />
-        <RecentPostsFeed locale={locale} />
+        <RecentPostsFeed locale={locale} initialItems={recentForPortal} />
       </div>
       <LandingSplineAccent scene={scenes.accent2} position="bottom-left" />
       <ProblemSection />

@@ -103,6 +103,9 @@ function ItemRow({ item, locale }: { item: PulseItem; locale: Locale }) {
             {locale === 'th' ? '💬' : '댓'} {item.commentCount}
           </span>
         ) : null}
+        {typeof item.viewCount === 'number' && item.viewCount > 0 ? (
+          <span aria-label="views">{locale === 'th' ? `วิว${item.viewCount}` : `조${item.viewCount}`}</span>
+        ) : null}
         <time dateTime={item.createdAt ?? undefined}>{relTime(item.createdAt, locale)}</time>
       </span>
     </Link>

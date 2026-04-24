@@ -73,25 +73,25 @@ export function EntryFlowQuickRow({ flow, locale = 'ko' }: { flow: EntryFlowResp
         {lanes.map((lane) => (
           <div
             key={lane.id}
-            className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
+            className="flex flex-col rounded-lg border border-white/10 bg-slate-800/50 p-3 shadow-sm ring-1 ring-white/5 backdrop-blur-sm"
           >
             <div className="flex items-start gap-2">
               <span className="text-lg leading-none" aria-hidden>
                 {iconFor[lane.id] ?? '·'}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="m-0 text-sm font-extrabold text-slate-900">{lane.title}</p>
-                <p className="mt-1 m-0 line-clamp-2 text-xs leading-snug text-slate-600">{lane.description}</p>
+                <p className="m-0 text-sm font-extrabold text-slate-100">{lane.title}</p>
+                <p className="mt-1 m-0 line-clamp-2 text-xs leading-snug text-slate-400">{lane.description}</p>
               </div>
             </div>
-            <p className="mt-2 m-0 line-clamp-2 rounded border border-amber-200/80 bg-amber-50 px-2 py-1 text-[11px] leading-tight text-amber-900">
+            <p className="mt-2 m-0 line-clamp-2 rounded border border-amber-500/20 bg-amber-950/40 px-2 py-1 text-[11px] leading-tight text-amber-200/90">
               {lane.signal}
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Link
                 href={lane.primaryHref}
                 onClick={() => void trackLaneClick(lane.id, 'primary')}
-                className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md bg-slate-900 px-2.5 text-center text-xs font-bold text-white no-underline hover:bg-slate-800"
+                className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md bg-violet-600 px-2.5 text-center text-xs font-bold text-white no-underline hover:bg-violet-500"
               >
                 {lane.primaryLabel}
               </Link>
@@ -99,7 +99,7 @@ export function EntryFlowQuickRow({ flow, locale = 'ko' }: { flow: EntryFlowResp
                 <Link
                   href={lane.secondaryHref}
                   onClick={() => void trackLaneClick(lane.id, 'secondary')}
-                  className="inline-flex min-h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 text-center text-xs font-semibold text-slate-800 no-underline hover:bg-slate-50"
+                  className="inline-flex min-h-9 items-center justify-center rounded-md border border-white/15 bg-slate-800/80 px-2.5 text-center text-xs font-semibold text-slate-200 no-underline hover:border-white/25 hover:bg-slate-700/80"
                 >
                   {lane.secondaryLabel}
                 </Link>

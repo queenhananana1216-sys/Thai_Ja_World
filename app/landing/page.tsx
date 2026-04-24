@@ -159,7 +159,7 @@ export default async function LandingPage() {
         dangerouslySetInnerHTML={{
           __html: `
             body:has(main.tj-landing-root){
-              background-color:#f3f4f6!important;
+              background-color:#090a1c!important;
               background-image:none!important;
             }
             body:has(main.tj-landing-root) .fx-mini-layer{ display:none!important; }

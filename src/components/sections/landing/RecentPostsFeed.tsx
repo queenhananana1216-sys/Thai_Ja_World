@@ -45,12 +45,13 @@ const CATEGORY_COLOR: Record<string, { color: string; bg: string }> = {
   job: { color: '#c4b5fd', bg: 'rgba(196,181,253,0.18)' },
 };
 
+/** 랜딩 포털(다크 서피스) — 밝은 파스텔 대신 semi-transparent */
 const CATEGORY_COLOR_PORTAL: Record<string, { color: string; bg: string }> = {
-  free: { color: '#be185d', bg: '#fce7f3' },
-  info: { color: '#0369a1', bg: '#e0f2fe' },
-  restaurant: { color: '#4d7c0f', bg: '#ecfccb' },
-  flea: { color: '#b45309', bg: '#fef3c7' },
-  job: { color: '#6d28d9', bg: '#ede9fe' },
+  free: { color: '#fbcfe8', bg: 'rgba(244,114,182,0.12)' },
+  info: { color: '#7dd3fc', bg: 'rgba(56,189,248,0.12)' },
+  restaurant: { color: '#d9f99d', bg: 'rgba(163,230,53,0.12)' },
+  flea: { color: '#fde68a', bg: 'rgba(251,191,36,0.12)' },
+  job: { color: '#c4b5fd', bg: 'rgba(167,139,250,0.14)' },
 };
 
 export async function RecentPostsFeed({ locale, variant = 'dark', limit = 12 }: Props) {
@@ -71,16 +72,16 @@ export async function RecentPostsFeed({ locale, variant = 'dark', limit = 12 }: 
         className="flex items-baseline justify-between gap-3"
         style={
           isPortal
-            ? { marginBottom: 8, borderBottom: '1px solid #e2e8f0', paddingBottom: 8 }
+            ? { marginBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8 }
             : { marginBottom: 12 }
         }
       >
         <h2
           id="tj-recent-posts"
-          className={isPortal ? 'text-sm font-extrabold text-slate-900' : ''}
+          className={isPortal ? 'text-sm font-extrabold text-slate-100' : ''}
           style={
             isPortal
-              ? { margin: 0, fontSize: 14, fontWeight: 800, color: '#0f172a' }
+              ? { margin: 0, fontSize: 14, fontWeight: 800, color: '#f1f5f9' }
               : { margin: 0, fontSize: 18, fontWeight: 800, color: '#f8fafc' }
           }
         >
@@ -89,10 +90,10 @@ export async function RecentPostsFeed({ locale, variant = 'dark', limit = 12 }: 
         <Link
           href="/community/boards"
           prefetch={false}
-          className={isPortal ? 'text-xs font-semibold text-blue-600' : ''}
+          className={isPortal ? 'text-xs font-semibold text-violet-300' : ''}
           style={
             isPortal
-              ? { fontSize: 12, fontWeight: 700, color: '#2563eb', textDecoration: 'none' }
+              ? { fontSize: 12, fontWeight: 700, color: '#c4b5fd', textDecoration: 'none' }
               : { fontSize: 12, fontWeight: 700, color: '#f9a8d4', textDecoration: 'none' }
           }
         >
@@ -136,11 +137,11 @@ export async function RecentPostsFeed({ locale, variant = 'dark', limit = 12 }: 
               gap: 2px;
             }
             .tj-recent-row-portal { text-decoration: none; color: inherit; border-radius: 6px; }
-            .tj-recent-row-portal:hover { background: #f1f5f9; }
+            .tj-recent-row-portal:hover { background: rgba(255,255,255,0.05); }
             .tj-recent-row-portal:focus-visible {
-              outline: 2px solid #93c5fd;
+              outline: 2px solid #a78bfa;
               outline-offset: 1px;
-              background: #f1f5f9;
+              background: rgba(255,255,255,0.05);
             }
           `,
           }}
@@ -150,7 +151,7 @@ export async function RecentPostsFeed({ locale, variant = 'dark', limit = 12 }: 
       <div className={isPortal ? 'tj-recent-grid-portal' : 'tj-recent-grid'}>
         {items.map((p) => {
           const tone = catMap[p.category] ?? (isPortal
-            ? { color: '#334155', bg: '#f1f5f9' }
+            ? { color: '#cbd5e1', bg: 'rgba(255,255,255,0.08)' }
             : { color: '#e2e8f0', bg: 'rgba(255,255,255,0.08)' });
           return (
             <Link
@@ -191,7 +192,7 @@ export async function RecentPostsFeed({ locale, variant = 'dark', limit = 12 }: 
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  color: isPortal ? '#0f172a' : '#f1f5f9',
+                  color: isPortal ? '#f1f5f9' : '#f1f5f9',
                   fontWeight: 500,
                 }}
               >
@@ -201,7 +202,7 @@ export async function RecentPostsFeed({ locale, variant = 'dark', limit = 12 }: 
                 style={{
                   flexShrink: 0,
                   fontSize: 11,
-                  color: isPortal ? '#64748b' : '#94a3b8',
+                  color: isPortal ? '#94a3b8' : '#94a3b8',
                   display: 'inline-flex',
                   gap: 8,
                   alignItems: 'baseline',
@@ -209,7 +210,7 @@ export async function RecentPostsFeed({ locale, variant = 'dark', limit = 12 }: 
               >
                 {p.commentCount > 0 ? (
                   <span
-                    className={isPortal ? 'rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600' : ''}
+                    className={isPortal ? 'rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-slate-300' : ''}
                   >
                     {p.commentCount}
                   </span>

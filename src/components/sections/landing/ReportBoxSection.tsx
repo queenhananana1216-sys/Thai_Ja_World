@@ -55,13 +55,13 @@ export function ReportBoxSection({ preview, locale }: Props) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="mb-1 inline-flex items-center rounded-full border border-violet-400/40 bg-violet-500/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-violet-200">
+            <p className="mb-1 inline-flex max-w-full items-center rounded-full border border-violet-400/40 bg-violet-500/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-violet-200">
               {t.kicker}
             </p>
-            <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+            <h2 className="break-words text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
               {t.title}
             </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-300">{t.lead}</p>
+            <p className="mt-2 max-w-3xl break-words text-sm leading-relaxed text-slate-300">{t.lead}</p>
             {degraded ? (
               <p className="mt-1 text-xs text-amber-200/90">
                 {locale === 'th'
@@ -74,10 +74,10 @@ export function ReportBoxSection({ preview, locale }: Props) {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-lg backdrop-blur-sm sm:p-5">
-            <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="mb-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
               <h3 className="text-sm font-bold text-violet-100">{t.colFind}</h3>
               <Link
-                className="text-xs font-semibold text-violet-200 underline-offset-2 hover:underline"
+                className="w-fit shrink-0 text-left text-xs font-semibold text-violet-200 underline-offset-2 hover:underline"
                 href="/community/boards/new?cat=report_find"
               >
                 {t.writeFind}
@@ -92,15 +92,18 @@ export function ReportBoxSection({ preview, locale }: Props) {
                 findRows.map((r) => (
                   <li
                     key={r.id}
-                    className="flex items-start justify-between gap-2 rounded-lg border border-white/5 bg-black/20 px-3 py-2"
+                    className="flex flex-col items-stretch gap-1 rounded-lg border border-white/5 bg-black/20 px-3 py-2 sm:flex-row sm:items-start sm:justify-between sm:gap-2"
                   >
                     <Link
                       href={`/community/boards/${r.id}`}
                       className="min-w-0 font-medium text-slate-100 hover:text-white"
                     >
-                      <span className="line-clamp-2">{r.title}</span>
+                      <span className="line-clamp-2 break-words">{r.title}</span>
                     </Link>
-                    <span className="shrink-0 text-[11px] text-slate-400" title={r.created_at}>
+                    <span
+                      className="shrink-0 text-left text-[11px] text-slate-400 sm:pt-0.5 sm:text-right"
+                      title={r.created_at}
+                    >
                       {t.countReplies(r.comment_count)} · {formatDate(r.created_at)}
                     </span>
                   </li>
@@ -110,10 +113,10 @@ export function ReportBoxSection({ preview, locale }: Props) {
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-lg backdrop-blur-sm sm:p-5">
-            <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="mb-3 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
               <h3 className="text-sm font-bold text-amber-100">{t.colMissing}</h3>
               <Link
-                className="text-xs font-semibold text-amber-100/90 underline-offset-2 hover:underline"
+                className="w-fit shrink-0 text-left text-xs font-semibold text-amber-100/90 underline-offset-2 hover:underline"
                 href="/community/boards/new?cat=report_missing"
               >
                 {t.writeMissing}
@@ -128,15 +131,18 @@ export function ReportBoxSection({ preview, locale }: Props) {
                 missingRows.map((r) => (
                   <li
                     key={r.id}
-                    className="flex items-start justify-between gap-2 rounded-lg border border-white/5 bg-black/20 px-3 py-2"
+                    className="flex flex-col items-stretch gap-1 rounded-lg border border-white/5 bg-black/20 px-3 py-2 sm:flex-row sm:items-start sm:justify-between sm:gap-2"
                   >
                     <Link
                       href={`/community/boards/${r.id}`}
                       className="min-w-0 font-medium text-slate-100 hover:text-white"
                     >
-                      <span className="line-clamp-2">{r.title}</span>
+                      <span className="line-clamp-2 break-words">{r.title}</span>
                     </Link>
-                    <span className="shrink-0 text-[11px] text-slate-400" title={r.created_at}>
+                    <span
+                      className="shrink-0 text-left text-[11px] text-slate-400 sm:pt-0.5 sm:text-right"
+                      title={r.created_at}
+                    >
                       {t.countReplies(r.comment_count)} · {formatDate(r.created_at)}
                     </span>
                   </li>

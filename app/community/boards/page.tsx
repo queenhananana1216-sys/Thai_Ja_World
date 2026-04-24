@@ -235,7 +235,7 @@ export default async function BoardsListPage({
         return (
           <article key={pid} className="mb-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-violet-300 hover:shadow-md">
             <Link href={`/community/boards/${pid}`} className="block no-underline hover:no-underline">
-              <div className="text-xs font-medium text-slate-500">
+              <div className="break-words text-xs font-medium leading-relaxed text-slate-500">
                 {cat} · {author} · {formatDate(p.created_at as string | null)} · {d.board.comments}{' '}
                 {p.comment_count ?? 0}
                 {showViewCounts ? (

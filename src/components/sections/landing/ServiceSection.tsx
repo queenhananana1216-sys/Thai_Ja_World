@@ -23,13 +23,15 @@ export function ServiceSection({
         color: '#e2e8f0',
       }}
     >
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 16px' }}>
-        <div style={{ marginBottom: 18, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0, fontSize: 'clamp(24px,4.4vw,36px)', lineHeight: 1.2, fontWeight: 800 }}>{pickBilingual(c.title, locale)}</h2>
-          <p style={{ margin: 0, maxWidth: 480, borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)', padding: '8px 12px', fontSize: 12, lineHeight: 1.5, color: '#cbd5e1' }}>
+      <div className="mx-auto max-w-[1180px] px-4">
+        <div className="mb-[18px] flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+          <h2 className="min-w-0 break-words text-[clamp(1.5rem,4.4vw,2.25rem)] font-extrabold leading-tight">
+            {pickBilingual(c.title, locale)}
+          </h2>
+          <p className="m-0 w-full max-w-full rounded-xl border border-white/20 bg-white/[0.06] px-3 py-2 text-xs leading-relaxed text-slate-300 sm:max-w-[min(100%,30rem)] sm:shrink-0">
             {pickBilingual(c.subtitle, locale)}
             {degraded ? (
-              <span style={{ display: 'block', marginTop: 6, color: 'rgba(253,230,138,0.95)' }}>
+              <span className="mt-1.5 block text-amber-100/95">
                 {locale === 'th' ? ' (แสดงค่าเริ่มต้น — DB ล้มเหลว)' : ' (DB 연결 실패 — 기본 문구 표시)'}
               </span>
             ) : null}
@@ -51,7 +53,19 @@ export function ServiceSection({
               <p style={{ margin: 0, fontSize: 13, color: '#ddd6fe' }}>{feature.icon}</p>
               <h3 style={{ margin: '8px 0 0', fontSize: 20, fontWeight: 700, lineHeight: 1.3 }}>{feature.title}</h3>
               <p style={{ margin: '10px 0 0', fontSize: 14, color: '#cbd5e1', lineHeight: 1.6 }}>{feature.description}</p>
-              <ul style={{ margin: '12px 0 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 8, fontSize: 14, color: '#cbd5e1', listStyle: 'none', padding: 0 }}>
+              <ul
+                className="mt-3"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 14rem), 1fr))',
+                  gap: 8,
+                  fontSize: 14,
+                  color: '#cbd5e1',
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                }}
+              >
                 {feature.bullets.map((bullet) => (
                   <li key={bullet} style={{ borderRadius: 10, border: '1px solid rgba(71,85,105,0.7)', background: 'rgba(15,23,42,0.7)', padding: '8px 10px', lineHeight: 1.5 }}>
                     {bullet}

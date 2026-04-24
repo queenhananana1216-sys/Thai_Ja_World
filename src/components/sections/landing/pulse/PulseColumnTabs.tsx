@@ -17,9 +17,12 @@ import type { Locale } from '@/i18n/types';
 type Props = {
   columns: PulseColumn[];
   locale: Locale;
+  /** 밝은 포털(홈)에서 다크 톤 탭과 구분 */
+  appearance?: 'dark' | 'light';
 };
 
-export function PulseColumnTabs({ columns, locale }: Props) {
+export function PulseColumnTabs({ columns, locale, appearance = 'dark' }: Props) {
+  const light = appearance === 'light';
   const [idx, setIdx] = useState(0);
 
   const onKey = useCallback(
@@ -57,7 +60,7 @@ export function PulseColumnTabs({ columns, locale }: Props) {
           marginBottom: 12,
           scrollbarWidth: 'thin',
           WebkitOverflowScrolling: 'touch',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: light ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.08)',
         }}
       >
         {columns.map((c, i) => {
@@ -78,7 +81,13 @@ export function PulseColumnTabs({ columns, locale }: Props) {
                 flexShrink: 0,
                 fontSize: 14,
                 fontWeight: isActive ? 700 : 500,
-                color: isActive ? '#f8fafc' : '#94a3b8',
+                color: isActive
+                  ? light
+                    ? '#0f172a'
+                    : '#f8fafc'
+                  : light
+                    ? '#64748b'
+                    : '#94a3b8',
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
@@ -107,7 +116,7 @@ export function PulseColumnTabs({ columns, locale }: Props) {
                     marginLeft: 6,
                     fontSize: 11,
                     fontWeight: 700,
-                    color: isActive ? '#f9a8d4' : '#64748b',
+                    color: isActive ? (light ? '#6d28d9' : '#f9a8d4') : (light ? '#94a3b8' : '#64748b'),
                   }}
                 >
                   {c.todayCount}
@@ -123,20 +132,40 @@ export function PulseColumnTabs({ columns, locale }: Props) {
         role="tabpanel"
         id={`tj-pulse-panel-${idx}`}
         aria-labelledby={`tj-pulse-tab-${idx}`}
-        style={{
-          background: 'rgba(15,17,40,0.7)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 16,
-          padding: 14,
-          boxShadow: '0 8px 28px rgba(2,6,23,0.35)',
-          borderTopWidth: 2,
-          borderTopColor: 'transparent',
-          backgroundImage: `linear-gradient(rgba(15,17,40,0.7),rgba(15,17,40,0.7)), ${accent.tabBorder}`,
-          backgroundOrigin: 'border-box',
-          backgroundClip: 'padding-box, border-box',
-        }}
+        style={
+          light
+            ? {
+                background: '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 16,
+                padding: 14,
+                boxShadow: '0 1px 2px rgba(15,23,42,0.06)',
+                borderTopWidth: 2,
+                borderTopColor: 'transparent',
+                backgroundImage: `linear-gradient(#fff,#fff), ${accent.tabBorder}`,
+                backgroundOrigin: 'border-box',
+                backgroundClip: 'padding-box, border-box',
+              }
+            : {
+                background: 'rgba(15,17,40,0.7)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 16,
+                padding: 14,
+                boxShadow: '0 8px 28px rgba(2,6,23,0.35)',
+                borderTopWidth: 2,
+                borderTopColor: 'transparent',
+                backgroundImage: `linear-gradient(rgba(15,17,40,0.7),rgba(15,17,40,0.7)), ${accent.tabBorder}`,
+                backgroundOrigin: 'border-box',
+                backgroundClip: 'padding-box, border-box',
+              }
+        }
       >
-        <PulseCard col={active} locale={locale} variant="panel" />
+        <PulseCard
+          col={active}
+          locale={locale}
+          variant="panel"
+          appearance={light ? 'light' : 'dark'}
+        />
       </div>
     </div>
   );

@@ -1,7 +1,31 @@
 import { StatsBar } from '@/components/ui/landing/StatsBar';
 import { LANDING_TESTIMONIALS } from '@/lib/landing/constants';
+import { portWidgetCard, portWidgetHeaderSub, portWidgetHeaderTitle } from '@/lib/landing/portalWidgetStyle';
 
-export function TestimonialSection() {
+type Props = { variant?: 'legacy' | 'portal' };
+
+export function TestimonialSection({ variant = 'legacy' }: Props) {
+  if (variant === 'portal') {
+    return (
+      <section className="border-t border-slate-200/80 bg-slate-100/30 py-8" data-variant="testimonial-portal">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+          <h2 className={portWidgetHeaderTitle + ' m-0 sm:text-base'}>실제 교민들이 남긴 이야기</h2>
+          <p className={portWidgetHeaderSub + ' mt-1 m-0'}>새 글·댓글이 쌓이는지 숫자로도 확인해 보세요.</p>
+          <div className="mt-3 grid gap-2.5 sm:grid-cols-3 sm:gap-3">
+            {LANDING_TESTIMONIALS.map((testimonial) => (
+              <blockquote key={testimonial.id} className={portWidgetCard + ' m-0 p-3.5 sm:p-4'}>
+                <p className="m-0 text-xs leading-relaxed text-slate-700 sm:text-[0.8125rem]">{testimonial.quote}</p>
+                <cite className="mt-2 block text-[11px] font-bold not-italic text-violet-800">{testimonial.author}</cite>
+              </blockquote>
+            ))}
+          </div>
+          <div className="mt-4">
+            <StatsBar />
+          </div>
+        </div>
+      </section>
+    );
+  }
   return (
     <section
       style={{

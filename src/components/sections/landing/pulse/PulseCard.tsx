@@ -57,7 +57,15 @@ function relTime(iso: string | null, locale: Locale): string {
   return lang === 'th' ? 'เมื่อสักครู่' : '방금 전';
 }
 
-function ItemRow({ item, locale }: { item: PulseItem; locale: Locale }) {
+function ItemRow({
+  item,
+  locale,
+  light,
+}: {
+  item: PulseItem;
+  locale: Locale;
+  light?: boolean;
+}) {
   return (
     <Link
       href={item.href}
@@ -70,7 +78,7 @@ function ItemRow({ item, locale }: { item: PulseItem; locale: Locale }) {
         padding: '8px 12px',
         borderRadius: 10,
         textDecoration: 'none',
-        color: '#e2e8f0',
+        color: light ? '#1e293b' : '#e2e8f0',
         fontSize: 13.5,
         lineHeight: 1.45,
       }}
@@ -82,7 +90,7 @@ function ItemRow({ item, locale }: { item: PulseItem; locale: Locale }) {
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
-          color: '#f1f5f9',
+          color: light ? '#0f172a' : '#f1f5f9',
           fontWeight: 500,
         }}
       >
@@ -92,7 +100,7 @@ function ItemRow({ item, locale }: { item: PulseItem; locale: Locale }) {
         style={{
           flexShrink: 0,
           fontSize: 11,
-          color: '#94a3b8',
+          color: light ? '#94a3b8' : '#94a3b8',
           display: 'inline-flex',
           gap: 8,
           alignItems: 'baseline',
@@ -113,12 +121,15 @@ export function PulseCard({
   col,
   locale,
   variant = 'grid',
+  appearance = 'dark',
 }: {
   col: PulseColumn;
   locale: Locale;
   /** grid: 데스크톱 그리드, panel: 모바일 탭 패널(풀폭) */
   variant?: 'grid' | 'panel';
+  appearance?: 'dark' | 'light';
 }) {
+  const light = appearance === 'light';
   const accent = ACCENT_MAP[col.accent];
   const hasItems = col.items.length > 0;
 
@@ -126,11 +137,12 @@ export function PulseCard({
     display: 'flex',
     flexDirection: 'column',
     minWidth: 0,
-    background: variant === 'grid' ? 'rgba(15,17,40,0.7)' : 'transparent',
-    border: variant === 'grid' ? '1px solid rgba(255,255,255,0.08)' : 'none',
+    background:
+      variant === 'grid' ? (light ? '#fff' : 'rgba(15,17,40,0.7)') : 'transparent',
+    border: variant === 'grid' ? (light ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.08)') : 'none',
     borderRadius: variant === 'grid' ? 16 : 0,
     padding: variant === 'grid' ? 14 : 0,
-    boxShadow: variant === 'grid' ? '0 8px 28px rgba(2,6,23,0.35)' : 'none',
+    boxShadow: variant === 'grid' ? (light ? '0 1px 2px rgba(15,23,42,0.06)' : '0 8px 28px rgba(2,6,23,0.35)') : 'none',
   };
 
   return (
@@ -169,7 +181,7 @@ export function PulseCard({
           prefetch={false}
           style={{
             fontSize: 11,
-            color: '#c4b5fd',
+            color: light ? '#6d28d9' : '#c4b5fd',
             textDecoration: 'none',
             fontWeight: 600,
             flexShrink: 0,
@@ -181,17 +193,17 @@ export function PulseCard({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {hasItems ? (
-          col.items.map((it) => <ItemRow key={it.id} item={it} locale={locale} />)
+          col.items.map((it) => <ItemRow key={it.id} item={it} locale={locale} light={light} />)
         ) : (
           <div
             style={{
               padding: '14px 12px 16px',
               fontSize: 12.5,
-              color: '#94a3b8',
+              color: light ? '#64748b' : '#94a3b8',
               lineHeight: 1.55,
               borderRadius: 10,
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px dashed rgba(255,255,255,0.08)',
+              background: light ? '#f8fafc' : 'rgba(255,255,255,0.02)',
+              border: light ? '1px dashed #e2e8f0' : '1px dashed rgba(255,255,255,0.08)',
             }}
           >
             {locale === 'th'

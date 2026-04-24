@@ -164,6 +164,29 @@ export type Dictionary = {
     myLocalShopEmptyFollowup: string;
     /** /my-local-shop — 문의 페이지로 */
     myLocalShopContactCta: string;
+    /** 홈 포털 — 시작 가이드(엔트리 플로우) */
+    entryFlowTitle: string;
+    entryFlowSub: string;
+    entryFlowKicker: string;
+    /** 홈 포털 — 통계 위젯 */
+    statsWidgetTitle: string;
+    statsWidgetSub: string;
+    statsWidgetMember: string;
+    statsWidgetPost: string;
+    statsWidgetNews: string;
+    statsWidgetLocal: string;
+    statsWidgetUpdated: string;
+    /** 홈 포털 — 뉴스 티저(우측) */
+    newsTeaserTitle: string;
+    /** 홈 포털 — 최신 글 위젯 */
+    recentPostsTitle: string;
+    recentPostsSub: string;
+    /** 홈 — 기능/서비스 섹션 제목(랜딩) */
+    serviceHubTitle: string;
+    serviceHubSub: string;
+    /** 홈 — 파트너 스트립(배너) */
+    partnerStripTitle: string;
+    partnerStripSub: string;
   };
   /** 비회원 공개 꿀팁 허브 — 본문·출처는 로그인 후 광장 */
   tips: {
@@ -795,6 +818,23 @@ const ko: Dictionary = {
     myLocalShopEmptyFollowup:
       '가게 등록·오너 연결은 운영(관리자)에서 진행합니다. 본인 사업장이라면 가입 이메일을 알려 주고 «로컬 스팟»에 오너로 연결해 달라고 요청해 주세요.',
     myLocalShopContactCta: '문의·연결 요청 →',
+    entryFlowKicker: 'START HERE',
+    entryFlowTitle: '태자월드 시작 가이드',
+    entryFlowSub: '거래, 구인구직, 로컬가게, 미니홈을 한눈에 보고 바로 이동할 수 있게 정리했습니다.',
+    statsWidgetTitle: '오늘의 숫자',
+    statsWidgetSub: '회원·게시·뉴스·로컬이 쌓이는 규모를 한눈에 봅니다.',
+    statsWidgetMember: '회원',
+    statsWidgetPost: '게시',
+    statsWidgetNews: '뉴스',
+    statsWidgetLocal: '로컬',
+    statsWidgetUpdated: '갱신',
+    newsTeaserTitle: '최신 뉴스',
+    recentPostsTitle: '최신 게시글',
+    recentPostsSub: '잡담 · 생활 정보 — 광장에서 올라온 글',
+    serviceHubTitle: '태자월드에서 바로 쓸 수 있는 것들',
+    serviceHubSub: '환율 리모컨은 전역에 떠 있고, 아래는 메뉴별 요약입니다.',
+    partnerStripTitle: '태자월드 파트너 · 스폰서',
+    partnerStripSub: '관리팀이 승인한 링크만 노출됩니다. 클릭 시 제휴사 페이지로 이동합니다.',
   },
   tips: {
     pageTitle: '태국 생활 꿀팁',
@@ -1428,6 +1468,23 @@ const th: Dictionary = {
     myLocalShopEmptyFollowup:
       'การลงทะเบียนร้าน·เชื่อมเจ้าของทำโดยทีมงาน (แอดมิน) หากเป็นร้านของคุณ แจ้งอีเมลที่สมัครเพื่อให้เชื่อมเป็นเจ้าของใน «จุดท้องถิ่น»',
     myLocalShopContactCta: 'ติดต่อ·ขอเชื่อมบัญชี →',
+    entryFlowKicker: 'START HERE',
+    entryFlowTitle: 'คู่มือเริ่มต้นแทจะโลก',
+    entryFlowSub: 'เทรด งาน ร้านท้องถิ่น และมินิโฮม — จัดเป็นขั้นตอนให้กดไปต่อได้ทันที',
+    statsWidgetTitle: 'ตัวเลขวันนี้',
+    statsWidgetSub: 'สมาชิก โพสต์ ข่าว และร้าน — มองภาพรวมได้ในครั้งเดียว',
+    statsWidgetMember: 'สมาชิก',
+    statsWidgetPost: 'โพสต์',
+    statsWidgetNews: 'ข่าว',
+    statsWidgetLocal: 'ร้าน',
+    statsWidgetUpdated: 'อัปเดต',
+    newsTeaserTitle: 'ข่าวล่าสุด',
+    recentPostsTitle: 'โพสต์ล่าสุด',
+    recentPostsSub: 'กระทู้ที่เพิ่งขึ้น — รวมบอร์ด',
+    serviceHubTitle: 'สิ่งที่ใช้บนเว็บแทจะโลกได้ทันที',
+    serviceHubSub: 'รีโมตอัตราแลกเปลี่ยนลอยบนหน้าจอ — ด้านล่างสรุปรายส่วน',
+    partnerStripTitle: 'พาร์ทเนอร์ · สปอนเซอร์',
+    partnerStripSub: 'ป้ายโฆษณาที่ดูแลโดยทีมแอดมิน — แตะเพื่อเปิดเว็บไซต์ผู้สนับสนุน',
   },
   tips: {
     pageTitle: 'ทิปส์ชีวิตในไทย',

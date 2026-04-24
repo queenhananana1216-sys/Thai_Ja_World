@@ -1,7 +1,53 @@
 import { ExchangeRateFloat } from '@/components/ui/landing/ExchangeRateFloat';
 import { LANDING_FEATURES } from '@/lib/landing/constants';
+import { portWidgetCard, portWidgetHeaderSub, portWidgetHeaderTitle } from '@/lib/landing/portalWidgetStyle';
 
-export function ServiceSection() {
+type LegacyProps = { variant?: 'legacy' };
+type PortalProps = { variant: 'portal'; serviceHub: { title: string; sub: string } };
+type Props = LegacyProps | PortalProps;
+
+function isPortal(p: Props): p is PortalProps {
+  return p.variant === 'portal';
+}
+
+export function ServiceSection(props: Props) {
+  if (isPortal(props)) {
+    const { serviceHub } = props;
+    return (
+      <section className="bg-slate-100/50 py-8" data-variant="service-portal">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+          <h2 className="m-0 text-sm font-extrabold text-slate-800 sm:text-base">{serviceHub.title}</h2>
+          <p className="mt-1.5 m-0 text-xs text-slate-500">{serviceHub.sub}</p>
+          <div className="mt-2">
+            <ExchangeRateFloat />
+          </div>
+          <ul className="m-0 mt-3 list-none space-y-2.5 p-0 sm:mt-4">
+            {LANDING_FEATURES.map((feature) => (
+              <li
+                key={feature.id}
+                className={portWidgetCard + ' p-3.5 sm:p-4'}
+                style={{ listStyle: 'none' }}
+              >
+                <p className="m-0 text-[11px] text-violet-700 sm:text-xs">{feature.icon}</p>
+                <h3 className={portWidgetHeaderTitle + ' mt-0.5'}>{feature.title}</h3>
+                <p className={portWidgetHeaderSub + ' mt-1.5 m-0'}>{feature.description}</p>
+                <ul className="m-0 mt-2.5 list-none space-y-1.5 p-0 text-xs text-slate-600 sm:space-y-2 sm:text-[0.8125rem]">
+                  {feature.bullets.map((b) => (
+                    <li
+                      key={b}
+                      className="rounded-lg border border-slate-100 bg-slate-50/90 px-2.5 py-1.5 leading-relaxed"
+                    >
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    );
+  }
   return (
     <section
       style={{

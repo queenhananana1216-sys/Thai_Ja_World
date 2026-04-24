@@ -1,6 +1,63 @@
 import Link from 'next/link';
+import { portWidgetCard, portPrimaryBtn, portSecondaryBtn, portWidgetHeaderSub, portWidgetHeaderTitle } from '@/lib/landing/portalWidgetStyle';
 
-export function FooterSection() {
+type Props = { variant?: 'legacy' | 'portal' };
+
+export function FooterSection({ variant = 'legacy' }: Props) {
+  if (variant === 'portal') {
+    return (
+      <section
+        className="border-t border-slate-200/90 bg-slate-100/90 py-10"
+        data-variant="footer-portal"
+      >
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+          <h3 className={portWidgetHeaderTitle + ' m-0 text-[0.9rem] sm:text-base'}>광고주 QR 제휴 안내</h3>
+          <p className={portWidgetHeaderSub + ' mt-2.5 m-0 max-w-3xl text-[0.8125rem]'}>
+            카운터 앞에 태자월드 QR 명함을 배치하면 첫 1개월 광고비를 무료로 제공합니다. 오프라인 방문객이 QR을 스캔하면
+            랜딩 → 로컬 탭 → 매장 미니홈으로 연결되어 메뉴, 공지, 예약 채널까지 자연스럽게 이동합니다.
+          </p>
+          <ul className="m-0 mt-3 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2 sm:gap-2">
+            {['QR 배치 사진 확인', '미니홈 공개 슬러그 점검', '메뉴/사진 최소 2개 이상 등록', 'LINE 연락 채널 연결'].map((t) => (
+              <li
+                key={t}
+                className="rounded-lg border border-slate-200/90 bg-white px-2.5 py-1.5 text-xs text-slate-700"
+              >
+                {t}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 grid gap-2.5 sm:mt-5 sm:grid-cols-3 sm:gap-3">
+            <article className={portWidgetCard + ' border-violet-200/80 p-3.5 sm:p-4'}>
+              <h4 className="m-0 text-xs font-bold text-violet-900 sm:text-sm">오프라인 손님 전환</h4>
+              <p className="mt-1.5 m-0 text-[11px] leading-relaxed text-slate-600 sm:text-xs">
+                카운터 QR 한 번으로 고객이 미니홈 상세(메뉴, 이벤트, 공지)까지 바로 이동합니다.
+              </p>
+            </article>
+            <article className={portWidgetCard + ' border-rose-200/80 p-3.5 sm:p-4'}>
+              <h4 className="m-0 text-xs font-bold text-rose-900 sm:text-sm">운영 비용 대비 효율</h4>
+              <p className="mt-1.5 m-0 text-[11px] leading-relaxed text-slate-600 sm:text-xs">
+                첫 1개월 무료로 테스트하고, 실제 문의/예약 흐름을 확인한 뒤 광고 확대를 판단할 수 있습니다.
+              </p>
+            </article>
+            <article className={portWidgetCard + ' border-amber-200/80 p-3.5 sm:p-4'}>
+              <h4 className="m-0 text-xs font-bold text-amber-900 sm:text-sm">성과 측정 확장</h4>
+              <p className="mt-1.5 m-0 text-[11px] leading-relaxed text-slate-600 sm:text-xs">
+                QR 유입, 미니홈 클릭, 연락 채널 전환 수치 기반으로 다음 캠페인 전략을 만들 수 있습니다.
+              </p>
+            </article>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2 sm:mt-5">
+            <Link href="/ads" className={portPrimaryBtn + ' min-h-10 text-[0.8125rem]'}>
+              광고 상품 보기
+            </Link>
+            <Link href="/contact" className={portSecondaryBtn + ' min-h-10 text-[0.8125rem]'}>
+              광고 문의하기
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
   return (
     <section
       className="border-t border-white/10 bg-[#040816] py-14"

@@ -16,6 +16,8 @@ import { LANDING_DEFAULT_STATS } from '@/lib/landing/constants';
 import { getLandingEntryFlow } from '@/lib/landing/entryFlow';
 import type { EntryFlowResponse } from '@/lib/landing/types';
 import { fetchCommunityPulse, type CommunityPulse } from '@/lib/landing/fetchCommunityPulse';
+import { fetchPublicSafetyContacts } from '@/lib/safety/fetchPublicSafetyContacts';
+import { LandingEmergencyStrip } from '@/components/sections/landing/LandingEmergencyStrip';
 import { fetchLandingStatsSSR } from '@/lib/stats/fetchStatsSSR';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
@@ -137,11 +139,12 @@ export default async function LandingPage() {
     generatedAt: new Date().toISOString(),
   };
 
-  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled] = await Promise.allSettled([
+  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled, safetySettled] = await Promise.allSettled([
     fetchLandingStatsSSR(),
     getLandingEntryFlow(),
     resolveSplineScenes(),
     fetchCommunityPulse(locale),
+    fetchPublicSafetyContacts(locale, 8),
   ]);
 
   const stats =
@@ -152,6 +155,7 @@ export default async function LandingPage() {
     entryFlowSettled.status === 'fulfilled' ? entryFlowSettled.value : fallbackEntryFlow;
   const scenes = scenesSettled.status === 'fulfilled' ? scenesSettled.value : fallbackScenes;
   const pulse = pulseSettled.status === 'fulfilled' ? pulseSettled.value : fallbackPulse;
+  const safetyItems = safetySettled.status === 'fulfilled' ? safetySettled.value : [];
 
   const heroScene = scenes.hero;
   const heroSceneUrls = [heroScene.sceneCodeUrl, heroScene.publishedUrl].filter(
@@ -177,6 +181,7 @@ export default async function LandingPage() {
       />
       <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6">
         <LandingPortalStrip isLoggedIn={isLoggedIn} />
+        <LandingEmergencyStrip locale={locale} items={safetyItems} />
         <HeroSection
           memberCount={stats.memberCount}
           sceneUrls={heroSceneUrls}

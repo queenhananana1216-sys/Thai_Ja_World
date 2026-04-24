@@ -6,6 +6,7 @@ export const LANDING_TEXT_NAV_ROW_A = [
   '/tips',
   '/news',
   '/local',
+  '/help/emergency',
   '/community/boards',
   '/community/boards?cat=info',
   '/community/boards?cat=restaurant',

@@ -45,6 +45,17 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
       'ร้านท้องถิ่น เดลิเวอรี่ อาหาร สั่งอาหาร แนะนำ กรุงเทพ พัทยา เชียงใหม่ ร้านอาหาร',
   },
   {
+    href: '/help/emergency',
+    koTitle: '긴급 연락·제보 (태국)',
+    thTitle: 'ฉุกเฉิน·ติดต่อ (ไทย)',
+    koHint: '대사관 191 1669',
+    thHint: 'ฉุกเฉิน สำนักทูต 191',
+    koBlob:
+      '긴급 연락 대사관 응급 191 1669 199 영사 0404 실종 제보 광장 정보 help emergency 태국',
+    thBlob:
+      'ฉุกเฉิน สำนักทูต 191 1669 199 กงสล 0404 รายงาน หาย บอร์ด emergency',
+  },
+  {
     href: '/community/boards',
     koTitle: '광장 수다 · 게시판',
     thTitle: 'ลานคุย · บอร์ด',

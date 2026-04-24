@@ -1,10 +1,48 @@
 'use client';
 
 import Link from 'next/link';
-import type { EntryFlowResponse } from '@/lib/landing/types';
+import type { EntryFlowResponse, EntryFlowSnapshot } from '@/lib/landing/types';
 
 interface EntryFlowSectionProps {
   flow: EntryFlowResponse;
+}
+
+function SnapshotStrip({ s }: { s: EntryFlowSnapshot }) {
+  const cell = (label: string, n: number) => (
+    <div
+      className="tj-snapshot-cell"
+      style={{
+        minWidth: 0,
+        borderRadius: 12,
+        border: '1px solid rgba(255,255,255,0.1)',
+        background: 'rgba(0,0,0,0.2)',
+        padding: '8px 10px',
+        textAlign: 'center' as const,
+      }}
+    >
+      <p style={{ margin: 0, fontSize: 10, color: '#94a3b8', fontWeight: 600, letterSpacing: '0.04em' }}>{label}</p>
+      <p style={{ margin: '2px 0 0', fontSize: 15, fontWeight: 800, color: '#f1f5f9' }}>{n}</p>
+    </div>
+  );
+  return (
+    <>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            .tj-snapshot-grid { display:grid; gap:6px; margin-top:14px; grid-template-columns: repeat(2, minmax(0,1fr)); }
+            @media (min-width: 640px) { .tj-snapshot-grid { grid-template-columns: repeat(4, minmax(0,1fr)); gap:8px; } }
+            .tj-snapshot-cell p:first-child { line-height:1.2; }
+          `,
+        }}
+      />
+      <div className="tj-snapshot-grid">
+        {cell('7일 광장(비꿀·안전)', s.posts7d)}
+        {cell('3일 뉴스(발행)', s.news3d)}
+        {cell('로컬 샵(배포)', s.publishedShops)}
+        {cell('공개 미니홈', s.minihomePublicRooms)}
+      </div>
+    </>
+  );
 }
 
 export function EntryFlowSection({ flow }: EntryFlowSectionProps) {
@@ -96,6 +134,7 @@ export function EntryFlowSection({ flow }: EntryFlowSectionProps) {
           </div>
         </div>
 
+        <SnapshotStrip s={flow.snapshot} />
         <div
           style={{
             display: 'grid',

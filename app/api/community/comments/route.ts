@@ -43,7 +43,7 @@ export async function POST(req: Request) {
           eventType: 'write_post',
           amount: 1,
           source: 'community_comment_create',
-          dedupeKey: `community_comment:${postId}:${Date.now()}`,
+          dedupeKey: `community_comment:${postId}`,
           metadata: { post_id: postId, kind: 'comment' },
         });
       }

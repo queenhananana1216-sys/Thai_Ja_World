@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { fetchRecentPosts } from '@/lib/landing/fetchRecentPosts';
+import { fetchRecentPosts, type RecentPostItem } from '@/lib/landing/fetchRecentPosts';
 import { categoryLabel } from '@/lib/community/postCategories';
 import type { Locale } from '@/i18n/types';
 
@@ -12,6 +12,8 @@ import type { Locale } from '@/i18n/types';
 
 type Props = {
   locale: Locale;
+  /** page.tsx에서 이미 fetchRecentPosts로 가져온 경우 중복 쿼리 생략 */
+  initialItems?: RecentPostItem[];
 };
 
 function relTime(iso: string | null, locale: Locale): string {
@@ -41,8 +43,8 @@ const CATEGORY_COLOR: Record<string, { color: string; bg: string }> = {
   job: { color: '#c4b5fd', bg: 'rgba(196,181,253,0.18)' },
 };
 
-export async function RecentPostsFeed({ locale }: Props) {
-  const items = await fetchRecentPosts(12);
+export async function RecentPostsFeed({ locale, initialItems }: Props) {
+  const items = initialItems ?? (await fetchRecentPosts(12));
   if (items.length === 0) return null;
 
   const title = locale === 'th' ? 'โพสต์ล่าสุด' : '최신 게시글';
@@ -176,6 +178,9 @@ export async function RecentPostsFeed({ locale }: Props) {
               >
                 {p.commentCount > 0 ? (
                   <span>{locale === 'th' ? '💬' : '댓'} {p.commentCount}</span>
+                ) : null}
+                {p.viewCount > 0 ? (
+                  <span>{locale === 'th' ? `วิว${p.viewCount}` : `조${p.viewCount}`}</span>
                 ) : null}
                 <time dateTime={p.createdAt ?? undefined}>{relTime(p.createdAt, locale)}</time>
               </span>

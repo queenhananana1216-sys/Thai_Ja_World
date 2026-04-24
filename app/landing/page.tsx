@@ -7,6 +7,7 @@ import { RecentPostsFeed } from '@/components/sections/landing/RecentPostsFeed';
 import { FooterSection } from '@/components/sections/landing/FooterSection';
 import { HeroSection } from '@/components/sections/landing/HeroSection';
 import { LandingScrollCta } from '@/components/sections/landing/LandingScrollCta';
+import { LandingPortalStrip } from '@/components/sections/landing/LandingPortalStrip';
 import { ProblemSection } from '@/components/sections/landing/ProblemSection';
 import { ServiceSection } from '@/components/sections/landing/ServiceSection';
 import { TestimonialSection } from '@/components/sections/landing/TestimonialSection';
@@ -17,6 +18,7 @@ import type { EntryFlowResponse } from '@/lib/landing/types';
 import { fetchCommunityPulse, type CommunityPulse } from '@/lib/landing/fetchCommunityPulse';
 import { fetchLandingStatsSSR } from '@/lib/stats/fetchStatsSSR';
 import { getLocale } from '@/i18n/get-locale';
+import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { resolveSplineScenes } from '@/lib/spline/resolver';
 import type { SplineScenesBySlot } from '@/lib/spline/types';
 
@@ -118,6 +120,17 @@ export default async function LandingPage() {
 
   const locale = await getLocale().catch(() => 'ko' as const);
 
+  let isLoggedIn = false;
+  try {
+    const sb = await createServerSupabaseAuthClient();
+    const {
+      data: { user },
+    } = await sb.auth.getUser();
+    isLoggedIn = Boolean(user);
+  } catch {
+    isLoggedIn = false;
+  }
+
   const fallbackPulse: CommunityPulse = {
     columns: [],
     degraded: true,
@@ -163,6 +176,7 @@ export default async function LandingPage() {
         }}
       />
       <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6">
+        <LandingPortalStrip isLoggedIn={isLoggedIn} />
         <HeroSection
           memberCount={stats.memberCount}
           sceneUrls={heroSceneUrls}

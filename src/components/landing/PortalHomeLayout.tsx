@@ -14,7 +14,8 @@ type Props = {
   locale: Locale;
   pulse: CommunityPulse;
   entryFlow: EntryFlowResponse;
-  stats: StatsResponse;
+  /** fetchLandingStatsSSR: 집계 + (실패 시) degraded */
+  stats: StatsResponse & { degraded?: boolean };
   /** SSR 날씨 (3도시) */
   weatherCities: ThailandCityWeather[];
   /** /api/weather·Open-Meteo */
@@ -78,11 +79,20 @@ export async function PortalHomeLayout({
   weatherUpdatedAt,
   fx,
 }: Props) {
-  const recentPostsBlock = await RecentPostsFeed({ locale, variant: 'portal', limit: 14 });
-  const { tabs: tabColumns, usedFallback: pulseUsedFallback } = pickThreePulseColumns(pulse, locale);
-  const hasThreeTabs = tabColumns.length === 3;
+  const recentPostsBlock = await RecentPostsFeed({ locale, variant: 'portal', limit: 16 });
+  const { tabs: tabColumns } = pickThreePulseColumns(pulse, locale);
   const hasAnyPulse = tabColumns.length > 0;
   const spotN = Math.max(0, stats.spotCount);
+  const th = locale === 'th';
+  const pulseTime =
+    typeof pulse.generatedAt === 'string' && pulse.generatedAt
+      ? new Date(pulse.generatedAt).toLocaleString(th ? 'th-TH' : 'ko-KR', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '';
 
   return (
     <div className="border-t border-slate-200/80 bg-slate-100" style={{ background: '#f3f4f6' }}>
@@ -90,9 +100,15 @@ export async function PortalHomeLayout({
         <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
           <div className="mb-2 flex items-baseline justify-between gap-2">
             <h2 className="m-0 text-sm font-extrabold text-slate-900">
-              {locale === 'th' ? 'เริ่มที่นี่ — ขาย · หางาน · ร้าน · มินิฮอม' : '시작 가이드 — 번개 · 구인 · 로컬 · 미니홈'}
+              {th
+                ? 'เริ่มที่นี่ — ขาย · หางาน · ร้าน · มินิฮอม'
+                : '시작 가이드 — 번개 · 구인 · 로컬 · 미니홈'}
             </h2>
-            <p className="m-0 text-[11px] text-slate-500">Entry flow + Ux 트래킹</p>
+            <p className="m-0 text-[11px] text-slate-500">
+              {th
+                ? `อัปเดต ${new Date(entryFlow.generatedAt).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}`
+                : `엔트리 흐름 ${new Date(entryFlow.generatedAt).toLocaleString('ko-KR', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}`}
+            </p>
           </div>
           <EntryFlowQuickRow flow={entryFlow} locale={locale} />
         </div>
@@ -150,10 +166,35 @@ export async function PortalHomeLayout({
               </p>
             </div>
 
-            <div className="hidden min-h-[120px] overflow-hidden rounded-lg border border-dashed border-slate-200 bg-slate-50/80 lg:block">
-              <div className="p-2 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Ad slot
-              </div>
+            <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm">
+              <p className="m-0 text-xs font-bold text-slate-500">
+                {th ? 'สรุปฐาน' : '사이트 집계'}
+                {stats.degraded ? (
+                  <span className="ml-1.5 text-[10px] font-normal text-amber-700">({th ? 'อ้างอิง' : '참고'})</span>
+                ) : null}
+              </p>
+              <p className="mt-1 m-0 text-[11px] text-slate-600 leading-relaxed">
+                {th ? (
+                  <>
+                    สมาชิก <strong className="text-slate-900">{stats.memberCount.toLocaleString('th-TH')}</strong> ·
+                    โพสต์ <strong className="text-slate-900">{stats.postCount.toLocaleString('th-TH')}</strong> ·
+                    ข่าว <strong className="text-slate-900">{stats.newsCount.toLocaleString('th-TH')}</strong>
+                  </>
+                ) : (
+                  <>
+                    가입 <strong className="text-slate-900">{stats.memberCount.toLocaleString('ko-KR')}</strong> ·
+                    게시 <strong className="text-slate-900">{stats.postCount.toLocaleString('ko-KR')}</strong> ·
+                    뉴스 <strong className="text-slate-900">{stats.newsCount.toLocaleString('ko-KR')}</strong>
+                  </>
+                )}
+              </p>
+              <Link
+                className="mt-2 inline-block text-xs font-bold text-blue-600 no-underline"
+                href="/community/boards"
+                prefetch={false}
+              >
+                {th ? 'ไปกระดาน' : '광장 열기 →'}
+              </Link>
             </div>
           </aside>
 
@@ -175,18 +216,19 @@ export async function PortalHomeLayout({
                 <section aria-labelledby="tj-portal-pulse" className="min-w-0">
                   <div className="mb-1 flex items-baseline justify-between gap-2">
                     <h2 id="tj-portal-pulse" className="m-0 text-sm font-extrabold text-slate-900">
-                      {locale === 'th' ? 'ชีพจรชุมชน' : '광장 심박(탭)'}
+                      {th ? 'ชีพจรชุมชน' : '광장 심박'}
                     </h2>
                     {pulse.degraded ? (
-                      <span className="text-[10px] font-bold text-amber-700">degraded</span>
+                      <span className="text-[10px] font-semibold text-amber-800">
+                        {th ? 'ข้อมูลบางส่วน' : '일부 요약'}
+                      </span>
                     ) : null}
                   </div>
                   <p className="m-0 mb-2 text-[11px] text-slate-500">
-                    {hasThreeTabs
-                      ? pulseUsedFallback
-                        ? 'fetchCommunityPulse (자동 3열)'
-                        : 'fetchCommunityPulse: 뉴스 · 자유 · 질문'
-                      : `fetchCommunityPulse · ${tabColumns.length} col`}
+                    {th
+                      ? 'ข่าว · คุย · ถาม — อัปเดต'
+                      : '뉴스 · 자유 · 질문 — 실시간'}
+                    {pulseTime ? ` · ${pulseTime}` : ''}
                   </p>
                   <div className="tj-portal-pulse-grid hidden lg:grid">
                     {tabColumns.map((col) => (
@@ -256,26 +298,29 @@ export async function PortalHomeLayout({
                 $1 = {Number.isFinite(fx.usdToThb) ? fx.usdToThb.toFixed(2) : '—'} THB · $1 ={' '}
                 {Number.isFinite(fx.usdToKrw) ? Math.round(fx.usdToKrw).toLocaleString() : '—'} KRW
               </p>
-              {fx.mock ? <p className="mt-1 m-0 text-[10px] text-amber-800">sample rate</p> : null}
+              {fx.mock ? (
+                <p className="mt-1 m-0 text-[10px] text-amber-800">{th ? 'อัตราชั่วคราว' : '참고용 요율'}</p>
+              ) : null}
             </div>
 
             <div
               className="rounded-lg border border-slate-200 bg-white p-2 text-xs shadow-sm"
-              aria-label={locale === 'th' ? 'ลัดไป' : '빠른 메뉴'}
+              aria-label={th ? 'ลัดไป' : '빠른 메뉴'}
             >
               <p className="m-0 mb-2 text-[10px] font-extrabold text-slate-500">
-                {locale === 'th' ? 'ลัด' : '빠른 링크'}
+                {th ? 'ลัด' : '빠른 링크'}
               </p>
               <div className="grid grid-cols-3 gap-1">
                 {[
-                  { h: '/community/boards', t: locale === 'th' ? 'กระดาน' : '광장' },
-                  { h: '/tips', t: locale === 'th' ? 'เคล็ดลับ' : '꿀팁' },
-                  { h: '/news', t: locale === 'th' ? 'ข่าว' : '뉴스' },
-                  { h: '/community/trade', t: locale === 'th' ? 'แลก' : '거래' },
-                  { h: '/community/boards?cat=job', t: locale === 'th' ? 'งาน' : '구인' },
-                  { h: '/minihome', t: locale === 'th' ? 'มินิ' : '미니홈' },
-                  { h: '/chat', t: locale === 'th' ? 'แชท' : '채팅' },
-                  { h: '/my-local-shop', t: locale === 'th' ? 'ร้านฉัน' : '내가게' },
+                  { h: '/community/boards', t: th ? 'กระดาน' : '광장' },
+                  { h: '/tips', t: th ? 'เคล็ดลับ' : '꿀팁' },
+                  { h: '/news', t: th ? 'ข่าว' : '뉴스' },
+                  { h: '/community/trade', t: th ? 'แลก' : '거래' },
+                  { h: '/community/boards?cat=job', t: th ? 'งาน' : '구인' },
+                  { h: '/minihome', t: th ? 'มินิ' : '미니홈' },
+                  { h: '/ilchon', t: th ? 'เพื่อน' : '일촌' },
+                  { h: '/chat', t: th ? 'แชท' : '채팅' },
+                  { h: '/my-local-shop', t: th ? 'ร้านฉัน' : '내가게' },
                 ].map((l) => (
                   <Link
                     key={l.h}

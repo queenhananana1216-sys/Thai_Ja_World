@@ -18,6 +18,9 @@ import { getLocale } from '@/i18n/get-locale';
 import { resolveSplineScenes } from '@/lib/spline/resolver';
 import type { SplineScenesBySlot } from '@/lib/spline/types';
 
+/** 캐시·ISR에 묶이지 않고 배포 직후에도 갱신된 랜딩이 보이게 */
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: '태자월드 — 태국 사는 한국인 커뮤니티 | 비자·생활정보·한인업체',
   description:
@@ -164,19 +167,19 @@ export default async function LandingPage() {
         }}
       />
       <div
-        className="pointer-events-none absolute inset-0 opacity-60"
-        aria-hidden
-        style={{
-          background:
-            'radial-gradient(ellipse at top, rgba(196,181,253,0.28), transparent 45%), radial-gradient(ellipse at 25% 60%, rgba(249,168,212,0.2), transparent 55%), radial-gradient(ellipse at 85% 70%, rgba(251,191,36,0.14), transparent 60%)',
-        }}
-      />
-      <div
         className="relative z-[1] mx-auto w-full max-w-[1320px] px-4 pt-6 pb-4 sm:px-6"
         style={{ minHeight: 0, maxWidth: 1320 }}
       >
         <HeroSection
           memberCount={stats.memberCount}
+          portalStats={{
+            memberCount: stats.memberCount,
+            postCount: stats.postCount,
+            newsCount: stats.newsCount,
+            spotCount: stats.spotCount,
+            lastUpdatedAt: stats.lastUpdatedAt,
+            degraded: (stats as { degraded?: boolean }).degraded,
+          }}
           sceneUrls={heroSceneUrls}
           heroScene={heroScene}
           variant="portalCompact"

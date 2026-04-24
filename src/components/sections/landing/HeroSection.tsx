@@ -12,10 +12,21 @@ import type { SplineSceneRecord } from '@/lib/spline/types';
 
 interface HeroSectionProps {
   memberCount?: number;
+  /** 포털 히어로 우측: 집계 숫자(fetchLandingStatsSSR) */
+  portalStats?: {
+    memberCount: number;
+    postCount: number;
+    newsCount: number;
+    spotCount: number;
+    lastUpdatedAt: string | null;
+    degraded?: boolean;
+  };
   /** 레거시: 랜덤 로테이션용 scene URL 배열 */
   sceneUrls?: string[];
   /** 신규: spline_scenes 파이프라인의 `hero` 슬롯 레코드 (우선 적용) */
   heroScene?: SplineSceneRecord;
+  /** 랜딩 포털: 다크 히어로 높이·3D 부하를 줄이고 아래 라이트 3열로 이어짐 */
+  variant?: 'default' | 'portalCompact';
 }
 
 /** 카피가 비었을 때의 i18n 기본값(빈 페이지 방지) */
@@ -24,7 +35,13 @@ const HARDCODED_TITLE_FALLBACK = '오늘 태국 한줄 기사부터 바로 확�
 const HARDCODED_BODY_FALLBACK =
   '비자·병원·집·교통, 오늘 필요한 정보를 한줄로 먼저 보고 필요한 메뉴로 바로 이동하세요.';
 
-export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], heroScene }: HeroSectionProps) {
+export function HeroSection({
+  memberCount: _memberCount = 0,
+  portalStats,
+  sceneUrls = [],
+  heroScene,
+  variant = 'default',
+}: HeroSectionProps) {
   const [locale, setLocale] = useState<Locale>('ko');
 
   useLayoutEffect(() => {
@@ -80,6 +97,24 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], her
     const forceHighFromQuery = params.get('quality') === 'high' || params.get('spline') === 'on';
     const savedOverride = window.localStorage.getItem('tj_quality_override') === 'high';
 
+    if (variant === 'portalCompact') {
+      if (reducedMotion) {
+        setQualityTier('low');
+        return;
+      }
+      if (forceHighFromQuery) {
+        window.localStorage.setItem('tj_quality_override', 'high');
+        setQualityTier('high');
+        return;
+      }
+      if (savedOverride) {
+        setQualityTier('high');
+        return;
+      }
+      setQualityTier('low');
+      return;
+    }
+
     if (forceHighFromQuery) {
       window.localStorage.setItem('tj_quality_override', 'high');
       setQualityTier('high');
@@ -109,7 +144,7 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], her
       return;
     }
     setQualityTier('high');
-  }, []);
+  }, [variant]);
 
   useEffect(() => {
     if (availableScenes.length <= 1) {
@@ -231,6 +266,210 @@ export function HeroSection({ memberCount: _memberCount = 0, sceneUrls = [], her
     padding: isMobileLayout ? '14px' : '16px',
     backdropFilter: 'blur(10px)',
   };
+
+  const isPortal = variant === 'portalCompact';
+
+  if (isPortal) {
+    const th = locale === 'th';
+    const portalMinH = isMobileLayout ? 'min(32vh, 300px)' : 'min(36vh, 400px)';
+    const compactSection: CSSProperties = {
+      position: 'relative',
+      overflow: 'hidden',
+      borderRadius: 16,
+      border: '1px solid rgba(255,255,255,0.12)',
+      borderBottom: '1px solid rgba(255,255,255,0.1)',
+      background: '#090a1c',
+      color: '#f8fafc',
+      minHeight: portalMinH,
+      maxHeight: '38vh',
+      boxShadow: '0 20px 60px rgba(5,8,22,0.45)',
+    };
+    const compactWrap: CSSProperties = {
+      position: 'relative',
+      zIndex: 1,
+      display: 'flex',
+      flexDirection: isMobileLayout ? 'column' : 'row',
+      gap: isMobileLayout ? 16 : 24,
+      justifyContent: 'space-between',
+      minHeight: 0,
+      padding: isMobileLayout ? '18px 16px' : '22px 24px',
+    };
+    const quickLinks = [
+      { href: '/community/boards?cat=flea', label: th ? 'ตลาด' : '번개' },
+      { href: '/community/boards?cat=job', label: th ? 'งาน' : '구인' },
+      { href: '/local', label: th ? 'ร้าน' : '로컬' },
+      { href: '/minihome', label: th ? 'มินิ' : '미니홈' },
+    ] as const;
+    const s = portalStats;
+    const statRows = s
+      ? [
+          { k: 'm', label: th ? 'สมาชิก' : '가입', v: s.memberCount, href: '/auth/signup' as const },
+          { k: 'p', label: th ? 'โพสต์' : '게시', v: s.postCount, href: '/community/boards' as const },
+          { k: 'n', label: th ? 'ข่าว' : '뉴스', v: s.newsCount, href: '/news' as const },
+          { k: 'l', label: th ? 'ร้าน' : '로컬', v: s.spotCount, href: '/local' as const },
+        ]
+      : null;
+    const lastLine = (() => {
+      if (!s?.lastUpdatedAt) return th ? 'ข้อมูลสรุป — อัปเดตล่าสุด' : '집계·요약 — 최근 콘텐츠 갱신';
+      try {
+        const t = new Date(s.lastUpdatedAt);
+        if (!Number.isFinite(t.getTime())) return '';
+        return th
+          ? `อัปเดต ${t.toLocaleString('th-TH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+          : `최신 갱신 ${t.toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+      } catch {
+        return '';
+      }
+    })();
+    return (
+      <section className="tj-landing-hero-portal" style={compactSection} aria-label={th ? 'ภาพรวม' : '요약·바로가기'}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            background:
+              'linear-gradient(120deg, rgba(9,10,28,0.95) 0%, rgba(20,12,32,0.88) 55%, rgba(30,20,50,0.6) 100%)',
+          }}
+          aria-hidden
+        />
+        <div style={compactWrap}>
+          <div style={{ flex: '1 1 55%', minWidth: 0 }}>
+            <p
+              style={{
+                display: 'inline-flex',
+                margin: 0,
+                padding: '4px 10px',
+                borderRadius: 999,
+                border: '1px solid rgba(196,181,253,0.4)',
+                background: 'rgba(139,92,246,0.12)',
+                color: '#e9d5ff',
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+              }}
+            >
+              {copyKicker}
+            </p>
+            <h1
+              style={{
+                margin: '8px 0 0',
+                fontSize: isMobileLayout ? 22 : 26,
+                lineHeight: 1.2,
+                fontWeight: 800,
+                color: '#f8fafc',
+                letterSpacing: '-0.02em',
+                textShadow: '0 4px 20px rgba(1,4,18,0.5)',
+              }}
+            >
+              {copyLead}
+            </h1>
+            <p
+              style={{
+                margin: '8px 0 0',
+                fontSize: isMobileLayout ? 13 : 14,
+                lineHeight: 1.5,
+                color: '#cbd5e1',
+              }}
+            >
+              {copyBody}
+            </p>
+            <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <Link href="/community/boards" style={{ ...heroPrimaryCtaStyle, minHeight: 40, padding: '10px 14px', fontSize: 14 }}>
+                {th ? 'กระดาน' : '광장 둘러보기'}
+              </Link>
+              <Link href="/news" style={{ ...heroSecondaryCtaStyle, minHeight: 40, padding: '10px 14px', fontSize: 14 }}>
+                {th ? 'ข่าว' : '뉴스'}
+              </Link>
+            </div>
+            <p style={{ margin: '8px 0 0', fontSize: 12, color: '#94a3b8', lineHeight: 1.45 }}>{copyBridgeHint}</p>
+          </div>
+          <div
+            style={{
+              flex: isMobileLayout ? '1 1 auto' : '0 0 min(260px, 32%)',
+              minWidth: isMobileLayout ? undefined : 200,
+            }}
+          >
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', color: '#a5b4fc' }}>
+              {th ? 'ตัวเลขสรุป' : '지금 쌓인 데이터'}
+              {s?.degraded ? (
+                <span style={{ fontWeight: 600, color: '#fbbf24' }}> {th ? '(อ้างอิง)' : '(참고·연결 점검)'}</span>
+              ) : null}
+            </p>
+            {statRows ? (
+              <div
+                style={{
+                  marginTop: 8,
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: 6,
+                }}
+              >
+                {statRows.map((row) => (
+                  <Link
+                    key={row.k}
+                    href={row.href}
+                    style={{
+                      borderRadius: 10,
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      background: 'rgba(15,17,40,0.75)',
+                      padding: '8px 10px',
+                      textDecoration: 'none',
+                      textAlign: 'left',
+                    }}
+                    prefetch={false}
+                  >
+                    <span style={{ display: 'block', fontSize: 10, color: '#94a3b8' }}>{row.label}</span>
+                    <span style={{ display: 'block', fontSize: 20, fontWeight: 800, color: '#f1f5f9', lineHeight: 1.2 }}>
+                      {row.v.toLocaleString(th ? 'th-TH' : 'ko-KR')}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+            <p style={{ margin: '8px 0 0', fontSize: 10, fontWeight: 600, color: '#64748b' }}>{lastLine}</p>
+            <p style={{ margin: '10px 0 0', fontSize: 10, fontWeight: 800, color: '#c4b5fd' }}>
+              {th ? 'ลัด' : '빠른 이동'}
+            </p>
+            <div
+              style={{
+                marginTop: 4,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 6,
+              }}
+            >
+              {quickLinks.map((q) => (
+                <Link
+                  key={q.href}
+                  href={q.href}
+                  prefetch={false}
+                  style={{
+                    borderRadius: 10,
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    background: 'rgba(15,17,40,0.5)',
+                    padding: '6px 8px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: '#e2e8f0',
+                    textDecoration: 'none',
+                    textAlign: 'center',
+                  }}
+                >
+                  {q.label}
+                </Link>
+              ))}
+            </div>
+            <p style={{ margin: '6px 0 0', fontSize: 10, color: '#94a3b8', lineHeight: 1.4 }}>
+              {th
+                ? 'รายละเอียด กระดาน·ร้าน·ข่าว อยู่ทางล่าง'
+                : '아래 라이트 구역: 광장·최신글·날씨·환율·배너가 한 화면에'}
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section style={sectionStyle}>

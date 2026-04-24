@@ -1,11 +1,8 @@
 import type { Metadata } from 'next';
 import { CTASection } from '@/components/sections/landing/CTASection';
-import { CommunityPulseSection } from '@/components/sections/landing/CommunityPulseSection';
-import { EntryFlowSection } from '@/components/sections/landing/EntryFlowSection';
-import { HomeBannerGrid } from '@/components/sections/landing/HomeBannerGrid';
-import { RecentPostsFeed } from '@/components/sections/landing/RecentPostsFeed';
 import { FooterSection } from '@/components/sections/landing/FooterSection';
 import { HeroSection } from '@/components/sections/landing/HeroSection';
+import { PortalHomeLayout } from '@/components/landing/PortalHomeLayout';
 import { ProblemSection } from '@/components/sections/landing/ProblemSection';
 import { ServiceSection } from '@/components/sections/landing/ServiceSection';
 import { TestimonialSection } from '@/components/sections/landing/TestimonialSection';
@@ -15,9 +12,14 @@ import { getLandingEntryFlow } from '@/lib/landing/entryFlow';
 import type { EntryFlowResponse } from '@/lib/landing/types';
 import { fetchCommunityPulse, type CommunityPulse } from '@/lib/landing/fetchCommunityPulse';
 import { fetchLandingStatsSSR } from '@/lib/stats/fetchStatsSSR';
+import { fetchThailandCitiesWeather } from '@/lib/weather/fetchThailandCitiesWeather';
+import { fetchUsdFx, FX_SNAPSHOT_FALLBACK } from '@/lib/fx/fetchUsdFx';
 import { getLocale } from '@/i18n/get-locale';
 import { resolveSplineScenes } from '@/lib/spline/resolver';
 import type { SplineScenesBySlot } from '@/lib/spline/types';
+
+/** 캐시·ISR에 묶이지 않고 배포 직후에도 갱신된 랜딩이 보이게 */
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: '태자월드 — 태국 사는 한국인 커뮤니티 | 비자·생활정보·한인업체',
@@ -123,11 +125,14 @@ export default async function LandingPage() {
     generatedAt: new Date().toISOString(),
   };
 
-  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled] = await Promise.allSettled([
+  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled, weatherSettled, fxSettled] =
+    await Promise.allSettled([
     fetchLandingStatsSSR(),
     getLandingEntryFlow(),
     resolveSplineScenes(),
     fetchCommunityPulse(locale),
+    fetchThailandCitiesWeather(locale),
+    fetchUsdFx({ next: { revalidate: 1800 } }),
   ]);
 
   const stats =
@@ -138,6 +143,9 @@ export default async function LandingPage() {
     entryFlowSettled.status === 'fulfilled' ? entryFlowSettled.value : fallbackEntryFlow;
   const scenes = scenesSettled.status === 'fulfilled' ? scenesSettled.value : fallbackScenes;
   const pulse = pulseSettled.status === 'fulfilled' ? pulseSettled.value : fallbackPulse;
+  const weather = weatherSettled.status === 'fulfilled' ? weatherSettled.value : { cities: [], updatedAt: null as string | null };
+  const fxSnapshot =
+    fxSettled.status === 'fulfilled' ? fxSettled.value : { ...FX_SNAPSHOT_FALLBACK, dateISO: new Date().toISOString() };
 
   const heroScene = scenes.hero;
   const heroSceneUrls = [heroScene.sceneCodeUrl, heroScene.publishedUrl].filter(
@@ -149,32 +157,44 @@ export default async function LandingPage() {
       {/* 랜딩에서만: 좌우 크림 바디·패턴이 비치지 않도록 (전역 body) */}
       <style
         dangerouslySetInnerHTML={{
-          __html:
-            'body:has(main.tj-landing-root){background-color:#090a1c!important;background-image:none!important;}',
+          __html: `
+            body:has(main.tj-landing-root){
+              background-color:#090a1c!important;
+              background-image:none!important;
+            }
+            body:has(main.tj-landing-root) .fx-mini-layer{ display:none!important; }
+          `,
         }}
       />
       <div
-        className="pointer-events-none absolute inset-0 opacity-60"
-        aria-hidden
-        style={{
-          background:
-            'radial-gradient(ellipse at top, rgba(196,181,253,0.28), transparent 45%), radial-gradient(ellipse at 25% 60%, rgba(249,168,212,0.2), transparent 55%), radial-gradient(ellipse at 85% 70%, rgba(251,191,36,0.14), transparent 60%)',
-        }}
-      />
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6">
+        className="relative z-[1] mx-auto w-full max-w-[1320px] px-4 pt-6 pb-4 sm:px-6"
+        style={{ minHeight: 0, maxWidth: 1320 }}
+      >
         <HeroSection
           memberCount={stats.memberCount}
+          portalStats={{
+            memberCount: stats.memberCount,
+            postCount: stats.postCount,
+            newsCount: stats.newsCount,
+            spotCount: stats.spotCount,
+            lastUpdatedAt: stats.lastUpdatedAt,
+            degraded: (stats as { degraded?: boolean }).degraded,
+          }}
           sceneUrls={heroSceneUrls}
           heroScene={heroScene}
+          variant="portalCompact"
         />
       </div>
       <LandingSplineAccent scene={scenes.accent1} position="top-right" />
-      <EntryFlowSection flow={entryFlow} />
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
-        <CommunityPulseSection pulse={pulse} locale={locale} />
-        <HomeBannerGrid locale={locale} />
-        <RecentPostsFeed locale={locale} />
-      </div>
+      <PortalHomeLayout
+        locale={locale}
+        pulse={pulse}
+        entryFlow={entryFlow}
+        stats={stats}
+        weatherCities={weather.cities}
+        weatherUpdatedAt={weather.updatedAt}
+        fx={fxSnapshot}
+      />
       <LandingSplineAccent scene={scenes.accent2} position="bottom-left" />
       <ProblemSection />
       <ServiceSection />

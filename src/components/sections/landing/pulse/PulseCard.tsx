@@ -57,12 +57,23 @@ function relTime(iso: string | null, locale: Locale): string {
   return lang === 'th' ? 'เมื่อสักครู่' : '방금 전';
 }
 
-function ItemRow({ item, locale }: { item: PulseItem; locale: Locale }) {
+function ItemRow({
+  item,
+  locale,
+  tone = 'dark',
+}: {
+  item: PulseItem;
+  locale: Locale;
+  tone?: 'dark' | 'light';
+}) {
+  const titleC = tone === 'light' ? '#0f172a' : '#f1f5f9';
+  const metaC = tone === 'light' ? '#64748b' : '#94a3b8';
+  const rowC = tone === 'light' ? '#334155' : '#e2e8f0';
   return (
     <Link
       href={item.href}
       prefetch={false}
-      className="tj-pulse-row"
+      className={tone === 'light' ? 'tj-pulse-row tj-pulse-row--light' : 'tj-pulse-row'}
       style={{
         display: 'flex',
         alignItems: 'baseline',
@@ -70,7 +81,7 @@ function ItemRow({ item, locale }: { item: PulseItem; locale: Locale }) {
         padding: '8px 12px',
         borderRadius: 10,
         textDecoration: 'none',
-        color: '#e2e8f0',
+        color: rowC,
         fontSize: 13.5,
         lineHeight: 1.45,
       }}
@@ -82,7 +93,7 @@ function ItemRow({ item, locale }: { item: PulseItem; locale: Locale }) {
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
-          color: '#f1f5f9',
+          color: titleC,
           fontWeight: 500,
         }}
       >
@@ -92,7 +103,7 @@ function ItemRow({ item, locale }: { item: PulseItem; locale: Locale }) {
         style={{
           flexShrink: 0,
           fontSize: 11,
-          color: '#94a3b8',
+          color: metaC,
           display: 'inline-flex',
           gap: 8,
           alignItems: 'baseline',
@@ -113,25 +124,40 @@ export function PulseCard({
   col,
   locale,
   variant = 'grid',
+  tone = 'dark',
 }: {
   col: PulseColumn;
   locale: Locale;
   /** grid: 데스크톱 그리드, panel: 모바일 탭 패널(풀폭) */
   variant?: 'grid' | 'panel';
+  /** light: 밝은 포털 구역(필고형 라이트 카드) */
+  tone?: 'dark' | 'light';
 }) {
   const accent = ACCENT_MAP[col.accent];
   const hasItems = col.items.length > 0;
 
-  const cardStyle: CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    minWidth: 0,
-    background: variant === 'grid' ? 'rgba(15,17,40,0.7)' : 'transparent',
-    border: variant === 'grid' ? '1px solid rgba(255,255,255,0.08)' : 'none',
-    borderRadius: variant === 'grid' ? 16 : 0,
-    padding: variant === 'grid' ? 14 : 0,
-    boxShadow: variant === 'grid' ? '0 8px 28px rgba(2,6,23,0.35)' : 'none',
-  };
+  const cardStyle: CSSProperties =
+    tone === 'light' && variant === 'grid'
+      ? {
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0,
+          background: '#fff',
+          border: '1px solid #e2e8f0',
+          borderRadius: 8,
+          padding: 12,
+          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.06)',
+        }
+      : {
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0,
+          background: variant === 'grid' ? 'rgba(15,17,40,0.7)' : 'transparent',
+          border: variant === 'grid' ? '1px solid rgba(255,255,255,0.08)' : 'none',
+          borderRadius: variant === 'grid' ? 16 : 0,
+          padding: variant === 'grid' ? 14 : 0,
+          boxShadow: variant === 'grid' ? '0 8px 28px rgba(2,6,23,0.35)' : 'none',
+        };
 
   return (
     <article style={cardStyle} className="tj-pulse-card">
@@ -141,35 +167,38 @@ export function PulseCard({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 10,
-          marginBottom: 10,
-          paddingInline: 2,
+          marginBottom: tone === 'light' ? 8 : 10,
+          paddingInline: tone === 'light' ? 0 : 2,
+          borderBottom: tone === 'light' ? '1px solid #e2e8f0' : 'none',
+          paddingBottom: tone === 'light' ? 8 : 0,
         }}
       >
-        <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center', minWidth: 0 }}>
+        <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center', minWidth: 0, flexWrap: 'wrap' }}>
           <span
             style={{
               display: 'inline-block',
-              padding: '3px 10px',
-              borderRadius: 999,
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              color: accent.title,
-              background: accent.pill,
+              padding: tone === 'light' ? '0' : '3px 10px',
+              borderRadius: tone === 'light' ? 0 : 999,
+              fontSize: tone === 'light' ? 14 : 11,
+              fontWeight: 800,
+              letterSpacing: tone === 'light' ? '0' : '0.04em',
+              color: tone === 'light' ? '#0f172a' : accent.title,
+              background: tone === 'light' ? 'transparent' : accent.pill,
             }}
           >
             {col.label}
           </span>
-          <span style={{ fontSize: 11, color: '#94a3b8' }}>
+          <span style={{ fontSize: 11, color: tone === 'light' ? '#64748b' : '#94a3b8' }}>
             {locale === 'th' ? `วันนี้ ${col.todayCount}` : `오늘 ${col.todayCount}개`}
           </span>
         </div>
         <Link
           href={col.moreHref}
           prefetch={false}
+          className={tone === 'light' ? 'text-blue-600' : undefined}
           style={{
             fontSize: 11,
-            color: '#c4b5fd',
+            color: tone === 'light' ? '#2563eb' : '#c4b5fd',
             textDecoration: 'none',
             fontWeight: 600,
             flexShrink: 0,
@@ -181,17 +210,19 @@ export function PulseCard({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {hasItems ? (
-          col.items.map((it) => <ItemRow key={it.id} item={it} locale={locale} />)
+          col.items.map((it) => (
+            <ItemRow key={it.id} item={it} locale={locale} tone={tone} />
+          ))
         ) : (
           <div
             style={{
               padding: '14px 12px 16px',
               fontSize: 12.5,
-              color: '#94a3b8',
+              color: tone === 'light' ? '#64748b' : '#94a3b8',
               lineHeight: 1.55,
               borderRadius: 10,
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px dashed rgba(255,255,255,0.08)',
+              background: tone === 'light' ? '#f8fafc' : 'rgba(255,255,255,0.02)',
+              border: tone === 'light' ? '1px dashed #cbd5e1' : '1px dashed rgba(255,255,255,0.08)',
             }}
           >
             {locale === 'th'

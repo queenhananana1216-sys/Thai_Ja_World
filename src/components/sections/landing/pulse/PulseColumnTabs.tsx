@@ -17,9 +17,11 @@ import type { Locale } from '@/i18n/types';
 type Props = {
   columns: PulseColumn[];
   locale: Locale;
+  /** light: 밝은 포털 카드(CommunityPulseSection 다크 히어로 구역은 기본 dark) */
+  tone?: 'dark' | 'light';
 };
 
-export function PulseColumnTabs({ columns, locale }: Props) {
+export function PulseColumnTabs({ columns, locale, tone = 'dark' }: Props) {
   const [idx, setIdx] = useState(0);
 
   const onKey = useCallback(
@@ -40,6 +42,11 @@ export function PulseColumnTabs({ columns, locale }: Props) {
   const active = columns[safeIdx] ?? columns[0];
   if (!active) return null;
   const accent = ACCENT_MAP[active.accent];
+  const tabBorderColor = tone === 'light' ? 'rgba(148,163,184,0.45)' : 'rgba(255,255,255,0.08)';
+  const activeColor = tone === 'light' ? '#0f172a' : '#f8fafc';
+  const idleColor = tone === 'light' ? '#64748b' : '#94a3b8';
+  const panelBg = tone === 'light' ? '#fff' : 'rgba(15,17,40,0.7)';
+  const panelBorder = tone === 'light' ? '1px solid #e2e8f0' : '1px solid rgba(255,255,255,0.08)';
 
   return (
     <div className="tj-pulse-mobile-tabs">
@@ -57,12 +64,12 @@ export function PulseColumnTabs({ columns, locale }: Props) {
           marginBottom: 12,
           scrollbarWidth: 'thin',
           WebkitOverflowScrolling: 'touch',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: `1px solid ${tabBorderColor}`,
         }}
       >
         {columns.map((c, i) => {
           const isActive = i === idx;
-          const tone = ACCENT_MAP[c.accent];
+          const t = ACCENT_MAP[c.accent];
           return (
             <button
               key={c.label}
@@ -78,7 +85,7 @@ export function PulseColumnTabs({ columns, locale }: Props) {
                 flexShrink: 0,
                 fontSize: 14,
                 fontWeight: isActive ? 700 : 500,
-                color: isActive ? '#f8fafc' : '#94a3b8',
+                color: isActive ? activeColor : idleColor,
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
@@ -96,7 +103,7 @@ export function PulseColumnTabs({ columns, locale }: Props) {
                     bottom: -1,
                     height: 2,
                     borderRadius: 2,
-                    background: tone.tabBorder,
+                    background: tone === 'light' ? t.title : t.tabBorder,
                   }}
                 />
               ) : null}
@@ -107,7 +114,7 @@ export function PulseColumnTabs({ columns, locale }: Props) {
                     marginLeft: 6,
                     fontSize: 11,
                     fontWeight: 700,
-                    color: isActive ? '#f9a8d4' : '#64748b',
+                    color: isActive ? (tone === 'light' ? '#db2777' : '#f9a8d4') : '#64748b',
                   }}
                 >
                   {c.todayCount}
@@ -123,20 +130,30 @@ export function PulseColumnTabs({ columns, locale }: Props) {
         role="tabpanel"
         id={`tj-pulse-panel-${idx}`}
         aria-labelledby={`tj-pulse-tab-${idx}`}
-        style={{
-          background: 'rgba(15,17,40,0.7)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 16,
-          padding: 14,
-          boxShadow: '0 8px 28px rgba(2,6,23,0.35)',
-          borderTopWidth: 2,
-          borderTopColor: 'transparent',
-          backgroundImage: `linear-gradient(rgba(15,17,40,0.7),rgba(15,17,40,0.7)), ${accent.tabBorder}`,
-          backgroundOrigin: 'border-box',
-          backgroundClip: 'padding-box, border-box',
-        }}
+        style={
+          tone === 'light'
+            ? {
+                background: panelBg,
+                border: panelBorder,
+                borderRadius: 8,
+                padding: 12,
+                boxShadow: '0 1px 2px rgba(15, 23, 42, 0.06)',
+              }
+            : {
+                background: 'rgba(15,17,40,0.7)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 16,
+                padding: 14,
+                boxShadow: '0 8px 28px rgba(2,6,23,0.35)',
+                borderTopWidth: 2,
+                borderTopColor: 'transparent',
+                backgroundImage: `linear-gradient(rgba(15,17,40,0.7),rgba(15,17,40,0.7)), ${accent.tabBorder}`,
+                backgroundOrigin: 'border-box',
+                backgroundClip: 'padding-box, border-box',
+              }
+        }
       >
-        <PulseCard col={active} locale={locale} variant="panel" />
+        <PulseCard col={active} locale={locale} variant="panel" tone={tone} />
       </div>
     </div>
   );

@@ -12,6 +12,10 @@ import type { Locale } from '@/i18n/types';
 
 type Props = {
   locale: Locale;
+  /** portal: 필고형 라이트 카드(랜딩 3열 중앙) / dark: 기존 다크 톤 */
+  variant?: 'dark' | 'portal';
+  /** portal에서만 사용 — 기본 12 */
+  limit?: number;
 };
 
 function relTime(iso: string | null, locale: Locale): string {
@@ -41,58 +45,66 @@ const CATEGORY_COLOR: Record<string, { color: string; bg: string }> = {
   job: { color: '#c4b5fd', bg: 'rgba(196,181,253,0.18)' },
 };
 
-export async function RecentPostsFeed({ locale }: Props) {
-  const items = await fetchRecentPosts(12);
+/** 랜딩 포털(다크 서피스) — 밝은 파스텔 대신 semi-transparent */
+const CATEGORY_COLOR_PORTAL: Record<string, { color: string; bg: string }> = {
+  free: { color: '#fbcfe8', bg: 'rgba(244,114,182,0.12)' },
+  info: { color: '#7dd3fc', bg: 'rgba(56,189,248,0.12)' },
+  restaurant: { color: '#d9f99d', bg: 'rgba(163,230,53,0.12)' },
+  flea: { color: '#fde68a', bg: 'rgba(251,191,36,0.12)' },
+  job: { color: '#c4b5fd', bg: 'rgba(167,139,250,0.14)' },
+};
+
+export async function RecentPostsFeed({ locale, variant = 'dark', limit = 12 }: Props) {
+  const items = await fetchRecentPosts(limit);
   if (items.length === 0) return null;
 
+  const isPortal = variant === 'portal';
   const title = locale === 'th' ? 'โพสต์ล่าสุด' : '최신 게시글';
   const moreLabel = locale === 'th' ? 'ดูเพิ่ม →' : '전체 보기 →';
+  const catMap = isPortal ? CATEGORY_COLOR_PORTAL : CATEGORY_COLOR;
 
   return (
     <section
       aria-labelledby="tj-recent-posts"
-      style={{
-        marginTop: 32,
-        marginBottom: 8,
-      }}
+      style={isPortal ? { marginTop: 0, marginBottom: 0 } : { marginTop: 32, marginBottom: 8 }}
     >
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'baseline',
-          justifyContent: 'space-between',
-          gap: 12,
-          marginBottom: 12,
-        }}
+        className="flex items-baseline justify-between gap-3"
+        style={
+          isPortal
+            ? { marginBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8 }
+            : { marginBottom: 12 }
+        }
       >
         <h2
           id="tj-recent-posts"
-          style={{
-            margin: 0,
-            fontSize: 18,
-            fontWeight: 800,
-            color: '#f8fafc',
-          }}
+          className={isPortal ? 'text-sm font-extrabold text-slate-100' : ''}
+          style={
+            isPortal
+              ? { margin: 0, fontSize: 14, fontWeight: 800, color: '#f1f5f9' }
+              : { margin: 0, fontSize: 18, fontWeight: 800, color: '#f8fafc' }
+          }
         >
           {title}
         </h2>
         <Link
           href="/community/boards"
           prefetch={false}
-          style={{
-            fontSize: 12,
-            fontWeight: 700,
-            color: '#f9a8d4',
-            textDecoration: 'none',
-          }}
+          className={isPortal ? 'text-xs font-semibold text-violet-300' : ''}
+          style={
+            isPortal
+              ? { fontSize: 12, fontWeight: 700, color: '#c4b5fd', textDecoration: 'none' }
+              : { fontSize: 12, fontWeight: 700, color: '#f9a8d4', textDecoration: 'none' }
+          }
         >
           {moreLabel}
         </Link>
       </div>
 
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
+      {!isPortal ? (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
             .tj-recent-grid {
               display: grid;
               gap: 4px;
@@ -113,24 +125,46 @@ export async function RecentPostsFeed({ locale }: Props) {
               background: rgba(255,255,255,0.06);
             }
           `,
-        }}
-      />
+          }}
+        />
+      ) : (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+            .tj-recent-grid-portal {
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            }
+            .tj-recent-row-portal { text-decoration: none; color: inherit; border-radius: 6px; }
+            .tj-recent-row-portal:hover { background: rgba(255,255,255,0.05); }
+            .tj-recent-row-portal:focus-visible {
+              outline: 2px solid #a78bfa;
+              outline-offset: 1px;
+              background: rgba(255,255,255,0.05);
+            }
+          `,
+          }}
+        />
+      )}
 
-      <div className="tj-recent-grid">
+      <div className={isPortal ? 'tj-recent-grid-portal' : 'tj-recent-grid'}>
         {items.map((p) => {
-          const tone = CATEGORY_COLOR[p.category] ?? { color: '#e2e8f0', bg: 'rgba(255,255,255,0.08)' };
+          const tone = catMap[p.category] ?? (isPortal
+            ? { color: '#cbd5e1', bg: 'rgba(255,255,255,0.08)' }
+            : { color: '#e2e8f0', bg: 'rgba(255,255,255,0.08)' });
           return (
             <Link
               key={p.id}
               href={hrefForPost(p)}
               prefetch={false}
-              className="tj-recent-row"
+              className={isPortal ? 'tj-recent-row-portal' : 'tj-recent-row'}
               style={{
                 display: 'flex',
                 alignItems: 'baseline',
                 gap: 10,
-                padding: '10px 12px',
-                borderRadius: 10,
+                padding: isPortal ? '6px 4px' : '10px 12px',
+                borderRadius: isPortal ? 6 : 10,
                 fontSize: 13.5,
                 lineHeight: 1.4,
                 minWidth: 0,
@@ -158,7 +192,7 @@ export async function RecentPostsFeed({ locale }: Props) {
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  color: '#f1f5f9',
+                  color: isPortal ? '#f1f5f9' : '#f1f5f9',
                   fontWeight: 500,
                 }}
               >
@@ -168,14 +202,18 @@ export async function RecentPostsFeed({ locale }: Props) {
                 style={{
                   flexShrink: 0,
                   fontSize: 11,
-                  color: '#94a3b8',
+                  color: isPortal ? '#94a3b8' : '#94a3b8',
                   display: 'inline-flex',
                   gap: 8,
                   alignItems: 'baseline',
                 }}
               >
                 {p.commentCount > 0 ? (
-                  <span>{locale === 'th' ? '💬' : '댓'} {p.commentCount}</span>
+                  <span
+                    className={isPortal ? 'rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-slate-300' : ''}
+                  >
+                    {p.commentCount}
+                  </span>
                 ) : null}
                 <time dateTime={p.createdAt ?? undefined}>{relTime(p.createdAt, locale)}</time>
               </span>

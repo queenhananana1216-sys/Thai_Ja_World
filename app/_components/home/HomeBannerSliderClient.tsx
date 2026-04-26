@@ -1,0 +1,66 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import type { PremiumBannerRow } from '../../portal/types';
+import styles from './home-hub.module.css';
+
+const FALLBACK_BG = 'linear-gradient(120deg, #0f172a 0%, #1e3a8a 40%, #b45309 100%)';
+
+export function HomeBannerSliderClient({ banners }: { banners: PremiumBannerRow[] }) {
+  const [slide, setSlide] = useState(0);
+  const list = banners.length > 0 ? banners : null;
+
+  useEffect(() => {
+    if (!list || list.length < 2) return;
+    const t = setInterval(() => setSlide((s) => (s + 1) % list.length), 5200);
+    return () => clearInterval(t);
+  }, [list]);
+
+  if (!list) return null;
+
+  const first = list[0];
+  if (!first) return null;
+  const active = list[slide % list.length] ?? first;
+
+  return (
+    <div className={styles.sliderHost}>
+      {list.map((b, i) => (
+        <div
+          key={b.id}
+          className={`${styles.slide} ${i === slide ? styles.slideActive : ''}`}
+          style={{
+            background: b.image_url ? undefined : FALLBACK_BG,
+            backgroundImage: b.image_url ? `url(${b.image_url})` : undefined,
+          }}
+        />
+      ))}
+      <div className={styles.slideOverlay}>
+        {active.href ? (
+          <Link href={active.href} className="block text-inherit no-underline hover:opacity-95">
+            <div className={styles.slideTitle}>{active.title}</div>
+            <div className={styles.slideSub}>{active.subtitle ?? active.badge_text ?? ''}</div>
+          </Link>
+        ) : (
+          <>
+            <div className={styles.slideTitle}>{active.title}</div>
+            <div className={styles.slideSub}>{active.subtitle ?? active.badge_text ?? ''}</div>
+          </>
+        )}
+      </div>
+      {list.length > 1 ? (
+        <div className={styles.dots}>
+          {list.map((_, i) => (
+            <button
+              key={String(i)}
+              type="button"
+              className={`${styles.dot} ${i === slide ? styles.dotActive : ''}`}
+              onClick={() => setSlide(i)}
+              aria-label={`${i + 1}번 배너`}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}

@@ -1,0 +1,11 @@
+-- Roadmap reference (no schema change). Apply future work in dedicated migrations.
+--
+-- Mid-term:
+--   - public.local_shop_applications (applicant_profile_id, proposed_name, address_note, status, created_at, reviewed_at, reviewed_by)
+--   - Audit: local_spots_owner_audit (local_spot_id, old_owner, new_owner, actor_profile_id, created_at)
+--
+-- Long-term:
+--   - public.local_shop_staff (local_spot_id, profile_id, role text check in ('owner','manager','staff'))
+--   - RLS on local_spots child tables: allow select/update where auth.uid() in owner OR staff for that spot
+--
+SELECT 1;

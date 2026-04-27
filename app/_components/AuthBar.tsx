@@ -15,14 +15,18 @@ type MemberNavLabels = {
   ariaLabel: string;
 };
 
+/**
+ * 글로벌 스티키 헤더용 초소형 인증 UI (Pill).
+ * Supabase env 가 없으면 세션 없음으로만 처리 — UI 는 항상 렌더.
+ */
 export default function AuthBar({
   labels,
   memberNav,
-  variant = 'inline',
+  variant = 'chromePills',
 }: {
   labels: Labels;
   memberNav: MemberNavLabels;
-  variant?: 'inline' | 'natePanel';
+  variant?: 'chromePills' | 'inline';
 }) {
   const router = useRouter();
   const pathname = usePathname() || '/';
@@ -34,7 +38,7 @@ export default function AuthBar({
   const displayLocal = useMemo(() => {
     if (!email) return '';
     const local = email.split('@')[0] ?? email;
-    return local.length > 14 ? `${local.slice(0, 12)}…` : local;
+    return local.length > 12 ? `${local.slice(0, 10)}…` : local;
   }, [email]);
 
   const greetingSuffix = locale === 'ko' ? '님' : '';
@@ -76,12 +80,15 @@ export default function AuthBar({
     router.refresh();
   }
 
+  const isChrome = variant === 'chromePills';
+
   if (loading) {
-    if (variant === 'natePanel') {
+    if (isChrome) {
       return (
-        <div className="nate-user-panel nate-user-panel--loading" aria-busy="true">
-          <div className="nate-user-panel__skeleton-line" />
-          <div className="nate-user-panel__skeleton-line nate-user-panel__skeleton-line--short" />
+        <div className="auth-chrome-pills auth-chrome-pills--loading" aria-busy="true">
+          <span className="auth-chrome-pills__dot" />
+          <span className="auth-chrome-pills__dot" />
+          <span className="auth-chrome-pills__dot" />
         </div>
       );
     }
@@ -89,23 +96,21 @@ export default function AuthBar({
   }
 
   if (!email) {
-    if (variant === 'natePanel') {
+    if (isChrome) {
       return (
-        <div className="nate-user-panel nate-user-panel--guest">
-          <div className="nate-user-panel__guest-actions">
-            <Link
-              href={`/auth/login?next=${authNext}`}
-              className="nate-user-panel__btn nate-user-panel__btn--primary"
-            >
-              {labels.login}
-            </Link>
-            <Link
-              href={`/auth/signup?next=${authNext}`}
-              className="nate-user-panel__btn nate-user-panel__btn--outline"
-            >
-              {labels.signup}
-            </Link>
-          </div>
+        <div className="auth-chrome-pills auth-chrome-pills--guest" role="navigation" aria-label="계정">
+          <Link
+            href={`/auth/login?next=${authNext}`}
+            className="auth-chrome-pills__pill auth-chrome-pills__pill--primary"
+          >
+            {labels.login}
+          </Link>
+          <Link
+            href={`/auth/signup?next=${authNext}`}
+            className="auth-chrome-pills__pill auth-chrome-pills__pill--ghost"
+          >
+            {labels.signup}
+          </Link>
         </div>
       );
     }
@@ -121,30 +126,30 @@ export default function AuthBar({
     );
   }
 
-  if (variant === 'natePanel') {
+  if (isChrome) {
     return (
-      <div className="nate-user-panel">
-        <div className="nate-user-panel__head">
-          <span className="nate-user-panel__name" title={email}>
-            <strong>{displayLocal}</strong>
-            {greetingSuffix ? <span className="nate-user-panel__suffix">{greetingSuffix}</span> : null}
-          </span>
-          <button type="button" className="nate-user-panel__logout" onClick={() => void logout()}>
-            {labels.logout}
-          </button>
-        </div>
-        <nav className="nate-user-panel__member-quick" aria-label={memberNav.ariaLabel}>
-          <Link href="/minihome" className="nate-user-panel__minihome">
-            {memberNav.minihome}
-          </Link>
-          <Link href="/ilchon#ilchon-notes" className="nate-user-panel__subnav-link">
-            {memberNav.notesInbox}
-          </Link>
-          <Link href="/ilchon#ilchon-friends" className="nate-user-panel__subnav-link">
-            {memberNav.friends}
-          </Link>
-        </nav>
-      </div>
+      <nav className="auth-chrome-pills auth-chrome-pills--member" aria-label={memberNav.ariaLabel}>
+        <Link href="/minihome" className="auth-chrome-pills__pill auth-chrome-pills__pill--mini">
+          {memberNav.minihome}
+        </Link>
+        <Link href="/ilchon#ilchon-notes" className="auth-chrome-pills__link">
+          {memberNav.notesInbox}
+        </Link>
+        <Link href="/ilchon#ilchon-friends" className="auth-chrome-pills__link">
+          {memberNav.friends}
+        </Link>
+        <span className="auth-chrome-pills__who" title={email}>
+          <strong>{displayLocal}</strong>
+          {greetingSuffix}
+        </span>
+        <button
+          type="button"
+          className="auth-chrome-pills__pill auth-chrome-pills__pill--ghost"
+          onClick={() => void logout()}
+        >
+          {labels.logout}
+        </button>
+      </nav>
     );
   }
 

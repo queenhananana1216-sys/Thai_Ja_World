@@ -43,7 +43,7 @@ type ApiNewsHit = {
   score: number;
 };
 
-export type SiteSearchVariant = 'header' | 'hero' | 'portal' | 'nate' | 'headerNate';
+export type SiteSearchVariant = 'header' | 'hero' | 'portal' | 'nate' | 'headerNate' | 'integratedHub';
 
 type SiteSearchProps = {
   variant?: SiteSearchVariant;
@@ -60,6 +60,7 @@ export default function SiteSearch({ variant = 'header', omitIntro = false }: Si
   const panelId = `tj-search-panel-${variant}-${uid}`;
   const wrapRef = useRef<HTMLDivElement>(null);
   const isHeaderNate = variant === 'headerNate';
+  const isIntegratedHub = variant === 'integratedHub';
   const isNate = variant === 'nate';
   const isPortal = variant === 'portal' || isNate;
   const isHeroLike = variant === 'hero' || isPortal;
@@ -163,15 +164,17 @@ export default function SiteSearch({ variant = 'header', omitIntro = false }: Si
 
   const rootClass =
     'global-header__search' +
-    (isHeaderNate
-      ? ' site-search--header site-search--header-nate'
-      : isNate
-        ? ' site-search--hero site-search--portal site-search--nate'
-        : isPortal
-          ? ' site-search--hero site-search--portal'
-          : variant === 'hero'
-            ? ' site-search--hero'
-            : ' site-search--header');
+    (isIntegratedHub
+      ? ' site-search--integrated-hub'
+      : isHeaderNate
+        ? ' site-search--header site-search--header-nate'
+        : isNate
+          ? ' site-search--hero site-search--portal site-search--nate'
+          : isPortal
+            ? ' site-search--hero site-search--portal'
+            : variant === 'hero'
+              ? ' site-search--hero'
+              : ' site-search--header');
 
   const qTrim = q.trim();
   const showQuick = open && !qTrim;
@@ -219,8 +222,12 @@ export default function SiteSearch({ variant = 'header', omitIntro = false }: Si
 
   return (
     <div ref={wrapRef} className={rootClass}>
-      {isHeroLike && !omitIntro && s.heroTitle ? <p className="site-search__hero-title">{s.heroTitle}</p> : null}
-      {isPortal && !omitIntro && s.portalLead ? <p className="site-search__portal-lead">{s.portalLead}</p> : null}
+      {!isIntegratedHub && isHeroLike && !omitIntro && s.heroTitle ? (
+        <p className="site-search__hero-title">{s.heroTitle}</p>
+      ) : null}
+      {!isIntegratedHub && isPortal && !omitIntro && s.portalLead ? (
+        <p className="site-search__portal-lead">{s.portalLead}</p>
+      ) : null}
       {showHeaderBarLabel ? (
         <span className="global-header__search-visible-label">{s.headerBarLabel}</span>
       ) : null}
@@ -246,12 +253,12 @@ export default function SiteSearch({ variant = 'header', omitIntro = false }: Si
           onFocus={() => setOpen(true)}
         />
       </div>
-      {!isHeaderNate && s.hint ? (
+      {!isIntegratedHub && !isHeaderNate && s.hint ? (
         <p className="global-header__search-hint" aria-hidden="true">
           {s.hint}
         </p>
       ) : null}
-      {searchAssist && qTrim.length < 2 && open ? (
+      {!isIntegratedHub && searchAssist && qTrim.length < 2 && open ? (
         <p className="global-header__search-hint" style={{ color: 'var(--tj-link)', marginTop: 6 }}>
           {locale === 'th'
             ? 'ลองพิมพ์หมวด เช่น ร้าน, วีซ่า, มือสอง, งาน'

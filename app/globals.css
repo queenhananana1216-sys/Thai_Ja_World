@@ -110,25 +110,170 @@ a:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 2px 0;
+}
+
+.global-header__toolbar-start,
+.global-header__toolbar-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.global-header__toolbar-end {
   justify-content: flex-end;
-  gap: 10px;
-  padding: 6px 0;
+  margin-left: auto;
+}
+
+/* Sticky header 우측 — 초소형 로그인/가입 Pill (글라스모피즘) */
+.auth-chrome-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  max-width: min(100vw - 24px, 520px);
+  justify-content: flex-end;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(30, 58, 138, 0.38) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  backdrop-filter: blur(14px) saturate(1.35);
+  -webkit-backdrop-filter: blur(14px) saturate(1.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 8px 26px rgba(0, 0, 0, 0.35);
+}
+
+.auth-chrome-pills--loading {
+  gap: 6px;
+  padding: 6px 12px;
+  min-width: 5.5rem;
+  justify-content: center;
+}
+
+.auth-chrome-pills__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+  animation: auth-chrome-pulse 1s ease-in-out infinite;
+}
+
+.auth-chrome-pills__dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.auth-chrome-pills__dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes auth-chrome-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.auth-chrome-pills__pill,
+.auth-chrome-pills__link {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 3px 9px;
+  line-height: 1.2;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.auth-chrome-pills__pill--primary {
+  background: #c41e1e;
+  color: #fff;
+  border-color: rgba(0, 0, 0, 0.25);
+}
+
+.auth-chrome-pills__pill--primary:hover {
+  filter: brightness(1.08);
+  text-decoration: none;
+  color: #fff;
+}
+
+.auth-chrome-pills__pill--ghost {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.auth-chrome-pills__pill--ghost:hover {
+  border-color: rgba(255, 183, 3, 0.75);
+  color: #fff;
+  text-decoration: none;
+}
+
+.auth-chrome-pills__pill--mini {
+  background: rgba(67, 97, 238, 0.35);
+  color: #eef2ff;
+  border-color: rgba(129, 140, 248, 0.55);
+}
+
+.auth-chrome-pills__pill--mini:hover {
+  text-decoration: none;
+  color: #fff;
+}
+
+.auth-chrome-pills__link {
+  color: rgba(226, 232, 240, 0.92);
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.auth-chrome-pills__link:hover {
+  border-color: rgba(255, 183, 3, 0.65);
+  color: #fff;
+  text-decoration: none;
+}
+
+.auth-chrome-pills__who {
+  font-size: 0.58rem;
+  color: rgba(226, 232, 240, 0.85);
+  max-width: 7.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-chrome-pills__who strong {
+  font-weight: 800;
+  color: #fefce8;
+}
+
+.auth-chrome-pills--member .auth-chrome-pills__pill--ghost {
+  font-weight: 700;
 }
 
 .global-header__nate-band {
-  background: linear-gradient(180deg, #14121f 0%, var(--tj-landing-canvas) 100%);
-  color: #f8fafc;
-  border-bottom: 1px solid rgba(230, 163, 3, 0.42);
-  box-shadow: 0 18px 40px rgba(3, 4, 14, 0.4);
+  background: linear-gradient(90deg, rgba(7, 11, 20, 0.96) 0%, rgba(15, 23, 42, 0.92) 50%, rgba(7, 11, 20, 0.96) 100%);
+  color: #e2e8f0;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
 .global-header__nate-band-inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px 20px;
-  padding: 14px 0 16px;
+  justify-content: flex-start;
+  gap: 8px 12px;
+  padding: 3px 0 5px;
 }
 
 .global-header__logo-nate {
@@ -152,7 +297,7 @@ a:hover {
 .global-header__logo-suffix-nate {
   font-size: 0.78em;
   font-weight: 600;
-  color: #fbcfe8;
+  color: #f0d78c;
   letter-spacing: 0.02em;
 }
 
@@ -822,6 +967,70 @@ a:hover {
   min-width: 0;
   max-width: 440px;
   margin: 0 10px;
+}
+
+.site-search--integrated-hub.global-header__search {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.site-search--integrated-hub .global-header__search-field::before {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.site-search--integrated-hub .global-header__search-input {
+  background: #fff;
+  color: #0f172a;
+  border: 1px solid rgba(58, 12, 163, 0.22);
+}
+
+.site-search--integrated-hub .global-header__search-input::placeholder {
+  color: rgba(71, 85, 105, 0.72);
+}
+
+.site-search--integrated-hub .global-header__search-input:focus {
+  background: #fff;
+  border-color: rgba(59, 130, 246, 0.55);
+}
+
+.site-search--integrated-hub .global-header__search-panel {
+  z-index: 500;
+  background: #fffef6;
+  color: #1a1625;
+  border: 2px solid var(--tj-line, #1a1a1e);
+  box-shadow: 4px 4px 0 rgba(13, 13, 15, 0.12);
+}
+
+.site-search--integrated-hub .global-header__search-hit {
+  color: #1a1625;
+}
+
+.site-search--integrated-hub .global-header__search-hit:hover,
+.site-search--integrated-hub .global-header__search-hit:focus-visible {
+  background: rgba(67, 97, 238, 0.08);
+}
+
+.site-search--integrated-hub .global-header__search-hit-path {
+  color: #64748b;
+}
+
+.site-search--integrated-hub .global-header__search-section {
+  color: #475569;
+}
+
+.site-search--integrated-hub .global-header__search-empty {
+  color: #64748b;
+}
+
+.site-search--integrated-hub .global-header__search-footer {
+  border-top-color: rgba(26, 26, 30, 0.12);
+}
+
+.site-search--integrated-hub .global-header__search-footer-link {
+  color: #4338ca;
 }
 
 .global-header__search-field {

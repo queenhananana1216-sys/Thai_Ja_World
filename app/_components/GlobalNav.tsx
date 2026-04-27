@@ -1,8 +1,7 @@
 'use client';
 
 /**
- * app/_components/GlobalNav.tsx — 글로벌 상단 네비 + 언어 전환
- * (네이트형: 상단 얇은 툴바 → 흰 띠에 로고·로그인 패널 → 주요 메뉴 줄에 통합 검색)
+ * 글로벌 상단 네비 — 인증은 툴바 우측 Pill 전용 (흰 띠에 거대 로그인 패널 없음)
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -27,16 +26,14 @@ const HREFS = ['/', '/tips', '/local', '/community/boards', '/ilchon', '/minihom
 
 type Props = {
   dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board' | 'search'>;
-  /** 관리자 화이트리스트(또는 개발용 허용 세션)일 때만 표시 */
   showAdminConsole?: boolean;
-  /** 로고 자리에 얹을 Spline 3D 장면 (없으면 텍스트만) */
   logoScene?: SplineSceneRecord | null;
 };
 
 export default function GlobalNav({ dict, showAdminConsole = false, logoScene = null }: Props) {
   const pathname = usePathname() ?? '/';
-  /** 홈은 본문 포털 마스트에 통합 검색이 있어 헤더 검색을 숨겨 세로 중복·겹침을 줄임 */
   const hideHeaderSearch = pathname === '/';
+
   const labels = [
     dict.nav.home,
     dict.nav.tips,
@@ -78,18 +75,23 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
     <header className="global-header">
       <div className="global-header__toolbar">
         <div className="site-container global-header__toolbar-inner">
-          <LanguageSwitch labels={dict.lang} />
-          {showAdminConsole && (
-            <Link
-              href="/admin"
-              className={
-                'global-header__console global-header__console--subtle' +
-                (pathname.startsWith('/admin') ? ' global-header__console--active' : '')
-              }
-            >
-              {dict.nav.botConsole}
-            </Link>
-          )}
+          <div className="global-header__toolbar-start">
+            <LanguageSwitch labels={dict.lang} />
+          </div>
+          <div className="global-header__toolbar-end">
+            {showAdminConsole && (
+              <Link
+                href="/admin"
+                className={
+                  'global-header__console global-header__console--subtle' +
+                  (pathname.startsWith('/admin') ? ' global-header__console--active' : '')
+                }
+              >
+                {dict.nav.botConsole}
+              </Link>
+            )}
+            <AuthBar variant="chromePills" {...authProps} />
+          </div>
         </div>
       </div>
 
@@ -127,9 +129,6 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
             <BrandPhrase variant="light" />
             <span className="global-header__logo-suffix-nate">{dict.brandSuffix}</span>
           </Link>
-          <aside className="global-header__nate-user">
-            <AuthBar variant="natePanel" {...authProps} />
-          </aside>
         </div>
       </div>
 
@@ -141,92 +140,90 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
               (hideHeaderSearch ? ' global-header__main-nav-bar--nav-only' : '')
             }
           >
-          {/* 모바일: Sheet 메뉴 + (비홈일 때) 헤더 검색 */}
-          <div className="flex w-full items-center gap-2 md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="shrink-0 border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-                  aria-label={dict.nav.mainNavAria}
+            <div className="flex w-full items-center gap-2 md:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0 border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    aria-label={dict.nav.mainNavAria}
+                  >
+                    <Menu className="size-5" aria-hidden />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side="left"
+                  className="border-zinc-700 bg-zinc-950 text-zinc-50 [&_button]:text-zinc-50"
                 >
-                  <Menu className="size-5" aria-hidden />
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="left"
-                className="border-zinc-700 bg-zinc-950 text-zinc-50 [&_button]:text-zinc-50"
-              >
-                <SheetHeader>
-                  <SheetTitle className="text-left text-zinc-50">{dict.nav.mainNavAria}</SheetTitle>
-                </SheetHeader>
-                <div className="mt-6 flex flex-col gap-1 pr-2">
-                  <Link
-                    href={`/auth/login?next=${encodeURIComponent(pathname)}`}
-                    className="mb-2 rounded-md border border-violet-300/40 bg-violet-300/10 px-3 py-2.5 text-sm font-semibold text-violet-100 no-underline transition hover:bg-violet-300/20"
-                  >
-                    {dict.board.login}
-                  </Link>
-                  <Link
-                    href={`/auth/signup?next=${encodeURIComponent(pathname)}`}
-                    className="mb-2 rounded-md border border-pink-300/40 bg-pink-300/10 px-3 py-2.5 text-sm font-semibold text-pink-100 no-underline transition hover:bg-pink-300/20"
-                  >
-                    {dict.board.signup}
-                  </Link>
-                  {HREFS.map((href, i) => {
-                    const isActive = linkActive(href);
-                    return (
-                      <Link
-                        key={href}
-                        href={href}
-                        className={
-                          'rounded-md px-3 py-2.5 text-sm font-medium no-underline transition-colors ' +
-                          (isActive
-                            ? 'bg-white/15 text-museum-saffron'
-                            : 'text-zinc-100 hover:bg-white/10 hover:text-white')
-                        }
-                      >
-                        {labels[i]}
-                      </Link>
-                    );
-                  })}
+                  <SheetHeader>
+                    <SheetTitle className="text-left text-zinc-50">{dict.nav.mainNavAria}</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6 flex flex-col gap-1 pr-2">
+                    <Link
+                      href={`/auth/login?next=${encodeURIComponent(pathname)}`}
+                      className="mb-2 rounded-md border border-violet-300/40 bg-violet-300/10 px-3 py-2.5 text-sm font-semibold text-violet-100 no-underline transition hover:bg-violet-300/20"
+                    >
+                      {dict.board.login}
+                    </Link>
+                    <Link
+                      href={`/auth/signup?next=${encodeURIComponent(pathname)}`}
+                      className="mb-2 rounded-md border border-pink-300/40 bg-pink-300/10 px-3 py-2.5 text-sm font-semibold text-pink-100 no-underline transition hover:bg-pink-300/20"
+                    >
+                      {dict.board.signup}
+                    </Link>
+                    {HREFS.map((href, i) => {
+                      const isActive = linkActive(href);
+                      return (
+                        <Link
+                          key={href}
+                          href={href}
+                          className={
+                            'rounded-md px-3 py-2.5 text-sm font-medium no-underline transition-colors ' +
+                            (isActive
+                              ? 'bg-white/15 text-museum-saffron'
+                              : 'text-zinc-100 hover:bg-white/10 hover:text-white')
+                          }
+                        >
+                          {labels[i]}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </SheetContent>
+              </Sheet>
+              {!hideHeaderSearch ? (
+                <div className="global-header__main-nav-search min-w-0 flex-1">
+                  <SiteSearch variant="header" />
                 </div>
-              </SheetContent>
-            </Sheet>
-            {!hideHeaderSearch ? (
-              <div className="global-header__main-nav-search min-w-0 flex-1">
-                <SiteSearch variant="header" />
-              </div>
-            ) : null}
-          </div>
-
-          {/* 태블릿·데스크톱: 기존 가로 탭 + 검색 */}
-          <div className="hidden md:contents">
-            <div className="global-header__nav">
-              {HREFS.map((href, i) => {
-                const isActive = linkActive(href);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={
-                      'global-header__link' + (isActive ? ' global-header__link--active' : '')
-                    }
-                  >
-                    {labels[i]}
-                  </Link>
-                );
-              })}
+              ) : null}
             </div>
-            {!hideHeaderSearch ? (
-              <div className="global-header__main-nav-search">
-                <SiteSearch variant="header" />
+
+            <div className="hidden md:contents">
+              <div className="global-header__nav">
+                {HREFS.map((href, i) => {
+                  const isActive = linkActive(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={
+                        'global-header__link' + (isActive ? ' global-header__link--active' : '')
+                      }
+                    >
+                      {labels[i]}
+                    </Link>
+                  );
+                })}
               </div>
-            ) : null}
+              {!hideHeaderSearch ? (
+                <div className="global-header__main-nav-search">
+                  <SiteSearch variant="header" />
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
         </div>
       </nav>
     </header>

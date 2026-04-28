@@ -15,6 +15,7 @@ const MAX_LEN_BRAND = 160;
 const MAX_LEN_SUB = 3000;
 const MAX_LEN_BODY = 1200;
 const MAX_LEN_HOT_NOTE = 2000;
+const MAX_LEN_URL = 500;
 
 type Entry = { key: string; locale: string; value: string };
 const KO_NOISY_HOME_COPY_PATTERNS: RegExp[] = [
@@ -25,6 +26,7 @@ const KO_NOISY_HOME_COPY_PATTERNS: RegExp[] = [
 
 function maxLenForKey(key: string): number {
   if (key.startsWith('home_hero_brand_')) return MAX_LEN_BRAND;
+  if (key.startsWith('home_lifeline_') && key.endsWith('_url')) return MAX_LEN_URL;
   if (key === 'home_hero_sub') return MAX_LEN_SUB;
   if (key === 'home_hot_footnote') return MAX_LEN_HOT_NOTE;
   if (key === 'home_guest_public_body' || key === 'home_guest_member_body') return MAX_LEN_BODY;
@@ -48,6 +50,9 @@ function isAllowedKey(key: string, locale: string): key is SiteCopyHomeKey {
     key === 'home_hero_kicker' ||
     key === 'home_hero_lead' ||
     key === 'home_hero_sub' ||
+    key === 'home_lifeline_telegram_url' ||
+    key === 'home_lifeline_line_url' ||
+    key === 'home_lifeline_whatsapp_url' ||
     key === 'home_guest_public_label' ||
     key === 'home_guest_public_body' ||
     key === 'home_guest_member_label' ||
@@ -61,6 +66,7 @@ function isAllowedKey(key: string, locale: string): key is SiteCopyHomeKey {
     key === 'home_dream_personal' ||
     key === 'home_dream_outro'
   ) {
+    if (key.startsWith('home_lifeline_')) return locale === 'ko';
     return locale === 'ko' || locale === 'th';
   }
   return locale === 'ko';

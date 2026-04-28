@@ -35,6 +35,9 @@ export const SITE_COPY_HOME_KEYS = [
   ...HERO_SITE_COPY_KEYS,
   ...MAIN_HOME_SITE_COPY_KEYS,
   ...DREAM_HOME_SITE_COPY_KEYS,
+  'home_lifeline_telegram_url',
+  'home_lifeline_line_url',
+  'home_lifeline_whatsapp_url',
 ] as const;
 
 export type HeroSiteCopyKey = (typeof HERO_SITE_COPY_KEYS)[number];
@@ -80,6 +83,9 @@ export type MergedHeroSiteCopy = {
   dreamPersonalTh: string;
   dreamOutroKo: string;
   dreamOutroTh: string;
+  lifelineTelegramUrl: string;
+  lifelineLineUrl: string;
+  lifelineWhatsappUrl: string;
 };
 
 export function getMergedDefaultsFromI18n(): MergedHeroSiteCopy {
@@ -123,6 +129,9 @@ export function getMergedDefaultsFromI18n(): MergedHeroSiteCopy {
     dreamPersonalTh: th.dreamPersonal,
     dreamOutroKo: ko.dreamOutro,
     dreamOutroTh: th.dreamOutro,
+    lifelineTelegramUrl: '',
+    lifelineLineUrl: '',
+    lifelineWhatsappUrl: '',
   };
 }
 
@@ -166,5 +175,8 @@ export function adminHomeSiteCopyInitialRecord(defaults: MergedHeroSiteCopy): Re
     'home_dream_personal:th': defaults.dreamPersonalTh,
     'home_dream_outro:ko': defaults.dreamOutroKo,
     'home_dream_outro:th': defaults.dreamOutroTh,
+    'home_lifeline_telegram_url:ko': defaults.lifelineTelegramUrl,
+    'home_lifeline_line_url:ko': defaults.lifelineLineUrl,
+    'home_lifeline_whatsapp_url:ko': defaults.lifelineWhatsappUrl,
   };
 }

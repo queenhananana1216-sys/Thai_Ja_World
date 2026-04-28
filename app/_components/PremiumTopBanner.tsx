@@ -43,23 +43,13 @@ export default async function PremiumTopBanner() {
                 alignItems: 'center',
                 gap: 14,
                 padding: '10px 20px',
-                background: 'linear-gradient(90deg, #4c1d95 0%, #6d28d9 40%, #5b21b6 100%)',
+                background: 'linear-gradient(90deg, #0f172a 0%, #1e1b4b 100%)',
                 color: '#f5f3ff',
                 fontSize: 13,
                 flexWrap: 'wrap',
                 justifyContent: 'center',
               }}
             >
-              {b.image_url && /^(https?:\/\/|\/\/|\/)/i.test(b.image_url.trim()) ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={b.image_url}
-                  alt={b.title ?? ''}
-                  width={40}
-                  height={40}
-                  style={{ borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
-                />
-              ) : null}
               <div style={{ textAlign: 'center', flex: '1 1 200px' }}>
                 {b.badge_text ? (
                   <span

@@ -5,8 +5,6 @@ import Link from 'next/link';
 import type { PremiumBannerRow } from '../../portal/types';
 import styles from './home-hub.module.css';
 
-const FALLBACK_BG = 'linear-gradient(120deg, #0f172a 0%, #1e3a8a 40%, #b45309 100%)';
-
 export function HomeBannerSliderClient({ banners }: { banners: PremiumBannerRow[] }) {
   const [slide, setSlide] = useState(0);
   const list = banners.length > 0 ? banners : null;
@@ -29,13 +27,26 @@ export function HomeBannerSliderClient({ banners }: { banners: PremiumBannerRow[
         <div
           key={b.id}
           className={`${styles.slide} ${i === slide ? styles.slideActive : ''}`}
-          style={{
-            background: b.image_url ? undefined : FALLBACK_BG,
-            backgroundImage: b.image_url ? `url(${b.image_url})` : undefined,
-          }}
+          style={{ background: 'linear-gradient(90deg, #0f172a 0%, #1e1b4b 100%)' }}
         />
       ))}
       <div className={styles.slideOverlay}>
+        <div className={styles.mascotShell} aria-hidden>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/mascot/character.png"
+            alt="태자월드 마스코트 자리"
+            className={styles.mascotImage}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+          <div className={styles.mascotSkeleton}>
+            <div className={styles.mascotHead} />
+            <div className={styles.mascotBody} />
+            <span className={styles.mascotHint}>태자월드 마스코트(캐릭터) 영역</span>
+          </div>
+        </div>
         {active.href ? (
           <Link href={active.href} className="block text-inherit no-underline hover:opacity-95">
             <div className={styles.slideTitle}>{active.title}</div>

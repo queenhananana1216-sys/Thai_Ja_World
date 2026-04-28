@@ -96,6 +96,17 @@ export async function fetchMergedHeroSiteCopy(): Promise<MergedHeroSiteCopy> {
       dreamPersonalTh: row('home_dream_personal', 'th', defaults.dreamPersonalTh),
       dreamOutroKo: row('home_dream_outro', 'ko', defaults.dreamOutroKo),
       dreamOutroTh: row('home_dream_outro', 'th', defaults.dreamOutroTh),
+      lifelineTelegramUrl: row(
+        'home_lifeline_telegram_url',
+        'ko',
+        defaults.lifelineTelegramUrl,
+      ),
+      lifelineLineUrl: row('home_lifeline_line_url', 'ko', defaults.lifelineLineUrl),
+      lifelineWhatsappUrl: row(
+        'home_lifeline_whatsapp_url',
+        'ko',
+        defaults.lifelineWhatsappUrl,
+      ),
     };
   } catch {
     return defaults;

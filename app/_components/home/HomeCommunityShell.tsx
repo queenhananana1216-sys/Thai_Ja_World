@@ -15,6 +15,7 @@ import { HomeCompactSkeleton } from './HomeCompactSkeleton';
 import { HomeRightStatsSkeleton } from './HomeRightStatsSkeleton';
 import { HomeRealtimeBest } from './HomeRealtimeBest';
 import { listPremiumBanners } from '@/lib/banners/listPremiumBanners';
+import { createServerClient } from '@/lib/supabase/server';
 
 type WingFallback = {
   tone: 'mobility' | 'delivery';
@@ -32,27 +33,57 @@ function resolveCta(extra: Record<string, unknown>, fallback: string): string {
   return typeof cta === 'string' && cta.trim() ? cta.trim() : fallback;
 }
 
+function safeExternalUrl(value: string | null | undefined): string | null {
+  const v = value?.trim();
+  if (!v) return null;
+  return /^https?:\/\//i.test(v) ? v : null;
+}
+
+async function fetchLifelineLinks(): Promise<{ telegram: string | null; line: string | null; whatsapp: string | null }> {
+  try {
+    const sb = createServerClient();
+    const { data, error } = await sb
+      .from('site_copy')
+      .select('key, value')
+      .in('key', ['home_lifeline_telegram_url', 'home_lifeline_line_url', 'home_lifeline_whatsapp_url'])
+      .eq('locale', 'ko');
+    if (error || !data) {
+      return { telegram: null, line: null, whatsapp: null };
+    }
+    const map = new Map<string, string>(
+      data.map((r) => [String(r.key), typeof r.value === 'string' ? r.value : '']),
+    );
+    return {
+      telegram: safeExternalUrl(map.get('home_lifeline_telegram_url') ?? null),
+      line: safeExternalUrl(map.get('home_lifeline_line_url') ?? null),
+      whatsapp: safeExternalUrl(map.get('home_lifeline_whatsapp_url') ?? null),
+    };
+  } catch {
+    return { telegram: null, line: null, whatsapp: null };
+  }
+}
+
 export default function HomeCommunityShell() {
   const wingFallback = {
     left: {
       tone: 'mobility',
       badge: 'GRAB',
-      detailBadge: '★4.9 앱스토어 1위',
-      title: '방콕 이동의 모든 것',
-      subtitle: '실시간 픽업 · 기사 매칭 · 교민 안심 호출',
-      cta: 'Grab 앱 열기',
+      detailBadge: 'QR 즉시 호출',
+      title: '그랩(Grab)',
+      subtitle: '방콕 필수 이동앱',
+      cta: 'QR 즉시 호출',
       href: 'https://www.grab.com/th/download/',
-      chips: ['실시간 배차', '공항픽업'],
+      chips: ['방콕', '이동'],
     },
     right: {
       tone: 'delivery',
       badge: '배달K',
-      detailBadge: '오늘의 야식 15% 할인',
-      title: '파타야 한식 야식 배달',
-      subtitle: '새벽 2시까지 따끈한 한식/치킨 퀵배송',
-      cta: '할인 쿠폰 받기',
+      detailBadge: '쿠폰 받기',
+      title: '배달K',
+      subtitle: '태국 내 한식 야식 1위',
+      cta: '쿠폰 받기',
       href: 'https://www.google.com/search?q=%EB%B0%B0%EB%8B%ACK',
-      chips: ['30분 도착', '첫주문 쿠폰'],
+      chips: ['한식', '야식'],
     },
   } satisfies { left: WingFallback; right: WingFallback };
 
@@ -79,6 +110,7 @@ async function HomeCommunityShellContent({
 }) {
   let leftDb: (Awaited<ReturnType<typeof listPremiumBanners>>['wing_left'][number] | null) = null;
   let rightDb: (Awaited<ReturnType<typeof listPremiumBanners>>['wing_right'][number] | null) = null;
+  const lifelineLinks = await fetchLifelineLinks();
   try {
     const byPlacement = await bannersPromise;
     leftDb = byPlacement.wing_left[0] ?? null;
@@ -143,7 +175,7 @@ async function HomeCommunityShellContent({
   ];
 
   return (
-    <main className={`${styles.root} min-h-screen flex flex-col bg-slate-950`} data-tj-hub="2026">
+    <main className={`${styles.root} min-h-[120vh] pb-20 flex flex-col bg-slate-950`} data-tj-hub="2026">
       <div className={`${styles.hubGrid3} flex-1`}>
         <aside className={`${styles.wingLeft} hidden xl:block`}>
           <div className={styles.localWingStack}>
@@ -161,6 +193,27 @@ async function HomeCommunityShellContent({
               />
             ))}
           </div>
+          <section className={styles.lifelineCard} aria-label="긴급 연락처">
+            <h3 className={styles.lifelineTitle}>🚨 긴급 연락처</h3>
+            <ul className={styles.lifelineList}>
+              <li className={styles.lifelineItem}>
+                <span className={styles.lifelineLabel}>주태국 대한민국 대사관</span>
+                <a href="tel:+6622477537" className={styles.lifelineValue}>+66-2-247-7537</a>
+              </li>
+              <li className={styles.lifelineItem}>
+                <span className={styles.lifelineLabel}>태국 관광경찰 (한국어 통역)</span>
+                <a href="tel:1155" className={styles.lifelineValue}>1155</a>
+              </li>
+              <li className={styles.lifelineItem}>
+                <span className={styles.lifelineLabel}>응급차 / 구조대</span>
+                <a href="tel:1669" className={styles.lifelineValue}>1669</a>
+              </li>
+              <li className={styles.lifelineItem}>
+                <span className={styles.lifelineLabel}>한인회</span>
+                <a href="tel:+6622535330" className={styles.lifelineValue}>+66-2-253-5330</a>
+              </li>
+            </ul>
+          </section>
           <Suspense fallback={<HomeCompactSkeleton variant="left" />}>
             <HomeLeftRailBanners />
           </Suspense>
@@ -226,6 +279,38 @@ async function HomeCommunityShellContent({
               />
             ))}
           </div>
+          <section className={styles.lifelineCard} aria-label="태자월드 제보·문의함">
+            <h3 className={styles.lifelineTitle}>💡 태자월드 제보·문의함</h3>
+            <div className={styles.messengerRow}>
+              <a
+                href={lifelineLinks.telegram ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${styles.messengerLink} ${styles.telegramGlow} ${!lifelineLinks.telegram ? styles.messengerDisabled : ''}`}
+                aria-label="텔레그램 제보"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9.04 15.57 8.9 19.5c.4 0 .58-.17.8-.38l1.92-1.84 3.98 2.9c.73.4 1.24.19 1.44-.67l2.62-12.28h.01c.23-1.06-.38-1.48-1.09-1.22L3.2 11.67c-1.05.41-1.03.99-.18 1.25l3.93 1.23L16.08 8c.43-.27.82-.12.5.15"/></svg>
+              </a>
+              <a
+                href={lifelineLinks.whatsapp ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${styles.messengerLink} ${styles.whatsappGlow} ${!lifelineLinks.whatsapp ? styles.messengerDisabled : ''}`}
+                aria-label="왓츠앱 제보"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.5 3.5A11.74 11.74 0 0 0 12.07 0C5.6 0 .31 5.27.3 11.76c0 2.07.54 4.08 1.57 5.85L0 24l6.56-1.86a11.73 11.73 0 0 0 5.5 1.4h.01c6.47 0 11.77-5.27 11.77-11.76 0-3.14-1.22-6.1-3.34-8.28M12.07 21.55h-.01a9.75 9.75 0 0 1-4.97-1.36l-.36-.21-3.89 1.1 1.04-3.79-.23-.39A9.77 9.77 0 0 1 2.3 11.76C2.3 6.37 6.7 1.98 12.08 1.98c2.62 0 5.08 1.02 6.93 2.88a9.72 9.72 0 0 1 2.86 6.9c0 5.4-4.4 9.8-9.8 9.8m5.36-7.33c-.3-.15-1.76-.86-2.03-.96-.27-.1-.46-.15-.66.15s-.76.95-.93 1.15-.34.22-.63.08c-.3-.15-1.24-.45-2.36-1.44a8.72 8.72 0 0 1-1.64-2.03c-.17-.3-.02-.46.13-.6.14-.14.3-.34.44-.5s.2-.3.3-.5a.56.56 0 0 0-.03-.53c-.07-.15-.66-1.59-.9-2.17-.24-.57-.48-.5-.66-.5h-.56c-.2 0-.5.08-.76.37s-1 1-.98 2.43c.02 1.43 1.02 2.8 1.15 2.99.15.2 1.99 3.04 4.83 4.26.67.29 1.2.46 1.6.58.67.2 1.27.17 1.74.1.53-.08 1.76-.72 2.01-1.41.25-.7.25-1.3.17-1.42-.08-.12-.28-.2-.58-.35"/></svg>
+              </a>
+              <a
+                href={lifelineLinks.line ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${styles.messengerLink} ${styles.lineGlow} ${!lifelineLinks.line ? styles.messengerDisabled : ''}`}
+                aria-label="라인 제보"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.11 2 1.3 5.84 1.3 10.62c0 4.28 3.82 7.86 8.97 8.52.35.08.83.24.95.56.1.3.07.77.03 1.08l-.16 1c-.05.3-.23 1.17 1.02.64 1.26-.53 6.79-4 9.26-6.86 1.7-1.87 2.53-3.76 2.53-5.94C22.9 5.84 18.09 2 12.2 2zm-4.06 11.9H5.8a.4.4 0 0 1-.4-.4V8.9a.4.4 0 0 1 .8 0v4.2h1.74a.4.4 0 0 1 0 .8m2.06-.4a.4.4 0 0 1-.8 0V8.9a.4.4 0 0 1 .8 0zm4.28.4a.4.4 0 0 1-.33-.17l-2.27-3.1v2.87a.4.4 0 0 1-.8 0V8.9a.4.4 0 0 1 .73-.24l2.28 3.1V8.9a.4.4 0 0 1 .8 0v4.6a.4.4 0 0 1-.4.4m3.92 0h-2.14a.4.4 0 0 1-.4-.4V8.9a.4.4 0 0 1 .4-.4h2.14a.4.4 0 0 1 0 .8h-1.74v1.18h1.74a.4.4 0 0 1 0 .8h-1.74v1.42h1.74a.4.4 0 0 1 0 .8"/></svg>
+              </a>
+            </div>
+          </section>
           <Suspense fallback={<HomeRightStatsSkeleton />}>
             <HomeRightEngagementWing />
           </Suspense>

@@ -51,6 +51,13 @@ export function HomeHeroCopyForm({
   const [dreamPersTh, setDreamPersTh] = useState(initial['home_dream_personal:th'] ?? '');
   const [dreamOutKo, setDreamOutKo] = useState(initial['home_dream_outro:ko'] ?? '');
   const [dreamOutTh, setDreamOutTh] = useState(initial['home_dream_outro:th'] ?? '');
+  const [lifelineTelegramUrl, setLifelineTelegramUrl] = useState(
+    initial['home_lifeline_telegram_url:ko'] ?? '',
+  );
+  const [lifelineLineUrl, setLifelineLineUrl] = useState(initial['home_lifeline_line_url:ko'] ?? '');
+  const [lifelineWhatsappUrl, setLifelineWhatsappUrl] = useState(
+    initial['home_lifeline_whatsapp_url:ko'] ?? '',
+  );
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -104,6 +111,9 @@ export function HomeHeroCopyForm({
             { key: 'home_dream_personal', locale: 'th', value: dreamPersTh },
             { key: 'home_dream_outro', locale: 'ko', value: dreamOutKo },
             { key: 'home_dream_outro', locale: 'th', value: dreamOutTh },
+            { key: 'home_lifeline_telegram_url', locale: 'ko', value: lifelineTelegramUrl },
+            { key: 'home_lifeline_line_url', locale: 'ko', value: lifelineLineUrl },
+            { key: 'home_lifeline_whatsapp_url', locale: 'ko', value: lifelineWhatsappUrl },
           ],
         }),
       });
@@ -382,6 +392,40 @@ export function HomeHeroCopyForm({
         <label>
           ปุ่มเข้าสู่ระบบ/สมัคร · ไทย
           <input value={gCtaTh} onChange={(e) => setGCtaTh(e.target.value)} maxLength={200} />
+        </label>
+      </fieldset>
+
+      <fieldset className="admin-home-hero-form__fieldset">
+        <legend>우측 윙 — 제보·문의함 메신저 링크</legend>
+        <p className="admin-home-hero-form__hint" style={{ marginTop: 0 }}>
+          사이트 우측 윙의 텔레그램/라인/왓츠앱 아이콘 링크입니다. 비우면 해당 아이콘은 비활성 상태로 표시됩니다.
+        </p>
+        <label>
+          텔레그램 URL
+          <input
+            value={lifelineTelegramUrl}
+            onChange={(e) => setLifelineTelegramUrl(e.target.value)}
+            maxLength={500}
+            placeholder="https://t.me/..."
+          />
+        </label>
+        <label>
+          라인 URL
+          <input
+            value={lifelineLineUrl}
+            onChange={(e) => setLifelineLineUrl(e.target.value)}
+            maxLength={500}
+            placeholder="https://line.me/..."
+          />
+        </label>
+        <label>
+          왓츠앱 URL
+          <input
+            value={lifelineWhatsappUrl}
+            onChange={(e) => setLifelineWhatsappUrl(e.target.value)}
+            maxLength={500}
+            placeholder="https://wa.me/..."
+          />
         </label>
       </fieldset>
 

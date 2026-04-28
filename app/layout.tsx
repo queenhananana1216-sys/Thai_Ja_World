@@ -116,7 +116,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         data-tj-deploy-sha={deploySha || undefined}
         data-tj-request-mark={requestMark}
       >
-        <Providers heroSiteCopy={heroSiteCopy}>
+        <Providers heroSiteCopy={heroSiteCopy} initialLocale={locale}>
           <main className="min-h-screen flex flex-col overflow-x-hidden bg-slate-900">
             <GlobalNav
               showAdminConsole={!!adminSession}

@@ -2481,27 +2481,39 @@ export type Database = {
       processed_news: {
         Row: {
           clean_body: string | null
+          content_kr: string | null
+          content_th: string | null
           created_at: string
           id: string
           language: string | null
           published: boolean
           raw_news_id: string
+          title_kr: string | null
+          title_th: string | null
         }
         Insert: {
           clean_body?: string | null
+          content_kr?: string | null
+          content_th?: string | null
           created_at?: string
           id?: string
           language?: string | null
           published?: boolean
           raw_news_id: string
+          title_kr?: string | null
+          title_th?: string | null
         }
         Update: {
           clean_body?: string | null
+          content_kr?: string | null
+          content_th?: string | null
           created_at?: string
           id?: string
           language?: string | null
           published?: boolean
           raw_news_id?: string
+          title_kr?: string | null
+          title_th?: string | null
         }
         Relationships: [
           {
@@ -3616,6 +3628,8 @@ export type Database = {
       tips_articles: {
         Row: {
           body_preview: string | null
+          content_kr: string | null
+          content_th: string | null
           created_at: string
           created_by: string | null
           excerpt: string | null
@@ -3626,10 +3640,14 @@ export type Database = {
           source_url: string | null
           status: string
           title: string
+          title_kr: string | null
+          title_th: string | null
           updated_at: string
         }
         Insert: {
           body_preview?: string | null
+          content_kr?: string | null
+          content_th?: string | null
           created_at?: string
           created_by?: string | null
           excerpt?: string | null
@@ -3640,10 +3658,14 @@ export type Database = {
           source_url?: string | null
           status?: string
           title: string
+          title_kr?: string | null
+          title_th?: string | null
           updated_at?: string
         }
         Update: {
           body_preview?: string | null
+          content_kr?: string | null
+          content_th?: string | null
           created_at?: string
           created_by?: string | null
           excerpt?: string | null
@@ -3654,6 +3676,8 @@ export type Database = {
           source_url?: string | null
           status?: string
           title?: string
+          title_kr?: string | null
+          title_th?: string | null
           updated_at?: string
         }
         Relationships: [

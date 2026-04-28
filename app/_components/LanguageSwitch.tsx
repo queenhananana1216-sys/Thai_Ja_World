@@ -1,35 +1,31 @@
 'use client';
 
-import { useLayoutEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { readLocaleCookie } from '@/i18n/readLocaleCookie';
-import { TJ_LOCALE_CHANGE_EVENT, type Locale } from '@/i18n/types';
+import type { Locale } from '@/i18n/types';
+import { useGlobalLanguage } from '@/contexts/GlobalLanguageContext';
 
 type Props = {
   labels: { ko: string; th: string };
 };
 
 export default function LanguageSwitch({ labels }: Props) {
-  const router = useRouter();
+  const { locale, setLocale: setGlobalLocale } = useGlobalLanguage();
   const [active, setActive] = useState<Locale>('ko');
 
   useLayoutEffect(() => {
     setActive(readLocaleCookie());
   }, []);
 
+  useEffect(() => {
+    setActive(locale);
+  }, [locale]);
+
   async function setLocale(next: Locale) {
     if (next === active) return;
-    const res = await fetch('/api/locale', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ locale: next }),
-    });
-    if (!res.ok) return;
+    const ok = await setGlobalLocale(next);
+    if (!ok) return;
     setActive(next);
-    window.dispatchEvent(
-      new CustomEvent<Locale>(TJ_LOCALE_CHANGE_EVENT, { detail: next }),
-    );
-    router.refresh();
   }
 
   return (

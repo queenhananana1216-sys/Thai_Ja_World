@@ -22,6 +22,10 @@ export interface NewsItem {
     clean_body: string | null;
     raw_title: string | null;
     summaries: { summary_text: string; model: string | null }[] | null;
+    title_kr?: string | null;
+    content_kr?: string | null;
+    title_th?: string | null;
+    content_th?: string | null;
   };
 }
 

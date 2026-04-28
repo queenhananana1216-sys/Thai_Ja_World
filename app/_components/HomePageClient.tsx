@@ -4,17 +4,16 @@
  * 홈 본문 — Supabase·뉴스·가게는 브라우저에서만 조회해 첫 HTML이 즉시 끝나게 함.
  */
 import Link from 'next/link';
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { HubTipSocialIcons } from './HubTipSocialIcons';
 import SiteSearch from './SiteSearch';
-import { getDictionary, type Dictionary } from '@/i18n/dictionaries';
-import { readLocaleCookie } from '@/i18n/readLocaleCookie';
-import { TJ_LOCALE_CHANGE_EVENT, type Locale } from '@/i18n/types';
+import type { Dictionary } from '@/i18n/dictionaries';
 import type { NewsItem, LocalBusiness } from '@/types/taeworld';
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate, extractHostname } from '@/lib/utils/formatDate';
 import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
+import { useGlobalLanguage } from '@/contexts/GlobalLanguageContext';
 
 const HOME_FETCH_BUDGET_MS = 12_000;
 
@@ -55,7 +54,7 @@ async function fetchNewsBrowser(): Promise<NewsItem[]> {
     const { data: processed } = await sb
       .from('processed_news')
       .select(
-        'id, clean_body, raw_news(title, external_url, published_at), summaries(summary_text, model)',
+        'id, clean_body, title_kr, content_kr, title_th, content_th, raw_news(title, external_url, published_at), summaries(summary_text, model)',
       )
       .eq('published', true)
       .order('created_at', { ascending: false })
@@ -74,6 +73,10 @@ async function fetchNewsBrowser(): Promise<NewsItem[]> {
         clean_body: (pn.clean_body as string | null) ?? null,
         raw_title: rn?.title ?? null,
         summaries: sums ?? null,
+        title_kr: (pn.title_kr as string | null) ?? null,
+        content_kr: (pn.content_kr as string | null) ?? null,
+        title_th: (pn.title_th as string | null) ?? null,
+        content_th: (pn.content_th as string | null) ?? null,
       };
       const { title, summary_text } = titleAndSummaryFromProcessed(
         localeSource.clean_body,
@@ -207,7 +210,7 @@ function ShopMiniCard({
 }
 
 export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) {
-  const [locale, setLocale] = useState<Locale>('ko');
+  const { locale, dict } = useGlobalLanguage();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [shops, setShops] = useState<LocalBusiness[]>([]);
   /** 뉴스·가게 fetch 진행 중 (히어로·타일은 바로 표시) */
@@ -216,20 +219,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   const [weatherBusy, setWeatherBusy] = useState(true);
   const [weatherErr, setWeatherErr] = useState(false);
 
-  useLayoutEffect(() => {
-    setLocale(readLocaleCookie());
-  }, []);
-
-  useEffect(() => {
-    function onLocaleChange(e: Event) {
-      const ce = e as CustomEvent<Locale>;
-      if (ce.detail === 'ko' || ce.detail === 'th') setLocale(ce.detail);
-    }
-    window.addEventListener(TJ_LOCALE_CHANGE_EVENT, onLocaleChange);
-    return () => window.removeEventListener(TJ_LOCALE_CHANGE_EVENT, onLocaleChange);
-  }, []);
-
-  const d = useMemo(() => getDictionary(locale), [locale]);
+  const d = dict;
   const h: Dictionary['home'] = d.home;
   const hAny = h as Dictionary['home'] & Record<string, string>;
   const heroPrimaryCta = hAny.heroPrimaryCta ?? h.tipDigestTitle;
@@ -256,13 +246,25 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
     () =>
       news.map((item) => {
         if (!item.localeSource) return item;
+        const preferredTitle =
+          locale === 'th'
+            ? item.localeSource.title_th?.trim() || item.localeSource.title_kr?.trim() || null
+            : item.localeSource.title_kr?.trim() || item.localeSource.title_th?.trim() || null;
+        const preferredSummary =
+          locale === 'th'
+            ? item.localeSource.content_th?.trim() || item.localeSource.content_kr?.trim() || null
+            : item.localeSource.content_kr?.trim() || item.localeSource.content_th?.trim() || null;
         const { title, summary_text } = titleAndSummaryFromProcessed(
           item.localeSource.clean_body,
           item.localeSource.raw_title,
           item.localeSource.summaries,
           locale,
         );
-        return { ...item, title, summary_text };
+        return {
+          ...item,
+          title: preferredTitle || title,
+          summary_text: preferredSummary || summary_text,
+        };
       }),
     [news, locale],
   );

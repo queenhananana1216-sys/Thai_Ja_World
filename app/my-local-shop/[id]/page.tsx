@@ -24,6 +24,12 @@ export default async function OwnerShopOverviewPage({ params }: { params: Promis
         <li>로컬 목록 노출: {published ? '공개' : '비공개'}</li>
       </ul>
       <p style={{ margin: 0, fontSize: 13 }}>
+        <Link href={`/my-local-shop/${id}/leads`} style={{ color: 'var(--tj-link, #7c3aed)', fontWeight: 600 }}>
+          예약/주문 리드 상세 보기
+        </Link>
+        <span style={{ color: 'var(--tj-muted, #94a3b8)' }}> — 고객 요청 메모·메뉴 스냅샷 확인</span>
+      </p>
+      <p style={{ margin: 0, fontSize: 13 }}>
         <Link href={`/my-local-shop/${id}/advanced`} style={{ color: 'var(--tj-link, #7c3aed)', fontWeight: 600 }}>
           테마·BGM·레이아웃·확장 JSON(고급)
         </Link>

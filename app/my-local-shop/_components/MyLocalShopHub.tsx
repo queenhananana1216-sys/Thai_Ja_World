@@ -145,8 +145,9 @@ export default function MyLocalShopHub({ emptyFollowup, contactCta }: Props) {
             leads.slice(0, 8).map((lead) => {
               const itemCount = Array.isArray(lead.menu_snapshot) ? lead.menu_snapshot.length : 0;
               return (
-                <div
+                <Link
                   key={lead.id}
+                  href={`/my-local-shop/${lead.spot_id}/leads/${lead.id}`}
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -156,6 +157,7 @@ export default function MyLocalShopHub({ emptyFollowup, contactCta }: Props) {
                     borderRadius: 10,
                     padding: '8px 10px',
                     background: 'rgba(30,41,59,0.7)',
+                    textDecoration: 'none',
                   }}
                 >
                   <div style={{ minWidth: 0 }}>
@@ -167,7 +169,7 @@ export default function MyLocalShopHub({ emptyFollowup, contactCta }: Props) {
                     </p>
                   </div>
                   <span style={{ fontSize: 11, color: '#ddd6fe' }}>{lead.status}</span>
-                </div>
+                </Link>
               );
             })
           )}

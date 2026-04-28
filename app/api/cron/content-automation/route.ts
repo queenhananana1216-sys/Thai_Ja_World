@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { runNewsIngestPipeline } from '@/bots/orchestrator/runNewsIngestPipeline';
 import { isCronAuthorized } from '@/lib/cronAuth';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
+import { findActivePause, logCronEvent, pausedResponse, registerFailureAndSelfHeal } from '@/lib/cron/omniLogger';
 import { sanitizeAiKoreanPhrases, sanitizeAiThaiPhrases } from '@/lib/text/normalizeDisplayText';
 
 export const runtime = 'nodejs';
@@ -230,6 +231,7 @@ async function fetchSnapshots(now: Date): Promise<{ rows: SnapshotRow[]; metrics
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const pipelineId = 'cron/content-automation';
   const searchParams = new URL(req.url).searchParams;
   const force = searchParams.get('force') === '1';
   const key = readAndMaskForceKey(req);
@@ -247,6 +249,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       },
       { status: 401 },
     );
+  }
+
+  const paused = await findActivePause(pipelineId);
+  if (paused) {
+    await logCronEvent({
+      pipelineId,
+      event: 'content_automation',
+      status: 'fallback',
+      meta: { mode: 'pause_skip' },
+    });
+    return pausedResponse(pipelineId, paused.pausedUntil, paused.reason);
   }
 
   const nowMs = Date.now();
@@ -313,6 +326,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       typeof processOutput.succeeded === 'number' ? processOutput.succeeded : null;
     const sanitizedRows = await runSanitizationPass(admin);
 
+    await logCronEvent({
+      pipelineId,
+      event: 'content_automation',
+      status: metrics.errors.length > 0 ? 'delayed' : 'success',
+      meta: {
+        snapshots_inserted: snapshots.length,
+        external_api_errors: metrics.errors.length,
+        sanitized_news: sanitizedRows,
+      },
+    });
+
     return NextResponse.json({
       status: 'success',
       trigger: force ? 'manual-force-fetch' : 'cron',
@@ -336,6 +360,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       hasSupabaseServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
       hasOpenAiKey: Boolean(process.env.OPENAI_API_KEY?.trim()),
       hasGeminiKey: Boolean(process.env.GEMINI_API_KEY?.trim()),
+    });
+    await registerFailureAndSelfHeal({
+      pipelineId,
+      event: 'content_automation',
+      reason: message.toLowerCase().includes('timeout') ? 'content_api_timeout' : 'content_automation_failed',
+      retryCount: 1,
     });
     return NextResponse.json({ status: 'error', error: message }, { status: 500 });
   }

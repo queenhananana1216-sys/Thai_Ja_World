@@ -16,6 +16,7 @@ import { runKnowledgeCollectLoop } from '@/bots/orchestrator/runKnowledgeCollect
 import { runKnowledgeProcessLoop } from '@/bots/orchestrator/runKnowledgeProcessLoop';
 import { runKnowledgeStubRepairLoop } from '@/bots/orchestrator/runKnowledgeStubRepairLoop';
 import { isCronAuthorized } from '@/lib/cronAuth';
+import { findActivePause, logCronEvent, pausedResponse, registerFailureAndSelfHeal } from '@/lib/cron/omniLogger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,13 @@ const MAX_ITEMS = 20;
 const MAX_LIMIT = 30;
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const pipelineId = 'cron/knowledge';
+  const paused = await findActivePause(pipelineId);
+  if (paused) {
+    await logCronEvent({ pipelineId, event: 'knowledge_collect_process', status: 'fallback', meta: { mode: 'pause_skip' } });
+    return pausedResponse(pipelineId, paused.pausedUntil, paused.reason);
+  }
+
   if (!isCronAuthorized(req.headers.get('authorization'))) {
     return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
   }
@@ -62,43 +70,60 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
   // scope === 'none' → 키 없음 = 호출마다 실행
 
-  const collectRun = await runKnowledgeCollectLoop({
-    ...collectOpts,
-    ...(collectKey ? { idempotencyKey: collectKey } : {}),
-  });
+  try {
+    const collectRun = await runKnowledgeCollectLoop({
+      ...collectOpts,
+      ...(collectKey ? { idempotencyKey: collectKey } : {}),
+    });
 
-  const processRun = await runKnowledgeProcessLoop({
-    ...processOpts,
-    ...(processKey ? { idempotencyKey: processKey } : {}),
-  });
+    const processRun = await runKnowledgeProcessLoop({
+      ...processOpts,
+      ...(processKey ? { idempotencyKey: processKey } : {}),
+    });
 
-  /** 스텁 초안은 이미 processed 행이 있어 process 배치가 건너뜀 → 별도 재가공 */
-  const skipStub = searchParams.get('stubRepair') === '0' || searchParams.get('stubRepair') === 'false';
-  let stubRepairRun: Awaited<ReturnType<typeof runKnowledgeStubRepairLoop>> | { skipped: true; reason: string } | null =
-    null;
-  if (!skipStub) {
-    const sl = searchParams.get('stubLimit');
-    const n = sl ? Math.floor(Number(sl)) : 5;
-    const stubLimit = Number.isFinite(n) ? Math.min(Math.max(n, 1), 12) : 5;
-    stubRepairRun = await runKnowledgeStubRepairLoop({ limit: stubLimit });
-  } else {
-    stubRepairRun = { skipped: true, reason: 'stubRepair=0' };
+    /** 스텁 초안은 이미 processed 행이 있어 process 배치가 건너뜀 → 별도 재가공 */
+    const skipStub = searchParams.get('stubRepair') === '0' || searchParams.get('stubRepair') === 'false';
+    let stubRepairRun: Awaited<ReturnType<typeof runKnowledgeStubRepairLoop>> | { skipped: true; reason: string } | null =
+      null;
+    if (!skipStub) {
+      const sl = searchParams.get('stubLimit');
+      const n = sl ? Math.floor(Number(sl)) : 5;
+      const stubLimit = Number.isFinite(n) ? Math.min(Math.max(n, 1), 12) : 5;
+      stubRepairRun = await runKnowledgeStubRepairLoop({ limit: stubLimit });
+    } else {
+      stubRepairRun = { skipped: true, reason: 'stubRepair=0' };
+    }
+
+    await logCronEvent({
+      pipelineId,
+      event: 'knowledge_collect_process',
+      status: 'success',
+      meta: { collect_run_id: collectRun.run_id, process_run_id: processRun.run_id },
+    });
+    return NextResponse.json({
+      status: 'ok',
+      collect: {
+        run_id: collectRun.run_id,
+        skipped: collectRun.skipped,
+        success: collectRun.success,
+        error: collectRun.error,
+      },
+      process: {
+        run_id: processRun.run_id,
+        skipped: processRun.skipped,
+        success: processRun.success,
+        error: processRun.error,
+      },
+      stub_repair: stubRepairRun,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'knowledge_failed';
+    await registerFailureAndSelfHeal({
+      pipelineId,
+      event: 'knowledge_collect_process',
+      reason: message.toLowerCase().includes('timeout') ? 'knowledge_timeout' : 'knowledge_failed',
+      retryCount: 1,
+    });
+    return NextResponse.json({ status: 'error', error: message }, { status: 500 });
   }
-
-  return NextResponse.json({
-    status: 'ok',
-    collect: {
-      run_id: collectRun.run_id,
-      skipped: collectRun.skipped,
-      success: collectRun.success,
-      error: collectRun.error,
-    },
-    process: {
-      run_id: processRun.run_id,
-      skipped: processRun.skipped,
-      success: processRun.success,
-      error: processRun.error,
-    },
-    stub_repair: stubRepairRun,
-  });
 }

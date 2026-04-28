@@ -12,6 +12,12 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { runNewsIngestPipeline } from '@/bots/orchestrator/runNewsIngestPipeline';
 import { isCronAuthorized } from '@/lib/cronAuth';
+import {
+  findActivePause,
+  logCronEvent,
+  pausedResponse,
+  registerFailureAndSelfHeal,
+} from '@/lib/cron/omniLogger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,11 +47,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (Number.isFinite(n) && n >= 1 && n <= MAX_LIMIT) processOpts.limit = n;
   }
 
+  const pipelineId = 'cron/news';
+  const paused = await findActivePause(pipelineId);
+  if (paused) {
+    await logCronEvent({ pipelineId, event: 'news_fetch', status: 'fallback', meta: { mode: 'pause_skip' } });
+    return pausedResponse(pipelineId, paused.pausedUntil, paused.reason);
+  }
+
   try {
     const { collect: collectRun, process: summarizeRun } = await runNewsIngestPipeline({
       collect: collectOpts,
       process: processOpts,
     });
+    await logCronEvent({ pipelineId, event: 'news_fetch', status: 'success', meta: { route: '/api/cron/news' } });
     return NextResponse.json({
       status: 'ok',
       collect: collectRun,
@@ -54,6 +68,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal Server Error';
     console.error('[API /api/cron/news]', message);
+    await registerFailureAndSelfHeal({
+      pipelineId,
+      event: 'news_fetch',
+      reason: message.toLowerCase().includes('timeout') ? 'news_api_timeout' : 'news_fetch_failed',
+      retryCount: 1,
+    });
     return NextResponse.json({ status: 'error', error: 'Internal Server Error' }, { status: 500 });
   }
 }

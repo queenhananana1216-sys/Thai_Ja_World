@@ -13,6 +13,7 @@
  */
 import { NextResponse } from 'next/server';
 import { isCronAuthorized } from '@/lib/cronAuth';
+import { findActivePause, logCronEvent, pausedResponse, registerFailureAndSelfHeal } from '@/lib/cron/omniLogger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -68,6 +69,13 @@ async function notifySlack(summary: string, details: string) {
 }
 
 export async function GET(request: Request) {
+  const pipelineId = 'cron/post-deploy-smoke';
+  const paused = await findActivePause(pipelineId);
+  if (paused) {
+    await logCronEvent({ pipelineId, event: 'post_deploy_smoke', status: 'fallback', meta: { mode: 'pause_skip' } });
+    return pausedResponse(pipelineId, paused.pausedUntil, paused.reason);
+  }
+
   if (!isCronAuthorized(request.headers.get('authorization'))) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
@@ -92,6 +100,19 @@ export async function GET(request: Request) {
       .map((r) => `${r.ok ? 'OK ' : 'FAIL'} ${r.status ?? '-'} ${r.target}${r.error ? ` — ${r.error}` : ''}`)
       .join('\n');
     await notifySlack(summary, details);
+    await registerFailureAndSelfHeal({
+      pipelineId,
+      event: 'post_deploy_smoke',
+      reason: 'smoke_check_failed',
+      retryCount: 1,
+    });
+  } else {
+    await logCronEvent({
+      pipelineId,
+      event: 'post_deploy_smoke',
+      status: 'success',
+      meta: { checks: publicResults.length },
+    });
   }
 
   return NextResponse.json(

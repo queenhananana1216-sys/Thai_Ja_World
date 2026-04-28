@@ -10,12 +10,20 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { runKnowledgeStubRepairLoop } from '@/bots/orchestrator/runKnowledgeStubRepairLoop';
 import { isCronAuthorized } from '@/lib/cronAuth';
+import { findActivePause, logCronEvent, pausedResponse, registerFailureAndSelfHeal } from '@/lib/cron/omniLogger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const pipelineId = 'cron/knowledge-stubs';
+  const paused = await findActivePause(pipelineId);
+  if (paused) {
+    await logCronEvent({ pipelineId, event: 'knowledge_stub_repair', status: 'fallback', meta: { mode: 'pause_skip' } });
+    return pausedResponse(pipelineId, paused.pausedUntil, paused.reason);
+  }
+
   if (!isCronAuthorized(req.headers.get('authorization'))) {
     return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
   }
@@ -33,13 +41,26 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const result = await runKnowledgeStubRepairLoop({ limit });
     if (!result.success) {
+      await registerFailureAndSelfHeal({
+        pipelineId,
+        event: 'knowledge_stub_repair',
+        reason: result.error?.includes('timeout') ? 'knowledge_stub_timeout' : 'knowledge_stub_failed',
+        retryCount: 1,
+      });
       const status = result.error?.includes('LLM not configured') ? 503 : 500;
       return NextResponse.json({ status: 'error', ...result }, { status });
     }
+    await logCronEvent({ pipelineId, event: 'knowledge_stub_repair', status: 'success', meta: { limit: limit ?? null } });
     return NextResponse.json({ status: 'ok', ...result });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal Server Error';
     console.error('[API /api/cron/knowledge-stubs]', message);
+    await registerFailureAndSelfHeal({
+      pipelineId,
+      event: 'knowledge_stub_repair',
+      reason: message.toLowerCase().includes('timeout') ? 'knowledge_stub_timeout' : 'knowledge_stub_failed',
+      retryCount: 1,
+    });
     return NextResponse.json({ status: 'error', error: message }, { status: 500 });
   }
 }

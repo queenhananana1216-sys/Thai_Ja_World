@@ -4,6 +4,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { sendDailyWebPushDigest } from '@/lib/push/sendDailyWebPush';
 import { isCronAuthorized } from '@/lib/cronAuth';
+import { findActivePause, logCronEvent, pausedResponse, registerFailureAndSelfHeal } from '@/lib/cron/omniLogger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,11 +23,25 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
   }
 
+  const pipelineId = 'cron/push-daily-digest';
+  const paused = await findActivePause(pipelineId);
+  if (paused) {
+    await logCronEvent({ pipelineId, event: 'push_daily_digest', status: 'fallback', meta: { mode: 'pause_skip' } });
+    return pausedResponse(pipelineId, paused.pausedUntil, paused.reason);
+  }
+
   try {
     const result = await sendDailyWebPushDigest(siteOrigin(req));
+    await logCronEvent({ pipelineId, event: 'push_daily_digest', status: 'success', meta: { sent: result.sent ?? null } });
     return NextResponse.json({ status: 'ok', ...result });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    await registerFailureAndSelfHeal({
+      pipelineId,
+      event: 'push_daily_digest',
+      reason: msg.toLowerCase().includes('timeout') ? 'push_timeout' : 'push_digest_failed',
+      retryCount: 1,
+    });
     return NextResponse.json({ status: 'error', error: msg }, { status: 500 });
   }
 }

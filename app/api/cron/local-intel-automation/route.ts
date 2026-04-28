@@ -234,7 +234,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       .maybeSingle();
     if (!rawRow) continue;
 
-    const result = await processKnowledgeFromResolvedRaw(admin as any, rawRow);
+    const result = await processKnowledgeFromResolvedRaw(
+      admin as Parameters<typeof processKnowledgeFromResolvedRaw>[0],
+      rawRow,
+    );
     if (result.ok) processedCount += 1;
 
     if (ai.category === 'info') {

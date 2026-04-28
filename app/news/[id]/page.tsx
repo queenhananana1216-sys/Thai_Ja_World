@@ -13,6 +13,25 @@ import { extractHostname, formatDate } from '@/lib/utils/formatDate';
 
 type PageProps = { params: Promise<{ id: string }> };
 
+const AI_ERROR_PATTERN =
+  /\b(?:error|429|too many requests|exceeded quota|quota exceeded|rate limit|rate-limited|llm|openai|anthropic|upstream)\b/i;
+
+function hasAiPipelineErrorText(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return AI_ERROR_PATTERN.test(value);
+}
+
+function shouldUseGracefulFallback(parts: {
+  title: string;
+  summary: string | null;
+  blurb: string | null;
+  editorNote: string | null;
+}): boolean {
+  return [parts.title, parts.summary, parts.blurb, parts.editorNote].some((v) =>
+    hasAiPipelineErrorText(v),
+  );
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const locale = await getLocale();
@@ -48,9 +67,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     sums ?? null,
     locale,
   );
+  const useGracefulFallback = shouldUseGracefulFallback(detail);
 
   const description = trimForMetaDescription(
-    [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
+    useGracefulFallback
+      ? d.home.newsTitle
+      : [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
   );
   const url = absoluteUrl(`/news/${id}`);
   const datePublished = rn?.published_at ?? (row.created_at as string);
@@ -115,6 +137,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
     sums ?? null,
     locale,
   );
+  const useGracefulFallback = shouldUseGracefulFallback(detail);
 
   const { data: rawComments, error: commentsErr } = await supabase
     .from('news_comments')
@@ -151,7 +174,9 @@ export default async function NewsStoryPage({ params }: PageProps) {
   const host = detail.sourceUrl ? extractHostname(detail.sourceUrl) : '';
   const datePublished = rn?.published_at ?? (row.created_at as string);
   const jsonDesc = trimForMetaDescription(
-    [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
+    useGracefulFallback
+      ? d.home.newsTitle
+      : [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
     8000,
   );
   const [{ data: relatedNewsRaw }, { data: relatedPostsRaw }] = await Promise.all([
@@ -184,7 +209,8 @@ export default async function NewsStoryPage({ params }: PageProps) {
   }));
 
   return (
-    <div className="page-body board-page">
+    <div className="min-h-screen bg-[#151921] text-slate-200">
+      <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
       <JsonLd
         data={{
           '@context': 'https://schema.org',
@@ -233,25 +259,18 @@ export default async function NewsStoryPage({ params }: PageProps) {
           ],
         }}
       />
-      <Link href="/news" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
+      <Link
+        href="/news"
+        className="inline-flex text-sm font-medium text-sky-300 transition hover:text-sky-200"
+      >
         {h.newsDetailBackToHub}
       </Link>
-      <p
-        style={{
-          margin: '10px 0 0',
-          fontSize: '0.78rem',
-          color: 'var(--tj-muted)',
-          padding: '8px 10px',
-          border: '1px dashed rgba(148,163,184,0.45)',
-          borderRadius: 10,
-          background: 'rgba(248,250,252,0.85)',
-        }}
-      >
+      <p className="mt-3 rounded-xl border border-slate-700/80 bg-slate-900/70 px-3 py-2 text-xs text-slate-400">
         뉴스 발행은 관리자 전용입니다. 일반 회원은 본문 열람 및 댓글 참여만 가능합니다.
       </p>
 
-      <article className="news-story" style={{ marginTop: 18 }}>
-        <p className="board-post__meta" style={{ marginBottom: 8 }}>
+      <article className="mt-5 rounded-2xl border border-slate-700/80 bg-slate-900/70 p-5 shadow-[0_24px_80px_rgba(2,6,23,0.4)] sm:p-7">
+        <p className="mb-3 text-xs tracking-wide text-slate-400">
           {host && <span>🔗 {host}</span>}
           {rn?.published_at && (
             <>
@@ -260,89 +279,70 @@ export default async function NewsStoryPage({ params }: PageProps) {
             </>
           )}
         </p>
-        <h1 className="board-title" style={{ margin: '0 0 14px' }}>
+        <h1 className="mb-5 text-2xl font-semibold leading-tight tracking-tight text-slate-100 sm:text-3xl">
           {detail.title}
         </h1>
 
-        {detail.blurb && (
-          <div className="news-story__wit">
-            <p className="news-story__wit-label">{h.newsDetailWitLabel}</p>
-            <p className="news-story__wit-body">{detail.blurb}</p>
+        {!useGracefulFallback && detail.blurb ? (
+          <div className="rounded-2xl border border-slate-700/70 bg-slate-800/70 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              {h.newsDetailWitLabel}
+            </p>
+            <p className="leading-relaxed tracking-[0.01em] text-slate-200 whitespace-pre-wrap wrap-break-word">
+              {detail.blurb}
+            </p>
           </div>
-        )}
+        ) : null}
 
         {!user ? (
-          <div
-            className="news-story__lock-banner card"
-            style={{
-              marginTop: 20,
-              padding: '14px 16px',
-              background: 'linear-gradient(135deg, #faf5ff 0%, #fdf2f8 100%)',
-              border: '1px solid #e9d5ff',
-            }}
-          >
-            <p style={{ margin: 0, fontSize: '0.88rem', lineHeight: 1.6, color: 'var(--tj-ink)' }}>
+          <div className="mt-5 rounded-2xl border border-indigo-400/30 bg-linear-to-br from-slate-900/90 via-indigo-950/45 to-slate-900/90 p-4">
+            <p className="m-0 text-sm leading-relaxed tracking-[0.01em] text-slate-200">
               {h.newsDetailLockedLead}
             </p>
           </div>
         ) : null}
 
-        {user && detail.summary ? (
-          <div style={{ marginTop: 20 }}>
-            <p
-              style={{
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                color: 'var(--tj-muted)',
-                margin: '0 0 8px',
-                letterSpacing: '0.04em',
-              }}
-            >
+        {user && !useGracefulFallback && detail.summary ? (
+          <div className="mt-6">
+            <p className="mb-2 text-xs font-bold tracking-[0.12em] text-slate-400">
               {h.newsDetailSummaryLabel}
             </p>
-            <div
-              style={{
-                fontSize: '0.95rem',
-                lineHeight: 1.65,
-                color: 'var(--tj-ink)',
-                whiteSpace: 'pre-wrap',
-              }}
-            >
+            <div className="text-[0.97rem] leading-relaxed tracking-[0.01em] text-slate-200 whitespace-pre-wrap wrap-break-word">
               {detail.summary}
             </div>
           </div>
         ) : null}
 
-        {user && detail.editorNote ? (
-          <div className="news-story__editor" style={{ marginTop: 22 }}>
-            <p className="news-story__editor-label">{h.newsDetailEditorLabel}</p>
-            <p className="news-story__editor-body">{detail.editorNote}</p>
+        {user && !useGracefulFallback && detail.editorNote ? (
+          <div className="mt-6 rounded-2xl border border-slate-700/70 bg-slate-800/65 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+              {h.newsDetailEditorLabel}
+            </p>
+            <p className="leading-relaxed tracking-[0.01em] text-slate-200 whitespace-pre-wrap wrap-break-word">
+              {detail.editorNote}
+            </p>
+          </div>
+        ) : null}
+
+        {user && useGracefulFallback ? (
+          <div className="mt-6 rounded-2xl border border-sky-400/25 bg-linear-to-br from-slate-900/95 via-sky-950/30 to-slate-900/95 p-4 sm:p-5">
+            <p className="text-sm leading-relaxed tracking-[0.01em] text-slate-200">
+              💡 현재 AI가 최신 정보를 정밀하게 번역 및 요약하고 있습니다. 아래 버튼을 통해 원문 기사를 먼저 확인해 주세요.
+            </p>
           </div>
         ) : null}
 
         {user && detail.sourceUrl ? (
-          <p style={{ marginTop: 28 }}>
+          <p className="mt-7">
             <a
               href={detail.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="board-form__submit"
-              style={{
-                display: 'inline-block',
-                textAlign: 'center',
-                textDecoration: 'none',
-              }}
+              className="inline-flex items-center justify-center rounded-xl border border-sky-300/35 bg-linear-to-br from-slate-800/85 via-sky-900/60 to-slate-900/85 px-4 py-2.5 text-sm font-semibold text-sky-100 backdrop-blur-md transition hover:border-sky-200/55 hover:text-white"
             >
               {h.newsDetailExternalCta}
             </a>
-            <span
-              style={{
-                display: 'block',
-                marginTop: 8,
-                fontSize: '0.72rem',
-                color: '#94a3b8',
-              }}
-            >
+            <span className="mt-2 block text-xs text-slate-400">
               {h.newsDetailExternalHint}
             </span>
           </p>
@@ -350,20 +350,20 @@ export default async function NewsStoryPage({ params }: PageProps) {
       </article>
 
       {!user ? (
-        <div className="news-story__guest-note card" style={{ marginTop: 22, padding: '16px 18px' }}>
-          <p style={{ margin: '0 0 12px', fontSize: '0.86rem', lineHeight: 1.55, color: 'var(--tj-ink)' }}>
+        <div className="mt-6 rounded-2xl border border-slate-700/80 bg-slate-900/75 p-5">
+          <p className="mb-3 text-sm leading-relaxed text-slate-200">
             {h.newsDetailGuestNote}
           </p>
-          <p style={{ margin: 0, fontSize: '0.85rem' }}>
+          <p className="m-0 text-sm">
             <Link
               href={`/auth/login?next=${encodeURIComponent(path)}`}
-              style={{ color: 'var(--tj-link)', fontWeight: 600, marginRight: 12 }}
+              className="mr-3 font-semibold text-sky-300 hover:text-sky-200"
             >
               {d.board.login}
             </Link>
             <Link
               href={`/auth/signup?next=${encodeURIComponent(path)}`}
-              style={{ color: 'var(--tj-link)', fontWeight: 600 }}
+              className="font-semibold text-sky-300 hover:text-sky-200"
             >
               {d.board.signup}
             </Link>
@@ -372,19 +372,19 @@ export default async function NewsStoryPage({ params }: PageProps) {
       ) : null}
 
       {(relatedNews.length > 0 || relatedPosts.length > 0) && (
-        <section className="card" style={{ marginTop: 24, padding: 18 }}>
-          <h2 style={{ marginTop: 0, marginBottom: 10, fontSize: '1rem' }}>더 읽을거리</h2>
+        <section className="mt-6 rounded-2xl border border-slate-700/80 bg-slate-900/75 p-5">
+          <h2 className="mb-3 mt-0 text-base font-semibold text-slate-100">더 읽을거리</h2>
           {relatedNews.length > 0 && (
-            <div style={{ marginBottom: relatedPosts.length > 0 ? 14 : 0 }}>
-              <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: 'var(--tj-muted)' }}>관련 뉴스</p>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
+            <div className={relatedPosts.length > 0 ? 'mb-4' : ''}>
+              <p className="mb-2 text-xs text-slate-400">관련 뉴스</p>
+              <ul className="m-0 list-disc pl-5">
                 {relatedNews.map((item) => (
-                  <li key={item.id} style={{ marginBottom: 6 }}>
-                    <Link href={`/news/${item.id}`} style={{ color: 'var(--tj-link)' }}>
+                  <li key={item.id} className="mb-1.5">
+                    <Link href={`/news/${item.id}`} className="text-sky-300 hover:text-sky-200">
                       {item.title}
                     </Link>
                     {item.createdAt ? (
-                      <span style={{ marginLeft: 8, color: 'var(--tj-muted)', fontSize: '0.78rem' }}>
+                      <span className="ml-2 text-xs text-slate-400">
                         {formatDate(item.createdAt)}
                       </span>
                     ) : null}
@@ -395,17 +395,18 @@ export default async function NewsStoryPage({ params }: PageProps) {
           )}
           {relatedPosts.length > 0 && (
             <div>
-              <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: 'var(--tj-muted)' }}>
-                커뮤니티 인기 글
-              </p>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
+              <p className="mb-2 text-xs text-slate-400">커뮤니티 인기 글</p>
+              <ul className="m-0 list-disc pl-5">
                 {relatedPosts.map((item) => (
-                  <li key={item.id} style={{ marginBottom: 6 }}>
-                    <Link href={`/community/boards/${item.id}`} style={{ color: 'var(--tj-link)' }}>
+                  <li key={item.id} className="mb-1.5">
+                    <Link
+                      href={`/community/boards/${item.id}`}
+                      className="text-sky-300 hover:text-sky-200"
+                    >
                       {item.title}
                     </Link>
                     {item.updatedAt ? (
-                      <span style={{ marginLeft: 8, color: 'var(--tj-muted)', fontSize: '0.78rem' }}>
+                      <span className="ml-2 text-xs text-slate-400">
                         {formatDate(item.updatedAt)}
                       </span>
                     ) : null}
@@ -424,6 +425,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
         loginNextPath={path}
         currentUserId={user?.id}
       />
+      </div>
     </div>
   );
 }

@@ -11,6 +11,18 @@ type Row = {
   is_published: boolean;
 };
 
+type LeadRow = {
+  id: string;
+  spot_id: string;
+  spot_name: string;
+  customer_name: string | null;
+  phone: string;
+  status: string;
+  requested_time: string | null;
+  created_at: string;
+  menu_snapshot: unknown;
+};
+
 type Props = {
   /** 연결된 가게 없음 — 운영 모델 안내 */
   emptyFollowup?: string;
@@ -22,6 +34,7 @@ export default function MyLocalShopHub({ emptyFollowup, contactCta }: Props) {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
+  const [leads, setLeads] = useState<LeadRow[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -50,11 +63,23 @@ export default function MyLocalShopHub({ emptyFollowup, contactCta }: Props) {
     } else {
       setRows((data ?? []) as Row[]);
     }
+    const leadsRes = await fetch('/api/my-local-shop/order-leads', { cache: 'no-store' });
+    if (leadsRes.ok) {
+      const payload = (await leadsRes.json()) as { leads?: LeadRow[] };
+      setLeads(Array.isArray(payload.leads) ? payload.leads : []);
+    }
     setLoading(false);
   }, []);
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      void load();
+    }, 30_000);
+    return () => clearInterval(timer);
   }, [load]);
 
   if (loading) {
@@ -100,6 +125,54 @@ export default function MyLocalShopHub({ emptyFollowup, contactCta }: Props) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <section
+        style={{
+          border: '1px solid rgba(148,163,184,0.35)',
+          borderRadius: 14,
+          padding: 14,
+          background: 'rgba(15,23,42,0.82)',
+          color: '#e2e8f0',
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: 15 }}>🔔 실시간 예약/주문 알림</h2>
+        <p style={{ margin: '6px 0 0', fontSize: 12, color: '#94a3b8' }}>
+          shop_order_leads 최신 40건 · 30초 주기 새로고침
+        </p>
+        <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+          {leads.length === 0 ? (
+            <p style={{ margin: 0, fontSize: 13, color: '#cbd5e1' }}>아직 신규 주문이 없습니다.</p>
+          ) : (
+            leads.slice(0, 8).map((lead) => {
+              const itemCount = Array.isArray(lead.menu_snapshot) ? lead.menu_snapshot.length : 0;
+              return (
+                <div
+                  key={lead.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                    alignItems: 'center',
+                    border: '1px solid rgba(148,163,184,0.3)',
+                    borderRadius: 10,
+                    padding: '8px 10px',
+                    background: 'rgba(30,41,59,0.7)',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <strong style={{ fontSize: 13 }}>
+                      {lead.spot_name} · {lead.customer_name || '고객'}
+                    </strong>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: '#cbd5e1' }}>
+                      메뉴 {itemCount}건 · {lead.phone}
+                    </p>
+                  </div>
+                  <span style={{ fontSize: 11, color: '#ddd6fe' }}>{lead.status}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
       {msg ? <p style={{ fontSize: 14, color: '#dc2626' }}>{msg}</p> : null}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
         {rows.map((r) => {

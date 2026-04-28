@@ -40,7 +40,7 @@ export async function HomeGridQna() {
     return (
       <section className={styles.panel} aria-label="질문답변">
         <div className={styles.panelHead}>
-          <span className={`${styles.panelTitle} text-sm md:text-base`}>질문답변</span>
+          <span className={`${styles.panelTitle} min-w-0 truncate text-sm md:text-base`}>질문답변</span>
           <Link href="/community/boards" className={`${styles.panelMore} text-sm`}>
             더보기
           </Link>
@@ -54,9 +54,9 @@ export async function HomeGridQna() {
             {items.map((post) => (
               <li key={post.id}>
                 <Link href={`/community/boards/${post.id}`} className={styles.row}>
-                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>
-                    <span className={styles.rowTitleWrap}>
-                      <span>{post.title}</span>
+                  <div className={`${styles.rowTitle} min-w-0 text-base md:text-lg leading-snug`}>
+                    <span className={`${styles.rowTitleWrap} min-w-0`}>
+                      <span className="min-w-0 truncate wrap-break-word">{post.title}</span>
                       {isNewPost(post.created_at) ? (
                         <span className={`${styles.microBadge} ${styles.microBadgeNew}`}>새글</span>
                       ) : null}
@@ -65,7 +65,7 @@ export async function HomeGridQna() {
                       ) : null}
                     </span>
                   </div>
-                  <div className={`${styles.rowMeta} text-sm md:text-base`}>
+                  <div className={`${styles.rowMeta} min-w-0 truncate text-sm md:text-base`}>
                     댓글 {post.comment_count} · {formatDate(post.created_at)}
                   </div>
                 </Link>
@@ -94,9 +94,9 @@ export async function HomeGridQna() {
             {fallback.rows.map((post) => (
               <li key={post.id}>
                 <Link href={`/community/boards/${post.id}`} className={styles.row}>
-                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>
-                    <span className={styles.rowTitleWrap}>
-                      <span>{post.title}</span>
+                  <div className={`${styles.rowTitle} min-w-0 text-base md:text-lg leading-snug`}>
+                    <span className={`${styles.rowTitleWrap} min-w-0`}>
+                      <span className="min-w-0 truncate wrap-break-word">{post.title}</span>
                       {isNewPost(post.created_at) ? (
                         <span className={`${styles.microBadge} ${styles.microBadgeNew}`}>새글</span>
                       ) : null}
@@ -105,7 +105,7 @@ export async function HomeGridQna() {
                       ) : null}
                     </span>
                   </div>
-                  <div className={`${styles.rowMeta} text-sm md:text-base`}>
+                  <div className={`${styles.rowMeta} min-w-0 truncate text-sm md:text-base`}>
                     댓글 {post.comment_count ?? 0} · {formatDate(post.created_at)}
                   </div>
                 </Link>

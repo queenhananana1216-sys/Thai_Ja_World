@@ -16,6 +16,11 @@
 
 import { getServerSupabaseClient } from '../adapters/supabaseClient';
 import { newsInsertAsPublished } from '@/lib/news/newsPublishMode';
+import {
+  sanitizeAiKoreanPhrases,
+  sanitizeAiThaiPhrases,
+  sanitizeKoreanCommunityText,
+} from '@/lib/text/normalizeDisplayText';
 
 export type NewsSummaryProvider = 'openai' | 'gemini' | 'local' | 'auto';
 
@@ -124,6 +129,30 @@ interface LlmBilingualPayload {
   th_editor_note: string;
 }
 
+function sanitizeNewsPayloadTone(payload: LlmBilingualPayload): LlmBilingualPayload {
+  const sanitizeThai = (input: string, max: number) => {
+    const noAi = sanitizeAiThaiPhrases(input);
+    const t = noAi.trim();
+    if (t.length <= max) return t;
+    return `${t.slice(0, max - 1).trim()}…`;
+  };
+
+  const sanitizeKorean = (input: string, max: number) =>
+    sanitizeKoreanCommunityText(sanitizeAiKoreanPhrases(input), max);
+
+  return {
+    ...payload,
+    ko_title: sanitizeKorean(payload.ko_title, 110),
+    ko_summary: sanitizeKorean(payload.ko_summary, 600),
+    ko_blurb: sanitizeKorean(payload.ko_blurb, 130),
+    ko_editor_note: sanitizeKorean(payload.ko_editor_note, 260),
+    th_title: sanitizeThai(payload.th_title, 110),
+    th_summary: sanitizeThai(payload.th_summary, 620),
+    th_blurb: sanitizeThai(payload.th_blurb, 130),
+    th_editor_note: sanitizeThai(payload.th_editor_note, 260),
+  };
+}
+
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0;
 }
@@ -196,12 +225,14 @@ function buildStubBilingualPayload(
 }
 
 const BILINGUAL_SYSTEM_PROMPT =
-  'You are a news editor for a Thailand–Korea bilingual community site "Thai Ja World". Output valid JSON only.\n\nRequired keys: ko_title, ko_summary, ko_blurb, ko_editor_note, th_title, th_summary, th_blurb, th_editor_note.\n\nRules for title/summary/blurb:\n- Do NOT invent facts. Use only what is present in the provided title/body and keep it consistent with the source URL.\n- Avoid defamation: never state uncertain allegations as confirmed facts.\n- Avoid identifying private individuals; if names are not clearly provided in the input, use neutral wording.\n- Blurbs are click-worthy but responsible: short, attention-grabbing first lines without offensive, hateful, or political persuasion content.\n\nRules for ko_editor_note and th_editor_note (VERY IMPORTANT):\n- Write AFTER the factual work is done: these are informal "desk notes" from the site editor, NOT a second summary.\n- Do NOT repeat or paraphrase ko_summary/th_summary. No new facts; reactions and tone only.\n- Korean note in natural Korean; Thai note in natural Thai (same vibe).\n- 1~3 short sentences (or one wry paragraph). Self-deprecating humor is welcome (e.g. sharing your take costs everyone a minute—only if you feel like it).\n- Gently invite conversation or a reaction; never hard-sell, no "sign up / subscribe / click now", no ads, no political rallying, no guilt-tripping.\n- Warm, human, slightly witty; avoid corporate marketing tone.\n\nOutput only the JSON object with the eight string fields.';
+  'You are a news editor for a Thailand–Korea bilingual community site "Thai Ja World". Output valid JSON only.\n\nRequired keys: ko_title, ko_summary, ko_blurb, ko_editor_note, th_title, th_summary, th_blurb, th_editor_note.\n\nRules for title/summary/blurb:\n- Do NOT invent facts. Use only what is present in the provided title/body and keep it consistent with the source URL.\n- Avoid defamation: never state uncertain allegations as confirmed facts.\n- Avoid identifying private individuals; if names are not clearly provided in the input, use neutral wording.\n- Blurbs are click-worthy but responsible: short, attention-grabbing first lines without offensive, hateful, or political persuasion content.\n- Enforce native Thai expat-community tone (natural local language, not textbook translation).\n- Remove mechanical AI phrases such as "결론적으로", "이 글에서는", "놀랍게도", "กล่าวโดยสรุป", "บทความนี้".\n\nRules for ko_editor_note and th_editor_note (VERY IMPORTANT):\n- Write AFTER the factual work is done: these are informal "desk notes" from the site editor, NOT a second summary.\n- Do NOT repeat or paraphrase ko_summary/th_summary. No new facts; reactions and tone only.\n- Korean note in natural Korean; Thai note in natural Thai (same vibe).\n- 1~3 short sentences (or one wry paragraph). Self-deprecating humor is welcome (e.g. sharing your take costs everyone a minute—only if you feel like it).\n- Gently invite conversation or a reaction; never hard-sell, no "sign up / subscribe / click now", no ads, no political rallying, no guilt-tripping.\n- Warm, human, slightly witty; avoid corporate marketing tone.\n\nOutput only the JSON object with the eight string fields.';
 
 function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: string): string {
+  const sanitizedTitle = sanitizeAiKoreanPhrases(title);
+  const sanitizedBody = sanitizeAiKoreanPhrases(body);
   return [
-    `원문 제목: ${title}`,
-    `원문 본문(없으면 빈 값): ${body?.trim() || '(없음)'}`,
+    `원문 제목: ${sanitizedTitle || title}`,
+    `원문 본문(없으면 빈 값): ${sanitizedBody?.trim() || '(없음)'}`,
     `출처 URL: ${sourceUrl}`,
     '',
     '아래는 태국·동남아 지역과 관련된 원문 제목·본문 발췌·출처입니다. 사람이 읽기 좋은 헤드라인과 요약으로 다듬어 주세요.',
@@ -929,18 +960,19 @@ async function persistBilingualProcessedNews(
   publishedOverride?: boolean,
 ): Promise<SummarizeRowResult> {
   const url = row.external_url ?? '';
+  const sanitized = sanitizeNewsPayloadTone(llm);
   const cleanBody = JSON.stringify({
     ko: {
-      title: llm.ko_title,
-      summary: llm.ko_summary,
-      blurb: llm.ko_blurb,
-      ...(llm.ko_editor_note ? { editor_note: llm.ko_editor_note } : {}),
+      title: sanitized.ko_title,
+      summary: sanitized.ko_summary,
+      blurb: sanitized.ko_blurb,
+      ...(sanitized.ko_editor_note ? { editor_note: sanitized.ko_editor_note } : {}),
     },
     th: {
-      title: llm.th_title,
-      summary: llm.th_summary,
-      blurb: llm.th_blurb,
-      ...(llm.th_editor_note ? { editor_note: llm.th_editor_note } : {}),
+      title: sanitized.th_title,
+      summary: sanitized.th_summary,
+      blurb: sanitized.th_blurb,
+      ...(sanitized.th_editor_note ? { editor_note: sanitized.th_editor_note } : {}),
     },
     source_url: url,
   });
@@ -971,7 +1003,7 @@ async function persistBilingualProcessedNews(
 
   const { error: sKo } = await client.from('summaries').insert({
     processed_news_id: pid,
-    summary_text: llm.ko_summary,
+    summary_text: sanitized.ko_summary,
     model: 'ko',
   });
 
@@ -981,7 +1013,7 @@ async function persistBilingualProcessedNews(
 
   const { error: sTh } = await client.from('summaries').insert({
     processed_news_id: pid,
-    summary_text: llm.th_summary,
+    summary_text: sanitized.th_summary,
     model: 'th',
   });
 

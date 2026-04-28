@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import styles from './home-hub.module.css';
-import { fetchHomeRecentCommentTicker } from './home-queries';
+import { fetchHomeRecentCommentTicker, fetchHomeUxSnapshot } from './home-queries';
 import { fetchUsdFx } from '@/lib/fx/fetchUsdFx';
 import { createServerClient } from '@/lib/supabase/server';
 
@@ -66,19 +66,39 @@ async function readWeatherSummary(): Promise<string> {
   }
 }
 
+function buildUxCuration(totals: Awaited<ReturnType<typeof fetchHomeUxSnapshot>>['totals']) {
+  const localViews = Number(totals?.local_views ?? 0);
+  const localQrClicks = Number(totals?.local_qr_click ?? 0);
+  const localMinihomeClicks = Number(totals?.local_minihome_click ?? 0);
+  const dwellSeconds = Number(totals?.avg_dwell_seconds ?? 0);
+  const deadClickRate = Number(totals?.dead_click_rate ?? 0);
+
+  const cards = [
+    { href: '/local', label: '로컬 예약', hint: '근처 한인 가게·예약 바로가기', score: 20 + localViews * 1.8 },
+    { href: '/community/boards?cat=info', label: '생활 정보', hint: '비자·정착 실시간 정보', score: 18 + dwellSeconds * 0.2 },
+    { href: '/community/boards', label: '자유 게시판', hint: '지금 올라오는 교민 대화', score: 16 + (1 - deadClickRate) * 12 },
+    { href: '/minihome', label: '미니홈', hint: '단골·일촌 업데이트 확인', score: 14 + localMinihomeClicks * 1.7 },
+    { href: '/community/trade', label: '번개장터', hint: '중고 거래·긴급 나눔', score: 12 + localQrClicks * 1.5 },
+  ];
+
+  return cards.sort((a, b) => b.score - a.score).slice(0, 3);
+}
+
 export async function HomeRightEngagementWing() {
   const sb = createServerClient();
   const { data: auth } = await sb.auth.getUser();
   const uid = auth.user?.id ?? null;
 
-  const [point, weather, ticker, fx, quest] = await Promise.all([
+  const [point, weather, ticker, fx, quest, uxSnapshot] = await Promise.all([
     uid ? readMyPoint() : Promise.resolve(null),
     readWeatherSummary(),
     fetchHomeRecentCommentTicker(6),
     fetchUsdFx({ next: { revalidate: 1800 } }),
     uid ? readQuestProgress(uid) : Promise.resolve(null),
+    fetchHomeUxSnapshot(),
   ]);
   const thbKrw = fx.usdToThb > 0 ? fx.usdToKrw / fx.usdToThb : 0;
+  const curatedCards = buildUxCuration(uxSnapshot.totals);
 
   return (
     <>
@@ -119,6 +139,19 @@ export async function HomeRightEngagementWing() {
             <li key={item.id} className={styles.tickerItem}>
               <Link href={`/community/boards/${item.id}`} className={`${styles.tickerLink} min-w-0 wrap-break-word`}>
                 {item.title} · 댓글 {item.comment_count}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className={styles.socialWingCard} aria-label="UX 기반 맞춤 큐레이션">
+        <h3 className={`${styles.socialWingTitle} truncate`}>지금 추천 동선</h3>
+        <ul className={styles.tickerList}>
+          {curatedCards.map((card) => (
+            <li key={card.href} className={styles.tickerItem}>
+              <Link href={card.href} className={`${styles.tickerLink} min-w-0 wrap-break-word`}>
+                {card.label} · {card.hint}
               </Link>
             </li>
           ))}

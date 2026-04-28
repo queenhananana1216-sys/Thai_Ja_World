@@ -7,6 +7,7 @@ import 'server-only';
 
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { createServerClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/admin';
 import type { JobPost, MarketPost, PortalPostRow, PremiumBannerRow } from '../../portal/types';
 import type { LocalBusiness } from '@/types/taeworld';
 import type { HomeUnifiedFeedItem } from './home-feed-types';
@@ -37,6 +38,13 @@ export type HomeNewsRow = {
   href: string;
 };
 
+export type HomeRecommendedRow = {
+  id: string;
+  title: string;
+  href: string;
+  score: number;
+};
+
 export type HomeTipArticleRow = {
   id: string;
   title: string;
@@ -63,6 +71,9 @@ export type UxTotalsPublic = {
   api_error?: number;
   dead_click_rate?: number;
   local_views?: number;
+  local_qr_click?: number;
+  local_minihome_click?: number;
+  avg_dwell_seconds?: number;
 };
 
 function mapUnifiedRpcRow(r: Record<string, unknown>): HomeUnifiedFeedItem {
@@ -342,6 +353,97 @@ export async function fetchHomeNewsDigest(limit = 5): Promise<{ rows: HomeNewsRo
   }
 
   return { rows, error: null };
+}
+
+export async function fetchHomePersonalizedRecommendations(
+  limit = 6,
+): Promise<{ rows: HomeRecommendedRow[]; error: string | null }> {
+  try {
+    const admin = createServiceRoleClient();
+    const sinceIso = new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString();
+    const safeLimit = Math.max(1, Math.min(12, Math.floor(limit)));
+
+    const { data: uxRows, error: uxError } = await admin
+      .from('ux_events')
+      .select('session_id, path, event_type')
+      .gte('created_at', sinceIso)
+      .in('event_type', ['click', 'page_view'])
+      .like('path', '/community/boards/%')
+      .order('created_at', { ascending: false })
+      .limit(4000);
+    if (uxError) return { rows: [], error: uxError.message };
+
+    const postStats = new Map<string, { click: number; view: number; sessions: Set<string> }>();
+    const idRx = /\/community\/boards\/([0-9a-f-]{36})/i;
+    for (const row of uxRows ?? []) {
+      const path = String(row.path ?? '');
+      const m = idRx.exec(path);
+      if (!m?.[1]) continue;
+      const postId = m[1].toLowerCase();
+      const eventType = String(row.event_type ?? '');
+      const sessionId = String(row.session_id ?? '');
+      const slot = postStats.get(postId) ?? { click: 0, view: 0, sessions: new Set<string>() };
+      if (eventType === 'click') slot.click += 1;
+      if (eventType === 'page_view') slot.view += 1;
+      if (sessionId) slot.sessions.add(sessionId);
+      postStats.set(postId, slot);
+    }
+    if (postStats.size === 0) return { rows: [], error: null };
+
+    const { data: metricsRows } = await admin
+      .from('ux_metrics_5m')
+      .select('totals')
+      .order('window_start', { ascending: false })
+      .limit(12);
+
+    let avgDwellSeconds = 0;
+    let dwellSamples = 0;
+    for (const row of metricsRows ?? []) {
+      const totals = row.totals as { avg_dwell_seconds?: unknown } | null;
+      const v = Number(totals?.avg_dwell_seconds ?? 0);
+      if (Number.isFinite(v) && v > 0) {
+        avgDwellSeconds += v;
+        dwellSamples += 1;
+      }
+    }
+    const normalizedDwell = dwellSamples > 0 ? avgDwellSeconds / dwellSamples : 45;
+    const dwellFactor = 1 + Math.min(2.2, normalizedDwell / 180);
+
+    const candidates = Array.from(postStats.entries())
+      .map(([postId, stat]) => ({
+        postId,
+        score: (stat.click * 4 + stat.sessions.size * 2 + stat.view * 0.35) * dwellFactor,
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, safeLimit * 2);
+    if (candidates.length === 0) return { rows: [], error: null };
+
+    const ids = candidates.map((c) => c.postId);
+    const { data: posts, error: postError } = await admin
+      .from('posts')
+      .select('id, title, moderation_status, author_hidden')
+      .in('id', ids)
+      .eq('moderation_status', 'safe')
+      .eq('author_hidden', false);
+    if (postError) return { rows: [], error: postError.message };
+
+    const postMap = new Map((posts ?? []).map((p) => [String(p.id), String(p.title ?? '')]));
+    const rows: HomeRecommendedRow[] = [];
+    for (const c of candidates) {
+      const title = postMap.get(c.postId)?.trim();
+      if (!title) continue;
+      rows.push({
+        id: c.postId,
+        title,
+        href: `/community/boards/${c.postId}`,
+        score: Math.round(c.score * 10) / 10,
+      });
+      if (rows.length >= safeLimit) break;
+    }
+    return { rows, error: null };
+  } catch (error) {
+    return { rows: [], error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 export async function fetchHomeTipsArticles(

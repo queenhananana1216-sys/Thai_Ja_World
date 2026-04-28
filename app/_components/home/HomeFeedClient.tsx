@@ -9,8 +9,10 @@ import { categoryLabel, type PostCategorySlug } from '@/lib/community/postCatego
 import { formatDate } from '@/lib/utils/formatDate';
 import styles from './home-hub.module.css';
 import { HomeGlassEmptyState } from './HomeGlassEmptyState';
+import { normalizeContainerText } from '@/lib/text/normalizeDisplayText';
 
 const MAX_BATCHES = 8;
+type HomeRecommendedRow = { id: string; title: string; href: string; score: number };
 
 function itemHref(item: HomeUnifiedFeedItem): string {
   if (item.kind === 'job') return `/community/boards/${item.id}`;
@@ -35,9 +37,11 @@ function pillClass(item: HomeUnifiedFeedItem): string {
 export function HomeFeedClient({
   initialItems,
   initialError,
+  personalizedRows,
 }: {
   initialItems: HomeUnifiedFeedItem[];
   initialError: string | null;
+  personalizedRows: HomeRecommendedRow[];
 }) {
   const [items, setItems] = useState(initialItems);
   const [loading, setLoading] = useState(false);
@@ -112,6 +116,21 @@ export function HomeFeedClient({
       ) : null}
 
       <div className={styles.feedGrid}>
+        {personalizedRows.length > 0 ? (
+          <section className={styles.curationCard} aria-label="당신을 위한 맞춤 정보">
+            <h3 className={styles.curationHead}>💡 당신을 위한 맞춤 정보</h3>
+            <ul className={styles.curationList}>
+              {personalizedRows.map((row) => (
+                <li key={row.id}>
+                  <Link href={row.href} className={styles.curationRow}>
+                    <span className={styles.curationTitle}>{normalizeContainerText(row.title, 72)}</span>
+                    <span className={styles.curationScore}>점수 {row.score}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         {items.map((p) => {
           const thumbUrl = p.image_url;
           const preview = portalMetaLine({ excerpt: p.excerpt, content: null }, 100);

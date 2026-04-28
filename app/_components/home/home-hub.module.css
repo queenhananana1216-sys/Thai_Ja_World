@@ -364,7 +364,8 @@
   font-size: 0.7rem;
   line-height: 1.15;
   color: #f8fafc;
-  word-break: keep-all;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -375,10 +376,11 @@
   font-size: 0.56rem;
   line-height: 1.15;
   color: rgba(248, 250, 252, 0.88);
-  word-break: keep-all;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .localWingStack :global(.local-app-banner__chips) {
@@ -413,6 +415,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .localWingStack :global(.local-app-banner--mobility) {
@@ -504,6 +507,7 @@
   overflow: hidden;
   text-decoration: none;
   color: inherit;
+  container-type: inline-size;
 }
 
 .leftRailCard:hover {
@@ -524,6 +528,17 @@
   padding: 0.35rem 0.25rem;
   line-height: 1.25;
   word-break: keep-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+@container (max-width: 96px) {
+  .leftRailText {
+    font-size: 0.54rem;
+    padding: 0.28rem 0.2rem;
+  }
 }
 
 .leftRailErr {
@@ -760,12 +775,22 @@
   font-weight: 800;
   line-height: 1.2;
   color: #fefce8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  word-break: keep-all;
 }
 
 .slideSub {
   font-size: 0.62rem;
   color: rgba(254, 252, 232, 0.88);
   margin-top: 0.1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  word-break: keep-all;
 }
 
 .dots {
@@ -1319,6 +1344,60 @@
 .feedGrid {
   display: flex;
   flex-direction: column;
+}
+
+.curationCard {
+  margin: 0.22rem 0.24rem 0.1rem;
+  border: 1px solid rgba(250, 204, 21, 0.25);
+  background: linear-gradient(165deg, rgba(51, 65, 85, 0.74) 0%, rgba(15, 23, 42, 0.94) 100%);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.curationHead {
+  padding: 0.22rem 0.32rem;
+  border-bottom: 1px solid rgba(250, 204, 21, 0.2);
+  color: #fde68a;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.curationList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.curationRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.24rem 0.32rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  text-decoration: none;
+  color: inherit;
+}
+
+.curationRow:last-child {
+  border-bottom: none;
+}
+
+.curationTitle {
+  color: #f8fafc;
+  font-size: 0.79rem;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.curationScore {
+  color: #93c5fd;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .feedRow {

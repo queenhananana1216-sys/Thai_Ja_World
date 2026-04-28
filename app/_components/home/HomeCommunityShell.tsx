@@ -16,6 +16,7 @@ import { HomeRightStatsSkeleton } from './HomeRightStatsSkeleton';
 import { HomeRealtimeBest } from './HomeRealtimeBest';
 import { listPremiumBanners } from '@/lib/banners/listPremiumBanners';
 import { createServerClient } from '@/lib/supabase/server';
+import { normalizeBannerText, normalizeContainerText } from '@/lib/text/normalizeDisplayText';
 import EmergencyLifelineWidget from './EmergencyLifelineWidget';
 
 type WingFallback = {
@@ -31,7 +32,9 @@ type WingFallback = {
 
 function resolveCta(extra: Record<string, unknown>, fallback: string): string {
   const cta = extra.cta;
-  return typeof cta === 'string' && cta.trim() ? cta.trim() : fallback;
+  return typeof cta === 'string' && cta.trim()
+    ? normalizeBannerText(cta, 28)
+    : normalizeBannerText(fallback, 28);
 }
 
 function safeExternalUrl(value: string | null | undefined): string | null {
@@ -124,26 +127,26 @@ async function HomeCommunityShellContent({
   const left = leftDb
     ? {
         tone: wingFallback.left.tone,
-        badge: leftDb.badgeText ?? wingFallback.left.badge,
-        detailBadge: wingFallback.left.detailBadge,
-        title: leftDb.title || wingFallback.left.title,
-        subtitle: leftDb.subtitle || wingFallback.left.subtitle,
+        badge: normalizeContainerText(leftDb.badgeText ?? wingFallback.left.badge, 18),
+        detailBadge: normalizeContainerText(wingFallback.left.detailBadge, 20),
+        title: normalizeBannerText(leftDb.title || wingFallback.left.title, 38),
+        subtitle: normalizeBannerText(leftDb.subtitle || wingFallback.left.subtitle, 44),
         cta: resolveCta(leftDb.extra, wingFallback.left.cta),
         href: leftDb.href || wingFallback.left.href,
-        chips: wingFallback.left.chips,
+        chips: wingFallback.left.chips.map((chip) => normalizeContainerText(chip, 14)),
       }
     : wingFallback.left;
 
   const right = rightDb
     ? {
         tone: wingFallback.right.tone,
-        badge: rightDb.badgeText ?? wingFallback.right.badge,
-        detailBadge: wingFallback.right.detailBadge,
-        title: rightDb.title || wingFallback.right.title,
-        subtitle: rightDb.subtitle || wingFallback.right.subtitle,
+        badge: normalizeContainerText(rightDb.badgeText ?? wingFallback.right.badge, 18),
+        detailBadge: normalizeContainerText(wingFallback.right.detailBadge, 20),
+        title: normalizeBannerText(rightDb.title || wingFallback.right.title, 38),
+        subtitle: normalizeBannerText(rightDb.subtitle || wingFallback.right.subtitle, 44),
         cta: resolveCta(rightDb.extra, wingFallback.right.cta),
         href: rightDb.href || wingFallback.right.href,
-        chips: wingFallback.right.chips,
+        chips: wingFallback.right.chips.map((chip) => normalizeContainerText(chip, 14)),
       }
     : wingFallback.right;
 

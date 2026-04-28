@@ -8,6 +8,7 @@ import {
   type BannerRouteGroup,
   type PublicBanner,
 } from '@/lib/banners/types';
+import { normalizeBannerText } from '@/lib/text/normalizeDisplayText';
 
 type Row = {
   id: string;
@@ -51,8 +52,8 @@ function rowToPublic(row: Row): PublicBanner | null {
     id: row.id,
     placement,
     routeGroup: normalizeRouteGroup(row.route_group),
-    title: (row.title ?? '').trim(),
-    subtitle: row.subtitle?.trim() || null,
+    title: normalizeBannerText(row.title, 64),
+    subtitle: normalizeBannerText(row.subtitle, 76) || null,
     imageUrl: row.image_url?.trim() || null,
     imageWidth:
       typeof row.image_width === 'number' && Number.isFinite(row.image_width) ? row.image_width : null,
@@ -61,8 +62,8 @@ function rowToPublic(row: Row): PublicBanner | null {
         ? row.image_height
         : null,
     href: row.href?.trim() || null,
-    badgeText: row.badge_text?.trim() || null,
-    sponsorLabel: row.sponsor_label?.trim() || null,
+    badgeText: normalizeBannerText(row.badge_text, 20) || null,
+    sponsorLabel: normalizeBannerText(row.sponsor_label, 32) || null,
     sortOrder: typeof row.sort_order === 'number' ? row.sort_order : 0,
     extra: toExtra(row.extra),
   };

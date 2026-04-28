@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { runNewsIngestPipeline } from '@/bots/orchestrator/runNewsIngestPipeline';
 import { isCronAuthorized } from '@/lib/cronAuth';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
+import { sanitizeAiKoreanPhrases, sanitizeAiThaiPhrases } from '@/lib/text/normalizeDisplayText';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,8 +28,67 @@ type FetchJsonResult<T> = {
   error?: string;
 };
 
+type ProcessedNewsBody = {
+  ko?: { title?: string; summary?: string; blurb?: string; editor_note?: string };
+  th?: { title?: string; summary?: string; blurb?: string; editor_note?: string };
+  source_url?: string;
+};
+
 const FETCH_TIMEOUT_MS = 15_000;
 const CONTENT_AUTOMATION_LOCK_MS = 60_000;
+
+function sanitizeProcessedBody(raw: string | null): string | null {
+  if (!raw?.trim()) return raw;
+  try {
+    const parsed = JSON.parse(raw) as ProcessedNewsBody;
+    const clean = {
+      ...parsed,
+      ko: parsed.ko
+        ? {
+            ...parsed.ko,
+            title: sanitizeAiKoreanPhrases(parsed.ko.title ?? ''),
+            summary: sanitizeAiKoreanPhrases(parsed.ko.summary ?? ''),
+            blurb: sanitizeAiKoreanPhrases(parsed.ko.blurb ?? ''),
+            editor_note: sanitizeAiKoreanPhrases(parsed.ko.editor_note ?? ''),
+          }
+        : parsed.ko,
+      th: parsed.th
+        ? {
+            ...parsed.th,
+            title: sanitizeAiThaiPhrases(parsed.th.title ?? ''),
+            summary: sanitizeAiThaiPhrases(parsed.th.summary ?? ''),
+            blurb: sanitizeAiThaiPhrases(parsed.th.blurb ?? ''),
+            editor_note: sanitizeAiThaiPhrases(parsed.th.editor_note ?? ''),
+          }
+        : parsed.th,
+    };
+    return JSON.stringify(clean);
+  } catch {
+    return raw;
+  }
+}
+
+async function runSanitizationPass(admin: ReturnType<typeof createServiceRoleClient>): Promise<number> {
+  const { data, error } = await admin
+    .from('processed_news')
+    .select('id, clean_body')
+    .order('created_at', { ascending: false })
+    .limit(40);
+  if (error || !data?.length) return 0;
+
+  let updated = 0;
+  for (const row of data) {
+    const before = typeof row.clean_body === 'string' ? row.clean_body : null;
+    const after = sanitizeProcessedBody(before);
+    if (!before || !after || before === after) continue;
+    const { error: updateError } = await admin
+      .from('processed_news')
+      .update({ clean_body: after })
+      .eq('id', String(row.id));
+    if (!updateError) updated += 1;
+  }
+  return updated;
+}
 
 function cronSecret(): string {
   return process.env.CRON_SECRET?.trim() || process.env.BOT_CRON_SECRET?.trim() || '';
@@ -251,6 +311,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const processOutput = (newsResult.process.output ?? {}) as Record<string, unknown>;
     const processedSucceeded =
       typeof processOutput.succeeded === 'number' ? processOutput.succeeded : null;
+    const sanitizedRows = await runSanitizationPass(admin);
 
     return NextResponse.json({
       status: 'success',
@@ -259,6 +320,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       inserted_news: persistInfo.upserted ?? 0,
       collected_news_attempted: persistInfo.attempted ?? 0,
       summarized_news: processedSucceeded,
+      sanitized_news: sanitizedRows,
       updated_weather: metrics.weatherSummary ?? 'weather unavailable',
       updated_exchange: metrics.exchangeSummary ?? 'exchange unavailable',
       external_api_errors: metrics.errors,

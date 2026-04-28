@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { PremiumBannerRow } from '../../portal/types';
 import styles from './home-hub.module.css';
+import { normalizeContainerText } from '@/lib/text/normalizeDisplayText';
 
 export function HomeBannerSliderClient({ banners }: { banners: PremiumBannerRow[] }) {
   const [slide, setSlide] = useState(0);
@@ -49,13 +50,17 @@ export function HomeBannerSliderClient({ banners }: { banners: PremiumBannerRow[
         </div>
         {active.href ? (
           <Link href={active.href} className="block text-inherit no-underline hover:opacity-95">
-            <div className={styles.slideTitle}>{active.title}</div>
-            <div className={styles.slideSub}>{active.subtitle ?? active.badge_text ?? ''}</div>
+            <div className={styles.slideTitle}>{normalizeContainerText(active.title, 52)}</div>
+            <div className={styles.slideSub}>
+              {normalizeContainerText(active.subtitle ?? active.badge_text ?? '', 72)}
+            </div>
           </Link>
         ) : (
           <>
-            <div className={styles.slideTitle}>{active.title}</div>
-            <div className={styles.slideSub}>{active.subtitle ?? active.badge_text ?? ''}</div>
+            <div className={styles.slideTitle}>{normalizeContainerText(active.title, 52)}</div>
+            <div className={styles.slideSub}>
+              {normalizeContainerText(active.subtitle ?? active.badge_text ?? '', 72)}
+            </div>
           </>
         )}
       </div>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { fetchHomeLeftRailBanners } from './home-queries';
 import styles from './home-hub.module.css';
+import { normalizeContainerText } from '@/lib/text/normalizeDisplayText';
 
 /** 좌측 고정 세로 배너 레일 — `premium_banners` sidebar / home_strip */
 export async function HomeLeftRailBanners() {
@@ -21,7 +22,7 @@ export async function HomeLeftRailBanners() {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={img} alt="" className={styles.leftRailImg} width={80} height={200} />
           ) : (
-            <span className={styles.leftRailText}>{b.title}</span>
+            <span className={styles.leftRailText}>{normalizeContainerText(b.title, 34)}</span>
           );
           if (href === '#') {
             return (

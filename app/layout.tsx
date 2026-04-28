@@ -112,12 +112,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       className={`${notoSansKr.variable} ${notoSansThai.variable} overflow-x-hidden`}
     >
       <body
-        className="min-h-screen overflow-x-hidden bg-slate-950 text-slate-100"
+        className="min-h-screen overflow-x-hidden bg-slate-900 text-slate-300"
         data-tj-deploy-sha={deploySha || undefined}
         data-tj-request-mark={requestMark}
       >
         <Providers heroSiteCopy={heroSiteCopy}>
-          <main className="min-h-screen flex flex-col overflow-x-hidden bg-slate-950">
+          <main className="min-h-screen flex flex-col overflow-x-hidden bg-slate-900">
             <GlobalNav
               showAdminConsole={!!adminSession}
               logoScene={logoScene}
@@ -131,7 +131,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               }}
             />
             <PremiumTopBanner />
-            <div className="flex-1 min-h-0 overflow-x-hidden bg-slate-950">{children}</div>
+            <div className="flex-1 min-h-0 overflow-x-hidden bg-slate-900">{children}</div>
             <SiteFooter />
           </main>
           <FxRemoteWidget

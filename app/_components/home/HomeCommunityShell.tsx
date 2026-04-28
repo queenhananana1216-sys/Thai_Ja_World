@@ -176,7 +176,7 @@ async function HomeCommunityShellContent({
   ];
 
   return (
-    <main className={`${styles.root} min-h-[120vh] pb-20 flex flex-col bg-slate-950`} data-tj-hub="2026">
+    <main className={`${styles.root} min-h-[120vh] pb-20 flex flex-col bg-slate-900`} data-tj-hub="2026">
       <div className={`${styles.hubGrid3} flex-1`}>
         <aside className={`${styles.wingLeft} hidden xl:block`}>
           <div className={styles.localWingStack}>

@@ -43,8 +43,8 @@ body {
     'Apple SD Gothic Neo', 'Malgun Gothic', 'Sukhumvit Set', 'Leelawadee UI', system-ui,
     -apple-system, sans-serif;
   min-height: 100vh;
-  background: #020617;
-  color: #e2e8f0;
+  background: #151921;
+  color: #cbd5e1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
@@ -2144,9 +2144,10 @@ a:hover {
 
 .auth-route-root {
   min-height: calc(100vh - 140px);
-  background: radial-gradient(ellipse 90% 55% at 50% -25%, rgba(124, 58, 237, 0.09), transparent);
-  /* 본문·헤더 색 상속이 꼬여도 폼이 항상 진한 글자를 쓰도록 기준 명시 */
-  color: var(--tj-ink);
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -25%, rgba(59, 130, 246, 0.16), transparent),
+    linear-gradient(180deg, rgba(21, 25, 33, 0.92) 0%, rgba(15, 23, 42, 0.85) 100%);
+  color: #cbd5e1;
 }
 
 .auth-shell {
@@ -2156,12 +2157,14 @@ a:hover {
 }
 
 .auth-card {
-  background: var(--tj-surface);
+  background: rgba(30, 41, 59, 0.8);
   border-radius: 20px;
-  border: 1px solid var(--tj-line);
-  box-shadow: var(--tj-shadow);
+  border: 1px solid rgba(71, 85, 105, 0.6);
+  box-shadow: 0 16px 36px rgba(2, 6, 23, 0.42);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 28px 24px 30px;
-  color: var(--tj-ink);
+  color: #cbd5e1;
 }
 
 .auth-card__brand {
@@ -2188,14 +2191,14 @@ a:hover {
   font-size: 1.35rem;
   font-weight: 800;
   text-align: center;
-  color: var(--tj-ink);
+  color: #f8fafc;
   letter-spacing: -0.02em;
 }
 
 .auth-card__subtitle {
   margin: 0 0 22px;
   font-size: 0.88rem;
-  color: var(--tj-muted);
+  color: #94a3b8;
   text-align: center;
   line-height: 1.55;
 }
@@ -2206,7 +2209,7 @@ a:hover {
 
 .auth-card__body .board-form label {
   margin-top: 2px;
-  color: #1a1a22;
+  color: #cbd5e1;
   font-weight: 700;
 }
 
@@ -2217,18 +2220,31 @@ a:hover {
 .auth-card__body .board-form input[type='tel'],
 .auth-card__body .board-form textarea,
 .auth-card__body .board-form select {
-  color: var(--tj-ink);
-  caret-color: var(--tj-ink);
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+  caret-color: #e2e8f0;
 }
 
 .auth-card__body .board-form .auth-password-field__input {
-  color: var(--tj-ink);
-  caret-color: var(--tj-ink);
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+  caret-color: #e2e8f0;
+}
+
+.auth-card__body .board-form input:focus,
+.auth-card__body .board-form textarea:focus,
+.auth-card__body .board-form select:focus,
+.auth-card__body .board-form .auth-password-field__input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 
 .auth-card__body .board-form input::placeholder,
 .auth-card__body .board-form textarea::placeholder {
-  color: rgba(13, 13, 15, 0.42);
+  color: rgba(148, 163, 184, 0.82);
   opacity: 1;
 }
 
@@ -2236,9 +2252,9 @@ a:hover {
 .auth-card__body .board-form input:-webkit-autofill:hover,
 .auth-card__body .board-form input:-webkit-autofill:focus,
 .auth-card__body .board-form input:-webkit-autofill:active {
-  -webkit-text-fill-color: var(--tj-ink) !important;
-  caret-color: var(--tj-ink) !important;
-  box-shadow: 0 0 0 1000px #fff inset !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  caret-color: #e2e8f0 !important;
+  box-shadow: 0 0 0 1000px #0f172a inset !important;
 }
 
 .auth-steps {
@@ -2322,17 +2338,17 @@ a:hover {
 }
 
 .auth-btn--secondary {
-  background: #fff !important;
-  color: var(--tj-ink) !important;
-  border: 1px solid var(--tj-line) !important;
+  background: rgba(30, 41, 59, 0.75) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #334155 !important;
   box-shadow: none !important;
 }
 
 .auth-btn--social {
   width: 100%;
-  background: #fff !important;
-  color: #1f2937 !important;
-  border: 1px solid #d1d5db !important;
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #334155 !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -2342,13 +2358,13 @@ a:hover {
 .auth-inline-success {
   margin: 0 0 12px;
   font-size: 0.82rem;
-  color: #6d5a9e;
+  color: #60a5fa;
 }
 
 .auth-inline-error {
   margin: 0 0 12px;
   font-size: 0.82rem;
-  color: #be185d;
+  color: #fb7185;
 }
 
 .auth-turnstile-loading {
@@ -2362,7 +2378,7 @@ a:hover {
   margin: 20px 0 0;
   text-align: center;
   font-size: 0.84rem;
-  color: #334155;
+  color: #94a3b8;
 }
 
 .auth-footer-links__a {
@@ -2392,7 +2408,7 @@ a:hover {
   align-items: center;
   gap: 12px;
   margin: 22px 0 4px;
-  color: #475569;
+  color: #94a3b8;
   font-size: 0.78rem;
 }
 

@@ -23,12 +23,12 @@ import SiteSearch from './SiteSearch';
 import type { SplineSceneRecord } from '@/lib/spline/types';
 import { tryCreateBrowserClient } from '@/lib/supabase/client';
 
-const PRIMARY_MENUS = [
+const DEFAULT_MENUS = [
   { href: '/', label: '홈' },
   { href: '/community/boards', label: '자유게시판' },
   { href: '/community/boards?cat=flea', label: '번개장터' },
   { href: '/community/boards?cat=job', label: '구인구직' },
-  { href: '/community/boards?cat=info', label: '부동산' },
+  { href: '/local/info', label: '부동산' },
   { href: '/local', label: '로컬예약' },
 ] as const;
 const WRITE_CTA_HREF = '/community/write';
@@ -53,11 +53,31 @@ type Props = {
   logoScene?: SplineSceneRecord | null;
 };
 
+type PlazaRow = {
+  slug: string;
+  name: string;
+};
+
+type DynamicMenu = {
+  href: string;
+  label: string;
+};
+
+function resolveDynamicMenuHref(slug: string): string {
+  const s = slug.trim().toLowerCase();
+  if (s === 'free' || s === 'restaurant') return `/community/boards?cat=${encodeURIComponent(s)}`;
+  if (s === 'job' || s === 'jobs') return '/community/boards?cat=job';
+  if (s === 'flea' || s === 'market') return '/community/boards?cat=flea';
+  return `/local/${encodeURIComponent(s)}`;
+}
+
 export default function GlobalNav({ dict, showAdminConsole = false, logoScene = null }: Props) {
   const pathname = usePathname() ?? '/';
   const hideHeaderSearch = pathname === '/';
   const [compactHeader, setCompactHeader] = useState(false);
   const [canViewAdminConsole, setCanViewAdminConsole] = useState(false);
+  const [dynamicMenus, setDynamicMenus] = useState<DynamicMenu[]>([]);
+  const navMenus = dynamicMenus.length > 0 ? dynamicMenus : DEFAULT_MENUS;
 
   const authProps = {
     memberNav: {
@@ -86,6 +106,43 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    const sb = tryCreateBrowserClient();
+    if (!sb) {
+      setDynamicMenus(DEFAULT_MENUS.map((m) => ({ href: m.href, label: m.label })));
+      return;
+    }
+    const sbClient = sb;
+    async function loadMenus() {
+      const { data } = await sbClient
+        .from('plazas')
+        .select('slug,name')
+        .order('sort_order', { ascending: true })
+        .limit(24);
+      if (!alive) return;
+      const rows = (data ?? []) as PlazaRow[];
+      if (!rows.length) {
+        setDynamicMenus(DEFAULT_MENUS.map((m) => ({ href: m.href, label: m.label })));
+        return;
+      }
+      const mapped: DynamicMenu[] = [
+        { href: '/', label: '홈' },
+        ...rows
+          .filter((r) => typeof r.slug === 'string' && r.slug.trim() && typeof r.name === 'string')
+          .map((r) => ({
+            href: resolveDynamicMenuHref(r.slug),
+            label: r.name.trim(),
+          })),
+      ];
+      setDynamicMenus(mapped);
+    }
+    void loadMenus();
+    return () => {
+      alive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -248,7 +305,7 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
                     >
                       ✎ 글쓰기
                     </Link>
-                    {PRIMARY_MENUS.map((menu) => {
+                    {navMenus.map((menu) => {
                       const isActive = linkActive(menu.href);
                       return (
                         <Link
@@ -277,7 +334,7 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
 
             <div className="hidden md:contents">
               <div className="global-header__nav">
-                {PRIMARY_MENUS.map((menu) => {
+                {navMenus.map((menu) => {
                   const isActive = linkActive(menu.href);
                   return (
                     <Link

@@ -1499,6 +1499,70 @@
   line-height: 1.35;
 }
 
+@media (max-width: 768px) {
+  .root {
+    padding: 2px max(0.4rem, env(safe-area-inset-right)) 0.45rem max(0.4rem, env(safe-area-inset-left));
+  }
+
+  .tightDataColumn,
+  .centerStack,
+  .hubGrid3,
+  .philgoDense,
+  .wingRight,
+  .leftRail {
+    gap: 0.25rem;
+  }
+
+  .hubSearchStrip,
+  .lifelineCard,
+  .panel,
+  .feed,
+  .sideCard,
+  .realtimeBest {
+    border-radius: 9px;
+  }
+
+  .hubSearchStrip {
+    padding: 0.18rem 0.35rem;
+  }
+
+  .panelHead,
+  .realtimeBestHead,
+  .feedHead {
+    padding: 0.12rem 0.25rem;
+  }
+
+  .panelTitle,
+  .realtimeBestTitle {
+    font-size: 0.75rem;
+    letter-spacing: -0.025em;
+  }
+
+  .row,
+  .feedRow,
+  .curationRow,
+  .realtimeBestRow {
+    padding: 0.35rem 0.4rem;
+    gap: 0.35rem;
+  }
+
+  .rowTitle,
+  .feedTitle,
+  .curationTitle {
+    font-size: 0.76rem;
+    line-height: 1.2;
+  }
+
+  .rowMeta,
+  .feedEx,
+  .feedFoot,
+  .curationScore,
+  .realtimeBestMeta {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+}
+
 .loadMore {
   font-size: 0.62rem;
   padding: 0.35rem;

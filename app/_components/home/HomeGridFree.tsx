@@ -61,14 +61,14 @@ export async function HomeGridFree() {
             {items.map((post) => (
               <li key={post.id}>
                 <Link href={post.href} className={styles.row}>
-                  <div className={`${styles.rowTitle} min-w-0 text-base md:text-lg leading-snug`}>
+                  <div className={`${styles.rowTitle} min-w-0 text-sm font-semibold text-slate-200`}>
                     <span className={`${styles.rowTitleWrap} min-w-0`}>
-                      <span className="min-w-0 truncate wrap-break-word">{post.title}</span>
+                      <span className="min-w-0 line-clamp-1 break-all">{post.title}</span>
                       {post.isNew ? <span className={`${styles.microBadge} ${styles.microBadgeNew}`}>새글</span> : null}
                       {post.isHot ? <span className={`${styles.microBadge} ${styles.microBadgeHot}`}>HOT</span> : null}
                     </span>
                   </div>
-                  <div className={`${styles.rowMeta} min-w-0 truncate text-sm md:text-base`}>{post.meta}</div>
+                  <div className={`${styles.rowMeta} min-w-0 truncate text-[11px] text-slate-400 leading-snug`}>{post.meta}</div>
                 </Link>
               </li>
             ))}
@@ -95,9 +95,9 @@ export async function HomeGridFree() {
             {fallback.rows.map((post) => (
               <li key={post.id}>
                 <Link href={`/community/boards/${post.id}`} className={styles.row}>
-                  <div className={`${styles.rowTitle} min-w-0 text-base md:text-lg leading-snug`}>
+                  <div className={`${styles.rowTitle} min-w-0 text-sm font-semibold text-slate-200`}>
                     <span className={`${styles.rowTitleWrap} min-w-0`}>
-                      <span className="min-w-0 truncate wrap-break-word">{post.title}</span>
+                      <span className="min-w-0 line-clamp-1 break-all">{post.title}</span>
                       {isNewPost(post.created_at) ? (
                         <span className={`${styles.microBadge} ${styles.microBadgeNew}`}>새글</span>
                       ) : null}
@@ -106,7 +106,7 @@ export async function HomeGridFree() {
                       ) : null}
                     </span>
                   </div>
-                  <div className={`${styles.rowMeta} min-w-0 truncate text-sm md:text-base`}>
+                  <div className={`${styles.rowMeta} min-w-0 truncate text-[11px] text-slate-400 leading-snug`}>
                     댓글 {post.comment_count ?? 0} · {formatDate(post.created_at)}
                   </div>
                 </Link>

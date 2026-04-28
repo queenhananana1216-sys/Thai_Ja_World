@@ -105,7 +105,7 @@ export function HomeFeedClient({
 
   return (
     <section className={styles.feed} id="home-community-feed" aria-labelledby="home-feed-h">
-      <h2 className={`${styles.feedHead} text-sm md:text-base`} id="home-feed-h">
+      <h2 className={`${styles.feedHead} text-sm font-semibold text-slate-200`} id="home-feed-h">
         라이브
       </h2>
 
@@ -123,7 +123,7 @@ export function HomeFeedClient({
               {personalizedRows.map((row) => (
                 <li key={row.id}>
                   <Link href={row.href} className={styles.curationRow}>
-                    <span className={styles.curationTitle}>{normalizeContainerText(row.title, 72)}</span>
+                    <span className={`${styles.curationTitle} line-clamp-1`}>{normalizeContainerText(row.title, 72)}</span>
                     <span className={styles.curationScore}>점수 {row.score}</span>
                   </Link>
                 </li>
@@ -146,16 +146,16 @@ export function HomeFeedClient({
                   aria-hidden
                 />
               )}
-              <div>
-                <div>
-                  <span className={`${pillClass(p)} text-sm`}>{itemPillLabel(p)}</span>
-                  <span className={`${styles.feedMetaMuted} text-sm md:text-base`}>
+              <div className="min-w-0 space-y-1.5">
+                <div className="min-w-0 truncate">
+                  <span className={`${pillClass(p)} text-[11px]`}>{itemPillLabel(p)}</span>
+                  <span className={`${styles.feedMetaMuted} text-[11px]`}>
                     댓글 {p.comment_count} · 조회 {p.view_count}
                   </span>
                 </div>
-                <div className={`${styles.feedTitle} text-base md:text-lg leading-snug`}>{p.title}</div>
-                <p className={`${styles.feedEx} text-sm md:text-base leading-snug`}>{preview}</p>
-                <div className={`${styles.feedFoot} text-sm`}>{formatDate(p.created_at)}</div>
+                <div className={`${styles.feedTitle} line-clamp-1 text-sm font-semibold text-slate-200`}>{p.title}</div>
+                <p className={`${styles.feedEx} line-clamp-2 text-[11px] text-slate-400 leading-snug`}>{preview}</p>
+                <div className={`${styles.feedFoot} text-[11px] text-slate-400 leading-snug`}>{formatDate(p.created_at)}</div>
               </div>
             </Link>
           );

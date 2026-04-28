@@ -33,13 +33,13 @@ export async function HomeGridLocal() {
             {rows.map((b) => (
               <li key={b.id}>
                 <Link href={`/shop/${b.slug}`} className={styles.row}>
-                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>
+                  <div className={`${styles.rowTitle} text-sm font-semibold text-slate-200`}>
                     <span className={styles.rowTitleWrap}>
-                      <span>{b.name}</span>
+                      <span className="min-w-0 line-clamp-1 break-all">{b.name}</span>
                       {b.is_recommended ? <span className={`${styles.microBadge} ${styles.microBadgeHot}`}>HOT</span> : null}
                     </span>
                   </div>
-                  <div className={`${styles.rowMeta} text-sm md:text-base`}>
+                  <div className={`${styles.rowMeta} text-[11px] text-slate-400 leading-snug`}>
                     {b.category} · {b.region}
                     {b.is_recommended ? ' · 추천' : ''}
                   </div>

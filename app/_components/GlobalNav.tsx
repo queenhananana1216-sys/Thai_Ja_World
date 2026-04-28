@@ -21,6 +21,7 @@ import AuthBar from './AuthBar';
 import LanguageSwitch from './LanguageSwitch';
 import SiteSearch from './SiteSearch';
 import type { SplineSceneRecord } from '@/lib/spline/types';
+import { tryCreateBrowserClient } from '@/lib/supabase/client';
 
 const PRIMARY_MENUS = [
   { href: '/', label: '홈' },
@@ -56,6 +57,7 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
   const pathname = usePathname() ?? '/';
   const hideHeaderSearch = pathname === '/';
   const [compactHeader, setCompactHeader] = useState(false);
+  const [canViewAdminConsole, setCanViewAdminConsole] = useState(false);
 
   const authProps = {
     memberNav: {
@@ -86,6 +88,61 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  useEffect(() => {
+    let alive = true;
+    if (!showAdminConsole) {
+      setCanViewAdminConsole(false);
+      return;
+    }
+    const sb = tryCreateBrowserClient();
+    if (!sb) {
+      setCanViewAdminConsole(false);
+      return;
+    }
+    const sbClient = sb;
+
+    async function verifyAdminRole() {
+      const {
+        data: { session },
+      } = await sbClient.auth.getSession();
+      const user = session?.user;
+      if (!alive || !user) {
+        setCanViewAdminConsole(false);
+        return;
+      }
+
+      const appRole =
+        typeof user.app_metadata?.role === 'string' ? user.app_metadata.role.trim().toLowerCase() : '';
+      if (appRole === 'admin' || appRole === 'owner' || appRole === 'super_admin') {
+        setCanViewAdminConsole(true);
+        return;
+      }
+
+      const { data: profile } = await sbClient
+        .from('profiles')
+        .select('role, is_admin')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!alive) return;
+
+      const role = typeof profile?.role === 'string' ? profile.role.trim().toLowerCase() : '';
+      const hasAdminRole = role === 'admin' || role === 'owner' || role === 'super_admin';
+      const isAdmin = profile?.is_admin === true;
+      setCanViewAdminConsole(Boolean(hasAdminRole || isAdmin));
+    }
+
+    void verifyAdminRole();
+    const {
+      data: { subscription },
+    } = sbClient.auth.onAuthStateChange(() => {
+      void verifyAdminRole();
+    });
+    return () => {
+      alive = false;
+      subscription.unsubscribe();
+    };
+  }, [showAdminConsole]);
+
   return (
     <header className={`global-header${compactHeader ? ' global-header--compact' : ''}`}>
       <div className="global-header__toolbar">
@@ -94,7 +151,7 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
             <LanguageSwitch labels={dict.lang} />
           </div>
           <div className="global-header__toolbar-end">
-            {showAdminConsole && (
+            {canViewAdminConsole && (
               <Link
                 href="/admin"
                 className={

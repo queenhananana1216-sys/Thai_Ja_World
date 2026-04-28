@@ -39,14 +39,14 @@ export async function HomeGridNews() {
             {rows.map((n) => (
               <li key={n.id}>
                 <Link href={n.href} className={styles.row}>
-                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>
+                  <div className={`${styles.rowTitle} text-sm font-semibold text-slate-200`}>
                     <span className={styles.rowTitleWrap}>
-                      <span>{n.title}</span>
+                      <span className="min-w-0 line-clamp-1 break-all">{n.title}</span>
                       <span className={`${styles.microBadge} ${styles.microBadgeNew}`}>새글</span>
                     </span>
                   </div>
                   {n.summary ? (
-                    <div className={`${styles.rowMeta} text-sm md:text-base`}>{clip(n.summary, 96)}</div>
+                    <div className={`${styles.rowMeta} text-[11px] text-slate-400 leading-snug line-clamp-2`}>{clip(n.summary, 96)}</div>
                   ) : null}
                 </Link>
               </li>

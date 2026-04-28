@@ -65,30 +65,15 @@ export default function OpsRunPanel() {
 
   return (
     <section
-      style={{
-        border: '1px solid #cbd5e1',
-        borderRadius: 12,
-        padding: 14,
-        background: '#f8fafc',
-        marginBottom: 16,
-      }}
+      className="mb-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 backdrop-blur"
     >
-      <h2 style={{ margin: '0 0 10px', fontSize: 16 }}>통합 실행</h2>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      <h2 className="mb-2 text-sm font-semibold text-slate-100">통합 실행</h2>
+      <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={running}
           onClick={() => void run('all')}
-          style={{
-            borderRadius: 8,
-            border: '1px solid #0f172a',
-            background: running ? '#cbd5e1' : '#0f172a',
-            color: running ? '#334155' : '#fff',
-            fontWeight: 700,
-            fontSize: 12,
-            padding: '8px 12px',
-            cursor: running ? 'not-allowed' : 'pointer',
-          }}
+          className="rounded-md border border-slate-500 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
           전체 실행
         </button>
@@ -96,35 +81,19 @@ export default function OpsRunPanel() {
           type="button"
           disabled={running}
           onClick={() => void run('failed_only')}
-          style={{
-            borderRadius: 8,
-            border: '1px solid #334155',
-            background: '#fff',
-            color: '#334155',
-            fontWeight: 700,
-            fontSize: 12,
-            padding: '8px 12px',
-            cursor: running ? 'not-allowed' : 'pointer',
-          }}
+          className="rounded-md border border-cyan-500/40 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
           실패만 재실행
         </button>
-        {summary ? <span style={{ fontSize: 12, color: '#334155' }}>{summary}</span> : null}
+        {summary ? <span className="truncate text-xs text-slate-300">{summary}</span> : null}
       </div>
 
       {details.length > 0 ? (
-        <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
+        <div className="mt-3 grid gap-2">
           {details.map((d) => (
             <div
               key={`${d.step}-${d.run_id ?? 'skip'}`}
-              style={{
-                background: '#fff',
-                border: '1px solid #e2e8f0',
-                borderRadius: 8,
-                padding: '8px 10px',
-                fontSize: 12,
-                color: d.success ? '#0f172a' : '#991b1b',
-              }}
+              className={`rounded-md border px-2 py-2 text-xs ${d.success ? 'border-slate-600 bg-slate-900 text-slate-200' : 'border-rose-500/40 bg-rose-500/10 text-rose-300'}`}
             >
               {d.step} · {d.skipped ? 'skip' : d.success ? 'ok' : 'fail'}
               {d.error ? ` · ${d.error}` : ''}

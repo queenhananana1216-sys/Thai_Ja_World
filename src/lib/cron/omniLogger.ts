@@ -43,6 +43,9 @@ export async function findActivePause(pipelineId: string): Promise<{ pausedUntil
 
   for (const row of data ?? []) {
     const meta = row.meta as JsonRecord;
+    if (meta?.event === 'force_resume') {
+      return null;
+    }
     if (meta?.event !== 'self_heal_pause') continue;
     const pausedUntil = String(meta.paused_until ?? '');
     const reason = String(meta.reason ?? 'repeated_failure');

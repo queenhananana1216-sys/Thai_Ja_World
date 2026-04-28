@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import OpsRunPanel from './_components/OpsRunPanel';
+import OpsLogStreamClient from './_components/OpsLogStreamClient';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 type BotActionRow = {
@@ -17,12 +18,12 @@ const WATCH_BOTS = [
   'ux_admin_optimizer',
 ] as const;
 
-function tone(status: BotActionRow['status'] | 'missing'): { label: string; color: string; bg: string } {
-  if (status === 'success') return { label: '정상', color: '#166534', bg: '#dcfce7' };
-  if (status === 'running') return { label: '실행중', color: '#92400e', bg: '#fef3c7' };
-  if (status === 'failed') return { label: '실패', color: '#991b1b', bg: '#fee2e2' };
-  if (status === 'skipped') return { label: '스킵', color: '#334155', bg: '#e2e8f0' };
-  return { label: '미확인', color: '#334155', bg: '#e2e8f0' };
+function tone(status: BotActionRow['status'] | 'missing'): { label: string; className: string } {
+  if (status === 'success') return { label: '정상', className: 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/30' };
+  if (status === 'running') return { label: '실행중', className: 'text-amber-300 bg-amber-500/10 border border-amber-500/30' };
+  if (status === 'failed') return { label: '실패', className: 'text-rose-300 bg-rose-500/10 border border-rose-500/30' };
+  if (status === 'skipped') return { label: '스킵', className: 'text-slate-300 bg-slate-700/40 border border-slate-600' };
+  return { label: '미확인', className: 'text-slate-300 bg-slate-700/40 border border-slate-600' };
 }
 
 function minutesAgo(iso: string): number {
@@ -30,6 +31,12 @@ function minutesAgo(iso: string): number {
 }
 
 type PublicHealthCard = { label: string; count: number | null; target: string; hint: string };
+type PublishLogRow = {
+  id: string;
+  target_id: string;
+  published_at: string;
+  meta: Record<string, unknown>;
+};
 
 export default async function AdminOpsCenterPage() {
   let note: string | null = null;
@@ -39,10 +46,22 @@ export default async function AdminOpsCenterPage() {
   let draftNews: number | null = null;
   let draftKnowledge: number | null = null;
   const publicHealth: PublicHealthCard[] = [];
+  let activePauseCount = 0;
+  let topErrorReason = '-';
+  let fallbackRecoveredCount = 0;
+  let streamRows: Array<{
+    id: string;
+    pipelineId: string;
+    event: string;
+    status: string;
+    at: string;
+    reason: string;
+    isActivePause: boolean;
+  }> = [];
 
   try {
     const admin = createServiceRoleClient();
-    const [actionRes, newsRes, knowledgeRes] = await Promise.all([
+    const [actionRes, newsRes, knowledgeRes, logsRes] = await Promise.all([
       admin
         .from('bot_actions')
         .select('bot_name,status,created_at,error_message')
@@ -51,11 +70,19 @@ export default async function AdminOpsCenterPage() {
         .limit(300),
       admin.from('processed_news').select('*', { count: 'exact', head: true }).eq('published', false),
       admin.from('processed_knowledge').select('*', { count: 'exact', head: true }).eq('published', false),
+      admin
+        .from('publish_logs')
+        .select('id,target_id,published_at,meta')
+        .eq('channel', 'cron_pipeline')
+        .eq('target_type', 'cron_pipeline')
+        .order('published_at', { ascending: false })
+        .limit(400),
     ]);
 
     if (actionRes.error) throw new Error(actionRes.error.message);
     if (newsRes.error) throw new Error(newsRes.error.message);
     if (knowledgeRes.error) throw new Error(knowledgeRes.error.message);
+    if (logsRes.error) throw new Error(logsRes.error.message);
 
     draftNews = newsRes.count ?? 0;
     draftKnowledge = knowledgeRes.count ?? 0;
@@ -129,6 +156,68 @@ export default async function AdminOpsCenterPage() {
         hint: '이용자 작성',
       },
     );
+
+    const logs = (logsRes.data ?? []) as PublishLogRow[];
+    const now = Date.now();
+    const dayAgo = now - 24 * 60 * 60 * 1000;
+    const activePauseByPipeline = new Map<string, boolean>();
+    const errorCounts = new Map<string, number>();
+    const timelineByPipeline = new Map<
+      string,
+      Array<{ event: string; status: string; at: number; reason: string; id: string }>
+    >();
+
+    for (const row of logs) {
+      const meta = (row.meta ?? {}) as Record<string, unknown>;
+      const event = String(meta.event ?? '');
+      const status = String(meta.status ?? '');
+      const reason = String(meta.reason ?? '');
+      const atMs = Date.parse(String(meta.at ?? row.published_at));
+
+      if (!activePauseByPipeline.has(row.target_id)) {
+        if (event === 'force_resume') activePauseByPipeline.set(row.target_id, false);
+        else if (event === 'self_heal_pause') {
+          const pausedUntil = Date.parse(String(meta.paused_until ?? ''));
+          activePauseByPipeline.set(row.target_id, Number.isFinite(pausedUntil) && pausedUntil > now);
+        } else activePauseByPipeline.set(row.target_id, false);
+      }
+
+      if (status === 'failed' && atMs >= dayAgo && reason) {
+        errorCounts.set(reason, (errorCounts.get(reason) ?? 0) + 1);
+      }
+
+      const list = timelineByPipeline.get(row.target_id) ?? [];
+      list.push({ event, status, at: atMs, reason, id: row.id });
+      timelineByPipeline.set(row.target_id, list);
+    }
+
+    activePauseCount = Array.from(activePauseByPipeline.values()).filter(Boolean).length;
+    const topError = Array.from(errorCounts.entries()).sort((a, b) => b[1] - a[1])[0];
+    topErrorReason = topError ? `${topError[0]} (${topError[1]})` : '-';
+
+    for (const timeline of timelineByPipeline.values()) {
+      const asc = [...timeline].sort((a, b) => a.at - b.at);
+      for (let i = 1; i < asc.length; i += 1) {
+        const current = asc[i];
+        const prev = asc[i - 1];
+        if (!current || !prev) continue;
+        if (current.status === 'success' && prev.status === 'failed') fallbackRecoveredCount += 1;
+      }
+    }
+
+    streamRows = logs.slice(0, 140).map((row) => {
+      const meta = (row.meta ?? {}) as Record<string, unknown>;
+      const event = String(meta.event ?? 'unknown');
+      return {
+        id: row.id,
+        pipelineId: row.target_id,
+        event,
+        status: String(meta.status ?? 'unknown'),
+        at: String(meta.at ?? row.published_at),
+        reason: String(meta.reason ?? ''),
+        isActivePause: event === 'self_heal_pause' && Boolean(activePauseByPipeline.get(row.target_id)),
+      };
+    });
   } catch (e) {
     note = e instanceof Error ? e.message : String(e);
   }
@@ -142,43 +231,54 @@ export default async function AdminOpsCenterPage() {
   ] as const;
 
   return (
-    <main className="admin-page">
-      <h1 className="admin-dash__title">운영 통합센터</h1>
-      <p className="admin-dash__lead">
+    <main className="min-h-screen bg-slate-900 p-4 text-slate-100 md:p-6">
+      <h1 className="mb-1 text-xl font-semibold">운영 통합센터</h1>
+      <p className="mb-4 text-sm text-slate-300">
         뉴스·꿀정보·UX 봇을 한 번에 실행하고 상태를 확인하는 운영 대시보드입니다.
       </p>
-      {note ? <div className="admin-dash__alert">{note}</div> : null}
+      {note ? <div className="mb-3 rounded-lg border border-rose-500/40 bg-rose-500/10 p-2 text-sm text-rose-300">{note}</div> : null}
 
       <OpsRunPanel />
 
-      <section className="admin-dash__pipeline" style={{ marginBottom: 16 }}>
-        <h2>파이프라인 상태</h2>
-        <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+      <section className="mb-4 grid gap-3 md:grid-cols-3">
+        <article className="rounded-2xl border border-slate-700 bg-slate-800/60 p-4 backdrop-blur">
+          <p className="truncate text-xs text-slate-400">🛡️ 시스템 자율 방어 (Self-Heal Pauses)</p>
+          <div className="mt-2 flex items-center gap-2">
+            <strong className="text-2xl font-bold">{activePauseCount}</strong>
+            {activePauseCount > 0 ? <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" /> : null}
+          </div>
+        </article>
+        <article className="rounded-2xl border border-slate-700 bg-slate-800/60 p-4 backdrop-blur">
+          <p className="truncate text-xs text-slate-400">⚠️ 최다 발생 에러 (Top Error Reason)</p>
+          <p className="mt-2 truncate text-sm text-amber-300">{topErrorReason}</p>
+        </article>
+        <article className="rounded-2xl border border-slate-700 bg-slate-800/60 p-4 backdrop-blur">
+          <p className="truncate text-xs text-slate-400">🔄 복구 횟수 (Fallback Count)</p>
+          <strong className="mt-2 block text-2xl font-bold text-emerald-300">{fallbackRecoveredCount}</strong>
+        </article>
+      </section>
+
+      <section className="mb-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 backdrop-blur">
+        <h2 className="mb-2 text-sm font-semibold text-slate-100">파이프라인 상태</h2>
+        <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-5">
           {cards.map((c) => {
             const row = latestByBot[c.key];
             const badge = tone(row?.status ?? 'missing');
             return (
-              <article key={c.key} className="admin-dash__card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                  <div className="admin-dash__card-label">{c.label}</div>
+              <article key={c.key} className="rounded-lg border border-slate-700 bg-slate-900/60 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="truncate text-xs text-slate-300">{c.label}</div>
                   <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      borderRadius: 999,
-                      padding: '2px 8px',
-                      color: badge.color,
-                      background: badge.bg,
-                    }}
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${badge.className}`}
                   >
                     {badge.label}
                   </span>
                 </div>
-                <div className="admin-dash__card-hint">
+                <div className="truncate text-xs text-slate-500">
                   {row ? `${minutesAgo(row.created_at)}분 전` : '기록 없음'}
                 </div>
                 {row?.error_message ? (
-                  <p style={{ marginTop: 6, fontSize: 11, color: '#991b1b' }}>{row.error_message}</p>
+                  <p className="mt-1 truncate text-[11px] text-rose-300">{row.error_message}</p>
                 ) : null}
               </article>
             );
@@ -186,32 +286,28 @@ export default async function AdminOpsCenterPage() {
         </div>
       </section>
 
-      <section className="admin-dash__pipeline" style={{ marginBottom: 16 }}>
-        <h2>홈 &quot;광장 심박수&quot; 채움 현황</h2>
-        <p style={{ margin: '4px 0 10px', fontSize: 12, color: '#475569' }}>
+      <section className="mb-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 backdrop-blur">
+        <h2 className="mb-2 text-sm font-semibold text-slate-100">홈 &quot;광장 심박수&quot; 채움 현황</h2>
+        <p className="mb-2 text-xs text-slate-400">
           홈 랜딩 5개 컬럼이 실제 공개 DB 기준 몇 건인지. 0 이면 해당 카드가 비어 보이므로,
           해당 크론·카테고리를 먼저 점검하세요.
         </p>
-        <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {publicHealth.map((c) => {
             const empty = !c.count || c.count === 0;
             return (
               <article
                 key={c.label}
-                className="admin-dash__card"
-                style={{
-                  borderColor: empty ? '#fca5a5' : undefined,
-                  background: empty ? '#fef2f2' : undefined,
-                }}
+                className={`rounded-lg border p-3 ${empty ? 'border-rose-500/40 bg-rose-500/10' : 'border-slate-700 bg-slate-900/60'}`}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                  <div className="admin-dash__card-label">{c.label}</div>
-                  <strong style={{ fontSize: 18, color: empty ? '#b91c1c' : '#166534' }}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <div className="truncate text-xs text-slate-300">{c.label}</div>
+                  <strong className={`text-lg ${empty ? 'text-rose-300' : 'text-emerald-300'}`}>
                     {c.count ?? '—'}
                   </strong>
                 </div>
-                <div className="admin-dash__card-hint" style={{ marginTop: 6 }}>
-                  <Link href={c.target} style={{ color: '#7c3aed', fontSize: 12 }}>
+                <div className="mt-1 truncate text-xs text-slate-400">
+                  <Link href={c.target} className="text-cyan-300">
                     {c.target}
                   </Link>{' '}
                   · {c.hint}
@@ -222,16 +318,18 @@ export default async function AdminOpsCenterPage() {
         </div>
       </section>
 
-      <section className="admin-dash__pipeline">
-        <h2>승인 대기 큐</h2>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          <Link href="/admin/news" className="admin-shell__nav-brand" style={{ padding: '8px 10px' }}>
+      <OpsLogStreamClient rows={streamRows} />
+
+      <section className="mt-4 rounded-2xl border border-slate-700 bg-slate-800/60 p-4 backdrop-blur">
+        <h2 className="mb-2 text-sm font-semibold text-slate-100">승인 대기 큐</h2>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/news" className="rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-xs text-slate-200">
             뉴스 초안 {draftNews ?? '—'}건
           </Link>
-          <Link href="/admin/knowledge" className="admin-shell__nav-brand" style={{ padding: '8px 10px' }}>
+          <Link href="/admin/knowledge" className="rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-xs text-slate-200">
             꿀정보 초안 {draftKnowledge ?? '—'}건
           </Link>
-          <Link href="/admin/ux-bot" className="admin-shell__nav-brand" style={{ padding: '8px 10px' }}>
+          <Link href="/admin/ux-bot" className="rounded-md border border-slate-600 bg-slate-900 px-3 py-2 text-xs text-slate-200">
             UX 플래그 화면
           </Link>
         </div>

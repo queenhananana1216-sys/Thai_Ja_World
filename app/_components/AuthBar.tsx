@@ -3,8 +3,17 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, CircleUserRound, LogOut, Mail, UserRound, Users } from 'lucide-react';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { tryCreateBrowserClient } from '@/lib/supabase/client';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type Labels = { login: string; signup: string; logout: string };
 
@@ -129,26 +138,52 @@ export default function AuthBar({
   if (isChrome) {
     return (
       <nav className="auth-chrome-pills auth-chrome-pills--member" aria-label={memberNav.ariaLabel}>
-        <Link href="/minihome" className="auth-chrome-pills__pill auth-chrome-pills__pill--mini">
-          {memberNav.minihome}
-        </Link>
-        <Link href="/ilchon#ilchon-notes" className="auth-chrome-pills__link">
-          {memberNav.notesInbox}
-        </Link>
-        <Link href="/ilchon#ilchon-friends" className="auth-chrome-pills__link">
-          {memberNav.friends}
-        </Link>
-        <span className="auth-chrome-pills__who" title={email}>
-          <strong>{displayLocal}</strong>
-          {greetingSuffix}
-        </span>
-        <button
-          type="button"
-          className="auth-chrome-pills__pill auth-chrome-pills__pill--ghost"
-          onClick={() => void logout()}
-        >
-          {labels.logout}
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-slate-900/65 px-2.5 py-1.5 text-sm font-semibold text-slate-100 shadow-[0_8px_24px_rgba(2,6,23,0.45)] backdrop-blur-md transition hover:bg-slate-800/75"
+              aria-label={memberNav.ariaLabel}
+            >
+              <CircleUserRound className="size-4 text-slate-200" />
+              <span title={email}>{displayLocal}{greetingSuffix}</span>
+              <ChevronDown className="size-3.5 text-slate-300" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-56 border-white/15 bg-slate-950/90 text-slate-100 backdrop-blur-xl"
+          >
+            <DropdownMenuLabel className="text-xs text-slate-300">개인화 메뉴</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuItem asChild>
+              <Link href="/minihome" className="cursor-pointer gap-2 text-sm">
+                <UserRound className="size-4 text-slate-300" />
+                {memberNav.minihome}
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/ilchon#ilchon-notes" className="cursor-pointer gap-2 text-sm">
+                <Mail className="size-4 text-slate-300" />
+                {memberNav.notesInbox}
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/ilchon#ilchon-friends" className="cursor-pointer gap-2 text-sm">
+                <Users className="size-4 text-slate-300" />
+                {memberNav.friends}
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuItem
+              className="cursor-pointer gap-2 text-sm text-rose-300 focus:bg-rose-500/10 focus:text-rose-200"
+              onClick={() => void logout()}
+            >
+              <LogOut className="size-4 text-rose-300" />
+              {labels.logout}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </nav>
     );
   }

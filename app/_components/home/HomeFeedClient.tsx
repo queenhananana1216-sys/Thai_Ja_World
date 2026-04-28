@@ -100,7 +100,7 @@ export function HomeFeedClient({
 
   return (
     <section className={styles.feed} id="home-community-feed" aria-labelledby="home-feed-h">
-      <h2 className={styles.feedHead} id="home-feed-h">
+      <h2 className={`${styles.feedHead} text-sm md:text-base`} id="home-feed-h">
         라이브
       </h2>
 
@@ -124,14 +124,14 @@ export function HomeFeedClient({
               )}
               <div>
                 <div>
-                  <span className={pillClass(p)}>{itemPillLabel(p)}</span>
-                  <span className={styles.feedMetaMuted}>
+                  <span className={`${pillClass(p)} text-sm`}>{itemPillLabel(p)}</span>
+                  <span className={`${styles.feedMetaMuted} text-sm md:text-base`}>
                     댓글 {p.comment_count} · 조회 {p.view_count}
                   </span>
                 </div>
-                <div className={styles.feedTitle}>{p.title}</div>
-                <p className={styles.feedEx}>{preview}</p>
-                <div className={styles.feedFoot}>{formatDate(p.created_at)}</div>
+                <div className={`${styles.feedTitle} text-base md:text-lg leading-snug`}>{p.title}</div>
+                <p className={`${styles.feedEx} text-sm md:text-base leading-snug`}>{preview}</p>
+                <div className={`${styles.feedFoot} text-sm`}>{formatDate(p.created_at)}</div>
               </div>
             </Link>
           );

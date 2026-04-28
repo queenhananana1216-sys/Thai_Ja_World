@@ -42,27 +42,9 @@ body {
   font-family: var(--font-noto-kr, 'Noto Sans KR'), var(--font-noto-th, 'Noto Sans Thai'),
     'Apple SD Gothic Neo', 'Malgun Gothic', 'Sukhumvit Set', 'Leelawadee UI', system-ui,
     -apple-system, sans-serif;
-  background-color: var(--tj-bg);
-  background-image:
-    linear-gradient(118deg, rgba(230, 57, 70, 0.07) 0%, transparent 45%),
-    linear-gradient(208deg, rgba(67, 97, 238, 0.08) 0%, transparent 40%),
-    repeating-linear-gradient(
-      -12deg,
-      transparent,
-      transparent 34px,
-      rgba(13, 13, 15, 0.035) 34px,
-      rgba(13, 13, 15, 0.035) 35px
-    ),
-    repeating-linear-gradient(
-      78deg,
-      transparent,
-      transparent 34px,
-      rgba(255, 183, 3, 0.07) 34px,
-      rgba(255, 183, 3, 0.07) 35px
-    );
-  background-size: 100% 100%, 100% 100%, 140px 140px, 140px 140px;
-  background-attachment: fixed;
-  color: var(--tj-ink);
+  min-height: 100vh;
+  background: #020617;
+  color: #e2e8f0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
@@ -93,12 +75,14 @@ a:hover {
 /* ── 글로벌 헤더 (미니홈 감성 — 남색 금지) ──────────────────────────────── */
 
 .global-header {
-  background: transparent;
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.92) 0%, rgba(2, 6, 23, 0.78) 100%);
   color: #f8f8fa;
-  box-shadow: none;
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.5);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
   position: sticky;
   top: 0;
-  z-index: 220;
+  z-index: 500;
 }
 
 .global-header__toolbar {
@@ -112,7 +96,7 @@ a:hover {
   align-items: center;
   justify-content: space-between;
   gap: 8px 12px;
-  padding: 2px 0;
+  padding: 1px 0;
 }
 
 .global-header__toolbar-start,
@@ -272,14 +256,14 @@ a:hover {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px 12px;
-  padding: 3px 0 5px;
+  gap: 4px 8px;
+  padding: 1px 0;
 }
 
 .global-header__logo-nate {
   flex: 0 0 auto;
   font-weight: 800;
-  font-size: 1.02rem;
+  font-size: 0.92rem;
   letter-spacing: -0.02em;
   white-space: nowrap;
   text-decoration: none;
@@ -399,7 +383,7 @@ a:hover {
 .global-header__main-nav {
   background: linear-gradient(180deg, var(--tj-landing-canvas) 0%, var(--tj-hero-panel) 100%);
   color: #f8f8fa;
-  padding: 8px 0 10px;
+  padding: 1px 0;
   box-shadow: 0 1px 0 rgba(230, 163, 3, 0.45), 0 16px 40px rgba(3, 4, 14, 0.5);
 }
 
@@ -408,7 +392,23 @@ a:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 16px;
+  gap: 4px 8px;
+}
+
+.global-header--compact .global-header__nate-band {
+  display: none;
+}
+
+.global-header--compact .global-header__toolbar {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.global-header--compact .global-header__main-nav {
+  box-shadow: 0 1px 0 rgba(230, 163, 3, 0.24), 0 8px 18px rgba(3, 4, 14, 0.35);
+}
+
+.global-header--compact {
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.95) 0%, rgba(2, 6, 23, 0.82) 100%);
 }
 
 .global-header__main-nav-search {
@@ -796,9 +796,9 @@ a:hover {
 }
 
 .site-search--header.global-header__search .global-header__search-input {
-  min-height: 48px;
-  padding: 12px 14px 12px 40px;
-  font-size: 16px;
+  min-height: 34px;
+  padding: 7px 10px 7px 34px;
+  font-size: 14px;
   line-height: 1.25;
   background: #ffffff;
   color: #1a1625;
@@ -843,9 +843,9 @@ a:hover {
 }
 
 .site-search--header-nate .global-header__search-input {
-  min-height: 52px;
-  padding: 14px 52px 14px 16px;
-  font-size: 1.06rem;
+  min-height: 36px;
+  padding: 8px 40px 8px 12px;
+  font-size: 0.92rem;
   font-weight: 500;
   line-height: 1.25;
   border-radius: 8px;
@@ -1611,18 +1611,29 @@ a:hover {
 }
 
 .global-header__link {
-  padding: 6px 12px;
+  padding: 3px 8px;
   border-radius: 999px;
-  font-size: 0.86rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: var(--tj-header-muted);
   text-decoration: none;
-  transition: background 0.15s, color 0.15s;
+  border: 1px solid transparent;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.global-header--compact .global-header__link {
+  padding: 2px 7px;
 }
 
 .global-header__link:hover {
   color: #fff;
   background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(250, 204, 21, 0.42);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.35), 0 0 0 1px rgba(250, 204, 21, 0.28);
   text-decoration: none;
 }
 

@@ -116,39 +116,35 @@ export default async function NewsStoryPage({ params }: PageProps) {
     locale,
   );
 
-  let comments: NewsCommentRow[] = [];
-  if (user) {
-    const { data: rawComments, error: commentsErr } = await supabase
-      .from('news_comments')
-      .select('id, content, created_at, author_id')
-      .eq('processed_news_id', id)
-      .order('created_at', { ascending: true });
+  const { data: rawComments, error: commentsErr } = await supabase
+    .from('news_comments')
+    .select('id, content, created_at, author_id')
+    .eq('processed_news_id', id)
+    .order('created_at', { ascending: true });
 
-    const commentRows = !commentsErr ? (rawComments ?? []) : [];
-
-    const authorIds = [...new Set(commentRows.map((c) => c.author_id as string))];
-    let profs: { id: string; display_name: string | null }[] | null = [];
-    if (authorIds.length > 0) {
-      const q = await supabase
-        .from('profiles')
-        .select('id, display_name')
-        .in('id', authorIds);
-      profs = q.data;
-    }
-
-    const nameMap: Record<string, string> = {};
-    for (const p of profs ?? []) {
-      nameMap[p.id as string] = (p.display_name as string) || 'member';
-    }
-
-    comments = commentRows.map((c) => ({
-      id: c.id as string,
-      content: c.content as string,
-      created_at: c.created_at as string,
-      display_name: nameMap[c.author_id as string] ?? 'member',
-      author_id: c.author_id as string,
-    }));
+  const commentRows = !commentsErr ? (rawComments ?? []) : [];
+  const authorIds = [...new Set(commentRows.map((c) => c.author_id as string))];
+  let profs: { id: string; display_name: string | null }[] | null = [];
+  if (authorIds.length > 0) {
+    const q = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', authorIds);
+    profs = q.data;
   }
+
+  const nameMap: Record<string, string> = {};
+  for (const p of profs ?? []) {
+    nameMap[p.id as string] = (p.display_name as string) || 'member';
+  }
+
+  const comments: NewsCommentRow[] = commentRows.map((c) => ({
+    id: c.id as string,
+    content: c.content as string,
+    created_at: c.created_at as string,
+    display_name: nameMap[c.author_id as string] ?? 'member',
+    author_id: c.author_id as string,
+  }));
 
   const path = `/news/${id}`;
   const pageUrl = absoluteUrl(path);
@@ -240,6 +236,19 @@ export default async function NewsStoryPage({ params }: PageProps) {
       <Link href="/news" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
         {h.newsDetailBackToHub}
       </Link>
+      <p
+        style={{
+          margin: '10px 0 0',
+          fontSize: '0.78rem',
+          color: 'var(--tj-muted)',
+          padding: '8px 10px',
+          border: '1px dashed rgba(148,163,184,0.45)',
+          borderRadius: 10,
+          background: 'rgba(248,250,252,0.85)',
+        }}
+      >
+        뉴스 발행은 관리자 전용입니다. 일반 회원은 본문 열람 및 댓글 참여만 가능합니다.
+      </p>
 
       <article className="news-story" style={{ marginTop: 18 }}>
         <p className="board-post__meta" style={{ marginBottom: 8 }}>
@@ -408,15 +417,13 @@ export default async function NewsStoryPage({ params }: PageProps) {
         </section>
       )}
 
-      {user ? (
-        <NewsComments
-          processedNewsId={id}
-          initial={comments}
-          labels={d.board}
-          loginNextPath={path}
-          currentUserId={user.id}
-        />
-      ) : null}
+      <NewsComments
+        processedNewsId={id}
+        initial={comments}
+        labels={d.board}
+        loginNextPath={path}
+        currentUserId={user?.id}
+      />
     </div>
   );
 }

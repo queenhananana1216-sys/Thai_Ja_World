@@ -109,25 +109,28 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang={locale} className={`${notoSansKr.variable} ${notoSansThai.variable}`}>
       <body
+        className="min-h-screen bg-slate-950 text-slate-100"
         data-tj-deploy-sha={deploySha || undefined}
         data-tj-request-mark={requestMark}
       >
         <Providers heroSiteCopy={heroSiteCopy}>
-          <GlobalNav
-            showAdminConsole={!!adminSession}
-            logoScene={logoScene}
-            dict={{
-              nav: navForHeader,
-              brandSuffix: d.brandSuffix,
-              logoAria: d.logoAria,
-              lang: d.lang,
-              board: d.board,
-              search: d.search,
-            }}
-          />
-          <PremiumTopBanner />
-          {children}
-          <SiteFooter />
+          <div className="min-h-screen flex flex-col bg-slate-950">
+            <GlobalNav
+              showAdminConsole={!!adminSession}
+              logoScene={logoScene}
+              dict={{
+                nav: navForHeader,
+                brandSuffix: d.brandSuffix,
+                logoAria: d.logoAria,
+                lang: d.lang,
+                board: d.board,
+                search: d.search,
+              }}
+            />
+            <PremiumTopBanner />
+            <div className="flex-1 min-h-0 bg-slate-950">{children}</div>
+            <SiteFooter />
+          </div>
           <FxRemoteWidget
             locale={locale}
             initial={{ ...FX_SNAPSHOT_FALLBACK, dateISO: new Date().toISOString() }}

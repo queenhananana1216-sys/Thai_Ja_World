@@ -6,6 +6,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,7 +23,15 @@ import SiteSearch from './SiteSearch';
 import { SplineCanvas } from '@/components/3d/SplineCanvas';
 import type { SplineSceneRecord } from '@/lib/spline/types';
 
-const HREFS = ['/', '/tips', '/local', '/community/boards', '/ilchon', '/minihome'] as const;
+const PRIMARY_MENUS = [
+  { href: '/', label: '홈' },
+  { href: '/community/boards', label: '자유게시판' },
+  { href: '/community/boards?cat=flea', label: '번개장터' },
+  { href: '/community/boards?cat=job', label: '구인구직' },
+  { href: '/community/boards?cat=info', label: '부동산' },
+  { href: '/local', label: '로컬예약' },
+] as const;
+const WRITE_CTA_HREF = '/community/boards/new';
 
 type Props = {
   dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board' | 'search'>;
@@ -33,15 +42,7 @@ type Props = {
 export default function GlobalNav({ dict, showAdminConsole = false, logoScene = null }: Props) {
   const pathname = usePathname() ?? '/';
   const hideHeaderSearch = pathname === '/';
-
-  const labels = [
-    dict.nav.home,
-    dict.nav.tips,
-    dict.nav.local,
-    dict.nav.community,
-    dict.nav.ilchon,
-    dict.nav.minihome,
-  ];
+  const [compactHeader, setCompactHeader] = useState(false);
 
   const authProps = {
     memberNav: {
@@ -58,21 +59,22 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
   };
 
   function linkActive(href: string): boolean {
-    return href === '/'
-      ? pathname === '/'
-      : href === '/tips'
-        ? pathname === '/tips' || pathname.startsWith('/tips/')
-        : href === '/community/boards'
-          ? pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade')
-          : href === '/ilchon'
-            ? pathname.startsWith('/ilchon')
-            : href === '/minihome'
-              ? pathname.startsWith('/minihome')
-              : pathname.startsWith(href);
+    if (href === '/') return pathname === '/';
+    if (href.startsWith('/community/boards')) {
+      return pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade');
+    }
+    return pathname.startsWith(href);
   }
 
+  useEffect(() => {
+    const onScroll = () => setCompactHeader(window.scrollY > 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <header className="global-header">
+    <header className={`global-header${compactHeader ? ' global-header--compact' : ''}`}>
       <div className="global-header__toolbar">
         <div className="site-container global-header__toolbar-inner">
           <div className="global-header__toolbar-start">
@@ -173,20 +175,26 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
                     >
                       {dict.board.signup}
                     </Link>
-                    {HREFS.map((href, i) => {
-                      const isActive = linkActive(href);
+                    <Link
+                      href={WRITE_CTA_HREF}
+                      className="mb-2 rounded-md border border-blue-300/45 bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white no-underline shadow-[0_0_0_1px_rgba(147,197,253,0.3),0_10px_24px_rgba(37,99,235,0.35)] transition hover:bg-blue-500"
+                    >
+                      ✎ 글쓰기
+                    </Link>
+                    {PRIMARY_MENUS.map((menu) => {
+                      const isActive = linkActive(menu.href);
                       return (
                         <Link
-                          key={href}
-                          href={href}
+                          key={menu.href}
+                          href={menu.href}
                           className={
                             'rounded-md px-3 py-2.5 text-sm font-medium no-underline transition-colors ' +
                             (isActive
-                              ? 'bg-white/15 text-museum-saffron'
-                              : 'text-zinc-100 hover:bg-white/10 hover:text-white')
+                              ? 'bg-white/15 text-museum-saffron shadow-[0_0_0_1px_rgba(250,204,21,0.42),0_0_14px_rgba(250,204,21,0.2)]'
+                              : 'text-zinc-100 hover:bg-white/10 hover:text-white hover:shadow-[0_0_0_1px_rgba(250,204,21,0.35),0_0_12px_rgba(59,130,246,0.35)]')
                           }
                         >
-                          {labels[i]}
+                          {menu.label}
                         </Link>
                       );
                     })}
@@ -202,21 +210,27 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
 
             <div className="hidden md:contents">
               <div className="global-header__nav">
-                {HREFS.map((href, i) => {
-                  const isActive = linkActive(href);
+                {PRIMARY_MENUS.map((menu) => {
+                  const isActive = linkActive(menu.href);
                   return (
                     <Link
-                      key={href}
-                      href={href}
+                      key={menu.href}
+                      href={menu.href}
                       className={
                         'global-header__link' + (isActive ? ' global-header__link--active' : '')
                       }
                     >
-                      {labels[i]}
+                      {menu.label}
                     </Link>
                   );
                 })}
               </div>
+              <Link
+                href={WRITE_CTA_HREF}
+                className="rounded-full bg-blue-600 px-3 py-2 text-xs font-semibold tracking-tight text-white no-underline shadow-[0_0_0_1px_rgba(147,197,253,0.4),0_10px_24px_rgba(37,99,235,0.38)] transition hover:bg-blue-500 hover:shadow-[0_0_0_1px_rgba(250,204,21,0.45),0_0_16px_rgba(59,130,246,0.45)]"
+              >
+                ✎ 글쓰기
+              </Link>
               {!hideHeaderSearch ? (
                 <div className="global-header__main-nav-search">
                   <SiteSearch variant="header" />

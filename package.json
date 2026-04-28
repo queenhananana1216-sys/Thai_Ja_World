@@ -69,6 +69,7 @@
     "eslint-config-next": "^15.5.7",
     "prisma": "^6.19.3",
     "shadcn": "^4.1.1",
+    "supabase": "^2.95.5",
     "typescript": "^5.7.0"
   }
 }

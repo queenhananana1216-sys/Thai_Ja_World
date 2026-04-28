@@ -10,8 +10,8 @@ export async function HomeGridLocal() {
     return (
       <section className={styles.panel} aria-label="로컬 업체">
         <div className={styles.panelHead}>
-          <span className={styles.panelTitle}>로컬 업체</span>
-          <Link href="/local" className={styles.panelMore}>
+          <span className={`${styles.panelTitle} text-sm md:text-base`}>로컬 업체</span>
+          <Link href="/local" className={`${styles.panelMore} text-sm`}>
             더보기
           </Link>
         </div>
@@ -22,8 +22,8 @@ export async function HomeGridLocal() {
             {rows.map((b) => (
               <li key={b.id}>
                 <Link href={`/local/${b.slug}`} className={styles.row}>
-                  <div className={styles.rowTitle}>{b.name}</div>
-                  <div className={styles.rowMeta}>
+                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{b.name}</div>
+                  <div className={`${styles.rowMeta} text-sm md:text-base`}>
                     {b.category} · {b.region}
                     {b.is_recommended ? ' · 추천' : ''}
                   </div>

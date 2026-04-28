@@ -16,8 +16,8 @@ export async function HomeGridNews() {
     return (
       <section className={styles.panel} aria-label="오늘의 뉴스">
         <div className={styles.panelHead}>
-          <span className={styles.panelTitle}>오늘의 뉴스</span>
-          <Link href="/news" className={styles.panelMore}>
+          <span className={`${styles.panelTitle} text-sm md:text-base`}>오늘의 뉴스</span>
+          <Link href="/news" className={`${styles.panelMore} text-sm`}>
             더보기
           </Link>
         </div>
@@ -28,8 +28,10 @@ export async function HomeGridNews() {
             {rows.map((n) => (
               <li key={n.id}>
                 <Link href={n.href} className={styles.row}>
-                  <div className={styles.rowTitle}>{n.title}</div>
-                  {n.summary ? <div className={styles.rowMeta}>{clip(n.summary, 96)}</div> : null}
+                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{n.title}</div>
+                  {n.summary ? (
+                    <div className={`${styles.rowMeta} text-sm md:text-base`}>{clip(n.summary, 96)}</div>
+                  ) : null}
                 </Link>
               </li>
             ))}

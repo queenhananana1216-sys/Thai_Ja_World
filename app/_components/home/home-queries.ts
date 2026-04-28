@@ -37,6 +37,22 @@ export type HomeNewsRow = {
   href: string;
 };
 
+export type HomeTipArticleRow = {
+  id: string;
+  title: string;
+  excerpt: string;
+  published_at: string | null;
+  created_at: string;
+};
+
+export type HomeCommunityPostRow = {
+  id: string;
+  title: string;
+  created_at: string;
+  comment_count: number;
+  category: string;
+};
+
 export type UxTotalsPublic = {
   total?: number;
   page_view?: number;
@@ -325,6 +341,65 @@ export async function fetchHomeNewsDigest(limit = 5): Promise<{ rows: HomeNewsRo
   }
 
   return { rows, error: null };
+}
+
+export async function fetchHomeTipsArticles(
+  limit = 5,
+): Promise<{ rows: HomeTipArticleRow[]; error: string | null }> {
+  const sb = tryCreate();
+  if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
+
+  const { data, error } = await sb
+    .from('tips_articles')
+    .select('id, title, excerpt, published_at, created_at')
+    .eq('status', 'published')
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) return { rows: [], error: error.message };
+
+  return {
+    rows: (data ?? []).map((r) => ({
+      id: String(r.id),
+      title: String(r.title ?? ''),
+      excerpt: r.excerpt != null ? String(r.excerpt) : '',
+      published_at: r.published_at != null ? String(r.published_at) : null,
+      created_at: String(r.created_at ?? ''),
+    })),
+    error: null,
+  };
+}
+
+export async function fetchHomePostsByCategory(
+  category: 'free' | 'qna',
+  limit = 10,
+): Promise<{ rows: HomeCommunityPostRow[]; error: string | null }> {
+  const sb = tryCreate();
+  if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
+
+  const { data, error } = await sb
+    .from('posts')
+    .select('id, title, created_at, comment_count, category')
+    .eq('moderation_status', 'safe')
+    .eq('author_hidden', false)
+    .eq('is_knowledge_tip', false)
+    .eq('category', category)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) return { rows: [], error: error.message };
+
+  return {
+    rows: (data ?? []).map((row) => ({
+      id: String(row.id),
+      title: String(row.title ?? ''),
+      created_at: String(row.created_at ?? ''),
+      comment_count: Number(row.comment_count ?? 0),
+      category: String(row.category ?? ''),
+    })),
+    error: null,
+  };
 }
 
 /** 게시판 전 카테고리(공개 안전 글) — 하단 무한 피드 */

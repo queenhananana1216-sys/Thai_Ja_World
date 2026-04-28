@@ -3,8 +3,8 @@ import SiteSearch from '../SiteSearch';
 import styles from './home-hub.module.css';
 import { HomeMarquee } from './HomeMarquee';
 import { HomeBannerSlot } from './HomeBannerSlot';
-import { HomeGridJobs } from './HomeGridJobs';
-import { HomeGridMarket } from './HomeGridMarket';
+import { HomeGridFree } from './HomeGridFree';
+import { HomeGridQna } from './HomeGridQna';
 import { HomeGridLocal } from './HomeGridLocal';
 import { HomeGridNews } from './HomeGridNews';
 import { HomeRightDbStats } from './HomeRightDbStats';
@@ -12,14 +12,24 @@ import { HomeRightUxStats } from './HomeRightUxStats';
 import { HomeRightFxBlock } from './HomeRightFxBlock';
 import { HomeFeedBlock } from './HomeFeedBlock';
 import { HomeLeftRailBanners } from './HomeLeftRailBanners';
+import LocalAppBanner from './LocalAppBanner';
 import { HomeCompactSkeleton } from './HomeCompactSkeleton';
 import { HomeRightStatsSkeleton } from './HomeRightStatsSkeleton';
 
 export default function HomeCommunityShell() {
   return (
-    <main className={styles.root} data-tj-hub="2026">
-      <div className={styles.hubGrid3}>
+    <main className={`${styles.root} min-h-screen flex flex-col bg-slate-950`} data-tj-hub="2026">
+      <div className={`${styles.hubGrid3} flex-1`}>
         <aside className={styles.wingLeft}>
+          <div className={styles.localWingStack}>
+            <LocalAppBanner
+              tone="mobility"
+              badge="T-RIDE"
+              title="방콕 이동의 모든 것"
+              subtitle="실시간 픽업 · 기사 매칭 · 교민 안심 호출"
+              cta="QR 다운로드"
+            />
+          </div>
           <Suspense fallback={<HomeCompactSkeleton variant="left" />}>
             <HomeLeftRailBanners />
           </Suspense>
@@ -28,7 +38,9 @@ export default function HomeCommunityShell() {
         <div className={styles.centerStack}>
           <div className={styles.tightDataColumn}>
             <div className={styles.hubSearchStrip}>
-              <p className={styles.hubSlogan}>태국 생활의 모든 연결, 태자월드</p>
+              <p className={`${styles.hubSlogan} text-xs md:text-sm`}>
+                태국 생활의 모든 것, 태자월드
+              </p>
               <div className={styles.hubSearchGrow}>
                 <SiteSearch variant="integratedHub" />
               </div>
@@ -44,10 +56,10 @@ export default function HomeCommunityShell() {
 
             <div className={styles.philgoDense}>
               <Suspense fallback={<HomeCompactSkeleton variant="panel" />}>
-                <HomeGridJobs />
+                <HomeGridFree />
               </Suspense>
               <Suspense fallback={<HomeCompactSkeleton variant="panel" />}>
-                <HomeGridMarket />
+                <HomeGridQna />
               </Suspense>
               <Suspense fallback={<HomeCompactSkeleton variant="panel" />}>
                 <HomeGridLocal />
@@ -64,6 +76,15 @@ export default function HomeCommunityShell() {
         </div>
 
         <div className={styles.wingRight}>
+          <div className={styles.localWingStack}>
+            <LocalAppBanner
+              tone="delivery"
+              badge="K-배달"
+              title="파타야 야식 1위"
+              subtitle="한식·분식·치킨 당일 도착"
+              cta="할인 쿠폰 받기"
+            />
+          </div>
           <Suspense fallback={<HomeRightStatsSkeleton />}>
             <HomeRightDbStats />
           </Suspense>

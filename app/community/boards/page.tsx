@@ -207,6 +207,15 @@ export default async function BoardsListPage({
           </article>
         );
       })}
+
+      <div className="mt-6 flex justify-center">
+        <Link
+          href={newPostHref}
+          className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white no-underline transition hover:bg-slate-700"
+        >
+          ✎ {d.board.newPost}
+        </Link>
+      </div>
     </main>
   );
 }

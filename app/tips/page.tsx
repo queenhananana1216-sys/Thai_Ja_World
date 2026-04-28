@@ -32,6 +32,19 @@ export default async function TipsHubPage() {
       <p style={{ margin: '0 0 12px', lineHeight: 1.6, color: 'var(--tj-muted)', fontSize: '0.92rem' }}>
         {t.pageLead}
       </p>
+      <p
+        style={{
+          margin: '0 0 12px',
+          fontSize: '0.8rem',
+          color: 'var(--tj-muted)',
+          padding: '8px 10px',
+          border: '1px dashed rgba(148,163,184,0.45)',
+          borderRadius: 10,
+          background: 'rgba(248,250,252,0.8)',
+        }}
+      >
+        꿀팁 글 발행은 관리자 전용입니다. 회원은 댓글과 반응으로 참여할 수 있습니다.
+      </p>
       <p style={{ margin: '0 0 22px', fontSize: '0.88rem' }}>
         <Link href="/news" style={{ color: 'var(--tj-link)', fontWeight: 600 }}>
           {t.crossLinkNewsHub}

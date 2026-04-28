@@ -16,6 +16,7 @@ import { HomeRightStatsSkeleton } from './HomeRightStatsSkeleton';
 import { HomeRealtimeBest } from './HomeRealtimeBest';
 import { listPremiumBanners } from '@/lib/banners/listPremiumBanners';
 import { createServerClient } from '@/lib/supabase/server';
+import EmergencyLifelineWidget from './EmergencyLifelineWidget';
 
 type WingFallback = {
   tone: 'mobility' | 'delivery';
@@ -193,27 +194,7 @@ async function HomeCommunityShellContent({
               />
             ))}
           </div>
-          <section className={styles.lifelineCard} aria-label="긴급 연락처">
-            <h3 className={styles.lifelineTitle}>🚨 긴급 연락처</h3>
-            <ul className={styles.lifelineList}>
-              <li className="flex justify-between items-center gap-2">
-                <span className={`${styles.lifelineLabel} truncate text-xs`}>주태국 대한민국 대사관</span>
-                <a href="tel:+6622477537" className={`${styles.lifelineValue} shrink-0 text-xs font-mono`}>+66-2-247-7537</a>
-              </li>
-              <li className="flex justify-between items-center gap-2">
-                <span className={`${styles.lifelineLabel} truncate text-xs`}>태국 관광경찰 (한국어 통역)</span>
-                <a href="tel:1155" className={`${styles.lifelineValue} shrink-0 text-xs font-mono`}>1155</a>
-              </li>
-              <li className="flex justify-between items-center gap-2">
-                <span className={`${styles.lifelineLabel} truncate text-xs`}>응급차 / 구조대</span>
-                <a href="tel:1669" className={`${styles.lifelineValue} shrink-0 text-xs font-mono`}>1669</a>
-              </li>
-              <li className="flex justify-between items-center gap-2">
-                <span className={`${styles.lifelineLabel} truncate text-xs`}>한인회</span>
-                <a href="tel:+6622535330" className={`${styles.lifelineValue} shrink-0 text-xs font-mono`}>+66-2-253-5330</a>
-              </li>
-            </ul>
-          </section>
+          <EmergencyLifelineWidget />
           <Suspense fallback={<HomeCompactSkeleton variant="left" />}>
             <HomeLeftRailBanners />
           </Suspense>

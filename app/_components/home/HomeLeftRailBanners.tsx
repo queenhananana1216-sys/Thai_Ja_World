@@ -6,13 +6,7 @@ import styles from './home-hub.module.css';
 export async function HomeLeftRailBanners() {
   try {
     const { rows, error } = await fetchHomeLeftRailBanners();
-    if (error) {
-      return (
-        <div className={styles.leftRail} aria-label="스폰서 배너">
-          <p className={styles.leftRailErr}>{error}</p>
-        </div>
-      );
-    }
+    if (error) return <div className={styles.leftRailSpacer} aria-hidden />;
     const withVisual = rows.filter((b) => Boolean(b.image_url?.trim()) || Boolean(b.href?.trim()));
     if (withVisual.length === 0) {
       return <div className={styles.leftRailSpacer} aria-hidden />;
@@ -44,11 +38,7 @@ export async function HomeLeftRailBanners() {
         })}
       </nav>
     );
-  } catch (e) {
-    return (
-      <div className={styles.leftRail} aria-label="스폰서 배너">
-        <p className={styles.leftRailErr}>{e instanceof Error ? e.message : '오류'}</p>
-      </div>
-    );
+  } catch {
+    return <div className={styles.leftRailSpacer} aria-hidden />;
   }
 }

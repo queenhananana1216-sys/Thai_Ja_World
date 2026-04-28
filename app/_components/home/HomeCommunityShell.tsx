@@ -69,9 +69,16 @@ async function HomeCommunityShellContent({
   bannersPromise: ReturnType<typeof listPremiumBanners>;
   wingFallback: { left: WingFallback; right: WingFallback };
 }) {
-  const byPlacement = await bannersPromise;
-  const leftDb = byPlacement.wing_left[0] ?? null;
-  const rightDb = byPlacement.wing_right[0] ?? null;
+  let leftDb: (Awaited<ReturnType<typeof listPremiumBanners>>['wing_left'][number] | null) = null;
+  let rightDb: (Awaited<ReturnType<typeof listPremiumBanners>>['wing_right'][number] | null) = null;
+  try {
+    const byPlacement = await bannersPromise;
+    leftDb = byPlacement.wing_left[0] ?? null;
+    rightDb = byPlacement.wing_right[0] ?? null;
+  } catch {
+    leftDb = null;
+    rightDb = null;
+  }
 
   const left = leftDb
     ? {

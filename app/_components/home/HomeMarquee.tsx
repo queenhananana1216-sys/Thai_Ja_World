@@ -4,9 +4,7 @@ import styles from './home-hub.module.css';
 export async function HomeMarquee() {
   try {
     const { titles, error } = await fetchHomeNewsMarqueeTitles(22);
-    if (error) {
-      return <p className={styles.errLine}>뉴스 마퀴: {error}</p>;
-    }
+    if (error) return null;
     if (titles.length === 0) return null;
 
     const loop = [...titles, ...titles];
@@ -21,11 +19,7 @@ export async function HomeMarquee() {
         </div>
       </div>
     );
-  } catch (e) {
-    return (
-      <p className={styles.errLine}>
-        뉴스 마퀴: {e instanceof Error ? e.message : '오류'}
-      </p>
-    );
+  } catch {
+    return null;
   }
 }

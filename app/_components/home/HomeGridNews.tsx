@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { fetchHomeNewsDigest } from './home-queries';
 import styles from './home-hub.module.css';
+import { HomeGlassEmptyState } from './HomeGlassEmptyState';
 
 function clip(s: string, n: number) {
   const t = s.trim();
@@ -11,7 +12,15 @@ function clip(s: string, n: number) {
 export async function HomeGridNews() {
   try {
     const { rows, error } = await fetchHomeNewsDigest(5);
-    if (error) return <section className={styles.panel} aria-label="오늘의 뉴스"><div className={styles.errLine}>{error}</div></section>;
+    if (error) {
+      return (
+        <section className={styles.panel} aria-label="오늘의 뉴스">
+          <div className="p-2">
+            <HomeGlassEmptyState label="오늘의 뉴스 빈 상태" />
+          </div>
+        </section>
+      );
+    }
 
     return (
       <section className={styles.panel} aria-label="오늘의 뉴스">
@@ -22,7 +31,9 @@ export async function HomeGridNews() {
           </Link>
         </div>
         {rows.length === 0 ? (
-          <ul className={styles.list} aria-label="뉴스 목록" />
+          <div className="p-2">
+            <HomeGlassEmptyState label="오늘의 뉴스 빈 상태" />
+          </div>
         ) : (
           <ul className={styles.list}>
             {rows.map((n) => (
@@ -39,10 +50,12 @@ export async function HomeGridNews() {
         )}
       </section>
     );
-  } catch (e) {
+  } catch {
     return (
       <section className={styles.panel} aria-label="오늘의 뉴스">
-        <div className={styles.errLine}>{e instanceof Error ? e.message : '오류'}</div>
+        <div className="p-2">
+          <HomeGlassEmptyState label="오늘의 뉴스 빈 상태" />
+        </div>
       </section>
     );
   }

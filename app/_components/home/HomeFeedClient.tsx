@@ -8,6 +8,7 @@ import { portalMetaLine } from '../../portal/text';
 import { categoryLabel, type PostCategorySlug } from '@/lib/community/postCategories';
 import { formatDate } from '@/lib/utils/formatDate';
 import styles from './home-hub.module.css';
+import { HomeGlassEmptyState } from './HomeGlassEmptyState';
 
 const MAX_BATCHES = 8;
 
@@ -104,7 +105,11 @@ export function HomeFeedClient({
         라이브
       </h2>
 
-      {items.length === 0 && !err ? <div className={styles.feedEmpty} aria-hidden /> : null}
+      {items.length === 0 && !err ? (
+        <div className="p-2">
+          <HomeGlassEmptyState label="라이브 피드 빈 상태" />
+        </div>
+      ) : null}
 
       <div className={styles.feedGrid}>
         {items.map((p) => {
@@ -139,9 +144,9 @@ export function HomeFeedClient({
       </div>
 
       {err ? (
-        <p className={styles.errLine} role="alert">
-          {err}
-        </p>
+        <div className="p-2" role="status">
+          <HomeGlassEmptyState label="라이브 피드 빈 상태" />
+        </div>
       ) : null}
 
       <div className={styles.loadMore} ref={sentinelRef} role="status" aria-busy={loading}>

@@ -1,11 +1,20 @@
 import Link from 'next/link';
 import { fetchHomeLocalBusinesses } from './home-queries';
 import styles from './home-hub.module.css';
+import { HomeGlassEmptyState } from './HomeGlassEmptyState';
 
 export async function HomeGridLocal() {
   try {
     const { rows, error } = await fetchHomeLocalBusinesses(5);
-    if (error) return <section className={styles.panel} aria-label="로컬 업체"><div className={styles.errLine}>{error}</div></section>;
+    if (error) {
+      return (
+        <section className={styles.panel} aria-label="로컬 업체">
+          <div className="p-2">
+            <HomeGlassEmptyState label="로컬 업체 빈 상태" />
+          </div>
+        </section>
+      );
+    }
 
     return (
       <section className={styles.panel} aria-label="로컬 업체">
@@ -16,7 +25,9 @@ export async function HomeGridLocal() {
           </Link>
         </div>
         {rows.length === 0 ? (
-          <ul className={styles.list} aria-label="로컬 목록" />
+          <div className="p-2">
+            <HomeGlassEmptyState label="로컬 업체 빈 상태" />
+          </div>
         ) : (
           <ul className={styles.list}>
             {rows.map((b) => (
@@ -34,10 +45,12 @@ export async function HomeGridLocal() {
         )}
       </section>
     );
-  } catch (e) {
+  } catch {
     return (
       <section className={styles.panel} aria-label="로컬 업체">
-        <div className={styles.errLine}>{e instanceof Error ? e.message : '오류'}</div>
+        <div className="p-2">
+          <HomeGlassEmptyState label="로컬 업체 빈 상태" />
+        </div>
       </section>
     );
   }

@@ -129,9 +129,9 @@ export default async function BoardsListPage({
       </div>
 
       {error && (
-        <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          게시글을 불러오지 못했습니다. posts.image_urls 컬럼과 RLS를 확인하세요. ({error.message})
-        </p>
+        <div className="mb-4 rounded-2xl border border-slate-600/40 bg-slate-900/45 px-4 py-4 text-center shadow-[0_14px_30px_rgba(2,6,23,0.38)] backdrop-blur-md">
+          <p className="m-0 text-sm font-medium text-slate-200">아직 등록된 글이 없습니다. 첫 글의 주인공이 되어보세요!</p>
+        </div>
       )}
 
       {!error && list.length === 0 && (
@@ -149,8 +149,6 @@ export default async function BoardsListPage({
       {list.map((p) => {
         const pid = p.id as string;
         const counts = countsByPostId[String(pid)] ?? { like: 0, heart: 0 };
-        const thumb = Array.isArray(p.image_urls) && p.image_urls.length > 0 ? p.image_urls[0] : null;
-        const excerpt = String(p.content ?? '').replace(/\s+/g, ' ').slice(0, 140);
         const cat = categoryLabel(String(p.category), locale);
         const author = names[p.author_id as string] ?? '…';
 
@@ -158,12 +156,12 @@ export default async function BoardsListPage({
         const authorHidden = Boolean(p.author_hidden);
 
         return (
-          <article key={pid} className="mb-3 rounded-2xl border border-white/10 bg-slate-900/50 p-5 shadow-[0_10px_30px_rgba(2,6,23,0.4)] transition hover:border-violet-300/50 hover:bg-slate-900/70">
+          <article key={pid} className="mb-2 rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2 shadow-[0_10px_24px_rgba(2,6,23,0.35)] transition hover:bg-slate-800/50">
             <Link href={`/community/boards/${pid}`} className="block no-underline hover:no-underline">
-              <div className="text-xs font-medium text-slate-500">
-                {cat} · {author} · {formatDate(p.created_at as string | null)} · {d.board.comments}{' '}
-                {p.comment_count ?? 0} · {d.board.views} {p.view_count ?? 0} · 좋아요 {counts.like} · 공감{' '}
-                {counts.heart}
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <span className="truncate text-sm font-semibold text-slate-100">{p.title as string}</span>
+                <span className="shrink-0">{d.board.comments} {p.comment_count ?? 0}</span>
+                <span className="shrink-0">{formatDate(p.created_at as string | null)}</span>
                 {authorHidden ? (
                   <>
                     {' '}
@@ -171,12 +169,7 @@ export default async function BoardsListPage({
                   </>
                 ) : null}
               </div>
-              <h2 className="mt-2 text-lg font-extrabold text-white">{p.title as string}</h2>
-              <p className="mt-1 text-sm leading-relaxed text-slate-300">{excerpt}</p>
-              {thumb && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={thumb} alt="" className="mt-3 h-40 w-full rounded-xl object-cover" loading="lazy" />
-              )}
+              <p className="mt-1 truncate text-xs text-slate-400">{cat} · {author} · {d.board.views} {p.view_count ?? 0} · 좋아요 {counts.like} · 공감 {counts.heart}</p>
             </Link>
             {isAuthor ? (
               <div className="mt-3">

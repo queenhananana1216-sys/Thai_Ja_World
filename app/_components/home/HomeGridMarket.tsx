@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { fetchHomeFeedPosts, fetchHomeMarket, fetchHomeNewsDigest, fetchHomeTipsArticles } from './home-queries';
 import styles from './home-hub.module.css';
 import { formatDate } from '@/lib/utils/formatDate';
+import { HomeGlassEmptyState } from './HomeGlassEmptyState';
 
 type FallbackItem = {
   id: string;
@@ -11,38 +12,39 @@ type FallbackItem = {
 };
 
 async function buildMarketFallback(limit: number): Promise<FallbackItem[]> {
-  const [posts, tips, news] = await Promise.all([
-    fetchHomeFeedPosts(limit),
-    fetchHomeTipsArticles(limit),
-    fetchHomeNewsDigest(limit),
-  ]);
+  try {
+    const posts = await fetchHomeFeedPosts(limit);
+    if (posts.rows.length > 0) {
+      return posts.rows.map((p) => ({
+        id: `post-${p.id}`,
+        href: `/community/boards/${p.id}`,
+        title: p.title,
+        meta: `생활 정보 · ${formatDate(p.created_at)}`,
+      }));
+    }
 
-  const items: FallbackItem[] = [];
-  for (const p of posts.rows) {
-    items.push({
-      id: `post-${p.id}`,
-      href: `/community/boards/${p.id}`,
-      title: p.title,
-      meta: `생활 정보 · ${formatDate(p.created_at)}`,
-    });
+    const [tips, news] = await Promise.all([fetchHomeTipsArticles(limit), fetchHomeNewsDigest(limit)]);
+    const items: FallbackItem[] = [];
+    for (const t of tips.rows) {
+      items.push({
+        id: `tip-${t.id}`,
+        href: `/tips/${t.id}`,
+        title: t.title,
+        meta: `태국 비자/생활 팁 · ${formatDate(t.published_at ?? t.created_at)}`,
+      });
+    }
+    for (const n of news.rows) {
+      items.push({
+        id: `news-${n.id}`,
+        href: n.href,
+        title: n.title,
+        meta: '최신 뉴스',
+      });
+    }
+    return items.slice(0, limit);
+  } catch {
+    return [];
   }
-  for (const t of tips.rows) {
-    items.push({
-      id: `tip-${t.id}`,
-      href: `/tips/${t.id}`,
-      title: t.title,
-      meta: `태국 비자/생활 팁 · ${formatDate(t.published_at ?? t.created_at)}`,
-    });
-  }
-  for (const n of news.rows) {
-    items.push({
-      id: `news-${n.id}`,
-      href: n.href,
-      title: n.title,
-      meta: '최신 뉴스',
-    });
-  }
-  return items.slice(0, limit);
 }
 
 export async function HomeGridMarket() {
@@ -60,16 +62,22 @@ export async function HomeGridMarket() {
           </Link>
         </div>
         {useFallback ? (
-          <ul className={styles.list}>
-            {fallbackRows.map((m) => (
-              <li key={m.id}>
-                <Link href={m.href} className={styles.row}>
-                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{m.title}</div>
-                  <div className={`${styles.rowMeta} text-sm md:text-base`}>{m.meta}</div>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          fallbackRows.length === 0 ? (
+            <div className="p-2">
+              <HomeGlassEmptyState label="번개장터 빈 상태" />
+            </div>
+          ) : (
+            <ul className={styles.list}>
+              {fallbackRows.map((m) => (
+                <li key={m.id}>
+                  <Link href={m.href} className={styles.row}>
+                    <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{m.title}</div>
+                    <div className={`${styles.rowMeta} text-sm md:text-base`}>{m.meta}</div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )
         ) : (
           <ul className={styles.list}>
             {rows.map((m) => (
@@ -99,14 +107,20 @@ export async function HomeGridMarket() {
           </Link>
         </div>
         <ul className={styles.list}>
-          {fallbackRows.map((m) => (
-            <li key={m.id}>
-              <Link href={m.href} className={styles.row}>
-                <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{m.title}</div>
-                <div className={`${styles.rowMeta} text-sm md:text-base`}>{m.meta}</div>
-              </Link>
+          {fallbackRows.length === 0 ? (
+            <li className="p-2">
+              <HomeGlassEmptyState label="번개장터 빈 상태" />
             </li>
-          ))}
+          ) : (
+            fallbackRows.map((m) => (
+              <li key={m.id}>
+                <Link href={m.href} className={styles.row}>
+                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{m.title}</div>
+                  <div className={`${styles.rowMeta} text-sm md:text-base`}>{m.meta}</div>
+                </Link>
+              </li>
+            ))
+          )}
         </ul>
       </section>
     );

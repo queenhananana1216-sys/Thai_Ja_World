@@ -139,14 +139,14 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
     typeof (post as { location_name?: string | null }).location_name === 'string'
       ? (post as { location_name?: string }).location_name
       : null;
-  const { data: relatedPostsRaw } = await supabase
+  const { data: relatedPostsRaw, error: relatedPostsError } = await supabase
     .from('posts')
     .select('id, title, created_at, comment_count, view_count')
     .eq('moderation_status', 'safe')
     .eq('is_knowledge_tip', false)
+    .eq('author_hidden', false)
     .eq('category', String(post.category))
     .neq('id', postId)
-    .order('comment_count', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(5);
   const relatedPosts = (relatedPostsRaw ?? []).map((item) => ({
@@ -293,10 +293,10 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
         </article>
       </div>
 
-      {relatedPosts.length > 0 && (
+      {!relatedPostsError && relatedPosts.length > 0 && (
         <section className="mt-5 rounded-2xl border border-white/10 bg-slate-900/50 p-5 shadow-[0_10px_35px_rgba(2,6,23,0.45)] backdrop-blur-md">
           <h2 className="mb-1 text-base font-bold text-slate-100">이 게시판의 최신 핫게시글</h2>
-          <p className="mb-3 text-xs font-medium text-slate-400">댓글이 활발한 글 순서로 보여드려요.</p>
+          <p className="mb-3 text-xs font-medium text-slate-400">같은 카테고리 최신 글을 보여드려요.</p>
           <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2">
             {relatedPosts.map((item) => (
               <li key={item.id} className="rounded-xl border border-slate-700/50 bg-slate-900/40 px-3 py-2 transition hover:bg-slate-800/50">

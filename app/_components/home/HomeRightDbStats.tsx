@@ -1,5 +1,6 @@
 ﻿import { loadCachedPublicSiteStats } from '@/lib/landing/publicSiteStats';
 import styles from './home-hub.module.css';
+import { HomeGlassEmptyState } from './HomeGlassEmptyState';
 
 function fmtCount(n: number): string {
   return n.toLocaleString('ko-KR');
@@ -42,10 +43,10 @@ export async function HomeRightDbStats() {
         ) : null}
       </section>
     );
-  } catch (e) {
+  } catch {
     return (
       <section className={styles.sideCard} aria-label="사이트 누적 집계">
-        <p className={styles.errLine}>{e instanceof Error ? e.message : '집계 오류'}</p>
+        <HomeGlassEmptyState label="사이트 누적 집계 빈 상태" />
       </section>
     );
   }

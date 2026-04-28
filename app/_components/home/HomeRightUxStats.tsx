@@ -1,5 +1,6 @@
 import { fetchHomeUxSnapshot } from './home-queries';
 import styles from './home-hub.module.css';
+import { HomeGlassEmptyState } from './HomeGlassEmptyState';
 
 function fmtTs(iso: string | null): string {
   if (!iso) return '—';
@@ -20,7 +21,7 @@ export async function HomeRightUxStats() {
     return (
       <aside className={styles.sideCard} aria-label="UX 스냅샷">
         <h2 className={styles.sideTitleMain}>UX 5m</h2>
-        {uxErr ? <p className={styles.errLine}>{uxErr}</p> : null}
+        {uxErr ? <HomeGlassEmptyState label="UX 스냅샷 빈 상태" /> : null}
         {totals ? (
           <div className={styles.uxMiniGrid}>
             {typeof totals.total === 'number' ? (
@@ -61,10 +62,10 @@ export async function HomeRightUxStats() {
         </p>
       </aside>
     );
-  } catch (e) {
+  } catch {
     return (
       <aside className={styles.sideCard} aria-label="UX 스냅샷">
-        <p className={styles.errLine}>{e instanceof Error ? e.message : '오류'}</p>
+        <HomeGlassEmptyState label="UX 스냅샷 빈 상태" />
       </aside>
     );
   }

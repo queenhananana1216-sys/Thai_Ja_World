@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { fetchHomeFeedPosts, fetchHomePostsByCategory } from './home-queries';
 import styles from './home-hub.module.css';
 import { formatDate } from '@/lib/utils/formatDate';
+import { HomeGlassEmptyState } from './HomeGlassEmptyState';
 
 export async function HomeGridFree() {
   try {
@@ -28,7 +29,9 @@ export async function HomeGridFree() {
           <div className={styles.panelHead}>
             <span className={`${styles.panelTitle} text-sm md:text-base`}>자유게시판</span>
           </div>
-          <ul className={styles.list} />
+          <div className="p-2">
+            <HomeGlassEmptyState label="자유게시판 빈 상태" />
+          </div>
         </section>
       );
     }
@@ -41,16 +44,22 @@ export async function HomeGridFree() {
             더보기
           </Link>
         </div>
-        <ul className={styles.list}>
-          {items.map((post) => (
-            <li key={post.id}>
-              <Link href={post.href} className={styles.row}>
-                <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{post.title}</div>
-                <div className={`${styles.rowMeta} text-sm md:text-base`}>{post.meta}</div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {items.length === 0 ? (
+          <div className="p-2">
+            <HomeGlassEmptyState label="자유게시판 빈 상태" />
+          </div>
+        ) : (
+          <ul className={styles.list}>
+            {items.map((post) => (
+              <li key={post.id}>
+                <Link href={post.href} className={styles.row}>
+                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{post.title}</div>
+                  <div className={`${styles.rowMeta} text-sm md:text-base`}>{post.meta}</div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     );
   } catch {
@@ -63,18 +72,24 @@ export async function HomeGridFree() {
             더보기
           </Link>
         </div>
-        <ul className={styles.list}>
-          {fallback.rows.map((post) => (
-            <li key={post.id}>
-              <Link href={`/community/boards/${post.id}`} className={styles.row}>
-                <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{post.title}</div>
-                <div className={`${styles.rowMeta} text-sm md:text-base`}>
-                  댓글 {post.comment_count ?? 0} · {formatDate(post.created_at)}
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {fallback.rows.length === 0 ? (
+          <div className="p-2">
+            <HomeGlassEmptyState label="자유게시판 빈 상태" />
+          </div>
+        ) : (
+          <ul className={styles.list}>
+            {fallback.rows.map((post) => (
+              <li key={post.id}>
+                <Link href={`/community/boards/${post.id}`} className={styles.row}>
+                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{post.title}</div>
+                  <div className={`${styles.rowMeta} text-sm md:text-base`}>
+                    댓글 {post.comment_count ?? 0} · {formatDate(post.created_at)}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     );
   }

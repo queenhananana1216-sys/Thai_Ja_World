@@ -2,6 +2,7 @@
  * GET /api/cron/purge-news — 7일(NEWS_RETENTION_DAYS) 지난 raw_news 일괄 삭제
  */
 import { type NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { purgeStaleRawNews } from '@/bots/actions/purgeStaleRawNews';
 import { isCronAuthorized } from '@/lib/cronAuth';
 
@@ -21,5 +22,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       { status: 500 },
     );
   }
+  revalidatePath('/');
+  revalidateTag('news');
+  revalidateTag('public-site-stats');
   return NextResponse.json({ status: 'ok', deleted_approx: result.matched ?? null });
 }

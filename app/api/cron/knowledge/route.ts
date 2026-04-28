@@ -12,6 +12,7 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { runKnowledgeCollectLoop } from '@/bots/orchestrator/runKnowledgeCollectLoop';
 import { runKnowledgeProcessLoop } from '@/bots/orchestrator/runKnowledgeProcessLoop';
 import { runKnowledgeStubRepairLoop } from '@/bots/orchestrator/runKnowledgeStubRepairLoop';
@@ -84,6 +85,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   } else {
     stubRepairRun = { skipped: true, reason: 'stubRepair=0' };
   }
+  revalidatePath('/');
+  revalidateTag('news');
+  revalidateTag('knowledge');
+  revalidateTag('public-site-stats');
 
   return NextResponse.json({
     status: 'ok',

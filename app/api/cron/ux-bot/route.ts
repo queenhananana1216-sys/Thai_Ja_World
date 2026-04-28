@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { runUxOptimizationLoop } from '@/bots/orchestrator/runUxOptimizationLoop';
 import { isCronAuthorized } from '@/lib/cronAuth';
 
@@ -18,6 +19,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!result.ok) {
     return NextResponse.json({ status: 'error', error: result.error ?? 'ux_loop_failed' }, { status: 500 });
   }
+  revalidatePath('/');
+  revalidateTag('ux');
   return NextResponse.json({ status: 'ok', ...result });
 }
 

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { isCronAuthorized } from '@/lib/cronAuth';
 import { runQuestCronCycle } from '@/lib/quests/runQuestCronCycle';
 
@@ -24,6 +25,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       includeNewsEvent,
       settleLimit,
     });
+    revalidatePath('/');
+    revalidateTag('quests');
     return NextResponse.json({ status: 'ok', ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal Server Error';

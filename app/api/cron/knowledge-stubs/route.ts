@@ -8,6 +8,7 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { runKnowledgeStubRepairLoop } from '@/bots/orchestrator/runKnowledgeStubRepairLoop';
 import { isCronAuthorized } from '@/lib/cronAuth';
 
@@ -36,6 +37,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       const status = result.error?.includes('LLM not configured') ? 503 : 500;
       return NextResponse.json({ status: 'error', ...result }, { status });
     }
+    revalidatePath('/');
+    revalidateTag('knowledge');
+    revalidateTag('news');
     return NextResponse.json({ status: 'ok', ...result });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal Server Error';

@@ -2,6 +2,7 @@
  * GET /api/cron/purge-bot-actions — BOT_ACTIONS_RETENTION_DAYS(기본 7)보다 오래된 bot_actions 삭제
  */
 import { type NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { purgeStaleBotActions } from '@/bots/actions/purgeStaleBotActions';
 import { isCronAuthorized } from '@/lib/cronAuth';
 
@@ -21,5 +22,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       { status: 500 },
     );
   }
+  revalidatePath('/');
+  revalidateTag('ux');
   return NextResponse.json({ status: 'ok', deleted_approx: result.matched ?? null });
 }

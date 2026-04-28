@@ -113,6 +113,7 @@ export default function FxRemoteWidget({
   const [menuOpen, setMenuOpen] = useState(false);
 
   const [styleBalance, setStyleBalance] = useState<number | null>(null);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
 
   useEffect(() => {
@@ -173,48 +174,40 @@ export default function FxRemoteWidget({
     return () => document.removeEventListener('mousedown', close);
   }, [menuOpen]);
 
-  const refreshStyleScore = useCallback(async () => {
-    const sb = createBrowserClient();
-    const {
-      data: { user },
-    } = await sb.auth.getUser();
-    if (!user) {
+  const refreshStyleScore = useCallback(async (userId: string | null) => {
+    if (!userId) {
       setStyleBalance(null);
       return;
     }
+    const sb = createBrowserClient();
     const { data } = await sb
       .from('profiles')
       .select('style_score_total')
-      .eq('id', user.id)
+      .eq('id', userId)
       .maybeSingle();
     setStyleBalance(typeof data?.style_score_total === 'number' ? data.style_score_total : 0);
   }, []);
 
   useEffect(() => {
     const sb = createBrowserClient();
-    let cancelled = false;
-    let ch: ReturnType<typeof sb.channel> | null = null;
+    let activeChannel: ReturnType<typeof sb.channel> | null = null;
 
-    void (async () => {
-      const {
-        data: { user },
-      } = await sb.auth.getUser();
-      if (cancelled || !user) {
-        setStyleBalance(null);
-        return;
+    const bindRealtime = (userId: string | null) => {
+      if (activeChannel) {
+        void sb.removeChannel(activeChannel);
+        activeChannel = null;
       }
-      await refreshStyleScore();
-      if (cancelled) return;
+      if (!userId) return;
       try {
-        ch = sb
-          .channel(`tj-profile-score-${user.id}`)
+        activeChannel = sb
+          .channel(`tj-profile-score-${userId}`)
           .on(
             'postgres_changes',
             {
               event: 'UPDATE',
               schema: 'public',
               table: 'profiles',
-              filter: `id=eq.${user.id}`,
+              filter: `id=eq.${userId}`,
             },
             (payload) => {
               const n = (payload.new as { style_score_total?: number }).style_score_total;
@@ -225,19 +218,35 @@ export default function FxRemoteWidget({
       } catch {
         /* Realtime 미설정 시 무시 */
       }
-    })();
+    };
+
+    void sb.auth.getSession().then(({ data }) => {
+      const userId = data.session?.user.id ?? null;
+      setAuthUserId(userId);
+      void refreshStyleScore(userId);
+      bindRealtime(userId);
+    });
+
+    const {
+      data: { subscription },
+    } = sb.auth.onAuthStateChange((_event, session) => {
+      const userId = session?.user.id ?? null;
+      setAuthUserId(userId);
+      void refreshStyleScore(userId);
+      bindRealtime(userId);
+    });
 
     function onVis() {
-      if (document.visibilityState === 'visible') void refreshStyleScore();
+      if (document.visibilityState === 'visible') void refreshStyleScore(authUserId);
     }
     document.addEventListener('visibilitychange', onVis);
 
     return () => {
-      cancelled = true;
       document.removeEventListener('visibilitychange', onVis);
-      if (ch) void sb.removeChannel(ch);
+      subscription.unsubscribe();
+      if (activeChannel) void sb.removeChannel(activeChannel);
     };
-  }, [refreshStyleScore]);
+  }, [authUserId, refreshStyleScore]);
 
   const amountNum = useMemo(() => {
     const n = parseFloat(amountStr);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { isCronAuthorized } from '@/lib/cronAuth';
 import { runLocalShopTemplatePipeline } from '@/lib/localShopTemplates/pipeline';
 
@@ -19,6 +20,9 @@ async function execute(req: NextRequest) {
   try {
     const limit = parseLimit(req.nextUrl.searchParams.get('limit'));
     const result = await runLocalShopTemplatePipeline(limit);
+    revalidatePath('/');
+    revalidateTag('local-shop');
+    revalidateTag('public-site-stats');
     return NextResponse.json({ status: 'ok', ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal Server Error';

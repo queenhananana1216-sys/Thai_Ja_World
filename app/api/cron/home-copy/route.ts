@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { runEngagementCopyPipeline } from '@/lib/siteCopy/runEngagementCopyPipeline';
 import { isCronAuthorized } from '@/lib/cronAuth';
 
@@ -13,6 +14,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   try {
     const result = await runEngagementCopyPipeline();
+    revalidatePath('/');
+    revalidateTag('home-copy');
     return NextResponse.json({
       status: 'ok',
       updated: result.updated,

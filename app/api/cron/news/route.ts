@@ -10,6 +10,7 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { runNewsIngestPipeline } from '@/bots/orchestrator/runNewsIngestPipeline';
 import { isCronAuthorized } from '@/lib/cronAuth';
 
@@ -46,6 +47,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       collect: collectOpts,
       process: processOpts,
     });
+    revalidatePath('/');
+    revalidateTag('news');
+    revalidateTag('public-site-stats');
     return NextResponse.json({
       status: 'ok',
       collect: collectRun,

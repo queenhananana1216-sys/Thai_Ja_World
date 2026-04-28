@@ -2,6 +2,7 @@
  * GET /api/cron/push-daily-digest — 구독자에게 최신 1건 기준 일일 웹 푸시
  */
 import { type NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { sendDailyWebPushDigest } from '@/lib/push/sendDailyWebPush';
 import { isCronAuthorized } from '@/lib/cronAuth';
 
@@ -24,6 +25,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   try {
     const result = await sendDailyWebPushDigest(siteOrigin(req));
+    revalidatePath('/');
+    revalidateTag('news');
     return NextResponse.json({ status: 'ok', ...result });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

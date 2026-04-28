@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import ShopMinihomeClient, { type ShopSpotPayload } from '@/app/shop/[slug]/ShopMinihomeClient';
+import ShopMinihomeClient, { type ShopSpotPayload } from '../../shop/[slug]/ShopMinihomeClient';
 import { createServerClient } from '@/lib/supabase/server';
 
 type Props = {

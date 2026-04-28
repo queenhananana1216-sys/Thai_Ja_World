@@ -155,7 +155,7 @@ export default function AuthBar({
             className="w-56 border-white/15 bg-slate-950/90 text-slate-100 backdrop-blur-xl"
           >
             <DropdownMenuLabel className="text-xs text-slate-300">개인화 메뉴</DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuSeparator className="bg-slate-700/70" />
             <DropdownMenuItem asChild>
               <Link href="/minihome" className="cursor-pointer gap-2 text-sm">
                 <UserRound className="size-4 text-slate-300" />
@@ -174,7 +174,7 @@ export default function AuthBar({
                 {memberNav.friends}
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuSeparator className="bg-slate-700/70" />
             <DropdownMenuItem
               className="cursor-pointer gap-2 text-sm text-rose-300 focus:bg-rose-500/10 focus:text-rose-200"
               onClick={() => void logout()}

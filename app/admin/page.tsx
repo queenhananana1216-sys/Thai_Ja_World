@@ -270,6 +270,12 @@ export default async function AdminDashboardPage() {
           </Link>
         </li>
         <li>
+          <Link href="/admin/banners">
+            배너 온/오프(간편)
+            <span>wing·홈 배너를 즉시 활성/비활성 전환</span>
+          </Link>
+        </li>
+        <li>
           <Link href="/admin/premium-banners">
             프리미엄 배너
             <span>상단 바·홈 스트립 등 전역 프로모</span>

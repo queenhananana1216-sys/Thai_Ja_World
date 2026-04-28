@@ -57,7 +57,7 @@ export async function HomeGridJobs() {
       <section className={styles.panel} aria-label="구인구직">
         <div className={styles.panelHead}>
           <span className={`${styles.panelTitle} text-sm md:text-base`}>구인구직</span>
-          <Link href="/portal#portal-jobs" className={`${styles.panelMore} text-sm`}>
+          <Link href="/community/boards?cat=job" className={`${styles.panelMore} text-sm`}>
             더보기
           </Link>
         </div>
@@ -76,7 +76,7 @@ export async function HomeGridJobs() {
           <ul className={styles.list}>
             {rows.map((j) => (
               <li key={j.id}>
-                <Link href={`/jobs/${j.id}`} className={styles.row}>
+                <Link href={`/community/boards/${j.id}`} className={styles.row}>
                   <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{j.title}</div>
                   <div className={`${styles.rowMeta} text-sm md:text-base`}>
                     {[j.company_name, j.location, j.salary].filter(Boolean).join(' · ') || ' '}

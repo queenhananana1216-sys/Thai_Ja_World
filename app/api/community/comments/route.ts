@@ -1,7 +1,7 @@
 /**
  * POST /api/community/comments
  * Authorization: Bearer <access_token>
- * Body: { post_id, content }
+ * Body: { post_id, content, parent_comment_id? }
  */
 import { NextResponse } from 'next/server';
 import { createModeratedComment } from '@/lib/moderation/commentSubmissionPipeline';
@@ -25,12 +25,16 @@ export async function POST(req: Request) {
   const b = body as Record<string, unknown>;
   const postId = typeof b.post_id === 'string' ? b.post_id : '';
   const content = typeof b.content === 'string' ? b.content : '';
+  const parentCommentId =
+    typeof b.parent_comment_id === 'string' && b.parent_comment_id.trim()
+      ? b.parent_comment_id.trim()
+      : null;
 
   if (!postId) {
     return NextResponse.json({ code: 'invalid' }, { status: 400 });
   }
 
-  const result = await createModeratedComment(token, postId, content);
+  const result = await createModeratedComment(token, postId, content, parentCommentId);
   if (result.ok) {
     try {
       const sb = createSupabaseWithUserJwt(token);

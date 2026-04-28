@@ -27,6 +27,7 @@ export async function createModeratedComment(
   accessToken: string,
   postId: string,
   rawContent: string,
+  parentCommentId?: string | null,
 ): Promise<CommentPipelineResult> {
   const token = accessToken.trim();
   if (!token) {
@@ -64,6 +65,18 @@ export async function createModeratedComment(
     .maybeSingle();
   if (postErr || !postRow) {
     return { ok: false, status: 404, code: 'invalid' };
+  }
+
+  const parentId = typeof parentCommentId === 'string' ? parentCommentId.trim() : '';
+  if (parentId) {
+    const { data: parentRow, error: parentErr } = await sb
+      .from('comments')
+      .select('id, post_id')
+      .eq('id', parentId)
+      .maybeSingle();
+    if (parentErr || !parentRow || String(parentRow.post_id) !== postId) {
+      return { ok: false, status: 400, code: 'invalid', message: 'invalid_parent_comment' };
+    }
   }
 
   const local = runLocalPostChecks(' ', content, 'free');
@@ -104,6 +117,7 @@ export async function createModeratedComment(
     post_id: postId,
     author_id: userId,
     content,
+    parent_comment_id: parentId || null,
     is_anonymous: false,
   });
   if (insErr) {

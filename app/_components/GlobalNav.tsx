@@ -31,7 +31,7 @@ const PRIMARY_MENUS = [
   { href: '/community/boards?cat=info', label: '부동산' },
   { href: '/local', label: '로컬예약' },
 ] as const;
-const WRITE_CTA_HREF = '/community/boards/new';
+const WRITE_CTA_HREF = '/community/write';
 
 type Props = {
   dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board' | 'search'>;
@@ -123,7 +123,7 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
                   publishedUrl={logoScene.publishedUrl}
                   sceneCodeUrl={logoScene.sceneCodeUrl}
                   quality={logoScene.qualityTier}
-                  placeholderTone="light"
+                  placeholderTone="dark"
                   title="Thai Ja World Logo 3D"
                 />
               </span>
@@ -149,7 +149,7 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="shrink-0 border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    className="shrink-0 border-white/25 bg-slate-800/70 text-white hover:bg-slate-700/85 hover:text-white"
                     aria-label={dict.nav.mainNavAria}
                   >
                     <Menu className="size-5" aria-hidden />
@@ -190,8 +190,8 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
                           className={
                             'rounded-md px-3 py-2.5 text-sm font-medium no-underline transition-colors ' +
                             (isActive
-                              ? 'bg-white/15 text-museum-saffron shadow-[0_0_0_1px_rgba(250,204,21,0.42),0_0_14px_rgba(250,204,21,0.2)]'
-                              : 'text-zinc-100 hover:bg-white/10 hover:text-white hover:shadow-[0_0_0_1px_rgba(250,204,21,0.35),0_0_12px_rgba(59,130,246,0.35)]')
+                              ? 'bg-slate-800 text-museum-saffron shadow-[0_0_0_1px_rgba(250,204,21,0.42),0_0_14px_rgba(250,204,21,0.2)]'
+                              : 'text-zinc-100 hover:bg-slate-800/70 hover:text-white hover:shadow-[0_0_0_1px_rgba(250,204,21,0.35),0_0_12px_rgba(59,130,246,0.35)]')
                           }
                         >
                           {menu.label}

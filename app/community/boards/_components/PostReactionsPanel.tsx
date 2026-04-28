@@ -94,25 +94,20 @@ export default function PostReactionsPanel({
   const heartActive = liked.heart;
 
   return (
-    <div style={{ marginTop: 10, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+    <div className="mt-2 flex flex-wrap items-center gap-2">
       {err ? (
-        <span style={{ color: '#b91c1c', fontSize: 12, fontWeight: 600, marginRight: 8 }}>{err}</span>
+        <span className="mr-2 text-xs font-semibold text-rose-300">{err}</span>
       ) : null}
 
       <button
         type="button"
         onClick={() => void toggle('like')}
         disabled={loading}
-        style={{
-          padding: '6px 12px',
-          borderRadius: 999,
-          border: `1px solid ${likeActive ? 'rgba(124, 58, 237, 0.6)' : 'rgba(228, 220, 232, 0.7)'}`,
-          background: likeActive ? 'linear-gradient(135deg, #7c3aed, #a78bfa)' : 'rgba(255,255,255,0.65)',
-          color: likeActive ? '#fff' : '#4a4458',
-          cursor: loading ? 'wait' : 'pointer',
-          fontWeight: 800,
-          fontSize: 12,
-        }}
+        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+          likeActive
+            ? 'border-violet-300/70 bg-linear-to-r from-violet-500 to-violet-400 text-white'
+            : 'border-white/15 bg-slate-800/60 text-slate-100 hover:bg-slate-800/85'
+        } disabled:cursor-wait disabled:opacity-70`}
       >
         좋아요 {likeCount > 0 ? `(${likeCount})` : ''}
       </button>
@@ -121,16 +116,11 @@ export default function PostReactionsPanel({
         type="button"
         onClick={() => void toggle('heart')}
         disabled={loading}
-        style={{
-          padding: '6px 12px',
-          borderRadius: 999,
-          border: `1px solid ${heartActive ? 'rgba(236, 72, 153, 0.55)' : 'rgba(228, 220, 232, 0.7)'}`,
-          background: heartActive ? 'linear-gradient(135deg, #ec4899, #f472b6)' : 'rgba(255,255,255,0.65)',
-          color: heartActive ? '#fff' : '#4a4458',
-          cursor: loading ? 'wait' : 'pointer',
-          fontWeight: 800,
-          fontSize: 12,
-        }}
+        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+          heartActive
+            ? 'border-pink-300/70 bg-linear-to-r from-pink-500 to-fuchsia-500 text-white'
+            : 'border-white/15 bg-slate-800/60 text-slate-100 hover:bg-slate-800/85'
+        } disabled:cursor-wait disabled:opacity-70`}
       >
         공감 {heartCount > 0 ? `(${heartCount})` : ''}
       </button>

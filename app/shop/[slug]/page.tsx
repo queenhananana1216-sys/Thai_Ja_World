@@ -56,20 +56,20 @@ export default async function ShopMinihomePage({
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#f5f3ff_60%,#ffffff_100%)] pb-12">
+    <div className="min-h-screen bg-slate-950 pb-12 text-slate-200">
       <div className="mx-auto max-w-[1320px] px-4 pt-8">
-        <div className="mb-5 rounded-2xl border border-violet-200/70 bg-white p-4 shadow-sm">
+        <div className="mb-5 rounded-2xl border border-white/10 bg-slate-900/50 p-4 shadow-[0_10px_30px_rgba(2,6,23,0.42)] backdrop-blur-md">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Link href="/" className="font-semibold text-violet-700 no-underline hover:underline">
+            <Link href="/" className="font-semibold text-violet-200 no-underline hover:underline">
               ← 홈
             </Link>
             <span className="text-slate-400">|</span>
-            <Link href="/local" className="font-semibold text-violet-700 no-underline hover:underline">
+            <Link href="/local" className="font-semibold text-violet-200 no-underline hover:underline">
               로컬 가게 목록
             </Link>
             <Link
               href="/ads"
-              className="ml-auto rounded-full border border-violet-300 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 no-underline transition hover:bg-violet-100"
+              className="ml-auto rounded-full border border-violet-300/50 bg-violet-500/15 px-3 py-1 text-xs font-semibold text-violet-200 no-underline transition hover:bg-violet-500/25"
             >
               우리 가게 광고 문의
             </Link>

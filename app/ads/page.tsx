@@ -34,13 +34,13 @@ export default async function AdsPage() {
         <div className="mt-7 flex flex-wrap gap-3">
           <Link
             href="/contact"
-            className="rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 no-underline transition hover:opacity-90"
+            className="rounded-xl border border-white/20 bg-slate-900/70 px-5 py-3 text-sm font-semibold text-white no-underline transition hover:bg-slate-900"
           >
             {isThai ? 'สอบถามแพ็กเกจโฆษณา' : '광고 패키지 문의하기'}
           </Link>
           <Link
             href="/local"
-            className="rounded-xl border border-violet-200/70 px-5 py-3 text-sm font-semibold text-violet-100 no-underline transition hover:bg-white/10"
+            className="rounded-xl border border-violet-200/70 px-5 py-3 text-sm font-semibold text-violet-100 no-underline transition hover:bg-slate-900/45"
           >
             {isThai ? 'ดูหน้าโลคัลตัวอย่าง' : '로컬 페이지 실제 예시 보기'}
           </Link>
@@ -68,18 +68,18 @@ export default async function AdsPage() {
               : '유입/클릭/문의 데이터를 기반으로 업종별 캠페인을 단계적으로 확장할 수 있습니다.',
           },
         ].map((item) => (
-          <article key={item.title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-bold text-slate-900">{item.title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.desc}</p>
+          <article key={item.title} className="rounded-2xl border border-white/10 bg-slate-900/50 p-5 shadow-[0_10px_30px_rgba(2,6,23,0.4)]">
+            <h2 className="text-base font-bold text-white">{item.title}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-300">{item.desc}</p>
           </article>
         ))}
       </section>
 
-      <section className="mt-10 rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
-        <h2 className="text-lg font-bold text-emerald-900">
+      <section className="mt-10 rounded-2xl border border-emerald-300/30 bg-emerald-500/10 p-6">
+        <h2 className="text-lg font-bold text-emerald-200">
           {isThai ? 'ข้อเสนอเริ่มต้นสำหรับร้านใหม่' : '신규 제휴 매장 시작 오퍼'}
         </h2>
-        <p className="mt-2 text-sm text-emerald-800">
+        <p className="mt-2 text-sm text-emerald-100/90">
           {isThai
             ? 'วาง QR ที่หน้าเคาน์เตอร์และลงข้อมูลร้านครบถ้วน รับส่วนลดเดือนแรกฟรี'
             : '카운터 QR 배치 + 미니홈 기본 셋업 완료 시, 첫 1개월 광고비 무료 적용(온보딩 조건 충족 시).'}

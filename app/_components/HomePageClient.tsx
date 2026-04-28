@@ -172,7 +172,7 @@ function ShopMiniCard({
 }) {
   const safeImage = isSafeImageUrl(shop.image_url) ? shop.image_url : null;
   return (
-    <Link href={`/local/${shop.slug}`} className="shop-card">
+    <Link href={`/shop/${shop.slug}`} className="shop-card">
       <div
         className="shop-card__image"
         role="img"

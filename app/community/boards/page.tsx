@@ -109,11 +109,11 @@ export default async function BoardsListPage({
 
   return (
     <main className="mx-auto max-w-[1320px] px-4 pb-16 pt-8">
-      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+      <div className="mb-6 rounded-3xl border border-white/10 bg-slate-900/50 p-6 shadow-[0_14px_38px_rgba(2,6,23,0.45)] backdrop-blur-md sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">{listTitle}</h1>
-            <p className="mt-1 text-sm text-slate-600">
+            <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">{listTitle}</h1>
+            <p className="mt-1 text-sm text-slate-300">
               {locale === 'th'
                 ? 'บอร์ดชุมชนที่เก็บข้อมูลแบบค้นหาได้ เพื่อไม่ให้โพสต์ดี ๆ หายไปในแชต'
                 : '정보 글이 묻히지 않도록 구조화해서 저장되는 커뮤니티 보드입니다.'}
@@ -135,8 +135,8 @@ export default async function BoardsListPage({
       )}
 
       {!error && list.length === 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-8">
-          <p className="m-0 text-slate-700">{d.board.empty}</p>
+        <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-8">
+          <p className="m-0 text-slate-300">{d.board.empty}</p>
           <Link
             href={`/auth/signup?next=${encodeURIComponent(newPostHref)}`}
             className="mt-3 inline-block text-sm font-semibold text-violet-700 no-underline hover:underline"
@@ -158,7 +158,7 @@ export default async function BoardsListPage({
         const authorHidden = Boolean(p.author_hidden);
 
         return (
-          <article key={pid} className="mb-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-violet-300 hover:shadow-md">
+          <article key={pid} className="mb-3 rounded-2xl border border-white/10 bg-slate-900/50 p-5 shadow-[0_10px_30px_rgba(2,6,23,0.4)] transition hover:border-violet-300/50 hover:bg-slate-900/70">
             <Link href={`/community/boards/${pid}`} className="block no-underline hover:no-underline">
               <div className="text-xs font-medium text-slate-500">
                 {cat} · {author} · {formatDate(p.created_at as string | null)} · {d.board.comments}{' '}
@@ -171,8 +171,8 @@ export default async function BoardsListPage({
                   </>
                 ) : null}
               </div>
-              <h2 className="mt-2 text-lg font-extrabold text-slate-900">{p.title as string}</h2>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">{excerpt}</p>
+              <h2 className="mt-2 text-lg font-extrabold text-white">{p.title as string}</h2>
+              <p className="mt-1 text-sm leading-relaxed text-slate-300">{excerpt}</p>
               {thumb && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={thumb} alt="" className="mt-3 h-40 w-full rounded-xl object-cover" loading="lazy" />

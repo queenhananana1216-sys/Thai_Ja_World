@@ -335,7 +335,7 @@ export default function MinihomeMe() {
 
   return (
     <div className="page-body board-page">
-      <section className="mb-6 rounded-3xl border border-violet-200/60 bg-white p-5 shadow-sm sm:p-6">
+      <section className="mb-6 rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-[0_14px_38px_rgba(2,6,23,0.45)] sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="m-0 text-2xl font-extrabold tracking-tight text-slate-900">{labels.pageTitle}</h1>
@@ -353,7 +353,7 @@ export default function MinihomeMe() {
             <button
               type="button"
               onClick={() => openOverlay(row.public_slug, row.owner_id)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800"
+              className="rounded-xl border border-white/15 bg-slate-900/70 px-3 py-2 text-xs font-semibold text-slate-200"
             >
               {labels.previewOverlay}
             </button>
@@ -392,7 +392,7 @@ export default function MinihomeMe() {
         </div>
       </section>
 
-      <section className="mb-6 rounded-3xl border border-emerald-200/70 bg-white p-5 shadow-sm sm:p-6">
+      <section className="mb-6 rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-[0_14px_38px_rgba(2,6,23,0.45)] sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="m-0 text-lg font-bold text-slate-900">
@@ -462,7 +462,7 @@ export default function MinihomeMe() {
         </div>
       ) : null}
 
-      <form className="board-form minihome-edit-form rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6" onSubmit={(e) => void onSave(e)}>
+      <form className="board-form minihome-edit-form rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-[0_14px_38px_rgba(2,6,23,0.45)] sm:p-6" onSubmit={(e) => void onSave(e)}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="m-0 text-xl font-bold text-slate-900">{panelTitle}</h2>

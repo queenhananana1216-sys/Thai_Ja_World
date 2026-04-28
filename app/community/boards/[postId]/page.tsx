@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import PostAuthorMenu from '../_components/PostAuthorMenu';
+import PostEngagementActions from '../_components/PostEngagementActions';
 import PostComments, { type CommentRow } from '../_components/PostComments';
 import PostReactionsPanel from '../_components/PostReactionsPanel';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
@@ -73,7 +74,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const { data: post, error } = await supabase
     .from('posts')
     .select(
-      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set',
+      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set, latitude, longitude, location_name',
     )
     .eq('id', postId)
     .eq('moderation_status', 'safe')
@@ -93,7 +94,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
 
   const { data: rawComments } = await supabase
     .from('comments')
-    .select('id, content, created_at, author_id')
+    .select('id, content, created_at, author_id, parent_comment_id')
     .eq('post_id', postId)
     .order('created_at', { ascending: true });
 
@@ -117,6 +118,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
     content: c.content as string,
     created_at: c.created_at as string,
     display_name: nameMap[c.author_id as string] ?? 'member',
+    parent_comment_id: c.parent_comment_id ? String(c.parent_comment_id) : null,
   }));
 
   const images = Array.isArray(post.image_urls) ? post.image_urls : [];
@@ -125,36 +127,35 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const pageUrl = absoluteUrl(path);
   const isAuthor = viewerId !== null && viewerId === (post.author_id as string);
   const authorHidden = Boolean(post.author_hidden);
-  const [{ data: relatedPostsRaw }, { data: relatedNewsRaw }] = await Promise.all([
-    supabase
-      .from('posts')
-      .select('id, title, updated_at')
-      .eq('moderation_status', 'safe')
-      .eq('is_knowledge_tip', false)
-      .eq('category', String(post.category))
-      .neq('id', postId)
-      .order('updated_at', { ascending: false })
-      .limit(6),
-    supabase
-      .from('processed_news')
-      .select('id, created_at, raw_news(title)')
-      .eq('published', true)
-      .order('created_at', { ascending: false })
-      .limit(4),
-  ]);
+  const lat =
+    typeof (post as { latitude?: number | null }).latitude === 'number'
+      ? Number((post as { latitude?: number }).latitude)
+      : null;
+  const lng =
+    typeof (post as { longitude?: number | null }).longitude === 'number'
+      ? Number((post as { longitude?: number }).longitude)
+      : null;
+  const locationName =
+    typeof (post as { location_name?: string | null }).location_name === 'string'
+      ? (post as { location_name?: string }).location_name
+      : null;
+  const { data: relatedPostsRaw } = await supabase
+    .from('posts')
+    .select('id, title, created_at, comment_count, view_count')
+    .eq('moderation_status', 'safe')
+    .eq('is_knowledge_tip', false)
+    .eq('category', String(post.category))
+    .neq('id', postId)
+    .order('comment_count', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(5);
   const relatedPosts = (relatedPostsRaw ?? []).map((item) => ({
     id: String(item.id),
     title: String(item.title ?? `Post ${item.id}`),
-    updatedAt: String(item.updated_at ?? ''),
+    createdAt: String(item.created_at ?? ''),
+    commentCount: Number(item.comment_count ?? 0),
+    viewCount: Number(item.view_count ?? 0),
   }));
-  const relatedNews = (relatedNewsRaw ?? []).map((item) => {
-    const raw = item.raw_news as { title?: string } | null;
-    return {
-      id: String(item.id),
-      title: String(raw?.title ?? `News ${item.id}`),
-      createdAt: String(item.created_at ?? ''),
-    };
-  });
 
   return (
     <main className="mx-auto max-w-[1100px] px-4 pb-16 pt-8">
@@ -205,26 +206,27 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
           ],
         }}
       />
-      <div className="mb-5 flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-        <Link href="/community/boards" className="text-sm font-semibold text-violet-700 no-underline hover:underline">
+      <div className="mb-5 flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/60 px-4 py-3 shadow-[0_12px_35px_rgba(2,6,23,0.45)] backdrop-blur-md">
+        <Link href="/community/boards" className="text-sm font-semibold text-slate-200 no-underline hover:text-white hover:underline">
           ← {d.board.backToList}
         </Link>
         <Link
           href="/ads"
-          className="rounded-full border border-violet-300 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 no-underline transition hover:bg-violet-100"
+          className="rounded-full border border-violet-300/40 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-200 no-underline transition hover:bg-violet-500/20"
         >
           광고/제휴 문의
         </Link>
       </div>
 
-      <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
-        <div className="text-xs font-medium text-slate-500">
+      <div className="mx-auto max-w-4xl">
+        <article className="rounded-3xl border border-white/10 bg-slate-900/50 p-6 shadow-[0_14px_40px_rgba(2,6,23,0.52)] backdrop-blur-md sm:p-7">
+        <div className="text-xs font-medium text-slate-300/80">
           {cat} · {d.board.author} {authorName} · {formatDate(post.created_at as string | null)} ·{' '}
           {d.board.views} {post.view_count ?? 0}
           {authorHidden ? (
             <>
               {' '}
-              · <span className="font-semibold text-violet-700">{d.board.postPrivateBadge}</span>
+              · <span className="font-semibold text-violet-200">{d.board.postPrivateBadge}</span>
             </>
           ) : null}
         </div>
@@ -253,14 +255,31 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
             />
           </div>
         ) : null}
-        <div className="mt-3">
+        <div id="post-reactions" className="mt-3">
           <PostReactionsPanel postId={postId} loginNextPath={path} />
         </div>
-        <h1 className="mt-4 text-2xl font-extrabold leading-tight text-slate-900 sm:text-3xl">
+        <h1 className="mt-4 text-2xl font-extrabold leading-tight text-white sm:text-3xl">
           {post.title as string}
         </h1>
-        <div className="mt-4 whitespace-pre-wrap text-[15px] leading-7 text-slate-700">
+        <div className="mt-4 whitespace-pre-wrap text-base leading-relaxed text-slate-200">
           {post.content as string}
+        </div>
+        {lat !== null && lng !== null ? (
+          <div className="mt-5 rounded-xl border border-slate-700/50 bg-slate-950/50 p-3">
+            <p className="mb-2 text-xs font-semibold text-slate-300">
+              📍 {locationName?.trim() || '위치 공유'}
+            </p>
+            <iframe
+              title="post-location-map"
+              src={`https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="h-56 w-full rounded-xl border border-slate-700/50"
+            />
+          </div>
+        ) : null}
+        <div className="mt-6 border-t border-white/10 pt-4">
+          <PostEngagementActions postPath={path} />
         </div>
         {images.map((url) => (
           // eslint-disable-next-line @next/next/no-img-element
@@ -268,62 +287,44 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
             key={url}
             src={url}
             alt=""
-            className="mt-4 w-full rounded-xl border border-slate-200 object-cover"
+            className="mt-4 w-full rounded-xl border border-white/10 object-cover"
           />
         ))}
-      </article>
+        </article>
+      </div>
 
-      {(relatedPosts.length > 0 || relatedNews.length > 0) && (
-        <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 text-base font-bold text-slate-900">이 글 본 사람들이 함께 본 글</h2>
-          {relatedPosts.length > 0 && (
-            <div className={relatedNews.length > 0 ? 'mb-4' : ''}>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">같은 카테고리 글</p>
-              <ul className="m-0 list-disc space-y-1 pl-5">
-                {relatedPosts.map((item) => (
-                  <li key={item.id}>
-                    <Link href={`/community/boards/${item.id}`} className="text-sm font-medium text-violet-700 no-underline hover:underline">
-                      {item.title}
-                    </Link>
-                    {item.updatedAt ? (
-                      <span className="ml-2 text-xs text-slate-500">
-                        {formatDate(item.updatedAt)}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {relatedNews.length > 0 && (
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">관련 뉴스</p>
-              <ul className="m-0 list-disc space-y-1 pl-5">
-                {relatedNews.map((item) => (
-                  <li key={item.id}>
-                    <Link href={`/news/${item.id}`} className="text-sm font-medium text-violet-700 no-underline hover:underline">
-                      {item.title}
-                    </Link>
-                    {item.createdAt ? (
-                      <span className="ml-2 text-xs text-slate-500">
-                        {formatDate(item.createdAt)}
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+      {relatedPosts.length > 0 && (
+        <section className="mt-5 rounded-2xl border border-white/10 bg-slate-900/50 p-5 shadow-[0_10px_35px_rgba(2,6,23,0.45)] backdrop-blur-md">
+          <h2 className="mb-1 text-base font-bold text-slate-100">이 게시판의 최신 핫게시글</h2>
+          <p className="mb-3 text-xs font-medium text-slate-400">댓글이 활발한 글 순서로 보여드려요.</p>
+          <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2">
+            {relatedPosts.map((item) => (
+              <li key={item.id} className="rounded-xl border border-slate-700/50 bg-slate-900/40 px-3 py-2 transition hover:bg-slate-800/50">
+                <Link
+                  href={`/community/boards/${item.id}`}
+                  className="block truncate text-sm font-semibold text-slate-100 no-underline hover:text-white"
+                  title={item.title}
+                >
+                  {item.title}
+                </Link>
+                <p className="mt-1 text-xs text-slate-400">
+                  댓글 {item.commentCount} · {formatDate(item.createdAt)}
+                </p>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
-      <PostComments
-        postId={postId}
-        initial={comments}
-        labels={d.board}
-        loginNextPath={path}
-        showLoginHint={!viewerId}
-      />
+      <div id="post-comments" className="mt-5">
+        <PostComments
+          postId={postId}
+          initial={comments}
+          labels={d.board}
+          loginNextPath={path}
+          showLoginHint={!viewerId}
+        />
+      </div>
     </main>
   );
 }

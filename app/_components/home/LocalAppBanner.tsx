@@ -17,11 +17,14 @@ export default function LocalAppBanner({
   badge,
   href = '#',
 }: LocalAppBannerProps) {
+  const safeHref = href?.trim() ? href : '#';
   return (
     <a
-      href={href}
+      href={safeHref}
       className={`local-app-banner local-app-banner--${tone}`}
       aria-label={`${title} - ${cta}`}
+      target="_blank"
+      rel="noopener noreferrer"
     >
       <span className="local-app-banner__glow" aria-hidden />
       <span className="local-app-banner__badge">{badge}</span>

@@ -12,8 +12,8 @@ import styles from './home-hub.module.css';
 const MAX_BATCHES = 8;
 
 function itemHref(item: HomeUnifiedFeedItem): string {
-  if (item.kind === 'job') return `/jobs/${item.id}`;
-  if (item.kind === 'market') return `/market/${item.id}`;
+  if (item.kind === 'job') return `/community/boards/${item.id}`;
+  if (item.kind === 'market') return `/community/boards/${item.id}`;
   return `/community/boards/${item.id}`;
 }
 

@@ -72,7 +72,7 @@ export default async function TipsTeaserPage({ params }: PageProps) {
   const tipRow = post as TipPostRow;
   const { data: commentsRaw } = await auth
     .from('comments')
-    .select('id,content,created_at,author_id')
+    .select('id,content,created_at,author_id,parent_comment_id')
     .eq('post_id', postId)
     .order('created_at', { ascending: true });
 
@@ -89,6 +89,7 @@ export default async function TipsTeaserPage({ params }: PageProps) {
     content: String(r.content ?? ''),
     created_at: String(r.created_at ?? ''),
     display_name: nameMap[String(r.author_id)] ?? 'member',
+    parent_comment_id: r.parent_comment_id ? String(r.parent_comment_id) : null,
   }));
   const path = `/tips/${postId}`;
 

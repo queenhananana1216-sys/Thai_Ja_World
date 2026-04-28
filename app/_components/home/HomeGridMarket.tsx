@@ -55,7 +55,7 @@ export async function HomeGridMarket() {
       <section className={styles.panel} aria-label="번개장터">
         <div className={styles.panelHead}>
           <span className={`${styles.panelTitle} text-sm md:text-base`}>번개장터</span>
-          <Link href="/portal#portal-market" className={`${styles.panelMore} text-sm`}>
+          <Link href="/community/boards?cat=flea" className={`${styles.panelMore} text-sm`}>
             더보기
           </Link>
         </div>
@@ -74,7 +74,7 @@ export async function HomeGridMarket() {
           <ul className={styles.list}>
             {rows.map((m) => (
               <li key={m.id}>
-                <Link href={`/market/${m.id}`} className={styles.row}>
+                <Link href={`/community/boards/${m.id}`} className={styles.row}>
                   <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{m.title}</div>
                   <div className={`${styles.rowMeta} text-sm md:text-base`}>
                     {[m.price_display, m.location, m.status].filter(Boolean).join(' · ')}

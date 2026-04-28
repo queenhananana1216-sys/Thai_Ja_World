@@ -36,6 +36,11 @@ export default function NewPostForm({
   const [files, setFiles] = useState<FileList | null>(null);
   const [ownerPassword, setOwnerPassword] = useState('');
   const [ownerPassword2, setOwnerPassword2] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationName, setLocationName] = useState('');
+  const [geoBusy, setGeoBusy] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -111,6 +116,9 @@ export default function NewPostForm({
         title: title.trim(),
         content: content.trim(),
         image_urls: uploadUrls,
+        latitude,
+        longitude,
+        location_name: locationName.trim() || null,
         ...(op ? { owner_password: op } : {}),
       }),
     });
@@ -137,13 +145,35 @@ export default function NewPostForm({
     }
   }
 
+  async function attachGeoLocation() {
+    setGeoError(null);
+    if (!navigator.geolocation) {
+      setGeoError('이 기기/브라우저는 위치 API를 지원하지 않습니다.');
+      return;
+    }
+    setGeoBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+        setGeoBusy(false);
+      },
+      (err) => {
+        setGeoError(err.message || '위치 권한을 확인해 주세요.');
+        setGeoBusy(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+    );
+  }
+
   return (
-    <form className="board-form" onSubmit={(e) => void onSubmit(e)}>
-      <label htmlFor="cat">{board.category}</label>
+    <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
+      <label htmlFor="cat" className="block text-sm font-semibold text-slate-200">{board.category}</label>
       <select
         id="cat"
         value={category}
         onChange={(e) => setCategory(e.target.value as PostCategorySlug)}
+        className="w-full rounded-xl border border-white/15 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-violet-300/60"
       >
         {cats.map((c) => (
           <option key={c.value} value={c.value}>
@@ -152,7 +182,7 @@ export default function NewPostForm({
         ))}
       </select>
 
-      <label htmlFor="ptitle">{board.title}</label>
+      <label htmlFor="ptitle" className="block text-sm font-semibold text-slate-200">{board.title}</label>
       <input
         id="ptitle"
         type="text"
@@ -160,30 +190,66 @@ export default function NewPostForm({
         onChange={(e) => setTitle(e.target.value)}
         maxLength={200}
         required
+        className="w-full rounded-xl border border-white/15 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-violet-300/60"
       />
 
-      <label htmlFor="pbody">{board.body}</label>
+      <label htmlFor="pbody" className="block text-sm font-semibold text-slate-200">{board.body}</label>
       <textarea
         id="pbody"
         value={content}
         onChange={(e) => setContent(e.target.value)}
         required
         minLength={2}
+        className="min-h-52 w-full rounded-2xl border border-white/10 bg-slate-950/75 p-3 text-sm leading-relaxed text-slate-100 outline-none transition focus:border-violet-300/60"
       />
 
-      <label htmlFor="pimg">{board.imagesHint}</label>
-      <input
-        id="pimg"
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        multiple
-        onChange={(e) => setFiles(e.target.files)}
-      />
+      <div className="rounded-xl border border-white/10 bg-slate-950/60 p-3">
+        <label htmlFor="pimg" className="block text-sm font-semibold text-slate-200">{board.imagesHint}</label>
+        <input
+          id="pimg"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          multiple
+          onChange={(e) => setFiles(e.target.files)}
+          className="mt-2 block w-full text-xs text-slate-300 file:mr-3 file:rounded-full file:border file:border-violet-300/40 file:bg-violet-500/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-violet-100"
+        />
+      </div>
+      {category === 'info' ? (
+        <div className="rounded-xl border border-emerald-300/30 bg-emerald-500/10 p-3">
+          <p className="m-0 text-sm font-semibold text-emerald-200">정보공유 위치 첨부</p>
+          <button
+            type="button"
+            onClick={() => void attachGeoLocation()}
+            className="mt-2 rounded-full border border-emerald-300/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/25 disabled:opacity-70"
+            disabled={geoBusy}
+          >
+            {geoBusy ? '위치 확인 중…' : '📍 현재 위치 첨부하기'}
+          </button>
+          {latitude !== null && longitude !== null ? (
+            <p className="mt-2 text-xs text-emerald-100">
+              위도 {latitude.toFixed(6)}, 경도 {longitude.toFixed(6)}
+            </p>
+          ) : null}
+          <label htmlFor="location-name" className="mt-2 block text-xs font-semibold text-emerald-100/90">
+            위치 이름(선택)
+          </label>
+          <input
+            id="location-name"
+            type="text"
+            value={locationName}
+            onChange={(e) => setLocationName(e.target.value)}
+            placeholder="예: BTS Asok 근처"
+            maxLength={120}
+            className="mt-1 w-full rounded-lg border border-emerald-300/25 bg-slate-950/70 px-3 py-2 text-xs text-slate-100 outline-none"
+          />
+          {geoError ? <p className="mt-2 text-xs text-rose-300">{geoError}</p> : null}
+        </div>
+      ) : null}
 
-      <p style={{ margin: '10px 0 4px', fontSize: '0.78rem', color: 'var(--tj-muted)' }}>
+      <p className="m-0 text-xs text-slate-400">
         {board.postOwnerPasswordOptional}
       </p>
-      <label htmlFor="popw">{board.postOwnerPasswordPlaceholder}</label>
+      <label htmlFor="popw" className="block text-sm font-semibold text-slate-200">{board.postOwnerPasswordPlaceholder}</label>
       <input
         id="popw"
         type="password"
@@ -191,8 +257,9 @@ export default function NewPostForm({
         value={ownerPassword}
         onChange={(e) => setOwnerPassword(e.target.value)}
         maxLength={128}
+        className="w-full rounded-xl border border-white/15 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-violet-300/60"
       />
-      <label htmlFor="popw2">{board.postOwnerPasswordRepeat}</label>
+      <label htmlFor="popw2" className="block text-sm font-semibold text-slate-200">{board.postOwnerPasswordRepeat}</label>
       <input
         id="popw2"
         type="password"
@@ -200,11 +267,16 @@ export default function NewPostForm({
         value={ownerPassword2}
         onChange={(e) => setOwnerPassword2(e.target.value)}
         maxLength={128}
+        className="w-full rounded-xl border border-white/15 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-violet-300/60"
       />
 
-      {error && <p style={{ color: '#be185d', fontSize: '0.86rem' }}>{error}</p>}
+      {error && <p className="text-sm font-medium text-rose-300">{error}</p>}
 
-      <button type="submit" className="board-form__submit" disabled={loading}>
+      <button
+        type="submit"
+        className="rounded-full border border-violet-300/50 bg-violet-500/20 px-5 py-2 text-sm font-semibold text-violet-100 transition hover:bg-violet-500/30 disabled:cursor-not-allowed disabled:opacity-70"
+        disabled={loading}
+      >
         {loading ? board.uploading : board.submit}
       </button>
     </form>

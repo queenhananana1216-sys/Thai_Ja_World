@@ -63,7 +63,7 @@ function SpotCard({
   const qrHref = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(abs)}`;
   const thumb = firstPhoto(spot.photo_urls);
   return (
-    <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
+    <article className="group overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 shadow-[0_10px_30px_rgba(2,6,23,0.4)] transition hover:-translate-y-0.5 hover:bg-slate-900/70">
       <div
         className="flex h-44 items-center justify-center bg-slate-100 text-4xl"
         style={thumb ? { backgroundImage: `url(${thumb})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
@@ -72,16 +72,16 @@ function SpotCard({
       </div>
       <div className="p-5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-base font-extrabold text-slate-900">{spot.name}</h3>
-          <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
+          <h3 className="text-base font-extrabold text-white">{spot.name}</h3>
+          <span className="rounded-full border border-violet-300/40 bg-violet-500/10 px-2.5 py-1 text-[11px] font-semibold text-violet-200">
             {spot.category}
           </span>
         </div>
-        {spot.description ? <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-600">{spot.description}</p> : null}
+        {spot.description ? <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-300">{spot.description}</p> : null}
         {Array.isArray(spot.tags) && spot.tags.length > 0 ? (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {spot.tags.slice(0, 4).map((t) => (
-              <span key={t} className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+              <span key={t} className="rounded-full bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-300">
                 #{t}
               </span>
             ))}
@@ -100,8 +100,8 @@ function SpotCard({
             rel="noopener noreferrer"
             className={`rounded-lg border px-3.5 py-2 text-xs font-semibold no-underline transition ${
               qrEmphasis
-                ? 'border-violet-500 bg-violet-50 text-violet-700 hover:bg-violet-100'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                ? 'border-violet-400/60 bg-violet-500/15 text-violet-200 hover:bg-violet-500/25'
+                : 'border-white/15 bg-slate-800 text-slate-200 hover:bg-slate-700'
             }`}
           >
             {qrEmphasis
@@ -117,7 +117,7 @@ function SpotCard({
               href={spot.line_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 no-underline transition hover:bg-emerald-100"
+              className="rounded-lg border border-emerald-300/40 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-200 no-underline transition hover:bg-emerald-500/20"
             >
               {locale === 'th' ? 'ติดต่อ LINE' : 'LINE 문의'}
             </a>
@@ -136,30 +136,30 @@ export default async function LocalPage() {
 
   return (
     <main className="mx-auto max-w-[1320px] px-4 pb-16 pt-8">
-      <section className="rounded-3xl border border-violet-200/60 bg-[linear-gradient(120deg,#eef2ff_0%,#fdf2f8_100%)] p-6 shadow-sm sm:p-8">
-        <h1 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">
+      <section className="rounded-3xl border border-white/10 bg-slate-900/50 p-6 shadow-[0_14px_38px_rgba(2,6,23,0.45)] backdrop-blur-md sm:p-8">
+        <h1 className="text-2xl font-extrabold text-white sm:text-3xl">
           {locale === 'th' ? '🏪 ร้านท้องถิ่น' : '🏪 로컬 가게'}
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-700">
+        <p className="mt-2 text-sm leading-relaxed text-slate-300">
           {locale === 'th'
             ? 'มินิโฮมสาธารณะดูได้ทันทีแม้ไม่ใช่สมาชิก สแกน QR เพื่อเปิดเมนูร้าน·รูป·ประกาศได้เลย'
             : '공개 미니홈은 비회원도 바로 볼 수 있어요. QR을 찍어 가게 메뉴판·사진·공지로 바로 들어갈 수 있습니다.'}
         </p>
         {qrEmphasis ? (
-          <p className="mt-3 text-xs font-bold text-violet-700">
+          <p className="mt-3 text-xs font-bold text-violet-200">
             {locale === 'th'
               ? 'ตอนนี้เน้นปุ่ม QR เพื่อให้เข้าหน้าเมนูได้เร็วขึ้น'
               : '지금은 QR 진입 버튼을 강조해서 바로 메뉴판으로 들어가기 쉽게 조정했어요.'}
           </p>
         ) : null}
         <div className="mt-5 flex flex-wrap items-center gap-2 text-xs">
-          <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-600">
-            🏪 {locale === 'th' ? 'ทั้งหมด' : '전체'} <strong className="text-slate-900">{spots.length}</strong>
+          <span className="rounded-full border border-white/15 bg-slate-900/65 px-3 py-1.5 text-slate-300">
+            🏪 {locale === 'th' ? 'ทั้งหมด' : '전체'} <strong className="text-white">{spots.length}</strong>
             {locale === 'th' ? ' ร้าน' : '개'}
           </span>
           <Link
             href="/ads"
-            className="rounded-full border border-violet-300 bg-violet-50 px-3 py-1.5 font-semibold text-violet-700 no-underline transition hover:bg-violet-100"
+            className="rounded-full border border-violet-300/50 bg-violet-500/15 px-3 py-1.5 font-semibold text-violet-200 no-underline transition hover:bg-violet-500/25"
           >
             {locale === 'th' ? 'โปรโมทร้านของคุณ' : '우리 가게 광고 문의'}
           </Link>
@@ -167,7 +167,7 @@ export default async function LocalPage() {
       </section>
 
       {spots.length === 0 ? (
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">
+        <div className="mt-8 rounded-2xl border border-white/10 bg-slate-900/50 p-8 text-center text-slate-300">
           <p className="mb-2 text-3xl">🏪</p>
           <p>{locale === 'th' ? 'ยังไม่มีมินิโฮมสาธารณะ' : '아직 공개된 로컬 미니홈이 없습니다.'}</p>
         </div>

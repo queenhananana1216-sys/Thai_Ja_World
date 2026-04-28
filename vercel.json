@@ -5,6 +5,10 @@
       "schedule": "0 */4 * * *"
     },
     {
+      "path": "/api/cron/content-automation",
+      "schedule": "0 0 * * *"
+    },
+    {
       "path": "/api/cron/home-copy",
       "schedule": "50 */4 * * *"
     },
@@ -33,12 +37,20 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/ops-monitor",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/local-shop-template-pipeline",
       "schedule": "10 */3 * * *"
     },
     {
       "path": "/api/cron/quests",
       "schedule": "5 * * * *"
+    },
+    {
+      "path": "/api/cron/rental-expiry",
+      "schedule": "0 0 * * *"
     },
     {
       "path": "/api/cron/post-deploy-smoke",

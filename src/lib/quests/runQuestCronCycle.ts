@@ -13,6 +13,7 @@ type RunQuestCronCycleResult = {
   spawnedBase: number;
   weatherQuestCode?: string | null;
   newsQuestCode?: string | null;
+  trafficQuestCode?: string | null;
   settledCount: number;
 };
 
@@ -106,6 +107,52 @@ async function createNewsEventQuest(targetDate: string): Promise<string | null> 
   return questCode;
 }
 
+async function createHighTrafficQuest(targetDate: string): Promise<string | null> {
+  const admin = createServiceRoleClient();
+  const sinceIso = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { data } = await admin
+    .from('ux_metrics_5m')
+    .select('totals, window_start')
+    .gte('window_start', sinceIso)
+    .order('window_start', { ascending: false })
+    .limit(2);
+
+  const rows = (data ?? []) as Array<{ totals?: Record<string, unknown> | null }>;
+  if (rows.length === 0) return null;
+
+  let pageViews = 0;
+  let deadClicks = 0;
+  for (const row of rows) {
+    const totals =
+      row.totals && typeof row.totals === 'object' && !Array.isArray(row.totals)
+        ? (row.totals as Record<string, unknown>)
+        : {};
+    const pv = Number(totals.page_view ?? 0);
+    const dc = Number(totals.dead_click ?? 0);
+    pageViews += Number.isFinite(pv) ? pv : 0;
+    deadClicks += Number.isFinite(dc) ? dc : 0;
+  }
+  if (pageViews < 180) return null;
+
+  const deadClickRate = pageViews > 0 ? deadClicks / pageViews : 0;
+  const questCode = `event_traffic_comment_${targetDate}`;
+  await admin.rpc('quest_create_event_quest', {
+    p_quest_code: questCode,
+    p_title_ko: 'High-traffic engagement quest',
+    p_title_th: 'High-traffic engagement quest',
+    p_event_type: 'send_reaction',
+    p_goal_count: deadClickRate >= 0.08 ? 3 : 2,
+    p_reward_corn: deadClickRate >= 0.08 ? 28 : 22,
+    p_conditions: {
+      signal: 'ux_metrics_5m',
+      target_date: targetDate,
+      page_views_10m: pageViews,
+      dead_click_rate: deadClickRate,
+    },
+  });
+  return questCode;
+}
+
 export async function runQuestCronCycle(
   options: RunQuestCronCycleOptions = {},
 ): Promise<RunQuestCronCycleResult> {
@@ -121,6 +168,7 @@ export async function runQuestCronCycle(
 
   const weatherQuestCode = includeWeatherEvent ? await createWeatherEventQuest(targetDate) : null;
   const newsQuestCode = includeNewsEvent ? await createNewsEventQuest(targetDate) : null;
+  const trafficQuestCode = await createHighTrafficQuest(targetDate);
 
   const { data: settledRaw } = await admin.rpc('quest_settle_completed_rewards', {
     p_limit: settleLimit,
@@ -135,6 +183,7 @@ export async function runQuestCronCycle(
     spawnedBase: typeof spawnedRaw === 'number' ? spawnedRaw : 0,
     weatherQuestCode,
     newsQuestCode,
+    trafficQuestCode,
     settledCount,
   };
 }

@@ -100,7 +100,7 @@ export async function HomeRightEngagementWing() {
             </div>
           </div>
         ) : (
-          <Link href="/login" className={styles.loginQuestCta}>
+          <Link href="/auth/login?next=%2F" className={styles.loginQuestCta}>
             🚀 로그인하고 퀘스트 보상받기
           </Link>
         )}

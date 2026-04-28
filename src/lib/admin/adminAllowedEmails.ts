@@ -1,6 +1,6 @@
 /**
  * ADMIN_ALLOWED_EMAILS: 쉼표·세미콜론·공백으로 구분한 소문자 정규화 목록.
- * 비어 있으면(미설정) 로그인한 계정만 /admin 접근(소규모·개발용). 운영에서는 반드시 이메일을 지정하세요.
+ * 보안 기본값은 "빈 목록 = 허용 없음" 입니다.
  */
 export function parseAdminAllowedEmails(): string[] {
   const raw = process.env.ADMIN_ALLOWED_EMAILS?.trim();
@@ -13,14 +13,11 @@ export function parseAdminAllowedEmails(): string[] {
 
 /**
  * Bearer JWT에 실린 이메일이 관리자 API·삭제 권한에 해당하는지.
- * {@link resolveAdminAccess} 와 동일: 화이트리스트가 비어 있으면(개발용) 이메일만 있으면 true.
+ * 화이트리스트 기반으로만 판단합니다.
  */
 export function isAdminActorEmail(email: string | undefined | null): boolean {
   const e = email?.trim().toLowerCase();
   if (!e) return false;
   const allowed = parseAdminAllowedEmails();
-  if (allowed.length > 0) {
-    return allowed.includes(e);
-  }
-  return true;
+  return allowed.includes(e);
 }

@@ -1,14 +1,12 @@
 /**
  * app/admin/layout.tsx — 관리자 영역 레이아웃
  *
- * ADMIN_ALLOWED_EMAILS 가 비어 있지 않으면 해당 이메일만 접근.
- * 비어 있으면(개발용) 로그인한 계정만 허용.
- * 권한 없음·미로그인은 홈으로 보내지 않고 404(notFound)로 처리합니다.
+ * 오너/관리자 권한이 아니면 즉시 홈으로 리다이렉트합니다.
  */
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import './admin-shell.css';
 
@@ -53,7 +51,7 @@ const adminSections = [
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   if (!(await resolveAdminAccess())) {
-    notFound();
+    redirect('/');
   }
 
   return (

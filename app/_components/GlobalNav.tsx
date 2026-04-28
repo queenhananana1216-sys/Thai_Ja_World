@@ -4,6 +4,7 @@
  * 글로벌 상단 네비 — 인증은 툴바 우측 Pill 전용 (흰 띠에 거대 로그인 패널 없음)
  */
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -17,10 +18,8 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import AuthBar from './AuthBar';
-import { BrandPhrase } from './BrandPhrase';
 import LanguageSwitch from './LanguageSwitch';
 import SiteSearch from './SiteSearch';
-import { SplineCanvas } from '@/components/3d/SplineCanvas';
 import type { SplineSceneRecord } from '@/lib/spline/types';
 
 const PRIMARY_MENUS = [
@@ -32,6 +31,20 @@ const PRIMARY_MENUS = [
   { href: '/local', label: '로컬예약' },
 ] as const;
 const WRITE_CTA_HREF = '/community/write';
+const OWNER_SPLINE_FILE_URL = 'https://app.spline.design/file/2e7c81f2-50e3-458f-8663-2f54af2cf60d';
+const LazySplineCanvas = dynamic(
+  () => import('@/components/3d/SplineCanvas').then((mod) => mod.SplineCanvas),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl border border-violet-300/20 bg-slate-900/75">
+        <span className="animate-pulse text-[10px] font-semibold tracking-[0.3em] text-slate-200/70 md:text-xs">
+          TAEJA WORLD
+        </span>
+      </div>
+    ),
+  },
+);
 
 type Props = {
   dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board' | 'search'>;
@@ -101,35 +114,32 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
         <div className="site-container global-header__nate-band-inner">
           <Link
             href="/"
-            className="global-header__logo-nate"
+            className="global-header__logo-nate inline-flex items-center"
             aria-label={dict.logoAria}
-            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
-            {logoScene && logoScene.isEnabled && (logoScene.sceneCodeUrl || logoScene.publishedUrl) ? (
-              <span
-                aria-hidden
-                style={{
-                  position: 'relative',
-                  display: 'inline-block',
-                  width: 40,
-                  height: 40,
-                  flexShrink: 0,
-                  overflow: 'hidden',
-                  borderRadius: 10,
-                }}
-              >
-                <SplineCanvas
-                  slot="logo"
-                  publishedUrl={logoScene.publishedUrl}
-                  sceneCodeUrl={logoScene.sceneCodeUrl}
-                  quality={logoScene.qualityTier}
-                  placeholderTone="dark"
-                  title="Thai Ja World Logo 3D"
-                />
-              </span>
-            ) : null}
-            <BrandPhrase variant="light" />
-            <span className="global-header__logo-suffix-nate">{dict.brandSuffix}</span>
+            <span
+              aria-hidden
+              className="relative block h-10 w-32 shrink-0 overflow-hidden rounded-xl border border-violet-300/20 bg-slate-950/80 md:h-12 md:w-40"
+            >
+              <LazySplineCanvas
+                slot="logo"
+                publishedUrl={
+                  logoScene && logoScene.isEnabled && logoScene.publishedUrl
+                    ? logoScene.publishedUrl
+                    : OWNER_SPLINE_FILE_URL
+                }
+                sceneCodeUrl={
+                  logoScene && logoScene.isEnabled && logoScene.sceneCodeUrl
+                    ? logoScene.sceneCodeUrl
+                    : undefined
+                }
+                quality={logoScene?.qualityTier ?? 'high'}
+                placeholderTone="dark"
+                interactive
+                title="TAEJA WORLD 2026 3D Logo"
+              />
+            </span>
+            <span className="sr-only">{dict.brandSuffix}</span>
           </Link>
         </div>
       </div>

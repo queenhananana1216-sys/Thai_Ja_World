@@ -29,6 +29,8 @@ type SplineCanvasProps = {
   placeholderTone?: 'dark' | 'light';
   /** 추가 style */
   style?: CSSProperties;
+  /** true 면 사용자 인터랙션 허용 */
+  interactive?: boolean;
 };
 
 function GradientPlaceholder({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
@@ -101,6 +103,7 @@ export function SplineCanvas({
   title,
   placeholderTone = 'dark',
   style,
+  interactive = false,
 }: SplineCanvasProps) {
   const clientQuality = useClientQuality(quality);
 
@@ -113,10 +116,7 @@ export function SplineCanvas({
   );
 
   const canRenderIframe = useMemo(
-    () =>
-      typeof publishedUrl === 'string' &&
-      publishedUrl.length > 0 &&
-      !publishedUrl.includes('app.spline.design/file/'),
+    () => typeof publishedUrl === 'string' && publishedUrl.length > 0,
     [publishedUrl],
   );
 
@@ -141,7 +141,7 @@ export function SplineCanvas({
         <Suspense fallback={<GradientPlaceholder tone={placeholderTone} />}>
           <Spline
             scene={sceneCodeUrl!}
-            style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
+            style={{ width: '100%', height: '100%', pointerEvents: interactive ? 'auto' : 'none' }}
           />
         </Suspense>
       </div>
@@ -160,7 +160,7 @@ export function SplineCanvas({
             width: '100%',
             height: '100%',
             border: 0,
-            pointerEvents: 'none',
+            pointerEvents: interactive ? 'auto' : 'none',
           }}
           referrerPolicy="strict-origin-when-cross-origin"
         />

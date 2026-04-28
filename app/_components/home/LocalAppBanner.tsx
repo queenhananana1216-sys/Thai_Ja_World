@@ -35,8 +35,8 @@ export default function LocalAppBanner({
         <span className="local-app-banner__badge">{badge}</span>
         {detailBadge ? <span className="local-app-banner__detail">{detailBadge}</span> : null}
       </span>
-      <strong className="local-app-banner__title">{title}</strong>
-      <span className="local-app-banner__subtitle">{subtitle}</span>
+      <strong className="local-app-banner__title break-keep leading-tight line-clamp-2">{title}</strong>
+      <span className="local-app-banner__subtitle break-keep leading-tight truncate">{subtitle}</span>
       {chips.length > 0 ? (
         <span className="local-app-banner__chips" aria-hidden>
           {chips.map((chip) => (
@@ -46,7 +46,7 @@ export default function LocalAppBanner({
           ))}
         </span>
       ) : null}
-      <span className="local-app-banner__cta">{cta}</span>
+      <span className="local-app-banner__cta break-keep leading-tight truncate">{cta}</span>
     </a>
   );
 }

@@ -10,12 +10,31 @@ export default async function AdminBannersPage() {
     const admin = createServiceRoleClient();
     const { data, error: qErr } = await admin
       .from('premium_banners')
-      .select('id, title, placement, route_group, href, sort_order, is_active')
+      .select('id, title, subtitle, placement, route_group, href, sort_order, is_active, extra')
       .order('placement', { ascending: true, nullsFirst: false })
       .order('sort_order', { ascending: true })
       .limit(200);
     if (qErr) error = qErr.message;
-    else rows = (data ?? []) as AdminBannerLite[];
+    else {
+      rows = (data ?? []).map((row) => {
+        const extra =
+          row.extra && typeof row.extra === 'object' && !Array.isArray(row.extra)
+            ? (row.extra as Record<string, unknown>)
+            : {};
+        const cta = typeof extra.cta === 'string' ? extra.cta : null;
+        return {
+          id: String(row.id),
+          title: String(row.title ?? ''),
+          subtitle: typeof row.subtitle === 'string' ? row.subtitle : null,
+          cta,
+          placement: (row.placement as string | null) ?? null,
+          route_group: (row.route_group as string | null) ?? null,
+          href: (row.href as string | null) ?? null,
+          sort_order: (row.sort_order as number | null) ?? null,
+          is_active: (row.is_active as boolean | null) ?? null,
+        } satisfies AdminBannerLite;
+      });
+    }
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   }

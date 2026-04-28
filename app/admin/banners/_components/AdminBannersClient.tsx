@@ -2,16 +2,23 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import LocalAppBanner from '../../../_components/home/LocalAppBanner';
+import hubStyles from '../../../_components/home/home-hub.module.css';
 
 export type AdminBannerLite = {
   id: string;
   title: string;
+  subtitle: string | null;
+  cta: string | null;
   placement: string | null;
   route_group: string | null;
   href: string | null;
   sort_order: number | null;
   is_active: boolean | null;
 };
+
+const TITLE_MAX = 12;
+const DESC_MAX = 22;
 
 export default function AdminBannersClient({ rows }: { rows: AdminBannerLite[] }) {
   const router = useRouter();
@@ -39,7 +46,9 @@ export default function AdminBannersClient({ rows }: { rows: AdminBannerLite[] }
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: row.id,
-          title: draft.title,
+          title: draft.title.slice(0, TITLE_MAX),
+          subtitle: (draft.subtitle ?? '').slice(0, DESC_MAX),
+          cta: (draft.cta ?? '').slice(0, DESC_MAX),
           href: draft.href,
           is_active: Boolean(draft.is_active),
         }),
@@ -67,19 +76,53 @@ export default function AdminBannersClient({ rows }: { rows: AdminBannerLite[] }
                 {(row.placement ?? row.route_group ?? 'slot')} · sort {row.sort_order ?? 0}
               </p>
             </div>
-            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] md:items-center">
-              <input
-                value={drafts[row.id]?.title ?? ''}
-                onChange={(e) => updateDraft(row.id, { title: e.target.value })}
-                className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
-                placeholder="배너 제목"
-              />
-              <input
-                value={drafts[row.id]?.href ?? ''}
-                onChange={(e) => updateDraft(row.id, { href: e.target.value })}
-                className="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200"
-                placeholder="https://..."
-              />
+            <div className="grid gap-2 md:grid-cols-2">
+              <div className="min-w-0">
+                <input
+                  value={drafts[row.id]?.title ?? ''}
+                  maxLength={TITLE_MAX}
+                  onChange={(e) => updateDraft(row.id, { title: e.target.value })}
+                  className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+                  placeholder="배너 제목"
+                />
+                <p className="mt-1 text-right text-xs text-slate-400">
+                  {(drafts[row.id]?.title ?? '').length} / {TITLE_MAX}
+                </p>
+              </div>
+              <div className="min-w-0">
+                <input
+                  value={drafts[row.id]?.subtitle ?? ''}
+                  maxLength={DESC_MAX}
+                  onChange={(e) => updateDraft(row.id, { subtitle: e.target.value })}
+                  className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200"
+                  placeholder="배너 설명"
+                />
+                <p className="mt-1 text-right text-xs text-slate-400">
+                  {(drafts[row.id]?.subtitle ?? '').length} / {DESC_MAX}
+                </p>
+              </div>
+              <div className="min-w-0">
+                <input
+                  value={drafts[row.id]?.cta ?? ''}
+                  maxLength={DESC_MAX}
+                  onChange={(e) => updateDraft(row.id, { cta: e.target.value })}
+                  className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200"
+                  placeholder="CTA 문구"
+                />
+                <p className="mt-1 text-right text-xs text-slate-400">
+                  {(drafts[row.id]?.cta ?? '').length} / {DESC_MAX}
+                </p>
+              </div>
+              <div className="min-w-0">
+                <input
+                  value={drafts[row.id]?.href ?? ''}
+                  onChange={(e) => updateDraft(row.id, { href: e.target.value })}
+                  className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200"
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+            <div className="mt-2 grid gap-2 md:grid-cols-[auto_auto] md:items-center md:justify-between">
               <label className="inline-flex items-center gap-2 text-xs text-slate-200">
                 <input
                   type="checkbox"
@@ -96,6 +139,23 @@ export default function AdminBannersClient({ rows }: { rows: AdminBannerLite[] }
               >
                 {busyId === row.id ? '저장 중…' : '저장'}
               </button>
+            </div>
+            <div className="mt-3 rounded-lg border border-white/10 bg-slate-950/50 p-3">
+              <p className="mb-2 text-xs font-semibold text-slate-200">👁️ 실시간 미리보기 (Live Preview)</p>
+              <div className="mx-auto w-[11.85rem]">
+                <div className={hubStyles.localWingStack}>
+                  <LocalAppBanner
+                    tone="mobility"
+                    badge={row.placement === 'wing_right' ? '배달K' : 'GRAB'}
+                    detailBadge={(drafts[row.id]?.cta ?? '').slice(0, DESC_MAX) || undefined}
+                    title={(drafts[row.id]?.title ?? '').slice(0, TITLE_MAX)}
+                    subtitle={(drafts[row.id]?.subtitle ?? '').slice(0, DESC_MAX)}
+                    cta={(drafts[row.id]?.cta ?? '').slice(0, DESC_MAX) || '쿠폰 받기'}
+                    href={drafts[row.id]?.href ?? '#'}
+                    chips={[]}
+                  />
+                </div>
+              </div>
             </div>
           </li>
         ))}

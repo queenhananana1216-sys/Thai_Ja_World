@@ -9,6 +9,8 @@ export const runtime = 'nodejs';
 type Body = {
   id?: string;
   title?: string;
+  subtitle?: string | null;
+  cta?: string | null;
   href?: string | null;
   is_active?: boolean;
 };
@@ -46,13 +48,39 @@ export async function POST(req: Request) {
   if (!title) {
     return NextResponse.json({ error: 'title 필요' }, { status: 400 });
   }
+  if (title.length > 12) {
+    return NextResponse.json({ error: 'title은 최대 12자입니다.' }, { status: 400 });
+  }
+  const subtitle =
+    body.subtitle === undefined || body.subtitle === null ? null : String(body.subtitle).trim() || null;
+  if (subtitle && subtitle.length > 22) {
+    return NextResponse.json({ error: 'subtitle은 최대 22자입니다.' }, { status: 400 });
+  }
+  const cta = body.cta === undefined || body.cta === null ? null : String(body.cta).trim() || null;
+  if (cta && cta.length > 22) {
+    return NextResponse.json({ error: 'cta는 최대 22자입니다.' }, { status: 400 });
+  }
   const href =
     body.href === undefined || body.href === null ? null : String(body.href).trim() || null;
 
   const admin = createServiceRoleClient();
+  const { data: existing } = await admin.from('premium_banners').select('extra').eq('id', id).maybeSingle();
+  const currentExtra =
+    existing?.extra && typeof existing.extra === 'object' && !Array.isArray(existing.extra)
+      ? (existing.extra as Record<string, unknown>)
+      : {};
+  const nextExtra = { ...currentExtra };
+  if (cta) nextExtra.cta = cta;
+  else delete nextExtra.cta;
   const { error } = await admin
     .from('premium_banners')
-    .update({ title, href, is_active: body.is_active })
+    .update({
+      title,
+      subtitle,
+      href,
+      extra: nextExtra,
+      is_active: body.is_active,
+    })
     .eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

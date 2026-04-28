@@ -71,7 +71,12 @@ export async function HomeGridMarket() {
               {fallbackRows.map((m) => (
                 <li key={m.id}>
                   <Link href={m.href} className={styles.row}>
-                    <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{m.title}</div>
+                    <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>
+                      <span className={styles.rowTitleWrap}>
+                        <span>{m.title}</span>
+                        <span className={`${styles.microBadge} ${styles.microBadgeNew}`}>새글</span>
+                      </span>
+                    </div>
                     <div className={`${styles.rowMeta} text-sm md:text-base`}>{m.meta}</div>
                   </Link>
                 </li>
@@ -83,7 +88,12 @@ export async function HomeGridMarket() {
             {rows.map((m) => (
               <li key={m.id}>
                 <Link href={`/community/boards/${m.id}`} className={styles.row}>
-                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{m.title}</div>
+                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>
+                    <span className={styles.rowTitleWrap}>
+                      <span>{m.title}</span>
+                      <span className={`${styles.microBadge} ${styles.microBadgeHot}`}>HOT</span>
+                    </span>
+                  </div>
                   <div className={`${styles.rowMeta} text-sm md:text-base`}>
                     {[m.price_display, m.location, m.status].filter(Boolean).join(' · ')}
                     {' · '}
@@ -115,7 +125,12 @@ export async function HomeGridMarket() {
             fallbackRows.map((m) => (
               <li key={m.id}>
                 <Link href={m.href} className={styles.row}>
-                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{m.title}</div>
+                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>
+                    <span className={styles.rowTitleWrap}>
+                      <span>{m.title}</span>
+                      <span className={`${styles.microBadge} ${styles.microBadgeNew}`}>새글</span>
+                    </span>
+                  </div>
                   <div className={`${styles.rowMeta} text-sm md:text-base`}>{m.meta}</div>
                 </Link>
               </li>

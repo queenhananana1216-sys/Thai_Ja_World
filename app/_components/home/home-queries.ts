@@ -50,6 +50,7 @@ export type HomeCommunityPostRow = {
   title: string;
   created_at: string;
   comment_count: number;
+  view_count?: number;
   category: string;
 };
 
@@ -380,7 +381,7 @@ export async function fetchHomePostsByCategory(
 
   const { data, error } = await sb
     .from('posts')
-    .select('id, title, created_at, comment_count, category')
+    .select('id, title, created_at, comment_count, view_count, category')
     .eq('moderation_status', 'safe')
     .eq('author_hidden', false)
     .eq('is_knowledge_tip', false)
@@ -396,6 +397,69 @@ export async function fetchHomePostsByCategory(
       title: String(row.title ?? ''),
       created_at: String(row.created_at ?? ''),
       comment_count: Number(row.comment_count ?? 0),
+      view_count: Number(row.view_count ?? 0),
+      category: String(row.category ?? ''),
+    })),
+    error: null,
+  };
+}
+
+export async function fetchHomeRealtimeBestPosts(limit = 5): Promise<{
+  rows: HomeCommunityPostRow[];
+  error: string | null;
+}> {
+  const sb = tryCreate();
+  if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
+
+  const since = new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString();
+  const { data, error } = await sb
+    .from('posts')
+    .select('id, title, created_at, comment_count, view_count, category')
+    .eq('moderation_status', 'safe')
+    .eq('author_hidden', false)
+    .gte('created_at', since)
+    .order('view_count', { ascending: false })
+    .order('comment_count', { ascending: false })
+    .limit(limit);
+
+  if (error) return { rows: [], error: error.message };
+  return {
+    rows: (data ?? []).map((row) => ({
+      id: String(row.id),
+      title: String(row.title ?? ''),
+      created_at: String(row.created_at ?? ''),
+      comment_count: Number(row.comment_count ?? 0),
+      view_count: Number(row.view_count ?? 0),
+      category: String(row.category ?? ''),
+    })),
+    error: null,
+  };
+}
+
+export async function fetchHomeRecentCommentTicker(limit = 6): Promise<{
+  rows: HomeCommunityPostRow[];
+  error: string | null;
+}> {
+  const sb = tryCreate();
+  if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
+
+  const { data, error } = await sb
+    .from('posts')
+    .select('id, title, created_at, comment_count, view_count, category')
+    .eq('moderation_status', 'safe')
+    .eq('author_hidden', false)
+    .gt('comment_count', 0)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) return { rows: [], error: error.message };
+  return {
+    rows: (data ?? []).map((row) => ({
+      id: String(row.id),
+      title: String(row.title ?? ''),
+      created_at: String(row.created_at ?? ''),
+      comment_count: Number(row.comment_count ?? 0),
+      view_count: Number(row.view_count ?? 0),
       category: String(row.category ?? ''),
     })),
     error: null,

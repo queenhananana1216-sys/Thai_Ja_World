@@ -7,14 +7,13 @@ import { HomeGridFree } from './HomeGridFree';
 import { HomeGridQna } from './HomeGridQna';
 import { HomeGridLocal } from './HomeGridLocal';
 import { HomeGridNews } from './HomeGridNews';
-import { HomeRightDbStats } from './HomeRightDbStats';
-import { HomeRightUxStats } from './HomeRightUxStats';
-import { HomeRightFxBlock } from './HomeRightFxBlock';
+import { HomeRightEngagementWing } from './HomeRightEngagementWing';
 import { HomeFeedBlock } from './HomeFeedBlock';
 import { HomeLeftRailBanners } from './HomeLeftRailBanners';
 import LocalAppBanner from './LocalAppBanner';
 import { HomeCompactSkeleton } from './HomeCompactSkeleton';
 import { HomeRightStatsSkeleton } from './HomeRightStatsSkeleton';
+import { HomeRealtimeBest } from './HomeRealtimeBest';
 import { listPremiumBanners } from '@/lib/banners/listPremiumBanners';
 
 type WingFallback = {
@@ -134,6 +133,10 @@ async function HomeCommunityShellContent({
               <HomeMarquee />
             </Suspense>
 
+            <Suspense fallback={<HomeCompactSkeleton variant="panel" />}>
+              <HomeRealtimeBest />
+            </Suspense>
+
             <Suspense fallback={<HomeCompactSkeleton variant="slider" />}>
               <HomeBannerSlot />
             </Suspense>
@@ -171,13 +174,7 @@ async function HomeCommunityShellContent({
             />
           </div>
           <Suspense fallback={<HomeRightStatsSkeleton />}>
-            <HomeRightDbStats />
-          </Suspense>
-          <Suspense fallback={<HomeCompactSkeleton variant="fx" />}>
-            <HomeRightFxBlock />
-          </Suspense>
-          <Suspense fallback={<HomeRightStatsSkeleton />}>
-            <HomeRightUxStats />
+            <HomeRightEngagementWing />
           </Suspense>
         </div>
       </div>

@@ -107,14 +107,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const requestMark = Math.random().toString(36).slice(2, 10);
 
   return (
-    <html lang={locale} className={`${notoSansKr.variable} ${notoSansThai.variable}`}>
+    <html
+      lang={locale}
+      className={`${notoSansKr.variable} ${notoSansThai.variable} overflow-x-hidden`}
+    >
       <body
-        className="min-h-screen bg-slate-950 text-slate-100"
+        className="min-h-screen overflow-x-hidden bg-slate-950 text-slate-100"
         data-tj-deploy-sha={deploySha || undefined}
         data-tj-request-mark={requestMark}
       >
         <Providers heroSiteCopy={heroSiteCopy}>
-          <div className="min-h-screen flex flex-col bg-slate-950">
+          <main className="min-h-screen flex flex-col overflow-x-hidden bg-slate-950">
             <GlobalNav
               showAdminConsole={!!adminSession}
               logoScene={logoScene}
@@ -128,9 +131,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               }}
             />
             <PremiumTopBanner />
-            <div className="flex-1 min-h-0 bg-slate-950">{children}</div>
+            <div className="flex-1 min-h-0 overflow-x-hidden bg-slate-950">{children}</div>
             <SiteFooter />
-          </div>
+          </main>
           <FxRemoteWidget
             locale={locale}
             initial={{ ...FX_SNAPSHOT_FALLBACK, dateISO: new Date().toISOString() }}

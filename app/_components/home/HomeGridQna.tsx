@@ -4,6 +4,10 @@ import styles from './home-hub.module.css';
 import { formatDate } from '@/lib/utils/formatDate';
 import { HomeGlassEmptyState } from './HomeGlassEmptyState';
 
+function isNewPost(iso: string): boolean {
+  return Date.now() - new Date(iso).getTime() < 1000 * 60 * 60 * 24;
+}
+
 export async function HomeGridQna() {
   try {
     const { rows, error } = await fetchHomePostsByCategory('qna', 8);
@@ -16,6 +20,7 @@ export async function HomeGridQna() {
             title: r.title,
             created_at: r.created_at,
             comment_count: r.comment_count,
+            view_count: r.view_count,
             category: 'free',
           }));
 
@@ -49,7 +54,17 @@ export async function HomeGridQna() {
             {items.map((post) => (
               <li key={post.id}>
                 <Link href={`/community/boards/${post.id}`} className={styles.row}>
-                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{post.title}</div>
+                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>
+                    <span className={styles.rowTitleWrap}>
+                      <span>{post.title}</span>
+                      {isNewPost(post.created_at) ? (
+                        <span className={`${styles.microBadge} ${styles.microBadgeNew}`}>새글</span>
+                      ) : null}
+                      {(post.comment_count ?? 0) >= 8 || (post.view_count ?? 0) >= 200 ? (
+                        <span className={`${styles.microBadge} ${styles.microBadgeHot}`}>HOT</span>
+                      ) : null}
+                    </span>
+                  </div>
                   <div className={`${styles.rowMeta} text-sm md:text-base`}>
                     댓글 {post.comment_count} · {formatDate(post.created_at)}
                   </div>
@@ -79,7 +94,17 @@ export async function HomeGridQna() {
             {fallback.rows.map((post) => (
               <li key={post.id}>
                 <Link href={`/community/boards/${post.id}`} className={styles.row}>
-                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>{post.title}</div>
+                  <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>
+                    <span className={styles.rowTitleWrap}>
+                      <span>{post.title}</span>
+                      {isNewPost(post.created_at) ? (
+                        <span className={`${styles.microBadge} ${styles.microBadgeNew}`}>새글</span>
+                      ) : null}
+                      {(post.comment_count ?? 0) >= 8 || (post.view_count ?? 0) >= 200 ? (
+                        <span className={`${styles.microBadge} ${styles.microBadgeHot}`}>HOT</span>
+                      ) : null}
+                    </span>
+                  </div>
                   <div className={`${styles.rowMeta} text-sm md:text-base`}>
                     댓글 {post.comment_count ?? 0} · {formatDate(post.created_at)}
                   </div>

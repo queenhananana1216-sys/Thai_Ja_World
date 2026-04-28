@@ -14,16 +14,91 @@ type SnapshotRow = {
   raw_body: string;
 };
 
-async function fetchSnapshots(now: Date): Promise<SnapshotRow[]> {
+type SnapshotMetrics = {
+  weatherSummary: string | null;
+  exchangeSummary: string | null;
+  errors: string[];
+};
+
+type FetchJsonResult<T> = {
+  ok: boolean;
+  status: number;
+  data?: T;
+  error?: string;
+};
+
+const FETCH_TIMEOUT_MS = 15_000;
+const CONTENT_AUTOMATION_LOCK_MS = 60_000;
+
+function cronSecret(): string {
+  return process.env.CRON_SECRET?.trim() || process.env.BOT_CRON_SECRET?.trim() || '';
+}
+
+function readAndMaskForceKey(req: NextRequest): string {
+  const key = new URL(req.url).searchParams.get('key')?.trim() || '';
+  if (key) {
+    console.log('[API /api/cron/content-automation] manual key provided (masked)');
+  }
+  return key;
+}
+
+async function fetchJsonWithTimeout<T>(apiName: string, url: string): Promise<FetchJsonResult<T>> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      cache: 'no-store',
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json, */*',
+        'User-Agent': 'TaejaWorld-Cron/1.0 (+content-automation)',
+      },
+    });
+    if (!res.ok) {
+      const body = (await res.text()).slice(0, 300);
+      return { ok: false, status: res.status, error: `[${apiName}] HTTP ${res.status}: ${body}` };
+    }
+    const data = (await res.json()) as T;
+    return { ok: true, status: res.status, data };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const reason = message.toLowerCase().includes('aborted')
+      ? `[${apiName}] timeout after ${FETCH_TIMEOUT_MS}ms`
+      : `[${apiName}] fetch failed: ${message}`;
+    return { ok: false, status: 0, error: reason };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function getLockUntil(): number {
+  return (globalThis as typeof globalThis & { __contentAutomationLockUntil?: number })
+    .__contentAutomationLockUntil ?? 0;
+}
+
+function setLockUntil(ts: number): void {
+  (globalThis as typeof globalThis & { __contentAutomationLockUntil?: number }).__contentAutomationLockUntil =
+    ts;
+}
+
+async function fetchSnapshots(now: Date): Promise<{ rows: SnapshotRow[]; metrics: SnapshotMetrics }> {
   const day = now.toISOString().slice(0, 10);
   const rows: SnapshotRow[] = [];
+  const metrics: SnapshotMetrics = {
+    weatherSummary: null,
+    exchangeSummary: null,
+    errors: [],
+  };
 
-  const weatherRes = await fetch(
+  const weatherRes = await fetchJsonWithTimeout<{ current?: { temperature_2m?: number; weather_code?: number } }>(
+    'open-meteo',
     'https://api.open-meteo.com/v1/forecast?latitude=13.7563&longitude=100.5018&current=temperature_2m,weather_code&timezone=Asia%2FBangkok',
-    { cache: 'no-store' },
   );
-  if (weatherRes.ok) {
-    const weather = (await weatherRes.json()) as { current?: { temperature_2m?: number; weather_code?: number } };
+  if (weatherRes.ok && weatherRes.data) {
+    const weather = weatherRes.data;
+    const temp = weather.current?.temperature_2m;
+    metrics.weatherSummary =
+      typeof temp === 'number' ? `Bangkok ${Math.round(temp * 10) / 10}C` : 'Bangkok temperature unavailable';
     rows.push({
       source: 'weather',
       title: `[AUTO][WEATHER] Bangkok ${day}`,
@@ -35,11 +110,19 @@ async function fetchSnapshots(now: Date): Promise<SnapshotRow[]> {
         current: weather.current ?? {},
       }),
     });
+  } else if (weatherRes.error) {
+    metrics.errors.push(weatherRes.error);
+    console.error('[API /api/cron/content-automation] weather fetch failed:', weatherRes.error);
   }
 
-  const fxRes = await fetch('https://open.er-api.com/v6/latest/THB', { cache: 'no-store' });
-  if (fxRes.ok) {
-    const fx = (await fxRes.json()) as { rates?: Record<string, number>; time_last_update_utc?: string };
+  const fxRes = await fetchJsonWithTimeout<{ rates?: Record<string, number>; time_last_update_utc?: string }>(
+    'open-er-api',
+    'https://open.er-api.com/v6/latest/THB',
+  );
+  if (fxRes.ok && fxRes.data) {
+    const fx = fxRes.data;
+    const thbKrw = fx.rates?.KRW;
+    metrics.exchangeSummary = typeof thbKrw === 'number' ? `THB/KRW ${thbKrw}` : 'THB/KRW unavailable';
     rows.push({
       source: 'exchange',
       title: `[AUTO][FX] THB/KRW snapshot ${day}`,
@@ -51,6 +134,9 @@ async function fetchSnapshots(now: Date): Promise<SnapshotRow[]> {
         updated_at_utc: fx.time_last_update_utc ?? null,
       }),
     });
+  } else if (fxRes.error) {
+    metrics.errors.push(fxRes.error);
+    console.error('[API /api/cron/content-automation] exchange fetch failed:', fxRes.error);
   }
 
   const visaFeed = `https://news.google.com/rss/search?q=${encodeURIComponent(
@@ -80,18 +166,48 @@ async function fetchSnapshots(now: Date): Promise<SnapshotRow[]> {
     }),
   });
 
-  return rows;
+  return { rows, metrics };
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  if (!isCronAuthorized(req.headers.get('authorization'))) {
-    return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
+  const searchParams = new URL(req.url).searchParams;
+  const force = searchParams.get('force') === '1';
+  const key = readAndMaskForceKey(req);
+  const secret = cronSecret();
+  const authOk = isCronAuthorized(req.headers.get('authorization'));
+  const keyOk = Boolean(secret) && key === secret;
+  const manualAllowed = force && (authOk || keyOk || !secret);
+
+  if (!authOk && !manualAllowed) {
+    return NextResponse.json(
+      {
+        status: 'error',
+        error: 'Unauthorized',
+        hint: 'Use Authorization Bearer token or ?force=1&key=<CRON_SECRET>',
+      },
+      { status: 401 },
+    );
   }
+
+  const nowMs = Date.now();
+  const lockUntil = getLockUntil();
+  if (lockUntil > nowMs) {
+    const retryAfterSec = Math.ceil((lockUntil - nowMs) / 1000);
+    return NextResponse.json(
+      {
+        status: 'locked',
+        error: 'content automation is already running or just finished',
+        retry_after_seconds: retryAfterSec,
+      },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSec) } },
+    );
+  }
+  setLockUntil(nowMs + CONTENT_AUTOMATION_LOCK_MS);
 
   try {
     const now = new Date();
     const admin = createServiceRoleClient();
-    const snapshots = await fetchSnapshots(now);
+    const { rows: snapshots, metrics } = await fetchSnapshots(now);
 
     if (snapshots.length > 0) {
       const { error: upsertError } = await admin.from('raw_news').upsert(
@@ -103,7 +219,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         })),
         { onConflict: 'external_url' },
       );
-      if (upsertError) throw new Error(upsertError.message);
+      if (upsertError) {
+        console.error('[API /api/cron/content-automation] raw_news upsert failed:', upsertError.message);
+        throw new Error(`raw_news upsert failed: ${upsertError.message}`);
+      }
 
       const { error: tipsError } = await admin.from('tips_articles').upsert(
         snapshots.map((s) => ({
@@ -117,7 +236,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         { onConflict: 'source_url' },
       );
       if (tipsError) {
-        console.warn('[API /api/cron/content-automation] tips upsert warning:', tipsError.message);
+        console.error('[API /api/cron/content-automation] tips_articles upsert warning:', tipsError.message);
       }
     }
 
@@ -126,15 +245,36 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       process: { limit: 20 },
     });
 
+    const collectOutput = (newsResult.collect.output ?? {}) as Record<string, unknown>;
+    const persistInfo =
+      (collectOutput.persist_raw_news as { upserted?: number; attempted?: number } | undefined) ?? {};
+    const processOutput = (newsResult.process.output ?? {}) as Record<string, unknown>;
+    const processedSucceeded =
+      typeof processOutput.succeeded === 'number' ? processOutput.succeeded : null;
+
     return NextResponse.json({
-      status: 'ok',
-      snapshots: snapshots.length,
+      status: 'success',
+      trigger: force ? 'manual-force-fetch' : 'cron',
+      snapshots_inserted: snapshots.length,
+      inserted_news: persistInfo.upserted ?? 0,
+      collected_news_attempted: persistInfo.attempted ?? 0,
+      summarized_news: processedSucceeded,
+      updated_weather: metrics.weatherSummary ?? 'weather unavailable',
+      updated_exchange: metrics.exchangeSummary ?? 'exchange unavailable',
+      external_api_errors: metrics.errors,
       collect: newsResult.collect,
       process: newsResult.process,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal Server Error';
-    console.error('[API /api/cron/content-automation]', message);
+    console.error('[API /api/cron/content-automation] fatal error:', {
+      message,
+      hasCronSecret: Boolean(cronSecret()),
+      hasSupabaseUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()),
+      hasSupabaseServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
+      hasOpenAiKey: Boolean(process.env.OPENAI_API_KEY?.trim()),
+      hasGeminiKey: Boolean(process.env.GEMINI_API_KEY?.trim()),
+    });
     return NextResponse.json({ status: 'error', error: message }, { status: 500 });
   }
 }

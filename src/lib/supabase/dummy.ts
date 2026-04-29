@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 type DummyError = { message: string };
-type DynamicChain = Record<string | symbol, unknown> & ((...args: unknown[]) => unknown);
+type DynamicChain = (...args: unknown[]) => unknown;
 
 function buildDummyResult(scope: string) {
   return { data: null, error: { message: `[${scope}] Supabase is disabled (missing env)` } as DummyError };
@@ -9,10 +9,11 @@ function buildDummyResult(scope: string) {
 
 function createThenableChain(scope: string): DynamicChain {
   const result = buildDummyResult(scope);
+  let chainProxy: DynamicChain;
   const chainTarget = function dummyQueryBuilder() {
     return chainProxy;
   };
-  const chainProxy = new Proxy(chainTarget, {
+  chainProxy = new Proxy(chainTarget, {
     get(_target, prop: string | symbol) {
       if (prop === 'then') return (onFulfilled?: (value: unknown) => unknown) => Promise.resolve(result).then(onFulfilled);
       if (prop === 'catch') return (onRejected?: (reason: unknown) => unknown) => Promise.resolve(result).catch(onRejected);
@@ -23,7 +24,7 @@ function createThenableChain(scope: string): DynamicChain {
       return chainProxy;
     },
   });
-  return chainProxy as DynamicChain;
+  return chainProxy;
 }
 
 function createDummyAuth(scope: string) {

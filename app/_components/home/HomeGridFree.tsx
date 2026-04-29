@@ -86,13 +86,13 @@ export async function HomeGridFree() {
             더보기
           </Link>
         </div>
-        {fallback.rows.length === 0 ? (
+        {(fallback.rows ?? []).length === 0 ? (
           <div className="p-2">
             <HomeGlassEmptyState label="자유게시판 빈 상태" />
           </div>
         ) : (
           <ul className={styles.list}>
-            {fallback.rows.map((post) => (
+            {(fallback.rows ?? []).map((post) => (
               <li key={post.id}>
                 <Link href={`/community/boards/${post.id}`} className={styles.row}>
                   <div className={`${styles.rowTitle} min-w-0 text-sm font-semibold text-slate-200`}>

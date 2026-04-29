@@ -14,8 +14,8 @@ type FallbackItem = {
 async function buildJobsFallback(limit: number): Promise<FallbackItem[]> {
   try {
     const posts = await fetchHomeFeedPosts(limit);
-    if (posts.rows.length > 0) {
-      return posts.rows.map((p) => ({
+    if ((posts.rows ?? []).length > 0) {
+      return (posts.rows ?? []).map((p) => ({
         id: `post-${p.id}`,
         href: `/community/boards/${p.id}`,
         title: p.title,
@@ -26,7 +26,7 @@ async function buildJobsFallback(limit: number): Promise<FallbackItem[]> {
     const [tips, news] = await Promise.all([fetchHomeTipsArticles(limit), fetchHomeNewsDigest(limit)]);
     const items: FallbackItem[] = [];
 
-    for (const t of tips.rows) {
+    for (const t of tips.rows ?? []) {
       items.push({
         id: `tip-${t.id}`,
         href: `/tips/${t.id}`,
@@ -34,7 +34,7 @@ async function buildJobsFallback(limit: number): Promise<FallbackItem[]> {
         meta: `생활 꿀팁 · ${formatDate(t.published_at ?? t.created_at)}`,
       });
     }
-    for (const n of news.rows) {
+    for (const n of news.rows ?? []) {
       items.push({
         id: `news-${n.id}`,
         href: n.href,
@@ -87,7 +87,7 @@ export async function HomeGridJobs() {
           )
         ) : (
           <ul className={styles.list}>
-            {rows.map((j) => (
+            {(rows ?? []).map((j) => (
               <li key={j.id}>
                 <Link href={`/community/boards/${j.id}`} className={styles.row}>
                   <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>

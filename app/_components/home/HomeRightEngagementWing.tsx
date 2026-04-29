@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import styles from './home-hub.module.css';
 import { fetchHomeRecentCommentTicker, fetchHomeUxSnapshot } from './home-queries';
-import { fetchUsdFx } from '@/lib/fx/fetchUsdFx';
+import { fetchUsdFx, FX_SNAPSHOT_FALLBACK } from '@/lib/fx/fetchUsdFx';
 import { createServerClient } from '@/lib/supabase/server';
 
 type QuestProgressSummary = {
@@ -85,20 +85,31 @@ function buildUxCuration(totals: Awaited<ReturnType<typeof fetchHomeUxSnapshot>>
 }
 
 export async function HomeRightEngagementWing() {
-  const sb = createServerClient();
-  const { data: auth } = await sb.auth.getUser();
-  const uid = auth.user?.id ?? null;
+  let uid: string | null = null;
+  let point: number | null = null;
+  let weather = '방콕 날씨 업데이트 대기중';
+  let ticker: Awaited<ReturnType<typeof fetchHomeRecentCommentTicker>> = { rows: [], error: null };
+  let fx: Awaited<ReturnType<typeof fetchUsdFx>> = FX_SNAPSHOT_FALLBACK;
+  let quest: QuestProgressSummary | null = null;
+  let uxSnapshot: Awaited<ReturnType<typeof fetchHomeUxSnapshot>> = { window_start: null, totals: null, error: null };
 
-  const [point, weather, ticker, fx, quest, uxSnapshot] = await Promise.all([
-    uid ? readMyPoint() : Promise.resolve(null),
-    readWeatherSummary(),
-    fetchHomeRecentCommentTicker(6),
-    fetchUsdFx({ next: { revalidate: 1800 } }),
-    uid ? readQuestProgress(uid) : Promise.resolve(null),
-    fetchHomeUxSnapshot(),
-  ]);
-  const thbKrw = fx.usdToThb > 0 ? fx.usdToKrw / fx.usdToThb : 0;
-  const curatedCards = buildUxCuration(uxSnapshot.totals);
+  try {
+    const sb = createServerClient();
+    const { data: auth } = await sb.auth.getUser();
+    uid = auth.user?.id ?? null;
+    [point, weather, ticker, fx, quest, uxSnapshot] = await Promise.all([
+      uid ? readMyPoint() : Promise.resolve(null),
+      readWeatherSummary(),
+      fetchHomeRecentCommentTicker(6),
+      fetchUsdFx({ next: { revalidate: 1800 } }),
+      uid ? readQuestProgress(uid) : Promise.resolve(null),
+      fetchHomeUxSnapshot(),
+    ]);
+  } catch {
+    // 우측 윙은 실패해도 전체 홈 렌더를 깨지 않게 안전 기본값 유지
+  }
+  const thbKrw = (fx?.usdToThb ?? 0) > 0 ? (fx?.usdToKrw ?? 0) / (fx?.usdToThb ?? 1) : 0;
+  const curatedCards = buildUxCuration(uxSnapshot?.totals ?? null);
 
   return (
     <>
@@ -135,7 +146,7 @@ export async function HomeRightEngagementWing() {
       <section className={styles.socialWingCard} aria-label="실시간 최근 댓글">
         <h3 className={`${styles.socialWingTitle} truncate`}>실시간 최근 댓글</h3>
         <ul className={styles.tickerList}>
-          {ticker.rows.slice(0, 5).map((item) => (
+          {(ticker.rows ?? []).slice(0, 5).map((item) => (
             <li key={item.id} className={styles.tickerItem}>
               <Link href={`/community/boards/${item.id}`} className={`${styles.tickerLink} min-w-0 wrap-break-word`}>
                 {item.title} · 댓글 {item.comment_count}
@@ -148,7 +159,7 @@ export async function HomeRightEngagementWing() {
       <section className={styles.socialWingCard} aria-label="UX 기반 맞춤 큐레이션">
         <h3 className={`${styles.socialWingTitle} truncate`}>지금 추천 동선</h3>
         <ul className={styles.tickerList}>
-          {curatedCards.map((card) => (
+          {(curatedCards ?? []).map((card) => (
             <li key={card.href} className={styles.tickerItem}>
               <Link href={card.href} className={`${styles.tickerLink} min-w-0 wrap-break-word`}>
                 {card.label} · {card.hint}

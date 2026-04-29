@@ -12,10 +12,11 @@ export async function HomeGridQna() {
   try {
     const { rows, error } = await fetchHomePostsByCategory('qna', 8);
     const backup = rows.length === 0 ? await fetchHomePostsByCategory('free', 8) : { rows: [], error: null };
+    const safeBackupRows = backup.rows ?? [];
     const items =
       rows.length > 0
         ? rows
-        : backup.rows.map((r) => ({
+        : safeBackupRows.map((r) => ({
             id: r.id,
             title: r.title,
             created_at: r.created_at,
@@ -85,13 +86,13 @@ export async function HomeGridQna() {
             더보기
           </Link>
         </div>
-        {fallback.rows.length === 0 ? (
+        {(fallback.rows ?? []).length === 0 ? (
           <div className="p-2">
             <HomeGlassEmptyState label="질문답변 빈 상태" />
           </div>
         ) : (
           <ul className={styles.list}>
-            {fallback.rows.map((post) => (
+            {(fallback.rows ?? []).map((post) => (
               <li key={post.id}>
                 <Link href={`/community/boards/${post.id}`} className={styles.row}>
                   <div className={`${styles.rowTitle} min-w-0 text-sm font-semibold text-slate-200`}>

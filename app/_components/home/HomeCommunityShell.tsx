@@ -54,8 +54,9 @@ async function fetchLifelineLinks(): Promise<{ telegram: string | null; line: st
     if (error || !data) {
       return { telegram: null, line: null, whatsapp: null };
     }
+    const safeRows = Array.isArray(data) ? data : [];
     const map = new Map<string, string>(
-      data.map((r) => [String(r.key), typeof r.value === 'string' ? r.value : '']),
+      safeRows.map((r) => [String(r.key), typeof r.value === 'string' ? r.value : '']),
     );
     return {
       telegram: safeExternalUrl(map.get('home_lifeline_telegram_url') ?? null),
@@ -183,7 +184,7 @@ async function HomeCommunityShellContent({
       <div className={`${styles.hubGrid3} flex-1`}>
         <aside className={`${styles.wingLeft} hidden xl:block`}>
           <div className={styles.localWingStack}>
-            {leftWingCards.map((card) => (
+            {(leftWingCards ?? []).map((card) => (
               <LocalAppBanner
                 key={`${card.badge}-${card.title}`}
                 tone={card.tone}
@@ -249,7 +250,7 @@ async function HomeCommunityShellContent({
 
         <div className={`${styles.wingRight} hidden xl:flex`}>
           <div className={styles.localWingStack}>
-            {rightWingCards.map((card) => (
+            {(rightWingCards ?? []).map((card) => (
               <LocalAppBanner
                 key={`${card.badge}-${card.title}`}
                 tone={card.tone}

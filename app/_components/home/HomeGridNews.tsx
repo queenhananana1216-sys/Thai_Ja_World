@@ -30,13 +30,13 @@ export async function HomeGridNews() {
             더보기
           </Link>
         </div>
-        {rows.length === 0 ? (
+        {(rows ?? []).length === 0 ? (
           <div className="p-2">
             <HomeGlassEmptyState label="오늘의 뉴스 빈 상태" />
           </div>
         ) : (
           <ul className={styles.list}>
-            {rows.map((n) => (
+            {(rows ?? []).map((n) => (
               <li key={n.id}>
                 <Link href={n.href} className={styles.row}>
                   <div className={`${styles.rowTitle} text-sm font-semibold text-slate-200`}>

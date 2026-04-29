@@ -43,14 +43,14 @@ export function HomeFeedClient({
   initialError: string | null;
   personalizedRows: HomeRecommendedRow[];
 }) {
-  const [items, setItems] = useState(initialItems);
+  const [items, setItems] = useState(initialItems ?? []);
   const [loading, setLoading] = useState(false);
   const [batches, setBatches] = useState(0);
   const [err, setErr] = useState<string | null>(initialError);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const lock = useRef(false);
 
-  const last = items.length > 0 ? items[items.length - 1] : null;
+  const last = (items ?? []).length > 0 ? items[(items ?? []).length - 1] : null;
 
   const loadMore = useCallback(async () => {
     if (lock.current || batches >= MAX_BATCHES || !last) return;
@@ -109,18 +109,18 @@ export function HomeFeedClient({
         라이브
       </h2>
 
-      {items.length === 0 && !err ? (
+      {(items ?? []).length === 0 && !err ? (
         <div className="p-2">
           <HomeGlassEmptyState label="라이브 피드 빈 상태" />
         </div>
       ) : null}
 
       <div className={styles.feedGrid}>
-        {personalizedRows.length > 0 ? (
+        {(personalizedRows ?? []).length > 0 ? (
           <section className={styles.curationCard} aria-label="당신을 위한 맞춤 정보">
             <h3 className={styles.curationHead}>💡 당신을 위한 맞춤 정보</h3>
             <ul className={styles.curationList}>
-              {personalizedRows.map((row) => (
+              {(personalizedRows ?? []).map((row) => (
                 <li key={row.id}>
                   <Link href={row.href} className={styles.curationRow}>
                     <span className={`${styles.curationTitle} line-clamp-1`}>{normalizeContainerText(row.title, 72)}</span>
@@ -131,7 +131,7 @@ export function HomeFeedClient({
             </ul>
           </section>
         ) : null}
-        {items.map((p) => {
+        {(items ?? []).map((p) => {
           const thumbUrl = p.image_url;
           const preview = portalMetaLine({ excerpt: p.excerpt, content: null }, 100);
           return (

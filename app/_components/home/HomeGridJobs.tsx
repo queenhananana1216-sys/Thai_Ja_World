@@ -52,7 +52,8 @@ async function buildJobsFallback(limit: number): Promise<FallbackItem[]> {
 export async function HomeGridJobs() {
   try {
     const { rows, error } = await fetchHomeJobs(5);
-    const useFallback = !!error || rows.length === 0;
+    const safeRows = rows ?? [];
+    const useFallback = !!error || safeRows.length === 0;
     const fallbackRows = useFallback ? await buildJobsFallback(5) : [];
 
     return (
@@ -87,7 +88,7 @@ export async function HomeGridJobs() {
           )
         ) : (
           <ul className={styles.list}>
-            {(rows ?? []).map((j) => (
+            {safeRows.map((j) => (
               <li key={j.id}>
                 <Link href={`/community/boards/${j.id}`} className={styles.row}>
                   <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>

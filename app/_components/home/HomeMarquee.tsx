@@ -4,9 +4,20 @@ import styles from './home-hub.module.css';
 export async function HomeMarquee() {
   try {
     const { titles, error } = await fetchHomeNewsMarqueeTitles(22);
-    if (error) return null;
     const safeTitles = titles ?? [];
-    if (safeTitles.length === 0) return null;
+    if (error || safeTitles.length === 0) {
+      return (
+        <div
+          className={`${styles.marqueeWrap} border border-slate-700/50 bg-slate-800/30`}
+          aria-label="뉴스 타이틀 로딩"
+          data-tj-marquee="empty"
+        >
+          <div className={`${styles.marqueeInner} animate-pulse text-slate-500`}>
+            <span className={styles.marqueeItem}>· 뉴스 헤드라인을 불러오는 중입니다</span>
+          </div>
+        </div>
+      );
+    }
 
     const loop = [...safeTitles, ...safeTitles];
     return (
@@ -21,6 +32,16 @@ export async function HomeMarquee() {
       </div>
     );
   } catch {
-    return null;
+    return (
+      <div
+        className={`${styles.marqueeWrap} border border-slate-700/50 bg-slate-800/30`}
+        aria-label="뉴스 타이틀 일시 중단"
+        data-tj-marquee="fallback"
+      >
+        <div className={`${styles.marqueeInner} text-slate-500`}>
+          <span className={styles.marqueeItem}>· 뉴스 영역은 곧 다시 표시됩니다</span>
+        </div>
+      </div>
+    );
   }
 }

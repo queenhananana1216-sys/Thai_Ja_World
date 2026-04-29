@@ -6,9 +6,10 @@ import type { PremiumBannerRow } from '../../portal/types';
 import styles from './home-hub.module.css';
 import { normalizeContainerText } from '@/lib/text/normalizeDisplayText';
 
-export function HomeBannerSliderClient({ banners }: { banners: PremiumBannerRow[] }) {
+export function HomeBannerSliderClient({ banners }: { banners: PremiumBannerRow[] | null | undefined }) {
   const [slide, setSlide] = useState(0);
-  const list = banners.length > 0 ? banners : null;
+  const raw = banners ?? [];
+  const list = raw.length > 0 ? raw : null;
 
   useEffect(() => {
     if (!list || list.length < 2) return;

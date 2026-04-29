@@ -77,9 +77,10 @@ export function HomeFeedClient({
         return;
       }
       setItems((prev) => {
-        const seen = new Set(prev.map((p) => `${p.kind}:${p.id}`));
+        const base = prev ?? [];
+        const seen = new Set(base.map((p) => `${p.kind}:${p.id}`));
         const next = json.items!.filter((p) => !seen.has(`${p.kind}:${p.id}`));
-        return [...prev, ...next];
+        return [...base, ...next];
       });
       setBatches((c) => c + 1);
     } catch (e) {

@@ -11,10 +11,11 @@ function isNewPost(iso: string): boolean {
 export async function HomeGridFree() {
   try {
     const { rows, error } = await fetchHomePostsByCategory('free', 8);
-    const fallback = rows.length === 0 ? await fetchHomeFeedPosts(8) : { rows: [], error: null };
+    const safeRows = rows ?? [];
+    const fallback = safeRows.length === 0 ? await fetchHomeFeedPosts(8) : { rows: [], error: null };
     const items =
-      rows.length > 0
-        ? rows.map((r) => ({
+      safeRows.length > 0
+        ? safeRows.map((r) => ({
             id: r.id,
             title: r.title,
             href: `/community/boards/${r.id}`,

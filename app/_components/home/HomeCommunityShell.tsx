@@ -118,8 +118,8 @@ async function HomeCommunityShellContent({
   const lifelineLinks = await fetchLifelineLinks();
   try {
     const byPlacement = await bannersPromise;
-    leftDb = byPlacement.wing_left[0] ?? null;
-    rightDb = byPlacement.wing_right[0] ?? null;
+    leftDb = byPlacement?.wing_left?.[0] ?? null;
+    rightDb = byPlacement?.wing_right?.[0] ?? null;
   } catch {
     leftDb = null;
     rightDb = null;

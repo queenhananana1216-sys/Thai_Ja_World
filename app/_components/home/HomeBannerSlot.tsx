@@ -6,8 +6,9 @@ export async function HomeBannerSlot() {
   try {
     const { rows, error } = await fetchHomePortalHeroBanners();
     if (error) return null;
-    if (rows.length === 0) return null;
-    return <HomeBannerSliderClient banners={rows} />;
+    const safe = rows ?? [];
+    if (safe.length === 0) return null;
+    return <HomeBannerSliderClient banners={safe} />;
   } catch {
     return null;
   }

@@ -37,9 +37,9 @@ export default function LocalAppBanner({
       </span>
       <strong className="local-app-banner__title break-keep leading-tight line-clamp-2">{title}</strong>
       <span className="local-app-banner__subtitle break-keep leading-tight truncate">{subtitle}</span>
-      {chips.length > 0 ? (
+      {(chips ?? []).length > 0 ? (
         <span className="local-app-banner__chips" aria-hidden>
-          {chips.map((chip) => (
+          {(chips ?? []).map((chip) => (
             <span key={chip} className="local-app-banner__chip">
               {chip}
             </span>

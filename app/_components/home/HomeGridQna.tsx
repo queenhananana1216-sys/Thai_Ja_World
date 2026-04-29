@@ -11,11 +11,12 @@ function isNewPost(iso: string): boolean {
 export async function HomeGridQna() {
   try {
     const { rows, error } = await fetchHomePostsByCategory('qna', 8);
-    const backup = rows.length === 0 ? await fetchHomePostsByCategory('free', 8) : { rows: [], error: null };
+    const safeRows = rows ?? [];
+    const backup = safeRows.length === 0 ? await fetchHomePostsByCategory('free', 8) : { rows: [], error: null };
     const safeBackupRows = backup.rows ?? [];
     const items =
-      rows.length > 0
-        ? rows
+      safeRows.length > 0
+        ? safeRows
         : safeBackupRows.map((r) => ({
             id: r.id,
             title: r.title,

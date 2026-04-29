@@ -8,7 +8,7 @@ export async function HomeLeftRailBanners() {
   try {
     const { rows, error } = await fetchHomeLeftRailBanners();
     if (error) return <div className={styles.leftRailSpacer} aria-hidden />;
-    const withVisual = rows.filter((b) => Boolean(b.image_url?.trim()) || Boolean(b.href?.trim()));
+    const withVisual = (rows ?? []).filter((b) => Boolean(b.image_url?.trim()) || Boolean(b.href?.trim()));
     if (withVisual.length === 0) {
       return <div className={styles.leftRailSpacer} aria-hidden />;
     }

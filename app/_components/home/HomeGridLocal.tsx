@@ -6,6 +6,7 @@ import { HomeGlassEmptyState } from './HomeGlassEmptyState';
 export async function HomeGridLocal() {
   try {
     const { rows, error } = await fetchHomeLocalBusinesses(5);
+    const safeRows = rows ?? [];
     if (error) {
       return (
         <section className={styles.panel} aria-label="로컬 업체">
@@ -24,13 +25,13 @@ export async function HomeGridLocal() {
             더보기
           </Link>
         </div>
-        {rows.length === 0 ? (
+        {safeRows.length === 0 ? (
           <div className="p-2">
             <HomeGlassEmptyState label="로컬 업체 빈 상태" />
           </div>
         ) : (
           <ul className={styles.list}>
-            {rows.map((b) => (
+            {safeRows.map((b) => (
               <li key={b.id}>
                 <Link href={`/shop/${b.slug}`} className={styles.row}>
                   <div className={`${styles.rowTitle} text-sm font-semibold text-slate-200`}>

@@ -50,7 +50,8 @@ async function buildMarketFallback(limit: number): Promise<FallbackItem[]> {
 export async function HomeGridMarket() {
   try {
     const { rows, error } = await fetchHomeMarket(5);
-    const useFallback = !!error || rows.length === 0;
+    const safeRows = rows ?? [];
+    const useFallback = !!error || safeRows.length === 0;
     const fallbackRows = useFallback ? await buildMarketFallback(5) : [];
 
     return (
@@ -85,7 +86,7 @@ export async function HomeGridMarket() {
           )
         ) : (
           <ul className={styles.list}>
-            {(rows ?? []).map((m) => (
+            {safeRows.map((m) => (
               <li key={m.id}>
                 <Link href={`/community/boards/${m.id}`} className={styles.row}>
                   <div className={`${styles.rowTitle} text-base md:text-lg leading-snug`}>

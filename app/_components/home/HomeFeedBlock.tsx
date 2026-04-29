@@ -7,9 +7,9 @@ export async function HomeFeedBlock() {
     const { rows: recommendations } = await fetchHomePersonalizedRecommendations(5);
     return (
       <HomeFeedClient
-        initialItems={rows}
+        initialItems={rows ?? []}
         initialError={error}
-        personalizedRows={recommendations}
+        personalizedRows={recommendations ?? []}
       />
     );
   } catch {

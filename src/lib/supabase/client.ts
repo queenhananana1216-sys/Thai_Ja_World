@@ -4,6 +4,7 @@
  * (예전: supabase-js 단독 → localStorage 만 씀 → 헤더는 로그인인데 /local 은 로그인 요구하는 불일치)
  */
 import { createBrowserClient as createSupabaseBrowserClient } from '@supabase/ssr';
+import { createDummySupabaseClient } from './dummy';
 
 const BROWSER_FETCH_TIMEOUT_MS = 15_000;
 
@@ -25,7 +26,8 @@ export function tryCreateBrowserClient() {
 export function createBrowserClient() {
   const client = tryCreateBrowserClient();
   if (!client) {
-    throw new Error('[BrowserClient] NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 필요');
+    console.error('[BrowserClient] NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 필요. dummy client 반환');
+    return createDummySupabaseClient('browser');
   }
   return client;
 }

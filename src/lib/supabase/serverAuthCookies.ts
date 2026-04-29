@@ -6,12 +6,14 @@ import 'server-only';
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { createDummySupabaseClient } from './dummy';
 
 export async function createServerSupabaseAuthClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url?.trim() || !key?.trim()) {
-    throw new Error('[serverAuthCookies] Supabase URL/anon key missing');
+    console.error('[serverAuthCookies] Supabase URL/anon key missing. dummy client 반환');
+    return createDummySupabaseClient('serverAuthCookies');
   }
 
   const cookieStore = await cookies();

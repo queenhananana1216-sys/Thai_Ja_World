@@ -6,6 +6,7 @@
  * SERVICE_ROLE 클라이언트(봇 전용): src/bots/adapters/supabaseClient.ts 참조.
  */
 import { createClient } from '@supabase/supabase-js';
+import { createDummySupabaseClient } from './dummy';
 
 /** Supabase가 응답 없이 걸리면(방화벽·일시 DNS·프로젝트 중지 등) 홈 SSR이 무한 로딩되므로 상한 둠 */
 const SERVER_FETCH_TIMEOUT_MS = 10_000;
@@ -21,10 +22,10 @@ export function createServerClient() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    throw new Error(
-      '[ServerClient] NEXT_PUBLIC_SUPABASE_URL 또는 NEXT_PUBLIC_SUPABASE_ANON_KEY 가 설정되지 않았습니다.\n' +
-        '.env.local 파일을 확인하세요.',
+    console.error(
+      '[ServerClient] NEXT_PUBLIC_SUPABASE_URL 또는 NEXT_PUBLIC_SUPABASE_ANON_KEY 가 설정되지 않았습니다. dummy client 반환',
     );
+    return createDummySupabaseClient('server');
   }
 
   return createClient(url, key, {

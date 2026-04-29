@@ -13,6 +13,7 @@
 
 /** Next 앱 외부(tsx CLI 등)에서도 봇을 돌릴 수 있게 server-only 미사용 — 이 모듈은 API·봇에서만 import 할 것 */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createDummySupabaseClient } from '@/lib/supabase/dummy';
 
 // ── 환경 변수 검증 ─────────────────────────────────────────────────────────
 
@@ -21,16 +22,12 @@ function resolveEnv(): { url: string; serviceRoleKey: string } {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url) {
-    throw new Error(
-      '[BotSystem] 환경 변수 NEXT_PUBLIC_SUPABASE_URL 이 설정되지 않았습니다.\n' +
-        '.env.local 파일을 확인하세요.',
-    );
+    console.error('[BotSystem] NEXT_PUBLIC_SUPABASE_URL 이 없습니다. dummy client 사용');
+    return { url: '', serviceRoleKey: '' };
   }
   if (!serviceRoleKey) {
-    throw new Error(
-      '[BotSystem] 환경 변수 SUPABASE_SERVICE_ROLE_KEY 가 설정되지 않았습니다.\n' +
-        '.env.local 파일을 확인하세요. (이 키는 절대 브라우저에 노출 금지)',
-    );
+    console.error('[BotSystem] SUPABASE_SERVICE_ROLE_KEY 가 없습니다. dummy client 사용');
+    return { url: '', serviceRoleKey: '' };
   }
 
   return { url, serviceRoleKey };
@@ -49,6 +46,10 @@ export function getServerSupabaseClient(): SupabaseClient {
   if (_client) return _client;
 
   const { url, serviceRoleKey } = resolveEnv();
+  if (!url || !serviceRoleKey) {
+    _client = createDummySupabaseClient('botSystem');
+    return _client;
+  }
 
   _client = createClient(url, serviceRoleKey, {
     auth: {

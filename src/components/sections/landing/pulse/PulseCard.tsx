@@ -133,8 +133,9 @@ export function PulseCard({
   /** light: 밝은 포털 구역(필고형 라이트 카드) */
   tone?: 'dark' | 'light';
 }) {
-  const accent = ACCENT_MAP[col.accent];
-  const hasItems = col.items.length > 0;
+  const accent = ACCENT_MAP[col.accent] ?? ACCENT_MAP.sky;
+  const items = col.items ?? [];
+  const hasItems = items.length > 0;
 
   const cardStyle: CSSProperties =
     tone === 'light' && variant === 'grid'
@@ -210,7 +211,7 @@ export function PulseCard({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {hasItems ? (
-          col.items.map((it) => (
+          items.map((it) => (
             <ItemRow key={it.id} item={it} locale={locale} tone={tone} />
           ))
         ) : (

@@ -1,13 +1,31 @@
 'use client';
 
 import Link from 'next/link';
-import type { EntryFlowResponse } from '@/lib/landing/types';
+import type { EntryFlowResponse, EntryFlowSnapshot } from '@/lib/landing/types';
 import type { Locale } from '@/i18n/types';
 
+const EMPTY_SNAPSHOT: EntryFlowSnapshot = {
+  posts7d: 0,
+  flea7d: 0,
+  job7d: 0,
+  publishedShops: 0,
+  deliveryReadyShops: 0,
+  minihomePublicRooms: 0,
+  news3d: 0,
+  tradeClicks14d: 0,
+  jobClicks14d: 0,
+  localClicks14d: 0,
+  minihomeClicks14d: 0,
+  tradeConversions14d: 0,
+  jobConversions14d: 0,
+  localConversions14d: 0,
+  minihomeConversions14d: 0,
+};
+
 export function EntryFlowQuickRow({ flow, locale = 'ko' }: { flow: EntryFlowResponse; locale?: Locale }) {
-  const lanes = flow.lanes;
+  const lanes = flow?.lanes ?? [];
   if (lanes.length === 0) return null;
-  const s = flow.snapshot;
+  const s: EntryFlowSnapshot = { ...EMPTY_SNAPSHOT, ...flow?.snapshot };
 
   function getSessionId(): string {
     try {

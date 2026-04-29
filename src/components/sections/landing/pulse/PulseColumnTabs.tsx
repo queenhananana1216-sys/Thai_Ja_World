@@ -15,31 +15,32 @@ import type { PulseColumn } from '@/lib/landing/fetchCommunityPulse';
 import type { Locale } from '@/i18n/types';
 
 type Props = {
-  columns: PulseColumn[];
+  columns?: PulseColumn[] | null;
   locale: Locale;
   /** light: 밝은 포털 카드(CommunityPulseSection 다크 히어로 구역은 기본 dark) */
   tone?: 'dark' | 'light';
 };
 
 export function PulseColumnTabs({ columns, locale, tone = 'dark' }: Props) {
+  const cols = columns ?? [];
   const [idx, setIdx] = useState(0);
 
   const onKey = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'ArrowRight') {
         e.preventDefault();
-        setIdx((i) => (i + 1) % columns.length);
+        setIdx((i) => (i + 1) % cols.length);
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        setIdx((i) => (i - 1 + columns.length) % columns.length);
+        setIdx((i) => (i - 1 + cols.length) % cols.length);
       }
     },
-    [columns.length],
+    [cols.length],
   );
 
-  if (columns.length === 0) return null;
-  const safeIdx = Math.min(Math.max(0, idx), columns.length - 1);
-  const active = columns[safeIdx] ?? columns[0];
+  if (cols.length === 0) return null;
+  const safeIdx = Math.min(Math.max(0, idx), cols.length - 1);
+  const active = cols[safeIdx] ?? cols[0];
   if (!active) return null;
   const accent = ACCENT_MAP[active.accent];
   const tabBorderColor = tone === 'light' ? 'rgba(148,163,184,0.45)' : 'rgba(255,255,255,0.08)';
@@ -67,7 +68,7 @@ export function PulseColumnTabs({ columns, locale, tone = 'dark' }: Props) {
           borderBottom: `1px solid ${tabBorderColor}`,
         }}
       >
-        {columns.map((c, i) => {
+        {cols.map((c, i) => {
           const isActive = i === idx;
           const t = ACCENT_MAP[c.accent];
           return (

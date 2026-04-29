@@ -35,10 +35,10 @@ function krwPerThb(fx: FxSnapshot): string {
 }
 
 function pickThreePulseColumns(
-  pulse: CommunityPulse,
+  pulse: CommunityPulse | null | undefined,
   locale: Locale,
 ): { tabs: PulseColumn[]; usedFallback: boolean } {
-  const { columns } = pulse;
+  const columns = pulse?.columns ?? [];
   if (columns.length === 0) return { tabs: [], usedFallback: true };
 
   const firstLabel = (columns[0]?.label ?? '').toLowerCase();
@@ -58,7 +58,7 @@ function pickThreePulseColumns(
     }
   }
 
-  const withItems = columns.filter((c) => c.items.length > 0);
+  const withItems = columns.filter((c) => (c.items ?? []).length > 0);
   if (withItems.length >= 3) {
     return { tabs: withItems.slice(0, 3), usedFallback: true };
   }
@@ -86,10 +86,14 @@ export async function PortalHomeLayout({
   const recentPostsBlock = await RecentPostsFeed({ locale, variant: 'portal', limit: 16 });
   const { tabs: tabColumns } = pickThreePulseColumns(pulse, locale);
   const hasAnyPulse = tabColumns.length > 0;
-  const spotN = Math.max(0, stats.spotCount);
+  const spotN = Math.max(0, stats.spotCount ?? 0);
+  const safeWeather = weatherCities ?? [];
+  const memberCount = stats.memberCount ?? 0;
+  const postCount = stats.postCount ?? 0;
+  const newsCount = stats.newsCount ?? 0;
   const th = locale === 'th';
   const pulseTime =
-    typeof pulse.generatedAt === 'string' && pulse.generatedAt
+    typeof pulse?.generatedAt === 'string' && pulse.generatedAt
       ? new Date(pulse.generatedAt).toLocaleString(th ? 'th-TH' : 'ko-KR', {
           month: 'short',
           day: 'numeric',
@@ -118,9 +122,15 @@ export async function PortalHomeLayout({
                 : '시작 가이드 — 번개 · 구인 · 로컬 · 미니홈'}
             </h2>
             <p className="m-0 text-[11px] text-slate-500">
-              {th
-                ? `อัปเดต ${new Date(entryFlow.generatedAt).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}`
-                : `엔트리 ${new Date(entryFlow.generatedAt).toLocaleString('ko-KR', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}`}
+              {(() => {
+                const raw = entryFlow?.generatedAt;
+                const t = raw ? new Date(raw).getTime() : NaN;
+                if (!Number.isFinite(t)) return th ? 'อัปเดต —' : '엔트리 —';
+                const d = new Date(t);
+                return th
+                  ? `อัปเดต ${d.toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}`
+                  : `엔트리 ${d.toLocaleString('ko-KR', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}`;
+              })()}
             </p>
           </div>
           <EntryFlowQuickRow flow={entryFlow} locale={locale} />
@@ -180,15 +190,15 @@ export async function PortalHomeLayout({
               <p className="mt-1 m-0 text-[11px] leading-relaxed text-slate-300">
                 {th ? (
                   <>
-                    สมาชิก <strong className="text-slate-100">{stats.memberCount.toLocaleString('th-TH')}</strong> ·
-                    โพสต์ <strong className="text-slate-100">{stats.postCount.toLocaleString('th-TH')}</strong> ·
-                    ข่าว <strong className="text-slate-100">{stats.newsCount.toLocaleString('th-TH')}</strong>
+                    สมาชิก <strong className="text-slate-100">{memberCount.toLocaleString('th-TH')}</strong> ·
+                    โพสต์ <strong className="text-slate-100">{postCount.toLocaleString('th-TH')}</strong> ·
+                    ข่าว <strong className="text-slate-100">{newsCount.toLocaleString('th-TH')}</strong>
                   </>
                 ) : (
                   <>
-                    가입 <strong className="text-slate-100">{stats.memberCount.toLocaleString('ko-KR')}</strong> ·
-                    게시 <strong className="text-slate-100">{stats.postCount.toLocaleString('ko-KR')}</strong> ·
-                    뉴스 <strong className="text-slate-100">{stats.newsCount.toLocaleString('ko-KR')}</strong>
+                    가입 <strong className="text-slate-100">{memberCount.toLocaleString('ko-KR')}</strong> ·
+                    게시 <strong className="text-slate-100">{postCount.toLocaleString('ko-KR')}</strong> ·
+                    뉴스 <strong className="text-slate-100">{newsCount.toLocaleString('ko-KR')}</strong>
                   </>
                 )}
               </p>
@@ -221,7 +231,7 @@ export async function PortalHomeLayout({
                     <h2 id="tj-portal-pulse" className="m-0 text-sm font-extrabold text-slate-100">
                       {th ? 'ชีพจรชุมชน' : '광장 심박'}
                     </h2>
-                    {pulse.degraded ? (
+                    {pulse?.degraded ? (
                       <span className="text-[10px] font-semibold text-amber-300/90">{th ? 'บางส่วน' : '일부'}</span>
                     ) : null}
                   </div>
@@ -251,9 +261,9 @@ export async function PortalHomeLayout({
           <aside className="order-3 flex flex-col gap-3 lg:col-span-3">
             <div className={`${card} p-3 text-sm`}>
               <p className="m-0 text-xs font-bold text-slate-400">{th ? 'อากาศ (3 เมือง)' : '날씨(3곳)'}</p>
-              {weatherCities.length > 0 ? (
+              {safeWeather.length > 0 ? (
                 <ul className="mt-2 m-0 list-none space-y-1.5 p-0">
-                  {weatherCities.map((c) => {
+                  {safeWeather.map((c) => {
                     const name = locale === 'th' ? c.key.replace('_', ' ') : CITY_NAMES_KO[c.key] ?? c.key;
                     return (
                       <li key={c.key} className="flex items-baseline justify-between gap-2 text-xs text-slate-200">

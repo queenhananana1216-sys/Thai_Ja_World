@@ -42,7 +42,6 @@ export default function AuthBar({
   const { locale } = useClientLocaleDictionary();
   const authNext = encodeURIComponent(pathname.startsWith('/auth') ? '/' : pathname);
   const [email, setEmail] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
   const displayLocal = useMemo(() => {
     if (!email) return '';
@@ -56,20 +55,15 @@ export default function AuthBar({
     const sb = tryCreateBrowserClient();
     if (!sb) {
       setEmail(null);
-      setLoading(false);
       return;
     }
-    const safety = setTimeout(() => setLoading(false), 12_000);
     void sb.auth
       .getSession()
       .then(({ data }) => {
-        clearTimeout(safety);
         setEmail(data.session?.user.email ?? null);
-        setLoading(false);
       })
       .catch(() => {
-        clearTimeout(safety);
-        setLoading(false);
+        /* 세션 조회 실패 시 비로그인 UI 유지 */
       });
     const {
       data: { subscription },
@@ -77,7 +71,6 @@ export default function AuthBar({
       setEmail(session?.user.email ?? null);
     });
     return () => {
-      clearTimeout(safety);
       subscription.unsubscribe();
     };
   }, []);
@@ -91,19 +84,7 @@ export default function AuthBar({
 
   const isChrome = variant === 'chromePills';
 
-  if (loading) {
-    if (isChrome) {
-      return (
-        <div className="auth-chrome-pills auth-chrome-pills--loading" aria-busy="true">
-          <span className="auth-chrome-pills__dot" />
-          <span className="auth-chrome-pills__dot" />
-          <span className="auth-chrome-pills__dot" />
-        </div>
-      );
-    }
-    return <span className="auth-bar auth-bar--muted">…</span>;
-  }
-
+  /** 세션 조회 전에도 로그인·가입 Pill 을 즉시 노출 (로딩 스켈레톤 없음) */
   if (!email) {
     if (isChrome) {
       return (

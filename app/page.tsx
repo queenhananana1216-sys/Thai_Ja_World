@@ -102,7 +102,7 @@ export default async function HomePage() {
     >
       <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 items-start gap-2 min-[1181px]:grid-cols-[minmax(10rem,12rem)_minmax(0,1fr)_minmax(11rem,14rem)]">
         <aside className="hidden min-[1181px]:block">
-          <div className="sticky space-y-2" style={{ top: 'var(--tj-home-sticky-top, 12.5rem)' }}>
+          <div className="sticky space-y-2" style={{ top: 'var(--tj-home-sticky-top, 14rem)' }}>
             <section className="rounded-xl border border-blue-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
               <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">스폰서 · 안내</p>
               {wingBanners.length === 0 ? (
@@ -194,7 +194,7 @@ export default async function HomePage() {
         </section>
 
         <aside className="hidden min-[1181px]:block">
-          <div className="sticky space-y-2" style={{ top: 'var(--tj-home-sticky-top, 12.5rem)' }}>
+          <div className="sticky space-y-2" style={{ top: 'var(--tj-home-sticky-top, 14rem)' }}>
             <section className="rounded-xl border border-blue-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
               <p className="text-[11px] font-black text-blue-300">최신 뉴스</p>
               {newsWing.length === 0 ? (

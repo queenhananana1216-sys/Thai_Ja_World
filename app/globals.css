@@ -30,7 +30,8 @@
   --tj-shadow: 6px 6px 0 rgba(13, 13, 15, 0.14);
   --tj-shadow-saffron: 5px 5px 0 rgba(255, 183, 3, 0.55);
   /** 글로벌 헤더(툴바+로고+메인내비) 아래에 포털 좌·우 스티키 윙을 붙일 때 오프셋 */
-  --tj-home-sticky-top: 12.5rem;
+  /* 홈에서도 통합 검색 노출 시 헤더 높이 증가 대비 */
+  --tj-home-sticky-top: 14rem;
 }
 
 *,
@@ -87,9 +88,8 @@ a:hover {
   box-shadow: 0 6px 18px rgba(2, 6, 23, 0.5);
   backdrop-filter: blur(12px) saturate(1.1);
   -webkit-backdrop-filter: blur(12px) saturate(1.1);
-  position: sticky;
-  top: 0;
-  z-index: 500;
+  position: relative;
+  z-index: 1;
 }
 
 .global-header__toolbar {

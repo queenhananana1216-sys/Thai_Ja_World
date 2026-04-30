@@ -73,7 +73,8 @@ function resolveDynamicMenuHref(slug: string): string {
 
 export default function GlobalNav({ dict, showAdminConsole = false, logoScene = null }: Props) {
   const pathname = usePathname() ?? '/';
-  const hideHeaderSearch = pathname === '/';
+  /** 홈(/)에서도 통합 검색 노출 — 세션·경로와 무관 */
+  const hideHeaderSearch = false;
   const [compactHeader, setCompactHeader] = useState(false);
   const [canViewAdminConsole, setCanViewAdminConsole] = useState(false);
   const [dynamicMenus, setDynamicMenus] = useState<DynamicMenu[]>([]);
@@ -201,6 +202,7 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
   }, [showAdminConsole]);
 
   return (
+    <div className="sticky top-0 z-[600] w-full shrink-0 border-b border-white/10 bg-[#0B0F19] isolate">
     <header className={`global-header${compactHeader ? ' global-header--compact' : ''}`}>
       <div className="global-header__toolbar">
         <div className="site-container global-header__toolbar-inner">
@@ -254,6 +256,9 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
               />
             </span>
             <span className="sr-only">{dict.brandSuffix}</span>
+            <span className="ml-2 text-sm font-black tracking-tight text-white sm:text-base" aria-hidden>
+              태자월드
+            </span>
           </Link>
         </div>
       </div>
@@ -365,5 +370,6 @@ export default function GlobalNav({ dict, showAdminConsole = false, logoScene = 
         </div>
       </nav>
     </header>
+    </div>
   );
 }

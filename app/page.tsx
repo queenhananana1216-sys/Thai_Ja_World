@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { unstable_noStore as noStore } from 'next/cache';
-import type { ReactNode } from 'react';
-import ClientSafeBoundary from './_components/ClientSafeBoundary';
 import { fetchPortalHomeFeed, type PortalFeedLine } from './lib/home/fetchPortalHomeFeed';
 
 /** 홈은 항상 최신 DB 스냅샷 우선 (레이아웃·다른 정적 페이지 캐시와 분리) */
@@ -43,169 +41,148 @@ export default async function HomePage() {
     <main className="min-h-screen bg-[#0B0F19] text-slate-100">
       <div className="mx-auto max-w-[1600px] px-2 pb-6 pt-4">
         <div className="grid grid-cols-12 gap-2">
-          <ClientSafeBoundary name="home-left-wing" fallback={<WingFallback title="Left Wing" />}>
-            {renderSafely(
-              () => (
-                <aside className="col-span-2 hidden xl:block">
-                  <div className="sticky top-22 space-y-2">
-                    <section className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md">
-                      <p className="text-[11px] uppercase tracking-wider text-blue-300">Left Wing</p>
-                      <h2 className="mt-1 text-sm font-semibold text-yellow-300">프리미엄 · 사이드</h2>
-                      {(wingBanners?.length ?? 0) > 0 ? (
-                        <ul className="mt-2 space-y-1 text-xs text-slate-200/90">
-                          {(wingBanners || []).map((b) => (
-                            <li key={b.id}>
-                              <Link
-                                href={b.href || '/ads'}
-                                className="text-slate-200/90 underline-offset-2 hover:text-white hover:underline"
-                              >
-                                {b.title}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="mt-2 text-xs text-slate-400">
-                          아직 등록된 게시글이 없습니다.{' '}
-                          <Link href="/ads" className="text-blue-300 hover:underline">
-                            첫 배너 등록하기
-                          </Link>
-                        </p>
-                      )}
-                    </section>
-                    <section className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md">
-                      <p className="text-[11px] uppercase tracking-wider text-blue-300">바로가기</p>
-                      <ul className="mt-2 space-y-1 text-xs">
-                        <li>
-                          <Link href="/community/boards" className="text-slate-200/90 hover:text-white hover:underline">
-                            광장
-                          </Link>
-                        </li>
-                        <li>
-                          <Link href="/community/trade" className="text-slate-200/90 hover:text-white hover:underline">
-                            중고·알바
-                          </Link>
-                        </li>
-                        <li>
-                          <Link href="/local" className="text-slate-200/90 hover:text-white hover:underline">
-                            로컬
-                          </Link>
-                        </li>
-                        <li>
-                          <Link href="/news" className="text-slate-200/90 hover:text-white hover:underline">
-                            뉴스
-                          </Link>
-                        </li>
-                      </ul>
-                    </section>
-                  </div>
-                </aside>
-              ),
-              <WingFallback title="Left Wing" />,
-            )}
-          </ClientSafeBoundary>
+          <aside className="col-span-2 hidden xl:block">
+            <div className="sticky top-22 space-y-2">
+              <section className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md">
+                <p className="text-[11px] uppercase tracking-wider text-blue-300">Left Wing</p>
+                <h2 className="mt-1 text-sm font-semibold text-yellow-300">프리미엄 · 사이드</h2>
+                {(wingBanners?.length ?? 0) > 0 ? (
+                  <ul className="mt-2 space-y-1 text-xs text-slate-200/90">
+                    {(wingBanners || []).map((b) => (
+                      <li key={b.id}>
+                        <Link
+                          href={b.href || '/ads'}
+                          className="text-slate-200/90 underline-offset-2 hover:text-white hover:underline"
+                        >
+                          {b.title}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-xs text-slate-400">
+                    아직 등록된 게시글이 없습니다.{' '}
+                    <Link href="/ads" className="text-blue-300 hover:underline">
+                      첫 배너 등록하기
+                    </Link>
+                  </p>
+                )}
+              </section>
+              <section className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md">
+                <p className="text-[11px] uppercase tracking-wider text-blue-300">바로가기</p>
+                <ul className="mt-2 space-y-1 text-xs">
+                  <li>
+                    <Link href="/community/boards" className="text-slate-200/90 hover:text-white hover:underline">
+                      광장
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/community/trade" className="text-slate-200/90 hover:text-white hover:underline">
+                      중고·알바
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/local" className="text-slate-200/90 hover:text-white hover:underline">
+                      로컬
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/news" className="text-slate-200/90 hover:text-white hover:underline">
+                      뉴스
+                    </Link>
+                  </li>
+                </ul>
+              </section>
+            </div>
+          </aside>
 
-          <ClientSafeBoundary name="home-main-column" fallback={<MainFallback />}>
-            {renderSafely(
-              () => (
-                <section className="col-span-12 xl:col-span-8">
-                  <header className="mb-2 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md">
-                    <p className="text-[11px] uppercase tracking-widest text-blue-300">2026 Taeja World</p>
-                    <h1 className="text-lg font-bold text-slate-50">초고밀도 교민 생활 포털 대시보드</h1>
-                    <p className="text-xs text-slate-300">
-                      구인구직, 장터, 커뮤니티, 로컬업체, 뉴스 — Supabase 실데이터 연동
-                    </p>
-                  </header>
+          <section className="col-span-12 xl:col-span-8">
+            <header className="mb-2 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md">
+              <p className="text-[11px] uppercase tracking-widest text-blue-300">2026 Taeja World</p>
+              <h1 className="text-lg font-bold text-slate-50">초고밀도 교민 생활 포털 대시보드</h1>
+              <p className="text-xs text-slate-300">
+                구인구직, 장터, 커뮤니티, 로컬업체, 뉴스 — 서버에서 Supabase 데이터를 조회해 HTML로 전달합니다.
+              </p>
+            </header>
 
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                    <Board
-                      title="구인구직"
-                      accent="text-blue-300"
-                      moreHref="/community/boards?cat=job"
-                      lines={jobs}
-                      emptyHint="첫 글의 주인공이 되어보세요!"
-                    />
-                    <Board
-                      title="번개장터"
-                      accent="text-yellow-300"
-                      moreHref="/community/boards?cat=flea"
-                      lines={market}
-                      emptyHint="첫 글의 주인공이 되어보세요!"
-                    />
-                    <Board
-                      title="자유게시판"
-                      accent="text-blue-300"
-                      moreHref="/community/boards?cat=free"
-                      lines={freeBoard}
-                      emptyHint="첫 글의 주인공이 되어보세요!"
-                    />
-                    <Board
-                      title="로컬 업체"
-                      accent="text-yellow-300"
-                      moreHref="/local"
-                      lines={localBiz}
-                      emptyHint="아직 등록된 게시글이 없습니다."
-                    />
-                    <div className="md:col-span-2">
-                      <Board
-                        title="오늘의 뉴스"
-                        accent="text-blue-300"
-                        moreHref="/news"
-                        lines={news}
-                        emptyHint="아직 등록된 게시글이 없습니다."
-                      />
-                    </div>
-                  </div>
-                </section>
-              ),
-              <MainFallback />,
-            )}
-          </ClientSafeBoundary>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              <Board
+                title="구인구직"
+                accent="text-blue-300"
+                moreHref="/community/boards?cat=job"
+                lines={jobs}
+                emptyHint="첫 글의 주인공이 되어보세요!"
+              />
+              <Board
+                title="번개장터"
+                accent="text-yellow-300"
+                moreHref="/community/boards?cat=flea"
+                lines={market}
+                emptyHint="첫 글의 주인공이 되어보세요!"
+              />
+              <Board
+                title="자유게시판"
+                accent="text-blue-300"
+                moreHref="/community/boards?cat=free"
+                lines={freeBoard}
+                emptyHint="첫 글의 주인공이 되어보세요!"
+              />
+              <Board
+                title="로컬 업체"
+                accent="text-yellow-300"
+                moreHref="/local"
+                lines={localBiz}
+                emptyHint="아직 등록된 게시글이 없습니다."
+              />
+              <div className="md:col-span-2">
+                <Board
+                  title="오늘의 뉴스"
+                  accent="text-blue-300"
+                  moreHref="/news"
+                  lines={news}
+                  emptyHint="아직 등록된 게시글이 없습니다."
+                />
+              </div>
+            </div>
+          </section>
 
-          <ClientSafeBoundary name="home-right-wing" fallback={<WingFallback title="Right Wing" />}>
-            {renderSafely(
-              () => (
-                <aside className="col-span-2 hidden xl:block">
-                  <div className="sticky top-22 space-y-2">
-                    <section className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md">
-                      <p className="text-[11px] uppercase tracking-wider text-blue-300">Right Wing</p>
-                      <h2 className="mt-1 text-sm font-semibold text-yellow-300">실시간 인기</h2>
-                      <ul className="mt-2 space-y-1 text-xs text-slate-200/90">
-                        <li>
-                          <Link href="/community/boards?cat=job" className="hover:text-white hover:underline">
-                            #구인구직
-                          </Link>
-                        </li>
-                        <li>
-                          <Link href="/community/boards?cat=flea" className="hover:text-white hover:underline">
-                            #번개장터
-                          </Link>
-                        </li>
-                        <li>
-                          <Link href="/community/boards?cat=free" className="hover:text-white hover:underline">
-                            #자유게시판
-                          </Link>
-                        </li>
-                        <li>
-                          <Link href="/local" className="hover:text-white hover:underline">
-                            #로컬
-                          </Link>
-                        </li>
-                      </ul>
-                    </section>
-                    <section className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md">
-                      <p className="text-[11px] uppercase tracking-wider text-blue-300">Notice</p>
-                      <h3 className="mt-1 text-sm font-semibold text-yellow-300">DB 연동</h3>
-                      <p className="mt-2 text-xs text-slate-200/90">
-                        본 페이지는 Supabase의 jobs, market, posts, 로컬 뷰, processed_news에서 불러옵니다.
-                      </p>
-                    </section>
-                  </div>
-                </aside>
-              ),
-              <WingFallback title="Right Wing" />,
-            )}
-          </ClientSafeBoundary>
+          <aside className="col-span-2 hidden xl:block">
+            <div className="sticky top-22 space-y-2">
+              <section className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md">
+                <p className="text-[11px] uppercase tracking-wider text-blue-300">Right Wing</p>
+                <h2 className="mt-1 text-sm font-semibold text-yellow-300">실시간 인기</h2>
+                <ul className="mt-2 space-y-1 text-xs text-slate-200/90">
+                  <li>
+                    <Link href="/community/boards?cat=job" className="hover:text-white hover:underline">
+                      #구인구직
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/community/boards?cat=flea" className="hover:text-white hover:underline">
+                      #번개장터
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/community/boards?cat=free" className="hover:text-white hover:underline">
+                      #자유게시판
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/local" className="hover:text-white hover:underline">
+                      #로컬
+                    </Link>
+                  </li>
+                </ul>
+              </section>
+              <section className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md">
+                <p className="text-[11px] uppercase tracking-wider text-blue-300">Notice</p>
+                <h3 className="mt-1 text-sm font-semibold text-yellow-300">DB 연동</h3>
+                <p className="mt-2 text-xs text-slate-200/90">
+                  본 페이지는 Supabase의 jobs, market, posts, 로컬 뷰, processed_news에서 불러옵니다.
+                </p>
+              </section>
+            </div>
+          </aside>
         </div>
       </div>
     </main>
@@ -269,33 +246,4 @@ function normalizeLines(input: unknown): PortalFeedLine[] {
       href: typeof row.href === 'string' && row.href.trim() ? row.href : '#',
       subtitle: typeof row.subtitle === 'string' && row.subtitle.trim() ? row.subtitle.trim() : null,
     }));
-}
-
-function renderSafely(render: () => ReactNode, fallback: ReactNode) {
-  try {
-    return render();
-  } catch {
-    return fallback;
-  }
-}
-
-function WingFallback({ title }: { title: string }) {
-  return (
-    <aside className="col-span-2 hidden xl:block">
-      <section className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-md">
-        <p className="text-[11px] uppercase tracking-wider text-blue-300">{title}</p>
-        <p className="mt-2 text-xs text-slate-400">아직 등록된 게시글이 없습니다.</p>
-      </section>
-    </aside>
-  );
-}
-
-function MainFallback() {
-  return (
-    <section className="col-span-12 xl:col-span-8">
-      <div className="rounded-xl border border-dashed border-white/15 bg-black/20 px-2 py-6 text-center text-xs text-slate-400">
-        첫 글의 주인공이 되어보세요!
-      </div>
-    </section>
-  );
 }

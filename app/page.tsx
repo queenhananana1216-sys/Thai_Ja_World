@@ -1,6 +1,8 @@
 import Link from 'next/link';
 
 const JOBS = [
+  '방콕 식당 구인합니다 · 주방·홀 서빙 · 급여 협의',
+  '치앙마이 매니저 구함 · 호텔 경력 우대 · 숙소 지원',
   '방콕 통역·매니저 채용 · 월 65만바트 · E-비자 지원',
   '파타야 한식당 주방보조 급구 · 숙식 · 4일 휴무',
   '치앙마이 리모트 디자이너 구인 · 재택 · 계약 6개월',
@@ -53,6 +55,17 @@ const NEWS = [
   '한-태 관광객 증가 통계 · 2026 Q1',
 ] as const;
 
+const QNA = [
+  '현지 계좌 개설 시 필요한 서류 정리 (2026)',
+  '국제운전면허 + 태국 로컬 면허 병행 팁',
+  '가성비 통신사 요금제 · 선불 vs 후불 비교',
+  '자녀 국제학교 입학 절차 경험담 · 방콕',
+  '집 계약 보증금·중도해지 분쟁 사례와 대처',
+  '한국 카드 해외결제 수수료·환율 적용 정리',
+  '아속 코워킹 데스크 쉐어 후기 · 월 비용',
+  '태국 부동산 중개 수수료 관행 Q&A',
+] as const;
+
 const LIVE_FEED = [
   '실시간: BTS 역세권 원룸 임대 문의 급증',
   '공지: 태국 생활 필수앱 프로모션 모음',
@@ -74,6 +87,7 @@ const BOARDS = [
   { title: '자유게시판', moreHref: '/community/boards?cat=free', items: FREE },
   { title: '로컬 업체', moreHref: '/local', items: LOCAL },
   { title: '태국 뉴스', moreHref: '/news', items: NEWS },
+  { title: '생활 Q&A', moreHref: '/community/boards?cat=qna', items: QNA },
 ] as const;
 
 const STICKY_TOP = '5.5rem';
@@ -84,9 +98,9 @@ export default function HomePage() {
       className="min-h-screen bg-[#0B0F19] px-1.5 py-2 text-slate-200"
       data-tj-root="portal-2026-hardcoded"
     >
-      <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-2 xl:grid-cols-[minmax(10rem,12rem)_minmax(0,1fr)_minmax(11rem,14rem)]">
-        {/* Left wing — sticky */}
-        <aside className="hidden xl:block">
+      <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 items-start gap-2 min-[1181px]:grid-cols-[minmax(10rem,12rem)_minmax(0,1fr)_minmax(11rem,14rem)]">
+        {/* Left wing — position: sticky (grid + items-start so wings float while center scrolls) */}
+        <aside className="hidden min-[1181px]:block">
           <div className="sticky space-y-2" style={{ top: STICKY_TOP }}>
             <section className="rounded-xl border border-blue-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
               <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">Left Wing</p>
@@ -181,8 +195,8 @@ export default function HomePage() {
           </section>
         </section>
 
-        {/* Right wing — sticky */}
-        <aside className="hidden xl:block">
+        {/* Right wing — position: sticky */}
+        <aside className="hidden min-[1181px]:block">
           <div className="sticky space-y-2" style={{ top: STICKY_TOP }}>
             <section className="rounded-xl border border-blue-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
               <p className="text-[11px] font-black text-blue-300">문의 / 제보</p>

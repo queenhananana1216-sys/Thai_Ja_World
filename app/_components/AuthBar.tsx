@@ -1,22 +1,27 @@
 import Link from 'next/link';
 
+type Props = {
+  loginLabel?: string;
+  signupLabel?: string;
+};
+
 /**
- * 비상 정적 헤더 전용 — Supabase·세션·훅 없음. 항상 로그인 / 회원가입만 표시.
+ * 헤더 계정 칩 — 라벨은 i18n dict에서 주입 (기본: 한국어 고정).
  */
-export default function AuthBar() {
+export default function AuthBar({ loginLabel = '로그인', signupLabel = '회원가입' }: Props) {
   return (
     <div className="auth-chrome-pills auth-chrome-pills--guest" role="navigation" aria-label="계정">
       <Link
         href="/auth/login?next=%2F"
         className="auth-chrome-pills__pill auth-chrome-pills__pill--primary"
       >
-        로그인
+        {loginLabel}
       </Link>
       <Link
         href="/auth/signup?next=%2F"
         className="auth-chrome-pills__pill auth-chrome-pills__pill--ghost"
       >
-        회원가입
+        {signupLabel}
       </Link>
     </div>
   );

@@ -1,22 +1,10 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Noto_Sans_KR, Noto_Sans_Thai } from 'next/font/google';
-import ClientSafeBoundary from './_components/ClientSafeBoundary';
-import DeferredVercelObservability from './_components/DeferredVercelObservability';
-import FxRemoteWidget from './_components/FxRemoteWidget';
 import GlobalNav from './_components/GlobalNav';
-import { GlobalNavFallback } from './_components/GlobalNavFallback';
-import PremiumTopBanner from './_components/PremiumTopBanner';
-import Providers from './_components/Providers';
 import { SiteFooterFallback } from './_components/SiteFooterFallback';
-import { SiteFooter } from '@/components/shell/SiteFooter';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
-import { fetchMergedHeroSiteCopy } from '@/lib/siteCopy/heroCopy';
-import { getMergedDefaultsFromI18n } from '@/lib/siteCopy/heroCopyDefaults';
-import { FX_SNAPSHOT_FALLBACK } from '@/lib/fx/fetchUsdFx';
-import { getActiveUxFlagsServer } from '@/lib/ux/flagsServer';
-import type { UxFlagMap } from '@/lib/ux/types';
 import { getSiteBaseUrl } from '@/lib/seo/site';
 import './globals.css';
 
@@ -69,6 +57,10 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+/**
+ * 비상 최소 루트 — Providers·Spline·Analytics·FX·배너·ErrorBoundary 래퍼 없음.
+ * SSR: locale + i18n dict 만. 본문은 {children}.
+ */
 export default async function RootLayout({ children }: { children: ReactNode }) {
   let locale: Awaited<ReturnType<typeof getLocale>> = 'ko';
   try {
@@ -77,77 +69,25 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     locale = 'ko';
   }
   const d = getDictionary(locale);
-
-  const [uxFlagsSettled, heroCopySettled] = await Promise.allSettled([
-    getActiveUxFlagsServer(),
-    fetchMergedHeroSiteCopy(),
-  ]);
-
-  const uxFlags: UxFlagMap = uxFlagsSettled.status === 'fulfilled' ? uxFlagsSettled.value : {};
-  const heroSiteCopy =
-    heroCopySettled.status === 'fulfilled' ? heroCopySettled.value : getMergedDefaultsFromI18n();
-
-  const noteLabelOverride =
-    locale === 'th'
-      ? (uxFlags['nav.member_notes_label']?.th as string | undefined)
-      : (uxFlags['nav.member_notes_label']?.ko as string | undefined);
-  const navForHeader = {
-    ...d.nav,
-    memberNotesInbox:
-      typeof noteLabelOverride === 'string' && noteLabelOverride.trim()
-        ? noteLabelOverride.trim()
-        : d.nav.memberNotesInbox,
-  };
-
   const deploySha = process.env.VERCEL_GIT_COMMIT_SHA ?? '';
-
-  const rootChromeFallback = (
-    <div className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-slate-200">
-      <GlobalNavFallback />
-      <main className="min-h-0 flex-1 overflow-x-hidden">{children}</main>
-      <SiteFooterFallback />
-    </div>
-  );
 
   return (
     <html lang={locale} className={`${notoSansKr.variable} ${notoSansThai.variable} overflow-x-hidden`}>
       <body
-        className="min-h-screen overflow-x-hidden bg-[#0B0F19] text-slate-200"
+        className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-slate-200"
         data-tj-deploy-sha={deploySha || undefined}
       >
-        <ClientSafeBoundary name="root-providers" fallback={rootChromeFallback}>
-          <Providers heroSiteCopy={heroSiteCopy} initialLocale={locale}>
-            <div className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-slate-200">
-              <ClientSafeBoundary name="global-nav" fallback={<GlobalNavFallback />}>
-                <GlobalNav
-                  dict={{
-                    nav: navForHeader,
-                    brandSuffix: d.brandSuffix,
-                    logoAria: d.logoAria,
-                    lang: d.lang,
-                    search: d.search,
-                  }}
-                />
-              </ClientSafeBoundary>
-              <PremiumTopBanner />
-              <div className="min-h-0 flex-1 overflow-x-hidden">{children}</div>
-              <ClientSafeBoundary name="site-footer" fallback={<SiteFooterFallback />}>
-                <SiteFooter />
-              </ClientSafeBoundary>
-            </div>
-            <ClientSafeBoundary name="fx-remote-widget" fallback={null}>
-              <FxRemoteWidget
-                locale={locale}
-                initial={{ ...FX_SNAPSHOT_FALLBACK, dateISO: new Date().toISOString() }}
-                labels={d.home.fxRemote}
-                panelTitle={d.home.fxTitle}
-              />
-            </ClientSafeBoundary>
-          </Providers>
-        </ClientSafeBoundary>
-        <ClientSafeBoundary name="deferred-observability" fallback={null}>
-          <DeferredVercelObservability />
-        </ClientSafeBoundary>
+        <GlobalNav
+          dict={{
+            nav: d.nav,
+            brandSuffix: d.brandSuffix,
+            logoAria: d.logoAria,
+            lang: d.lang,
+            search: d.search,
+          }}
+        />
+        <div className="min-h-0 w-full flex-1 overflow-x-hidden">{children}</div>
+        <SiteFooterFallback />
       </body>
     </html>
   );

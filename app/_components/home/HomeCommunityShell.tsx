@@ -4,6 +4,8 @@ import styles from './home-hub.module.css';
 import { HomeMarquee } from './HomeMarquee';
 import { HomeBannerSlot } from './HomeBannerSlot';
 import { HomeGridFree } from './HomeGridFree';
+import { HomeGridJobs } from './HomeGridJobs';
+import { HomeGridMarket } from './HomeGridMarket';
 import { HomeGridQna } from './HomeGridQna';
 import { HomeGridLocal } from './HomeGridLocal';
 import { HomeGridNews } from './HomeGridNews';
@@ -180,9 +182,9 @@ async function HomeCommunityShellContent({
   ];
 
   return (
-    <main className={`${styles.root} min-h-[120vh] pb-20 flex flex-col bg-slate-900`} data-tj-hub="2026">
+    <main className={`${styles.root} min-h-[120vh] pb-20 flex flex-col bg-[#0B0F19]`} data-tj-hub="2026">
       <div className={`${styles.hubGrid3} flex-1`}>
-        <aside className={`${styles.wingLeft} hidden xl:block`}>
+        <aside className={`${styles.wingLeft} hidden min-[1181px]:block`}>
           <div className={styles.localWingStack}>
             {(leftWingCards ?? []).map((card) => (
               <LocalAppBanner
@@ -219,15 +221,21 @@ async function HomeCommunityShellContent({
               <HomeMarquee />
             </Suspense>
 
-            <Suspense fallback={<HomeCompactSkeleton variant="panel" />}>
-              <HomeRealtimeBest />
-            </Suspense>
-
             <Suspense fallback={<HomeCompactSkeleton variant="slider" />}>
               <HomeBannerSlot />
             </Suspense>
 
+            <Suspense fallback={<HomeCompactSkeleton variant="panel" />}>
+              <HomeRealtimeBest />
+            </Suspense>
+
             <div className={styles.philgoDense}>
+              <Suspense fallback={<HomeCompactSkeleton variant="panel" />}>
+                <HomeGridJobs />
+              </Suspense>
+              <Suspense fallback={<HomeCompactSkeleton variant="panel" />}>
+                <HomeGridMarket />
+              </Suspense>
               <Suspense fallback={<HomeCompactSkeleton variant="panel" />}>
                 <HomeGridFree />
               </Suspense>
@@ -248,7 +256,7 @@ async function HomeCommunityShellContent({
           </Suspense>
         </div>
 
-        <div className={`${styles.wingRight} hidden xl:flex`}>
+        <div className={`${styles.wingRight} hidden min-[1181px]:flex`}>
           <div className={styles.localWingStack}>
             {(rightWingCards ?? []).map((card) => (
               <LocalAppBanner

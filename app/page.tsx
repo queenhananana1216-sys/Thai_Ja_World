@@ -1,5 +1,10 @@
 import Link from 'next/link';
-import { fetchPortalHomeFeed, type PortalFeedLine } from './lib/home/fetchPortalHomeFeed';
+import {
+  fetchPortalHomeFeed,
+  HONEST_EMPTY_PORTAL_HOME_FEED,
+  type PortalFeedLine,
+  type PortalHomeFeed,
+} from './lib/home/fetchPortalHomeFeed';
 
 const STICKY_TOP = '5.5rem';
 
@@ -63,19 +68,12 @@ function LiveFeedList({ lines }: { lines: PortalFeedLine[] }) {
 }
 
 export default async function HomePage() {
-  let feed = await fetchPortalHomeFeed();
-  if (!feed || typeof feed !== 'object') {
-    feed = {
-      jobs: [],
-      market: [],
-      freeBoard: [],
-      qna: [],
-      localBiz: [],
-      news: [],
-      wingBanners: [],
-      liveFeed: [],
-      siteTotals: null,
-    };
+  let feed: PortalHomeFeed;
+  try {
+    const loaded = await fetchPortalHomeFeed();
+    feed = loaded && typeof loaded === 'object' ? loaded : HONEST_EMPTY_PORTAL_HOME_FEED;
+  } catch {
+    feed = HONEST_EMPTY_PORTAL_HOME_FEED;
   }
 
   const jobs = normalizeLines(feed.jobs);

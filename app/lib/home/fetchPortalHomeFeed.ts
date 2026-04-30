@@ -34,9 +34,8 @@ export type PortalHomeFeed = {
   siteTotals: { profileCount: number; communityItemCount: number } | null;
 };
 
-const HOME_FETCH_TIMEOUT_MS = 3000;
-
-const emptyFeed = (): PortalHomeFeed => ({
+/** DB·네트워크 실패 시에도 내용 없음: 가짜 게시글 문자열을 넣지 않음 */
+export const HONEST_EMPTY_PORTAL_HOME_FEED: PortalHomeFeed = {
   jobs: [],
   market: [],
   freeBoard: [],
@@ -46,11 +45,15 @@ const emptyFeed = (): PortalHomeFeed => ({
   wingBanners: [],
   liveFeed: [],
   siteTotals: null,
-});
+};
 
-function unifiedItemToLine(item: HomeUnifiedFeedItem): PortalFeedLine {
-  const title = String(item.title ?? '').trim() || '(제목 없음)';
-  const href = `/community/boards/${encodeURIComponent(item.id)}`;
+const HOME_FETCH_TIMEOUT_MS = 8000;
+
+function unifiedItemToLine(item: HomeUnifiedFeedItem): PortalFeedLine | null {
+  const id = String(item.id ?? '').trim();
+  const title = String(item.title ?? '').trim();
+  if (!id || !title) return null;
+  const href = `/community/boards/${encodeURIComponent(id)}`;
   const pill =
     item.kind === 'job'
       ? '구인'
@@ -62,7 +65,7 @@ function unifiedItemToLine(item: HomeUnifiedFeedItem): PortalFeedLine {
     ? `${pill} · ${excerpt.slice(0, 96)}${excerpt.length > 96 ? '…' : ''}`
     : `${pill} · 댓글 ${item.comment_count} · 조회 ${item.view_count}`;
   return {
-    id: `${item.kind}-${item.id}`,
+    id: `${item.kind}-${id}`,
     title,
     href,
     subtitle,
@@ -108,56 +111,102 @@ function marketSubtitle(
   return row.excerpt?.trim() ? row.excerpt.trim().slice(0, 80) : null;
 }
 
-/** 루트 포털 3열 — Supabase 실데이터만 (실패·빈 배열은 안전 폴백) */
+/** Supabase에서 온 행만 노출. 제목·id 없으면 행 자체를 버림(가짜 플레이스홀더 없음). */
+function compactLines(lines: (PortalFeedLine | null)[]): PortalFeedLine[] {
+  return lines.filter((x): x is PortalFeedLine => x != null && Boolean(x.id?.trim()) && Boolean(x.title?.trim()));
+}
+
+/**
+ * 루트 포털 3열 — Supabase 실데이터만.
+ * 타임아웃·에러·빈 결과는 항상 빈 배열; 샘플/데모/임의 문구를 넣지 않음.
+ */
 export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
-  const out = emptyFeed();
+  const out: PortalHomeFeed = {
+    jobs: [],
+    market: [],
+    freeBoard: [],
+    qna: [],
+    localBiz: [],
+    news: [],
+    wingBanners: [],
+    liveFeed: [],
+    siteTotals: null,
+  };
 
   try {
     const j = await withTimeout(fetchHomeJobs(8), { rows: [], error: null });
-    out.jobs = (j.rows ?? []).map((r) => ({
-      id: String(r.id),
-      title: String(r.title ?? '').trim() || '(제목 없음)',
-      href: `/community/boards?cat=job`,
-      subtitle: jobSubtitle(r),
-    }));
+    out.jobs = compactLines(
+      (j.rows ?? []).map((r) => {
+        const id = String(r.id ?? '').trim();
+        const title = String(r.title ?? '').trim();
+        if (!id || !title) return null;
+        return {
+          id,
+          title,
+          href: `/community/boards?cat=job`,
+          subtitle: jobSubtitle(r),
+        };
+      }),
+    );
   } catch {
-    /* keep [] */
+    out.jobs = [];
   }
 
   try {
     const m = await withTimeout(fetchHomeMarket(8), { rows: [], error: null });
-    out.market = (m.rows ?? []).map((r) => ({
-      id: String(r.id),
-      title: String(r.title ?? '').trim() || '(제목 없음)',
-      href: `/community/boards?cat=flea`,
-      subtitle: marketSubtitle(r),
-    }));
+    out.market = compactLines(
+      (m.rows ?? []).map((r) => {
+        const id = String(r.id ?? '').trim();
+        const title = String(r.title ?? '').trim();
+        if (!id || !title) return null;
+        return {
+          id,
+          title,
+          href: `/community/boards?cat=flea`,
+          subtitle: marketSubtitle(r),
+        };
+      }),
+    );
   } catch {
-    /* keep [] */
+    out.market = [];
   }
 
   try {
     const f = await withTimeout(fetchHomePostsByCategory('free', 8), { rows: [], error: null });
-    out.freeBoard = (f.rows ?? []).map((r) => ({
-      id: String(r.id),
-      title: String(r.title ?? '').trim() || '(제목 없음)',
-      href: `/community/boards/${encodeURIComponent(r.id)}`,
-      subtitle: r.comment_count != null ? `댓글 ${r.comment_count}` : null,
-    }));
+    out.freeBoard = compactLines(
+      (f.rows ?? []).map((r) => {
+        const id = String(r.id ?? '').trim();
+        const title = String(r.title ?? '').trim();
+        if (!id || !title) return null;
+        return {
+          id,
+          title,
+          href: `/community/boards/${encodeURIComponent(id)}`,
+          subtitle: r.comment_count != null ? `댓글 ${r.comment_count}` : null,
+        };
+      }),
+    );
   } catch {
-    /* keep [] */
+    out.freeBoard = [];
   }
 
   try {
     const q = await withTimeout(fetchHomePostsByCategory('qna', 8), { rows: [], error: null });
-    out.qna = (q.rows ?? []).map((r) => ({
-      id: String(r.id),
-      title: String(r.title ?? '').trim() || '(제목 없음)',
-      href: `/community/boards/${encodeURIComponent(r.id)}`,
-      subtitle: r.comment_count != null ? `댓글 ${r.comment_count}` : null,
-    }));
+    out.qna = compactLines(
+      (q.rows ?? []).map((r) => {
+        const id = String(r.id ?? '').trim();
+        const title = String(r.title ?? '').trim();
+        if (!id || !title) return null;
+        return {
+          id,
+          title,
+          href: `/community/boards/${encodeURIComponent(id)}`,
+          subtitle: r.comment_count != null ? `댓글 ${r.comment_count}` : null,
+        };
+      }),
+    );
   } catch {
-    /* keep [] */
+    out.qna = [];
   }
 
   try {
@@ -167,45 +216,67 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
       const rpc = await withTimeout(fetchHomeLocalBusinesses(8), { rows: [], error: null });
       rows = rpc.rows ?? [];
     }
-    out.localBiz = rows.map((r) => ({
-      id: String(r.id),
-      title: String(r.name ?? '').trim() || '(이름 없음)',
-      href: r.slug ? `/shop/${encodeURIComponent(r.slug)}` : '/local',
-      subtitle: [r.region, r.category].filter(Boolean).join(' · ') || r.description?.slice(0, 72) || null,
-    }));
+    out.localBiz = compactLines(
+      rows.map((r) => {
+        const id = String(r.id ?? '').trim();
+        const title = String(r.name ?? '').trim();
+        if (!id || !title) return null;
+        return {
+          id,
+          title,
+          href: r.slug ? `/shop/${encodeURIComponent(r.slug)}` : '/local',
+          subtitle: [r.region, r.category].filter(Boolean).join(' · ') || r.description?.slice(0, 72) || null,
+        };
+      }),
+    );
   } catch {
-    /* keep [] */
+    out.localBiz = [];
   }
 
   try {
     const n = await withTimeout(fetchHomeNewsDigest(8), { rows: [], error: null });
-    out.news = (n.rows ?? []).map((r) => ({
-      id: String(r.id),
-      title: String(r.title ?? '').trim() || '(제목 없음)',
-      href: r.href?.trim() ? r.href : `/news/${encodeURIComponent(r.id)}`,
-      subtitle: r.summary?.trim() ? r.summary.trim().slice(0, 100) : null,
-    }));
+    out.news = compactLines(
+      (n.rows ?? []).map((r) => {
+        const id = String(r.id ?? '').trim();
+        const title = String(r.title ?? '').trim();
+        if (!id || !title) return null;
+        return {
+          id,
+          title,
+          href: r.href?.trim() ? r.href : `/news/${encodeURIComponent(id)}`,
+          subtitle: r.summary?.trim() ? r.summary.trim().slice(0, 100) : null,
+        };
+      }),
+    );
   } catch {
-    /* keep [] */
+    out.news = [];
   }
 
   try {
     const b = await withTimeout(fetchHomeLeftRailBanners(), { rows: [], error: null });
-    out.wingBanners = (b.rows ?? []).map((row) => ({
-      id: String(row.id),
-      title: String(row.title ?? '').trim() || '배너',
-      href: row.href?.trim() ? String(row.href) : '/ads',
-      subtitle: row.subtitle?.trim() ?? null,
-    }));
+    out.wingBanners = compactLines(
+      (b.rows ?? []).map((row) => {
+        const id = String(row.id ?? '').trim();
+        const title = String(row.title ?? '').trim();
+        if (!id || !title) return null;
+        const href = row.href?.trim() ? String(row.href) : '/ads';
+        return {
+          id,
+          title,
+          href,
+          subtitle: row.subtitle?.trim() ?? null,
+        };
+      }),
+    );
   } catch {
-    /* keep [] */
+    out.wingBanners = [];
   }
 
   try {
     const u = await withTimeout(fetchHomeUnifiedFeed(14), { rows: [], error: null });
-    out.liveFeed = (u.rows ?? []).map((row) => unifiedItemToLine(row));
+    out.liveFeed = compactLines((u.rows ?? []).map((row) => unifiedItemToLine(row)));
   } catch {
-    /* keep [] */
+    out.liveFeed = [];
   }
 
   try {
@@ -217,7 +288,7 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
       };
     }
   } catch {
-    /* keep null */
+    out.siteTotals = null;
   }
 
   return out;

@@ -29,6 +29,8 @@
   --tj-link-hover: #2845c7;
   --tj-shadow: 6px 6px 0 rgba(13, 13, 15, 0.14);
   --tj-shadow-saffron: 5px 5px 0 rgba(255, 183, 3, 0.55);
+  /** 글로벌 헤더(툴바+로고+메인내비) 아래에 포털 좌·우 스티키 윙을 붙일 때 오프셋 */
+  --tj-home-sticky-top: 12.5rem;
 }
 
 *,

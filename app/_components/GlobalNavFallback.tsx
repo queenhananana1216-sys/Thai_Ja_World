@@ -1,32 +1,36 @@
 import Link from 'next/link';
 
-/** GlobalNav 렌더 예외 시 — 비로그인 기본 헤더(정적, DB·세션 없음) */
+/** GlobalNav 예외 시에도 동일한 정적 껍데기 */
 export function GlobalNavFallback() {
   return (
-    <div className="sticky top-0 z-[600] w-full shrink-0 border-b border-white/10 bg-[#0B0F19] isolate">
-    <header className="global-header global-header--compact" role="banner">
-      <div className="site-container global-header__toolbar-inner py-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link href="/" className="text-sm font-extrabold tracking-tight text-white no-underline hover:underline">
-            태자월드
+    <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
+      <div className="site-container flex flex-wrap items-center justify-between gap-2 py-2">
+        <Link href="/" className="text-sm font-black text-white no-underline">
+          태자<span className="text-amber-300">월드</span>
+        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/auth/login?next=%2F"
+            className="rounded-full border border-violet-400/40 px-3 py-1 text-xs font-bold text-violet-100 no-underline"
+          >
+            로그인
           </Link>
-          <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-slate-200">
-            <Link href="/community/boards" className="no-underline hover:text-amber-200 hover:underline">
-              광장
-            </Link>
-            <Link href="/news" className="no-underline hover:text-amber-200 hover:underline">
-              뉴스
-            </Link>
-            <Link href="/local" className="no-underline hover:text-amber-200 hover:underline">
-              로컬
-            </Link>
-            <Link href="/auth/login" className="no-underline hover:text-amber-200 hover:underline">
-              로그인
-            </Link>
-          </nav>
+          <Link
+            href="/auth/signup?next=%2F"
+            className="rounded-full border border-white/20 px-3 py-1 text-xs font-bold text-slate-100 no-underline"
+          >
+            회원가입
+          </Link>
         </div>
       </div>
-    </header>
+      <div className="border-t border-white/10 px-4 pb-2">
+        <input
+          readOnly
+          tabIndex={-1}
+          placeholder="통합 검색"
+          className="w-full max-w-md rounded-full border border-white/15 bg-slate-900/70 px-3 py-1.5 text-xs text-slate-300"
+        />
+      </div>
     </div>
   );
 }

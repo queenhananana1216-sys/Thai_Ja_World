@@ -1,29 +1,8 @@
-'use client';
-
-/**
- * 글로벌 상단 네비 — 인증은 툴바 우측 Pill 전용 (흰 띠에 거대 로그인 패널 없음)
- */
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
-import { usePathname } from 'next/navigation';
-import { Menu } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import type { Dictionary } from '@/i18n/dictionaries';
-import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 import AuthBar from './AuthBar';
-import LanguageSwitch from './LanguageSwitch';
-import SiteSearch from './SiteSearch';
-import type { SplineSceneRecord } from '@/lib/spline/types';
-import { tryCreateBrowserClient } from '@/lib/supabase/client';
 
-const DEFAULT_MENUS = [
+const STATIC_MENUS = [
   { href: '/', label: '홈' },
   { href: '/community/boards', label: '자유게시판' },
   { href: '/community/boards?cat=flea', label: '번개장터' },
@@ -31,345 +10,124 @@ const DEFAULT_MENUS = [
   { href: '/local/info', label: '부동산' },
   { href: '/local', label: '로컬예약' },
 ] as const;
-const WRITE_CTA_HREF = '/community/write';
-const OWNER_SPLINE_FILE_URL = 'https://app.spline.design/file/2e7c81f2-50e3-458f-8663-2f54af2cf60d';
-const LazySplineCanvas = dynamic(
-  () => import('@/components/3d/SplineCanvas').then((mod) => mod.SplineCanvas),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl border border-violet-300/20 bg-slate-900/75">
-        <span className="animate-pulse text-[10px] font-semibold tracking-[0.3em] text-slate-200/70 md:text-xs">
-          TAEJA WORLD
-        </span>
-      </div>
-    ),
-  },
-);
+
+const WRITE_HREF = '/community/write';
 
 type Props = {
-  dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board' | 'search'>;
-  showAdminConsole?: boolean;
-  logoScene?: SplineSceneRecord | null;
+  dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'search'>;
 };
 
-type PlazaRow = {
-  slug: string;
-  name: string;
-};
-
-type DynamicMenu = {
-  href: string;
-  label: string;
-};
-
-function resolveDynamicMenuHref(slug: string): string {
-  const s = slug.trim().toLowerCase();
-  if (s === 'free' || s === 'restaurant') return `/community/boards?cat=${encodeURIComponent(s)}`;
-  if (s === 'job' || s === 'jobs') return '/community/boards?cat=job';
-  if (s === 'flea' || s === 'market') return '/community/boards?cat=flea';
-  return `/local/${encodeURIComponent(s)}`;
-}
-
-export default function GlobalNav({ dict, showAdminConsole = false, logoScene = null }: Props) {
-  const pathname = usePathname() ?? '/';
-  /** 홈(/)에서도 통합 검색 노출 — 세션·경로와 무관 */
-  const hideHeaderSearch = false;
-  const [compactHeader, setCompactHeader] = useState(false);
-  const [canViewAdminConsole, setCanViewAdminConsole] = useState(false);
-  const [dynamicMenus, setDynamicMenus] = useState<DynamicMenu[]>([]);
-  const navMenus = dynamicMenus.length > 0 ? dynamicMenus : DEFAULT_MENUS;
-
-  const authProps = {
-    memberNav: {
-      minihome: dict.nav.memberMinihome,
-      notesInbox: dict.nav.memberNotesInbox,
-      friends: dict.nav.memberFriends,
-      ariaLabel: dict.nav.memberQuickNavAria,
-    },
-    labels: {
-      login: dict.board.login,
-      signup: dict.board.signup,
-      logout: dict.board.logout,
-    },
-  };
-
-  function linkActive(href: string): boolean {
-    if (href === '/') return pathname === '/';
-    if (href.startsWith('/community/boards')) {
-      return pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade');
-    }
-    return pathname.startsWith(href);
-  }
-
-  useEffect(() => {
-    const onScroll = () => setCompactHeader(window.scrollY > 24);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-    const sb = tryCreateBrowserClient();
-    if (!sb) {
-      setDynamicMenus(DEFAULT_MENUS.map((m) => ({ href: m.href, label: m.label })));
-      return;
-    }
-    const sbClient = sb;
-    async function loadMenus() {
-      const { data } = await sbClient
-        .from('plazas')
-        .select('slug,name')
-        .order('sort_order', { ascending: true })
-        .limit(24);
-      if (!alive) return;
-      const rows = (data ?? []) as PlazaRow[];
-      if (!rows.length) {
-        setDynamicMenus(DEFAULT_MENUS.map((m) => ({ href: m.href, label: m.label })));
-        return;
-      }
-      const mapped: DynamicMenu[] = [
-        { href: '/', label: '홈' },
-        ...rows
-          .filter((r) => typeof r.slug === 'string' && r.slug.trim() && typeof r.name === 'string')
-          .map((r) => ({
-            href: resolveDynamicMenuHref(r.slug),
-            label: r.name.trim(),
-          })),
-      ];
-      setDynamicMenus(mapped);
-    }
-    void loadMenus();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-    if (!showAdminConsole) {
-      setCanViewAdminConsole(false);
-      return;
-    }
-    const sb = tryCreateBrowserClient();
-    if (!sb) {
-      setCanViewAdminConsole(false);
-      return;
-    }
-    const sbClient = sb;
-
-    async function verifyAdminRole() {
-      const {
-        data: { session },
-      } = await sbClient.auth.getSession();
-      const user = session?.user;
-      if (!alive || !user) {
-        setCanViewAdminConsole(false);
-        return;
-      }
-
-      const appRole =
-        typeof user.app_metadata?.role === 'string' ? user.app_metadata.role.trim().toLowerCase() : '';
-      if (appRole === 'admin' || appRole === 'owner' || appRole === 'super_admin') {
-        setCanViewAdminConsole(true);
-        return;
-      }
-
-      const { data: profile } = await sbClient
-        .from('profiles')
-        .select('role, is_admin')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (!alive) return;
-
-      const role = typeof profile?.role === 'string' ? profile.role.trim().toLowerCase() : '';
-      const hasAdminRole = role === 'admin' || role === 'owner' || role === 'super_admin';
-      const isAdmin = profile?.is_admin === true;
-      setCanViewAdminConsole(Boolean(hasAdminRole || isAdmin));
-    }
-
-    void verifyAdminRole();
-    const {
-      data: { subscription },
-    } = sbClient.auth.onAuthStateChange(() => {
-      void verifyAdminRole();
-    });
-    return () => {
-      alive = false;
-      subscription.unsubscribe();
-    };
-  }, [showAdminConsole]);
-
+/**
+ * 2026 비상 정적 헤더 — DB·Supabase·useEffect·인증 분기 없음. 시각적 껍데기만.
+ */
+export default function GlobalNav({ dict }: Props) {
   return (
-    <div className="sticky top-0 z-[600] w-full shrink-0 border-b border-white/10 bg-[#0B0F19] isolate">
-    <header className={`global-header${compactHeader ? ' global-header--compact' : ''}`}>
-      <div className="global-header__toolbar">
-        <div className="site-container global-header__toolbar-inner">
-          <div className="global-header__toolbar-start">
-            <LanguageSwitch labels={dict.lang} />
+    <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
+      <div className="border-b border-white/5 bg-slate-950/80">
+        <div className="site-container flex flex-wrap items-center justify-between gap-2 py-1.5">
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500">
+            <span className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400">{dict.lang.ko}</span>
+            <span className="text-slate-600">/</span>
+            <span className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400">{dict.lang.th}</span>
           </div>
-          <div className="global-header__toolbar-end">
-            {canViewAdminConsole && (
+          <AuthBar />
+        </div>
+      </div>
+
+      <div className="site-container flex flex-wrap items-center justify-between gap-3 py-2.5">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 no-underline"
+          aria-label={dict.logoAria}
+        >
+          <span
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-400/35 bg-gradient-to-br from-violet-600/40 to-slate-900 text-lg font-black text-white shadow-inner md:h-11 md:w-11"
+            aria-hidden
+          >
+            태
+          </span>
+          <span className="text-base font-black tracking-tight text-white md:text-lg">
+            태자<span className="text-amber-300">월드</span>
+          </span>
+          <span className="sr-only">{dict.brandSuffix}</span>
+        </Link>
+
+        <div className="order-3 w-full min-w-0 max-w-xl flex-1 md:order-none md:w-auto md:max-w-md">
+          <label className="sr-only" htmlFor="tj-header-search-dumb">
+            {dict.search.ariaLabel}
+          </label>
+          <input
+            id="tj-header-search-dumb"
+            type="search"
+            name="tj-header-search-dumb"
+            readOnly
+            tabIndex={-1}
+            placeholder={dict.search.placeholder}
+            className="w-full rounded-full border border-white/15 bg-slate-900/70 px-4 py-2 text-sm text-slate-200 outline-none ring-0 placeholder:text-slate-500"
+          />
+          <p className="mt-1 text-center text-[10px] text-slate-600 md:text-left">{dict.search.headerBarLabel}</p>
+        </div>
+      </div>
+
+      <nav
+        className="border-t border-white/5 bg-gradient-to-b from-slate-950/90 to-slate-900/95 py-2"
+        aria-label={dict.nav.mainNavAria}
+      >
+        <div className="site-container flex flex-col gap-2">
+          <details className="group md:hidden">
+            <summary className="cursor-pointer list-none rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-sm font-semibold text-slate-200 marker:hidden [&::-webkit-details-marker]:hidden">
+              <span className="after:ml-2 after:text-slate-500 after:content-['▾']">메뉴</span>
+            </summary>
+            <div className="mt-2 flex flex-col gap-1 rounded-lg border border-white/10 bg-slate-950/95 p-2">
               <Link
-                href="/admin"
-                className={
-                  'global-header__console global-header__console--subtle' +
-                  (pathname.startsWith('/admin') ? ' global-header__console--active' : '')
-                }
+                href="/auth/login?next=%2F"
+                className="rounded-md border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-center text-sm font-semibold text-violet-100 no-underline"
               >
-                {dict.nav.botConsole}
+                로그인
               </Link>
-            )}
-            <AuthBar variant="chromePills" {...authProps} />
-          </div>
-        </div>
-      </div>
-
-      <div className="global-header__nate-band">
-        <div className="site-container global-header__nate-band-inner">
-          <Link
-            href="/"
-            className="global-header__logo-nate inline-flex items-center"
-            aria-label={dict.logoAria}
-          >
-            <span
-              aria-hidden
-              className="relative block h-10 w-32 shrink-0 overflow-hidden rounded-xl border border-violet-300/20 bg-slate-950/80 md:h-12 md:w-40"
-            >
-              <LazySplineCanvas
-                slot="logo"
-                publishedUrl={
-                  logoScene && logoScene.isEnabled && logoScene.publishedUrl
-                    ? logoScene.publishedUrl
-                    : OWNER_SPLINE_FILE_URL
-                }
-                sceneCodeUrl={
-                  logoScene && logoScene.isEnabled && logoScene.sceneCodeUrl
-                    ? logoScene.sceneCodeUrl
-                    : undefined
-                }
-                quality={logoScene?.qualityTier ?? 'high'}
-                placeholderTone="dark"
-                interactive
-                title="TAEJA WORLD 2026 3D Logo"
-              />
-            </span>
-            <span className="sr-only">{dict.brandSuffix}</span>
-            <span className="ml-2 text-sm font-black tracking-tight text-white sm:text-base" aria-hidden>
-              태자월드
-            </span>
-          </Link>
-        </div>
-      </div>
-
-      <nav className="global-header__main-nav" aria-label={dict.nav.mainNavAria}>
-        <div className="site-container">
-          <div
-            className={
-              'global-header__main-nav-bar' +
-              (hideHeaderSearch ? ' global-header__main-nav-bar--nav-only' : '')
-            }
-          >
-            <div className="flex w-full items-center gap-2 md:hidden">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0 border-white/25 bg-slate-800/70 text-white hover:bg-slate-700/85 hover:text-white"
-                    aria-label={dict.nav.mainNavAria}
-                  >
-                    <Menu className="size-5" aria-hidden />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent
-                  side="left"
-                  className="border-zinc-700 bg-zinc-950 text-zinc-50 [&_button]:text-zinc-50"
-                >
-                  <SheetHeader>
-                    <SheetTitle className="text-left text-zinc-50">{dict.nav.mainNavAria}</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6 flex flex-col gap-1 pr-2">
-                    <Link
-                      href={`/auth/login?next=${encodeURIComponent(pathname)}`}
-                      className="mb-2 rounded-md border border-violet-300/40 bg-violet-300/10 px-3 py-2.5 text-sm font-semibold text-violet-100 no-underline transition hover:bg-violet-300/20"
-                    >
-                      {dict.board.login}
-                    </Link>
-                    <Link
-                      href={`/auth/signup?next=${encodeURIComponent(pathname)}`}
-                      className="mb-2 rounded-md border border-pink-300/40 bg-pink-300/10 px-3 py-2.5 text-sm font-semibold text-pink-100 no-underline transition hover:bg-pink-300/20"
-                    >
-                      {dict.board.signup}
-                    </Link>
-                    <Link
-                      href={WRITE_CTA_HREF}
-                      className="mb-2 rounded-md border border-blue-300/45 bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white no-underline shadow-[0_0_0_1px_rgba(147,197,253,0.3),0_10px_24px_rgba(37,99,235,0.35)] transition hover:bg-blue-500"
-                    >
-                      ✎ 글쓰기
-                    </Link>
-                    {navMenus.map((menu) => {
-                      const isActive = linkActive(menu.href);
-                      return (
-                        <Link
-                          key={menu.href}
-                          href={menu.href}
-                          className={
-                            'rounded-md px-3 py-2.5 text-sm font-medium no-underline transition-colors ' +
-                            (isActive
-                              ? 'bg-slate-800 text-museum-saffron shadow-[0_0_0_1px_rgba(250,204,21,0.42),0_0_14px_rgba(250,204,21,0.2)]'
-                              : 'text-zinc-100 hover:bg-slate-800/70 hover:text-white hover:shadow-[0_0_0_1px_rgba(250,204,21,0.35),0_0_12px_rgba(59,130,246,0.35)]')
-                          }
-                        >
-                          {menu.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </SheetContent>
-              </Sheet>
-              {!hideHeaderSearch ? (
-                <div className="global-header__main-nav-search min-w-0 flex-1">
-                  <SiteSearch variant="header" />
-                </div>
-              ) : null}
-            </div>
-
-            <div className="hidden md:contents">
-              <div className="global-header__nav">
-                {navMenus.map((menu) => {
-                  const isActive = linkActive(menu.href);
-                  return (
-                    <Link
-                      key={menu.href}
-                      href={menu.href}
-                      className={
-                        'global-header__link' + (isActive ? ' global-header__link--active' : '')
-                      }
-                    >
-                      {menu.label}
-                    </Link>
-                  );
-                })}
-              </div>
               <Link
-                href={WRITE_CTA_HREF}
-                className="rounded-full bg-blue-600 px-3 py-2 text-xs font-semibold tracking-tight text-white no-underline shadow-[0_0_0_1px_rgba(147,197,253,0.4),0_10px_24px_rgba(37,99,235,0.38)] transition hover:bg-blue-500 hover:shadow-[0_0_0_1px_rgba(250,204,21,0.45),0_0_16px_rgba(59,130,246,0.45)]"
+                href="/auth/signup?next=%2F"
+                className="rounded-md border border-pink-400/30 bg-pink-500/10 px-3 py-2 text-center text-sm font-semibold text-pink-100 no-underline"
+              >
+                회원가입
+              </Link>
+              <Link
+                href={WRITE_HREF}
+                className="rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white no-underline"
               >
                 ✎ 글쓰기
               </Link>
-              {!hideHeaderSearch ? (
-                <div className="global-header__main-nav-search">
-                  <SiteSearch variant="header" />
-                </div>
-              ) : null}
+              {STATIC_MENUS.map((m) => (
+                <Link
+                  key={m.href}
+                  href={m.href}
+                  className="rounded-md px-3 py-2 text-sm text-slate-200 no-underline hover:bg-slate-800"
+                >
+                  {m.label}
+                </Link>
+              ))}
             </div>
+          </details>
+
+          <div className="hidden flex-wrap items-center gap-2 md:flex">
+            {STATIC_MENUS.map((m) => (
+              <Link
+                key={m.href}
+                href={m.href}
+                className="rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-200 no-underline hover:border-amber-400/40 hover:text-amber-200"
+              >
+                {m.label}
+              </Link>
+            ))}
+            <Link
+              href={WRITE_HREF}
+              className="ml-auto rounded-full bg-blue-600 px-3 py-1.5 text-xs font-bold text-white no-underline shadow-md hover:bg-blue-500"
+            >
+              ✎ 글쓰기
+            </Link>
           </div>
         </div>
       </nav>
-    </header>
     </div>
   );
 }

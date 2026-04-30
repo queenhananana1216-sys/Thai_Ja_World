@@ -10,7 +10,6 @@ import PremiumTopBanner from './_components/PremiumTopBanner';
 import Providers from './_components/Providers';
 import { SiteFooterFallback } from './_components/SiteFooterFallback';
 import { SiteFooter } from '@/components/shell/SiteFooter';
-import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { fetchMergedHeroSiteCopy } from '@/lib/siteCopy/heroCopy';
@@ -18,8 +17,6 @@ import { getMergedDefaultsFromI18n } from '@/lib/siteCopy/heroCopyDefaults';
 import { FX_SNAPSHOT_FALLBACK } from '@/lib/fx/fetchUsdFx';
 import { getActiveUxFlagsServer } from '@/lib/ux/flagsServer';
 import type { UxFlagMap } from '@/lib/ux/types';
-import { resolveSplineScenes } from '@/lib/spline/resolver';
-import type { SplineSceneRecord } from '@/lib/spline/types';
 import { getSiteBaseUrl } from '@/lib/seo/site';
 import './globals.css';
 
@@ -81,19 +78,14 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   }
   const d = getDictionary(locale);
 
-  const [uxFlagsSettled, adminSettled, heroCopySettled, splineSettled] = await Promise.allSettled([
+  const [uxFlagsSettled, heroCopySettled] = await Promise.allSettled([
     getActiveUxFlagsServer(),
-    resolveAdminAccess(),
     fetchMergedHeroSiteCopy(),
-    resolveSplineScenes(),
   ]);
 
   const uxFlags: UxFlagMap = uxFlagsSettled.status === 'fulfilled' ? uxFlagsSettled.value : {};
-  const adminSession = adminSettled.status === 'fulfilled' ? adminSettled.value : false;
   const heroSiteCopy =
     heroCopySettled.status === 'fulfilled' ? heroCopySettled.value : getMergedDefaultsFromI18n();
-  const logoScene: SplineSceneRecord | null =
-    splineSettled.status === 'fulfilled' ? splineSettled.value.logo : null;
 
   const noteLabelOverride =
     locale === 'th'
@@ -128,14 +120,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <div className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-slate-200">
               <ClientSafeBoundary name="global-nav" fallback={<GlobalNavFallback />}>
                 <GlobalNav
-                  showAdminConsole={Boolean(adminSession)}
-                  logoScene={logoScene}
                   dict={{
                     nav: navForHeader,
                     brandSuffix: d.brandSuffix,
                     logoAria: d.logoAria,
                     lang: d.lang,
-                    board: d.board,
                     search: d.search,
                   }}
                 />

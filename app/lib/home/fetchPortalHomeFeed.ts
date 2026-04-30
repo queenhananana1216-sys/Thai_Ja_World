@@ -8,7 +8,11 @@ import {
   fetchHomeLocalBusinesses,
   fetchHomeNewsDigest,
   fetchHomeLeftRailBanners,
+  fetchHomeUnifiedFeed,
+  fetchHomeSiteTotals,
 } from '../../_components/home/home-queries';
+import type { HomeUnifiedFeedItem } from '../../_components/home/home-feed-types';
+import { categoryLabel } from '@/lib/community/postCategories';
 
 export type PortalFeedLine = {
   id: string;
@@ -21,9 +25,13 @@ export type PortalHomeFeed = {
   jobs: PortalFeedLine[];
   market: PortalFeedLine[];
   freeBoard: PortalFeedLine[];
+  qna: PortalFeedLine[];
   localBiz: PortalFeedLine[];
   news: PortalFeedLine[];
   wingBanners: PortalFeedLine[];
+  /** 통합 피드(RPC 또는 posts 폴백) — 하단 실시간 스트립 */
+  liveFeed: PortalFeedLine[];
+  siteTotals: { profileCount: number; communityItemCount: number } | null;
 };
 
 const HOME_FETCH_TIMEOUT_MS = 3000;
@@ -32,10 +40,34 @@ const emptyFeed = (): PortalHomeFeed => ({
   jobs: [],
   market: [],
   freeBoard: [],
+  qna: [],
   localBiz: [],
   news: [],
   wingBanners: [],
+  liveFeed: [],
+  siteTotals: null,
 });
+
+function unifiedItemToLine(item: HomeUnifiedFeedItem): PortalFeedLine {
+  const title = String(item.title ?? '').trim() || '(제목 없음)';
+  const href = `/community/boards/${encodeURIComponent(item.id)}`;
+  const pill =
+    item.kind === 'job'
+      ? '구인'
+      : item.kind === 'market'
+        ? '거래'
+        : categoryLabel(item.category || 'free', 'ko');
+  const excerpt = item.excerpt?.trim();
+  const subtitle = excerpt
+    ? `${pill} · ${excerpt.slice(0, 96)}${excerpt.length > 96 ? '…' : ''}`
+    : `${pill} · 댓글 ${item.comment_count} · 조회 ${item.view_count}`;
+  return {
+    id: `${item.kind}-${item.id}`,
+    title,
+    href,
+    subtitle,
+  };
+}
 
 async function withTimeout<T>(task: Promise<T>, fallback: T, timeoutMs = HOME_FETCH_TIMEOUT_MS): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -117,6 +149,18 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
   }
 
   try {
+    const q = await withTimeout(fetchHomePostsByCategory('qna', 8), { rows: [], error: null });
+    out.qna = (q.rows ?? []).map((r) => ({
+      id: String(r.id),
+      title: String(r.title ?? '').trim() || '(제목 없음)',
+      href: `/community/boards/${encodeURIComponent(r.id)}`,
+      subtitle: r.comment_count != null ? `댓글 ${r.comment_count}` : null,
+    }));
+  } catch {
+    /* keep [] */
+  }
+
+  try {
     const pub = await withTimeout(fetchHomeLocalPublicView(8), { rows: [], error: null });
     let rows = pub.rows ?? [];
     if (rows.length === 0) {
@@ -155,6 +199,25 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
     }));
   } catch {
     /* keep [] */
+  }
+
+  try {
+    const u = await withTimeout(fetchHomeUnifiedFeed(14), { rows: [], error: null });
+    out.liveFeed = (u.rows ?? []).map((row) => unifiedItemToLine(row));
+  } catch {
+    /* keep [] */
+  }
+
+  try {
+    const s = await withTimeout(fetchHomeSiteTotals(), { profileCount: 0, communityItemCount: 0, error: null });
+    if (!s.error) {
+      out.siteTotals = {
+        profileCount: Number(s.profileCount ?? 0),
+        communityItemCount: Number(s.communityItemCount ?? 0),
+      };
+    }
+  } catch {
+    /* keep null */
   }
 
   return out;

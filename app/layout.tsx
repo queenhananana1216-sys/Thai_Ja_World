@@ -21,6 +21,10 @@ import { resolveSplineScenes } from '@/lib/spline/resolver';
 import type { SplineSceneRecord } from '@/lib/spline/types';
 import './globals.css';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
 const notoSansKr = Noto_Sans_KR({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],

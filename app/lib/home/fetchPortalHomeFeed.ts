@@ -26,6 +26,8 @@ export type PortalHomeFeed = {
   wingBanners: PortalFeedLine[];
 };
 
+const HOME_FETCH_TIMEOUT_MS = 3000;
+
 const emptyFeed = (): PortalHomeFeed => ({
   jobs: [],
   market: [],
@@ -34,6 +36,24 @@ const emptyFeed = (): PortalHomeFeed => ({
   news: [],
   wingBanners: [],
 });
+
+async function withTimeout<T>(task: Promise<T>, fallback: T, timeoutMs = HOME_FETCH_TIMEOUT_MS): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race<T>([
+      task,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback), timeoutMs);
+      }),
+    ]);
+  } catch {
+    return fallback;
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+}
 
 function jobSubtitle(
   row: {
@@ -61,7 +81,7 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
   const out = emptyFeed();
 
   try {
-    const j = await fetchHomeJobs(8);
+    const j = await withTimeout(fetchHomeJobs(8), { rows: [] });
     out.jobs = (j.rows ?? []).map((r) => ({
       id: String(r.id),
       title: String(r.title ?? '').trim() || '(제목 없음)',
@@ -73,7 +93,7 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
   }
 
   try {
-    const m = await fetchHomeMarket(8);
+    const m = await withTimeout(fetchHomeMarket(8), { rows: [] });
     out.market = (m.rows ?? []).map((r) => ({
       id: String(r.id),
       title: String(r.title ?? '').trim() || '(제목 없음)',
@@ -85,7 +105,7 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
   }
 
   try {
-    const f = await fetchHomePostsByCategory('free', 8);
+    const f = await withTimeout(fetchHomePostsByCategory('free', 8), { rows: [] });
     out.freeBoard = (f.rows ?? []).map((r) => ({
       id: String(r.id),
       title: String(r.title ?? '').trim() || '(제목 없음)',
@@ -97,10 +117,10 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
   }
 
   try {
-    const pub = await fetchHomeLocalPublicView(8);
+    const pub = await withTimeout(fetchHomeLocalPublicView(8), { rows: [] });
     let rows = pub.rows ?? [];
     if (rows.length === 0) {
-      const rpc = await fetchHomeLocalBusinesses(8);
+      const rpc = await withTimeout(fetchHomeLocalBusinesses(8), { rows: [] });
       rows = rpc.rows ?? [];
     }
     out.localBiz = rows.map((r) => ({
@@ -114,7 +134,7 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
   }
 
   try {
-    const n = await fetchHomeNewsDigest(8);
+    const n = await withTimeout(fetchHomeNewsDigest(8), { rows: [] });
     out.news = (n.rows ?? []).map((r) => ({
       id: String(r.id),
       title: String(r.title ?? '').trim() || '(제목 없음)',
@@ -126,7 +146,7 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
   }
 
   try {
-    const b = await fetchHomeLeftRailBanners();
+    const b = await withTimeout(fetchHomeLeftRailBanners(), { rows: [] });
     out.wingBanners = (b.rows ?? []).map((row) => ({
       id: String(row.id),
       title: String(row.title ?? '').trim() || '배너',

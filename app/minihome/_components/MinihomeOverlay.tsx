@@ -31,10 +31,13 @@ const MinihomeOverlayContext = createContext<OverlayCtx | null>(null);
 
 export function useMinihomeOverlay(): OverlayCtx {
   const c = useContext(MinihomeOverlayContext);
-  if (!c) {
-    throw new Error('useMinihomeOverlay는 MinihomeOverlayProvider 안에서만 사용하세요.');
-  }
-  return c;
+  if (c) return c;
+  return {
+    openTarget: null,
+    openSlug: null,
+    open: () => {},
+    close: () => {},
+  };
 }
 
 function MinihomeOverlayPortal() {

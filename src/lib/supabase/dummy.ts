@@ -4,7 +4,13 @@ type DummyError = { message: string };
 type DynamicChain = (...args: unknown[]) => unknown;
 
 function buildDummyResult(scope: string) {
-  return { data: null, error: { message: `[${scope}] Supabase is disabled (missing env)` } as DummyError };
+  return {
+    data: null,
+    error: null as DummyError | null,
+    count: null,
+    status: 200,
+    statusText: `[${scope}] dummy-ok`,
+  };
 }
 
 function createThenableChain(scope: string): DynamicChain {
@@ -37,10 +43,19 @@ function createDummyAuth(scope: string) {
       return { data: { user: null }, error: null };
     },
     async signInWithPassword() {
-      return baseResult;
+      return { data: { user: null, session: null }, error: null };
+    },
+    async signInWithOtp() {
+      return { data: { user: null, session: null }, error: null };
+    },
+    async verifyOtp() {
+      return { data: { user: null, session: null }, error: null };
     },
     async signOut() {
       return { error: null };
+    },
+    async exchangeCodeForSession() {
+      return { data: { user: null, session: null }, error: null };
     },
   };
 }

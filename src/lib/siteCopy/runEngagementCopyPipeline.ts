@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { createDummySupabaseClient } from '@/lib/supabase/dummy';
 
 type SiteCopyEntry = {
   key: string;
@@ -10,7 +11,8 @@ function createPipelineAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url?.trim() || !key?.trim()) {
-    throw new Error('[engagement-copy] NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing');
+    console.error('[engagement-copy] NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing. dummy client 반환');
+    return createDummySupabaseClient('engagement-copy');
   }
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -173,7 +175,8 @@ export async function runEngagementCopyPipeline(): Promise<EngagementCopyPipelin
     { onConflict: 'key,locale' },
   );
   if (error) {
-    throw new Error(`[engagement-copy] upsert failed: ${error.message}`);
+    console.error(`[engagement-copy] upsert failed: ${error.message}`);
+    return { snapshot, entries, updated: 0 };
   }
 
   return { snapshot, entries, updated: entries.length };

@@ -7,6 +7,7 @@ import VercelSpeedInsights from './_components/VercelSpeedInsights';
 import GlobalNav from './_components/GlobalNav';
 import PremiumTopBanner from './_components/PremiumTopBanner';
 import Providers from './_components/Providers';
+import ClientSafeBoundary from './_components/ClientSafeBoundary';
 import { SiteFooter } from '@/components/shell/SiteFooter';
 import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import { getDictionary } from '@/i18n/dictionaries';
@@ -36,26 +37,40 @@ const notoSansThai = Noto_Sans_Thai({
 
 /** 프로덕션 도메인 연결 시 OG/절대 URL 기준 — locale 쿠키에 맞춰 기본 메타 */
 export async function generateMetadata(): Promise<Metadata> {
-  const loc = await getLocale();
-  const d = getDictionary(loc);
-  return {
-    metadataBase: new URL('https://www.thaijaworld.com'),
-    title: {
-      default: d.seo.defaultTitle,
-      template: d.seo.titleTemplate,
-    },
-    description: d.seo.defaultDescription,
-    /** 탭·검색 결과 파비콘 — app/icon.svg (피그마 PNG로 바꿀 땐 app/icon.png 권장, 48×48 이상) */
-    icons: {
-      icon: [{ url: '/icon.svg', type: 'image/svg+xml', sizes: '48x48' }],
-    },
-    /** 네이버 서치어드바이저 — HTML 태그 방식 소유확인 */
-    verification: {
-      other: {
-        'naver-site-verification': 'a5e68e7ff5120e3afa1c6c2c5c49d59e193760bb',
+  try {
+    const loc = await getLocale();
+    const d = getDictionary(loc);
+    return {
+      metadataBase: new URL('https://www.thaijaworld.com'),
+      title: {
+        default: d.seo.defaultTitle,
+        template: d.seo.titleTemplate,
       },
-    },
-  };
+      description: d.seo.defaultDescription,
+      /** 탭·검색 결과 파비콘 — app/icon.svg (피그마 PNG로 바꿀 땐 app/icon.png 권장, 48×48 이상) */
+      icons: {
+        icon: [{ url: '/icon.svg', type: 'image/svg+xml', sizes: '48x48' }],
+      },
+      /** 네이버 서치어드바이저 — HTML 태그 방식 소유확인 */
+      verification: {
+        other: {
+          'naver-site-verification': 'a5e68e7ff5120e3afa1c6c2c5c49d59e193760bb',
+        },
+      },
+    };
+  } catch {
+    return {
+      metadataBase: new URL('https://www.thaijaworld.com'),
+      title: {
+        default: '태자월드',
+        template: '%s | 태자월드',
+      },
+      description: '태국 교민 커뮤니티 태자월드',
+      icons: {
+        icon: [{ url: '/icon.svg', type: 'image/svg+xml', sizes: '48x48' }],
+      },
+    };
+  }
 }
 
 /**
@@ -116,33 +131,48 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         data-tj-deploy-sha={deploySha || undefined}
         data-tj-request-mark={requestMark}
       >
-        <Providers heroSiteCopy={heroSiteCopy} initialLocale={locale}>
-          <main className="min-h-screen flex flex-col overflow-x-hidden bg-slate-900">
-            <GlobalNav
-              showAdminConsole={!!adminSession}
-              logoScene={logoScene}
-              dict={{
-                nav: navForHeader,
-                brandSuffix: d.brandSuffix,
-                logoAria: d.logoAria,
-                lang: d.lang,
-                board: d.board,
-                search: d.search,
-              }}
-            />
-            <PremiumTopBanner />
-            <div className="flex-1 min-h-0 overflow-x-hidden bg-slate-900">{children}</div>
-            <SiteFooter />
-          </main>
-          <FxRemoteWidget
-            locale={locale}
-            initial={{ ...FX_SNAPSHOT_FALLBACK, dateISO: new Date().toISOString() }}
-            labels={d.home.fxRemote}
-            panelTitle={d.home.fxTitle}
-          />
-        </Providers>
-        <Analytics />
-        <VercelSpeedInsights />
+        <ClientSafeBoundary
+          name="root-providers"
+          fallback={<main className="min-h-screen overflow-x-hidden bg-slate-900">{children}</main>}
+        >
+          <Providers heroSiteCopy={heroSiteCopy} initialLocale={locale}>
+            <main className="min-h-screen flex flex-col overflow-x-hidden bg-slate-900">
+              <ClientSafeBoundary name="global-nav" fallback={null}>
+                <GlobalNav
+                  showAdminConsole={!!adminSession}
+                  logoScene={logoScene}
+                  dict={{
+                    nav: navForHeader,
+                    brandSuffix: d.brandSuffix,
+                    logoAria: d.logoAria,
+                    lang: d.lang,
+                    board: d.board,
+                    search: d.search,
+                  }}
+                />
+              </ClientSafeBoundary>
+              <PremiumTopBanner />
+              <div className="flex-1 min-h-0 overflow-x-hidden bg-slate-900">{children}</div>
+              <ClientSafeBoundary name="site-footer" fallback={null}>
+                <SiteFooter />
+              </ClientSafeBoundary>
+            </main>
+            <ClientSafeBoundary name="fx-remote-widget" fallback={null}>
+              <FxRemoteWidget
+                locale={locale}
+                initial={{ ...FX_SNAPSHOT_FALLBACK, dateISO: new Date().toISOString() }}
+                labels={d.home.fxRemote}
+                panelTitle={d.home.fxTitle}
+              />
+            </ClientSafeBoundary>
+          </Providers>
+        </ClientSafeBoundary>
+        <ClientSafeBoundary name="analytics" fallback={null}>
+          <Analytics />
+        </ClientSafeBoundary>
+        <ClientSafeBoundary name="speed-insights" fallback={null}>
+          <VercelSpeedInsights />
+        </ClientSafeBoundary>
       </body>
     </html>
   );

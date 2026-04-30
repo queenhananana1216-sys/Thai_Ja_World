@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
+import { unstable_noStore as noStore } from 'next/cache';
 import Portal2026View from './portal/Portal2026View';
 
 /** 홈은 항상 최신 DB 스냅샷 우선 (레이아웃·다른 정적 페이지 캐시와 분리) */
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 export const metadata: Metadata = {
   title: '태자월드 - 태국 교민과 로컬 상권을 잇는 No.1 커뮤니티',
@@ -12,5 +14,6 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
+  noStore();
   return <Portal2026View />;
 }

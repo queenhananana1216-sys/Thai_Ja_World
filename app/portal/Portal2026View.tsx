@@ -1,5 +1,4 @@
-export default function Portal2026View() {
-  const boards = [
+const FALLBACK_BOARDS = [
     {
       title: '구인구직',
       items: [
@@ -54,9 +53,9 @@ export default function Portal2026View() {
         '자녀 국제학교 입학 절차 경험담',
       ],
     },
-  ];
+];
 
-  const feed = [
+const FALLBACK_FEED = [
     '실시간: BTS 역세권 원룸 임대 문의 폭주',
     '공지: 태국 생활 필수앱 프로모션 업데이트',
     '속보: 주말 교통 통제 구간 지도 공유',
@@ -65,7 +64,24 @@ export default function Portal2026View() {
     '현장: 파타야 야시장 주차팁 총정리',
     '정보: 태국 이사 성수기 계약 유의사항',
     '트렌드: 로컬 배달앱 신규 할인코드 모음',
-  ];
+];
+
+function normalizeBoards() {
+  const source = Array.isArray(FALLBACK_BOARDS) ? FALLBACK_BOARDS : [];
+  return source.map((board) => ({
+    title: typeof board?.title === 'string' && board.title.trim() ? board.title : '커뮤니티',
+    items: Array.isArray(board?.items) ? board.items.filter((v): v is string => typeof v === 'string' && v.trim()) : [],
+  }));
+}
+
+function normalizeFeed() {
+  const source = Array.isArray(FALLBACK_FEED) ? FALLBACK_FEED : [];
+  return source.filter((v): v is string => typeof v === 'string' && v.trim());
+}
+
+function Portal2026ViewBody() {
+  const boards = normalizeBoards();
+  const feed = normalizeFeed();
 
   return (
     <main className="min-h-[120vh] bg-[#0B0F19] px-1.5 py-2 text-slate-200" data-tj-root="portal-2026">
@@ -90,7 +106,7 @@ export default function Portal2026View() {
           </div>
 
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-            {boards.map((board) => (
+            {(boards ?? []).map((board) => (
               <article
                 key={board.title}
                 className="rounded-xl border border-slate-600/60 bg-slate-900/55 backdrop-blur-md"
@@ -100,7 +116,7 @@ export default function Portal2026View() {
                   <span className="text-[11px] font-bold text-amber-300">더보기</span>
                 </header>
                 <ul className="px-2 py-1">
-                  {board.items.map((item) => (
+                  {(board.items ?? []).map((item) => (
                     <li key={item} className="truncate border-b border-slate-800/90 py-1 text-[11px] text-slate-200 last:border-b-0">
                       {item}
                     </li>
@@ -113,7 +129,7 @@ export default function Portal2026View() {
           <section className="rounded-xl border border-slate-600/60 bg-slate-900/55 backdrop-blur-md">
             <header className="border-b border-slate-700/70 px-2 py-1 text-xs font-black text-blue-300">실시간 커뮤니티 피드</header>
             <ul className="px-2 py-1">
-              {feed.map((item) => (
+              {(feed ?? []).map((item) => (
                 <li key={item} className="truncate border-b border-slate-800/90 py-1 text-[11px] text-slate-200 last:border-b-0">
                   {item}
                 </li>
@@ -137,4 +153,39 @@ export default function Portal2026View() {
       </div>
     </main>
   );
+}
+
+export default function Portal2026View() {
+  try {
+    return <Portal2026ViewBody />;
+  } catch (error) {
+    console.error('[portal-2026] SSR render failed; fallback body forced', error);
+    return (
+      <main className="min-h-screen bg-[#0B0F19] px-2 py-3 text-slate-200" data-tj-root="portal-2026-failsafe">
+        <div className="mx-auto grid w-full max-w-[1560px] grid-cols-1 gap-2 min-[1181px]:grid-cols-[minmax(9.25rem,11.5rem)_minmax(0,1fr)_minmax(12.25rem,14.75rem)]">
+          <aside className="hidden min-[1181px]:block">
+            <div className="sticky space-y-2" style={{ top: 'var(--tj-home-sticky-top, 5.5rem)' }}>
+              <section className="rounded-xl border border-blue-300/30 bg-slate-900/55 p-2 backdrop-blur-md">
+                <p className="text-[11px] font-black text-blue-300">좌측 윙 배너</p>
+                <p className="mt-1 text-xs text-slate-100">구인구직 · 번개장터 · 실시간 통계</p>
+              </section>
+            </div>
+          </aside>
+          <section className="rounded-xl border border-slate-600/60 bg-slate-900/55 p-2 backdrop-blur-md">
+            <h1 className="text-xs font-black text-amber-300">2026 고밀도 3열 포털 안전 모드</h1>
+            <p className="mt-1 text-[11px] text-slate-100">구인구직 / 번개장터 / 자유게시판 / 로컬 업체</p>
+            <p className="text-[11px] text-slate-100">실시간 커뮤니티 피드 · 스티키 윙 · 글래스모피즘</p>
+          </section>
+          <aside className="hidden min-[1181px]:block">
+            <div className="sticky space-y-2" style={{ top: 'var(--tj-home-sticky-top, 5.5rem)' }}>
+              <section className="rounded-xl border border-amber-300/30 bg-slate-900/55 p-2 backdrop-blur-md">
+                <p className="text-[11px] font-black text-amber-300">우측 윙 배너</p>
+                <p className="mt-1 text-xs text-slate-100">문의/제보 · 추천 업체 · 생활 정보</p>
+              </section>
+            </div>
+          </aside>
+        </div>
+      </main>
+    );
+  }
 }

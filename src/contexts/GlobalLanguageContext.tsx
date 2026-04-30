@@ -52,8 +52,10 @@ export function GlobalLanguageProvider({
 
 export function useGlobalLanguage() {
   const ctx = useContext(GlobalLanguageContext);
-  if (!ctx) {
-    throw new Error('useGlobalLanguage must be used within GlobalLanguageProvider');
-  }
-  return ctx;
+  if (ctx) return ctx;
+  return {
+    locale: 'ko' as Locale,
+    dict: getDictionary('ko'),
+    setLocale: async () => false,
+  };
 }

@@ -13,7 +13,8 @@ export const metadata: Metadata = {
     '태국 사는 한국인과 현지 로컬 비즈니스가 실시간으로 만나는 곳. 구인구직, 부동산, 번개장터, 비자 정보부터 로컬 한인 업체 당일 예약과 QR 제휴까지 태자월드에서 한 번에 해결하세요.',
 };
 
-export default async function HomePage() {
+/** 루트(/) 실경로: app/page.tsx — 2026 포털 강제 고정 */
+export default function HomePage() {
   noStore();
   return <Portal2026View />;
 }

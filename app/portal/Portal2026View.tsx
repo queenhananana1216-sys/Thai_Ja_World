@@ -70,13 +70,15 @@ function normalizeBoards() {
   const source = Array.isArray(FALLBACK_BOARDS) ? FALLBACK_BOARDS : [];
   return source.map((board) => ({
     title: typeof board?.title === 'string' && board.title.trim() ? board.title : '커뮤니티',
-    items: Array.isArray(board?.items) ? board.items.filter((v): v is string => typeof v === 'string' && v.trim()) : [],
+    items: Array.isArray(board?.items)
+      ? board.items.filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+      : [],
   }));
 }
 
 function normalizeFeed() {
   const source = Array.isArray(FALLBACK_FEED) ? FALLBACK_FEED : [];
-  return source.filter((v): v is string => typeof v === 'string' && v.trim());
+  return source.filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
 }
 
 function Portal2026ViewBody() {

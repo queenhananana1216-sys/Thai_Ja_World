@@ -18,6 +18,13 @@ function minihomeManagementPath(pathname: string): boolean {
 
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
+  /** 레거시·문서상 `/login` → 실제 로그인 라우트 */
+  if (url.pathname === '/login' || url.pathname === '/login/') {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/auth/login';
+    return NextResponse.redirect(loginUrl);
+  }
+
   const langParam = url.searchParams.get('lang');
   if (langParam === 'ko' || langParam === 'th') {
     url.searchParams.delete('lang');

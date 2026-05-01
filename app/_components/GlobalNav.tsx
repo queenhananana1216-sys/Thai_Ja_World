@@ -1,13 +1,9 @@
-'use client';
-
 import Link from 'next/link';
-import { useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import type { Dictionary } from '@/i18n/dictionaries';
+import { getDictionary } from '@/i18n/dictionaries';
+import { getLocale } from '@/i18n/get-locale';
 import type { Locale } from '@/i18n/types';
-import { useGlobalLanguage } from '@/contexts/GlobalLanguageContext';
 import AuthBar from './AuthBar';
-import GlobalNavSearchIsland from './GlobalNavSearchIsland';
 
 const WRITE_HREF = '/community/write';
 
@@ -24,52 +20,44 @@ function navItemsFor(dict: Dictionary, loc: Locale): { href: string; label: stri
   ];
 }
 
-export default function GlobalNav() {
-  const { locale, dict, setLocale } = useGlobalLanguage();
-  const router = useRouter();
-  const menus = useMemo(() => navItemsFor(dict, locale), [dict, locale]);
+export default async function GlobalNav() {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const menus = navItemsFor(dict, locale);
 
-  async function onSelectLocale(next: 'ko' | 'th') {
-    try {
-      const ok = await setLocale(next);
-      if (ok) router.refresh();
-    } catch {
-      /* language chrome stays visible */
-    }
-  }
+  const koActive = locale === 'ko';
+  const thActive = locale === 'th';
 
   return (
     <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
       <div className="border-b border-white/5 bg-slate-950/80">
         <div className="site-container flex flex-wrap items-center justify-between gap-2 py-1.5">
           <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500">
-            <button
-              type="button"
-              onClick={() => void onSelectLocale('ko')}
+            <a
+              href="?lang=ko"
               className={
-                'rounded border px-1.5 py-0.5 transition-colors ' +
-                (locale === 'ko'
+                'rounded border px-1.5 py-0.5 no-underline transition-colors ' +
+                (koActive
                   ? 'border-amber-400/50 bg-amber-500/10 text-amber-100'
                   : 'border-white/10 text-slate-400 hover:border-white/25 hover:text-slate-200')
               }
-              aria-pressed={locale === 'ko'}
+              aria-current={koActive ? 'true' : undefined}
             >
               {dict.lang.ko}
-            </button>
+            </a>
             <span className="text-slate-600">/</span>
-            <button
-              type="button"
-              onClick={() => void onSelectLocale('th')}
+            <a
+              href="?lang=th"
               className={
-                'rounded border px-1.5 py-0.5 transition-colors ' +
-                (locale === 'th'
+                'rounded border px-1.5 py-0.5 no-underline transition-colors ' +
+                (thActive
                   ? 'border-amber-400/50 bg-amber-500/10 text-amber-100'
                   : 'border-white/10 text-slate-400 hover:border-white/25 hover:text-slate-200')
               }
-              aria-pressed={locale === 'th'}
+              aria-current={thActive ? 'true' : undefined}
             >
               {dict.lang.th}
-            </button>
+            </a>
           </div>
           <AuthBar loginLabel={dict.board.login} signupLabel={dict.board.signup} />
         </div>
@@ -94,7 +82,22 @@ export default function GlobalNav() {
         </Link>
 
         <div className="order-3 w-full min-w-0 max-w-xl flex-1 md:order-none md:w-auto md:max-w-md">
-          <GlobalNavSearchIsland dict={dict} />
+          <div className="w-full min-w-0">
+            <label className="sr-only" htmlFor="tj-header-search-rsc">
+              {dict.search.ariaLabel}
+            </label>
+            <form action="/search" method="GET" className="m-0">
+              <input
+                id="tj-header-search-rsc"
+                name="q"
+                type="search"
+                placeholder={dict.search.placeholder}
+                autoComplete="off"
+                className="w-full rounded-full border border-white/15 bg-slate-900/70 px-4 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-500"
+              />
+            </form>
+            <p className="mt-1 text-center text-[10px] text-slate-600 md:text-left">{dict.search.headerBarLabel}</p>
+          </div>
         </div>
       </div>
 

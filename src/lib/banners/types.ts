@@ -49,6 +49,7 @@ export function pathnameToRouteGroups(pathname: string): BannerRouteGroup[] {
   const p = pathname.toLowerCase();
   const groups: BannerRouteGroup[] = ['all'];
   if (p === '/' || p.startsWith('/landing')) groups.push('home');
+  if (p.startsWith('/boards')) groups.push('boards');
   if (p.startsWith('/community/boards')) groups.push('community', 'boards');
   else if (p.startsWith('/community')) groups.push('community');
   if (p.startsWith('/tips')) groups.push('tips');

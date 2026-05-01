@@ -5,6 +5,7 @@ const WRITE_HREF = '/community/write';
 
 const NAV_MENUS: { href: string; label: string }[] = [
   { href: '/', label: '홈' },
+  { href: '/boards', label: '커뮤니티(게시판)' },
   { href: '/community/boards', label: '광장' },
   { href: '/community/boards?cat=flea', label: '번개장터' },
   { href: '/community/boards?cat=job', label: '구인구직' },

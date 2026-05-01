@@ -9,6 +9,8 @@ export type Dictionary = {
     /** 공개 꿀팁 허브 (/tips) */
     tips: string;
     local: string;
+    /** 통합 게시판 허브 (/boards) */
+    boards: string;
     community: string;
     /** 일촌 받은함 */
     ilchon: string;
@@ -656,6 +658,7 @@ const ko: Dictionary = {
     home: '홈',
     tips: '꿀팁',
     local: '로컬',
+    boards: '커뮤니티(게시판)',
     community: '광장',
     ilchon: '일촌',
     minihome: '미니홈',
@@ -1289,6 +1292,7 @@ const th: Dictionary = {
     home: 'หน้าแรก',
     tips: 'ทิปส์',
     local: 'ร้านท้องถิ่น',
+    boards: 'ชุมชน (บอร์ด)',
     community: 'ลานชุมชน',
     ilchon: 'เพื่อน (อิลชอน)',
     minihome: 'มินิโฮม',

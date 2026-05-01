@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      board_posts: {
+        Row: {
+          address: string | null
+          board_type: string
+          content: string
+          created_at: string
+          id: string
+          image_urls: string[]
+          lat: number | null
+          lng: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          board_type: string
+          content?: string
+          created_at?: string
+          id?: string
+          image_urls?: string[]
+          lat?: number | null
+          lng?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          board_type?: string
+          content?: string
+          created_at?: string
+          id?: string
+          image_urls?: string[]
+          lat?: number | null
+          lng?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bot_actions: {
         Row: {
           action_type: string
@@ -686,6 +736,7 @@ export type Database = {
           image_url: string | null
           image_urls: string[]
           is_active: boolean
+          is_demo: boolean
           is_recommended: boolean
           kakao_id: string | null
           line_id: string | null
@@ -714,6 +765,7 @@ export type Database = {
           image_url?: string | null
           image_urls?: string[]
           is_active?: boolean
+          is_demo?: boolean
           is_recommended?: boolean
           kakao_id?: string | null
           line_id?: string | null
@@ -742,6 +794,7 @@ export type Database = {
           image_url?: string | null
           image_urls?: string[]
           is_active?: boolean
+          is_demo?: boolean
           is_recommended?: boolean
           kakao_id?: string | null
           line_id?: string | null
@@ -4441,6 +4494,19 @@ export type Database = {
       quest_spawn_base_instances: {
         Args: { p_profile_id?: string; p_target_date?: string }
         Returns: number
+      }
+      quest_ensure_onboarding_first_post_instance: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_public_weekly_dotori_ranking: {
+        Args: { p_limit?: number }
+        Returns: {
+          rank: number
+          profile_id: string
+          display_name: string
+          dotori_earned: number
+        }[]
       }
       style_complete_signup_greeting: {
         Args: { p_body: string }

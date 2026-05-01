@@ -53,6 +53,8 @@ export type HomeNewsRow = {
   title: string;
   summary: string;
   href: string;
+  /** processed_news.created_at — 포털 한 줄 뉴스의 🕒 상대 시간 */
+  created_at: string;
 };
 
 export type HomeRecommendedRow = {
@@ -334,20 +336,25 @@ export async function fetchHomeLocalPublicView(limit = 5): Promise<{ rows: Local
   return { rows, error: null };
 }
 
-export async function fetchHomeNewsDigest(limit = 5): Promise<{ rows: HomeNewsRow[]; error: string | null }> {
+export async function fetchHomeNewsDigest(
+  limit = 5,
+  opts?: { summaryLocale?: 'ko' | 'th' },
+): Promise<{ rows: HomeNewsRow[]; error: string | null }> {
   const sb = tryCreate();
   if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
 
   const { data, error } = await sb
     .from('processed_news')
-    .select('id, clean_body, summaries(summary_text, model)')
+    .select('id, clean_body, created_at, summaries(summary_text, model)')
     .eq('published', true)
     .order('created_at', { ascending: false })
     .limit(limit);
 
   if (error) return { rows: [], error: error.message };
 
-  const locale = await getLocale().catch(() => 'ko' as const);
+  const locale =
+    opts?.summaryLocale ??
+    (await getLocale().catch(() => 'ko' as const));
   const rows: HomeNewsRow[] = [];
   for (const pn of data ?? []) {
     const id = String(pn.id);
@@ -365,8 +372,103 @@ export async function fetchHomeNewsDigest(limit = 5): Promise<{ rows: HomeNewsRo
       title: t,
       summary: (parsed.summary_text ?? '').trim(),
       href: `/news/${encodeURIComponent(id)}`,
+      created_at: pn.created_at != null ? String(pn.created_at) : '',
     });
   }
+
+  return { rows, error: null };
+}
+
+export type HomeLocalDemoBusinessRow = {
+  id: string;
+  slug: string;
+  name: string;
+  category: string;
+  region: string;
+  description: string | null;
+  mini_home: unknown;
+  image_url: string | null;
+  image_urls: string[];
+  emoji: string;
+};
+
+/** `is_demo=true` 로컬 업체 — 실데이터가 비었을 때 포털 우측·중앙 폴백 전용 */
+export async function fetchHomeLocalDemoBusinesses(
+  limit = 6,
+): Promise<{ rows: HomeLocalDemoBusinessRow[]; error: string | null }> {
+  const sb = tryCreate();
+  if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
+
+  const { data, error } = await sb
+    .from('local_businesses')
+    .select('id, slug, name, category, region, description, mini_home, is_demo, is_active, image_url, image_urls, emoji')
+    .eq('is_demo', true)
+    .eq('is_active', true)
+    .order('updated_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    const missing =
+      error.message.includes('column') &&
+      (error.message.includes('is_demo') || error.message.includes('does not exist'));
+    if (missing) return { rows: [], error: null };
+    return { rows: [], error: error.message };
+  }
+
+  const rows: HomeLocalDemoBusinessRow[] = (data ?? []).map((r) => ({
+    id: String(r.id),
+    slug: String(r.slug ?? ''),
+    name: String(r.name ?? ''),
+    category: String(r.category ?? ''),
+    region: String(r.region ?? ''),
+    description: r.description != null ? String(r.description) : null,
+    mini_home: r.mini_home,
+    image_url: r.image_url != null ? String(r.image_url) : null,
+    image_urls: Array.isArray(r.image_urls) ? (r.image_urls as string[]).filter((x) => typeof x === 'string') : [],
+    emoji: typeof r.emoji === 'string' && r.emoji.trim() ? r.emoji.trim() : '🏪',
+  }));
+
+  return { rows, error: null };
+}
+
+export type HomeWeeklyDotoriRankRow = {
+  rank: number;
+  profileId: string;
+  displayName: string;
+  dotoriEarned: number;
+};
+
+/** 이번 주(서울 기준) 완료된 주간 퀘스트 보상 도토리 합산 TOP N */
+export async function fetchHomeWeeklyDotoriRanking(
+  limit = 5,
+): Promise<{ rows: HomeWeeklyDotoriRankRow[]; error: string | null }> {
+  const sb = tryCreate();
+  if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
+
+  const { data, error } = await sb.rpc('get_public_weekly_dotori_ranking', {
+    p_limit: limit,
+  });
+
+  if (error) {
+    if (error.message.includes('function') && error.message.includes('does not exist')) {
+      return { rows: [], error: null };
+    }
+    return { rows: [], error: error.message };
+  }
+
+  const raw = (data ?? []) as {
+    rank?: unknown;
+    profile_id?: unknown;
+    display_name?: unknown;
+    dotori_earned?: unknown;
+  }[];
+
+  const rows: HomeWeeklyDotoriRankRow[] = raw.map((r) => ({
+    rank: Number(r.rank ?? 0),
+    profileId: String(r.profile_id ?? ''),
+    displayName: String(r.display_name ?? '익명'),
+    dotoriEarned: Number(r.dotori_earned ?? 0),
+  }));
 
   return { rows, error: null };
 }

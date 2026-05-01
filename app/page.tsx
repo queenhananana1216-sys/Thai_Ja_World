@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import PortalFeedSection from './_components/PortalFeedSection';
-import PortalHomeSuspenseFallback from './_components/PortalHomeSuspenseFallback';
+import PortalHomeGlassSkeleton from './_components/PortalHomeGlassSkeleton';
 import { absoluteUrl } from '@/lib/seo/site';
 
 /** 홈(/)만 SSR 데이터 페치 — 레이아웃은 정적 뼈대 유지 */
@@ -36,7 +36,7 @@ export function generateMetadata(): Metadata {
  */
 export default function HomePage() {
   return (
-    <Suspense fallback={<PortalHomeSuspenseFallback />}>
+    <Suspense fallback={<PortalHomeGlassSkeleton />}>
       <PortalFeedSection />
     </Suspense>
   );

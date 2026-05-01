@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: '/', key: 'home' },
   { href: '/tips', key: 'tips' },
   { href: '/local', key: 'local' },
+  { href: '/boards', key: 'boards' },
   { href: '/community/boards', key: 'community' },
   { href: '/ilchon', key: 'ilchon' },
   { href: '/minihome', key: 'minihome' },
@@ -27,6 +28,7 @@ type Props = {
 function isActive(href: string, pathname: string): boolean {
   if (href === '/') return pathname === '/';
   if (href === '/tips') return pathname === '/tips' || pathname.startsWith('/tips/');
+  if (href === '/boards') return pathname.startsWith('/boards');
   if (href === '/community/boards')
     return pathname.startsWith('/community/boards') || pathname.startsWith('/community/trade');
   return pathname.startsWith(href);
@@ -41,6 +43,7 @@ export function SiteHeader({ dict, showAdminConsole = false, children }: Props) 
     home: dict.nav.home,
     tips: dict.nav.tips,
     local: dict.nav.local,
+    boards: dict.nav.boards,
     community: dict.nav.community,
     ilchon: dict.nav.ilchon,
     minihome: dict.nav.memberMinihome,

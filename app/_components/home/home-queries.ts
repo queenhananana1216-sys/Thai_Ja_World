@@ -1,12 +1,13 @@
 /**
- * 홈 커뮤니티 허브 — Server-only Supabase 로더 (anon RLS / 공개 RPC)
+ * 홈 커뮤니티 허브 — Server-only 로더.
+ * 공개 데이터만: `cookies()` / `@supabase/ssr` 미사용, `@supabase/supabase-js` anon 단일 클라이언트.
  *
  * 참고: 구인·번개는 과거 `posts(job|flea)`에서 `jobs`·`market`으로 분리됨(083).
  */
 import 'server-only';
 
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
-import { createServerClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import type { JobPost, MarketPost, PortalPostRow, PremiumBannerRow } from '../../portal/types';
 import type { LocalBusiness } from '@/types/taeworld';
@@ -14,12 +15,27 @@ import type { HomeUnifiedFeedItem } from './home-feed-types';
 
 export type { HomeUnifiedFeedItem } from './home-feed-types';
 
-function tryCreate() {
-  try {
-    return createServerClient();
-  } catch {
-    return null;
-  }
+const PUBLIC_FETCH_TIMEOUT_MS = 10_000;
+
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), PUBLIC_FETCH_TIMEOUT_MS);
+  return fetch(input, { ...init, signal: ctrl.signal }).finally(() => clearTimeout(tid));
+}
+
+/** 익명 공개 읽기 전용 — SSR 쿠키/세션 미연동 */
+function createPublicAnonClient(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { fetch: fetchWithTimeout },
+  });
+}
+
+function tryCreate(): SupabaseClient | null {
+  return createPublicAnonClient();
 }
 
 const POST_COLS =

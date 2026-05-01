@@ -70,8 +70,11 @@ export default async function HomePage() {
   try {
     const loaded = await fetchPortalHomeFeed();
     feed = loaded && typeof loaded === 'object' ? loaded : HONEST_EMPTY_PORTAL_HOME_FEED;
-  } catch {
-    feed = HONEST_EMPTY_PORTAL_HOME_FEED;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return (
+      <div className="p-10 text-red-500 text-xl font-bold bg-black">치명적 에러 발생: {message}</div>
+    );
   }
 
   const jobs = normalizeLines(feed.jobs);

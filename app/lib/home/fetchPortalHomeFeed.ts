@@ -1,5 +1,7 @@
 import 'server-only';
 
+/** 홈 공개 피드 — DB 접근은 `home-queries.ts` 의 anon 전용 클라이언트만 사용(쿠키·SSR 없음). */
+
 import {
   fetchHomeJobs,
   fetchHomeMarket,

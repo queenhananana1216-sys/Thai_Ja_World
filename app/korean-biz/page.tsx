@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import KoreanBizHubClient, { type KoreanBizRow } from './KoreanBizHubClient';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerClient } from '@/lib/supabase/server';
@@ -42,7 +43,16 @@ export default async function KoreanBizPage() {
 
   return (
     <div className="min-h-[70vh] bg-[#060a12] bg-[radial-gradient(ellipse_at_top,_rgba(251,191,36,0.08),_transparent_55%)]">
-      <KoreanBizHubClient rows={rows} locale={locale} globalEmpty={Boolean(error) || rows.length === 0} />
+      <Suspense
+        fallback={
+          <div className="mx-auto max-w-3xl animate-pulse px-4 py-16">
+            <div className="h-10 rounded-xl bg-white/5" />
+            <div className="mt-6 h-32 rounded-2xl bg-white/5" />
+          </div>
+        }
+      >
+        <KoreanBizHubClient rows={rows} locale={locale} globalEmpty={Boolean(error) || rows.length === 0} />
+      </Suspense>
     </div>
   );
 }

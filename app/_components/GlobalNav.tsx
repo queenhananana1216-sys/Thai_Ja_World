@@ -3,6 +3,7 @@
  */
 import Link from 'next/link';
 import AuthBarClient from './AuthBarClient';
+import SpotlightNavSearch from './SpotlightNavSearch';
 import { getLocale } from '@/i18n/get-locale';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/types';
@@ -20,8 +21,6 @@ function headerExtraLabels(locale: Locale) {
       realestate: 'อสังหาฯ',
       news: 'ข่าว',
       menu: 'เมนู',
-      searchPlaceholder: 'ค้นหา',
-      searchHint: 'ค้นหาเมนู·ข่าว·บอร์ด',
       myMinihome: 'มินิโฮมของฉัน',
       masterAdmin: 'มาสเตอร์แอดมิน',
     };
@@ -32,8 +31,6 @@ function headerExtraLabels(locale: Locale) {
     realestate: '부동산',
     news: '뉴스',
     menu: '메뉴',
-    searchPlaceholder: '검색어를 입력하세요',
-    searchHint: '메뉴·뉴스·게시판을 통합 검색합니다',
     myMinihome: '내 미니홈',
     masterAdmin: '마스터 관리자',
   };
@@ -185,20 +182,7 @@ export default async function GlobalNav() {
           </div>
           <div className="order-3 w-full min-w-0 max-w-xl flex-1 md:order-none md:w-auto md:max-w-md">
             <div className="w-full min-w-0">
-              <label className="sr-only" htmlFor="tj-header-search-rsc">
-                {locale === 'th' ? 'ค้นหา' : '통합 검색'}
-              </label>
-              <form action="/search" method="GET" className="m-0">
-                <input
-                  id="tj-header-search-rsc"
-                  name="q"
-                  type="search"
-                  placeholder={x.searchPlaceholder}
-                  autoComplete="off"
-                  className="w-full min-h-11 rounded-full border border-white/15 bg-slate-900/70 px-4 py-2 text-base text-gray-100 outline-none placeholder:text-gray-300"
-                />
-              </form>
-              <p className="mt-1 text-center text-sm text-gray-200 md:text-left">{x.searchHint}</p>
+              <SpotlightNavSearch />
             </div>
           </div>
           {myMinihomeHref ? (

@@ -1,7 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import KoreanBizSearch from './KoreanBizSearch';
 import type { Locale } from '@/i18n/types';
 
 export type KoreanBizRow = {
@@ -105,11 +107,33 @@ export default function KoreanBizHubClient({
   /** 조회 실패·0건: 글라스 안내 카드만 강조 */
   globalEmpty?: boolean;
 }) {
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<KoreanBizRow['region']>('bangkok');
+  const [pool, setPool] = useState(rows);
+
+  useEffect(() => {
+    setPool(rows);
+  }, [rows]);
+
+  const onFilteredPoolChange = useCallback((next: KoreanBizRow[]) => {
+    setPool(next);
+  }, []);
+
+  useEffect(() => {
+    const focus = searchParams.get('focus')?.trim();
+    if (!focus) return;
+    const tid = window.setTimeout(() => {
+      document.getElementById(`korean-biz-row-${focus}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 120);
+    return () => window.clearTimeout(tid);
+  }, [searchParams]);
 
   const filtered = useMemo(
-    () => rows.filter((r) => r.region === tab).sort((a, b) => a.name.localeCompare(b.name, 'ko')),
-    [rows, tab],
+    () => pool.filter((r) => r.region === tab).sort((a, b) => a.name.localeCompare(b.name, 'ko')),
+    [pool, tab],
   );
 
   const contactLead =
@@ -176,16 +200,20 @@ export default function KoreanBizHubClient({
         ))}
       </div>
 
+      <KoreanBizSearch rows={rows} onFilteredPoolChange={onFilteredPoolChange} />
+
       <ul className="space-y-4">
         {filtered.length === 0 ? (
           <li
             className="rounded-2xl border border-white/12 bg-gradient-to-br from-slate-900/55 to-slate-950/50 px-5 py-10 text-center text-gray-300 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl"
           >
-            이 지역에 표시할 업소가 아직 없습니다. 다른 지역 탭을 눌러 보시거나 잠시 후 다시 확인해 주세요.
+            {pool.length === 0 && rows.length > 0
+              ? '검색 조건에 맞는 업소가 없습니다. 검색어를 바꿔 보세요.'
+              : '이 지역에 표시할 업소가 아직 없습니다. 다른 지역 탭을 눌러 보시거나 잠시 후 다시 확인해 주세요.'}
           </li>
         ) : (
           filtered.map((row) => (
-            <li key={row.id}>
+            <li key={row.id} id={`korean-biz-row-${row.id}`}>
               <article
                 className={`rounded-2xl border border-white/12 bg-gradient-to-br from-slate-900/65 via-slate-950/75 to-black/50 px-5 py-4 shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl ${
                   row.is_verified ? '' : 'opacity-85 ring-1 ring-rose-500/25'

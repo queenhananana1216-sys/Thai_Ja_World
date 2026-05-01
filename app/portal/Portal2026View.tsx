@@ -157,7 +157,7 @@ function EmptyState({ message }: { message: string }) {
   const text = message?.trim() ? message : '—';
   return (
     <div className={styles.emptyState}>
-      <p className="m-0 text-[11px] font-medium leading-relaxed text-slate-400">{text}</p>
+      <p className="m-0 text-base font-medium leading-relaxed text-gray-200">{text}</p>
     </div>
   );
 }
@@ -175,7 +175,10 @@ function NewsLinesSkeleton({ rows = 7 }: { rows?: number }) {
         </li>
       ))}
       <li className="pt-0.5">
-        <Link href="/news" className="text-[9px] font-semibold text-slate-500 hover:text-amber-300">
+        <Link
+          href="/news"
+          className="inline-flex min-h-11 items-center text-sm font-semibold text-gray-100 hover:text-amber-200"
+        >
           뉴스 허브에서 전체 보기 →
         </Link>
       </li>
@@ -188,16 +191,16 @@ function NewsDenseRowLink({ item }: { item: PortalFeedLine }) {
   const summary = item.subtitle?.trim() ?? '';
   const age = formatPortalNewsAge(item.publishedAt ?? null);
   return (
-    <li className="border-b border-slate-800/70 py-0.5 last:border-b-0">
+    <li className="border-b border-slate-800/70 py-1 last:border-b-0">
       <Link
         href={href}
-        className="flex min-w-0 flex-nowrap items-baseline gap-x-1 text-[10px] leading-[1.35] text-slate-200 hover:text-amber-200"
+        className="flex min-h-11 min-w-0 flex-nowrap items-center gap-x-1 text-base leading-snug text-gray-100 hover:text-amber-200"
       >
-        <span className="min-w-0 max-w-[46%] shrink truncate font-semibold text-slate-100">{item.title}</span>
-        <span className="shrink-0 text-slate-600">·</span>
-        <span className="min-w-0 flex-1 truncate text-slate-500">{summary || '—'}</span>
+        <span className="min-w-0 max-w-[46%] shrink truncate font-semibold text-white">{item.title}</span>
+        <span className="shrink-0 text-gray-300">·</span>
+        <span className="min-w-0 flex-1 truncate text-gray-200">{summary || '—'}</span>
         {age ? (
-          <span className="shrink-0 whitespace-nowrap text-[9px] text-slate-500 tabular-nums">🕒 {age}</span>
+          <span className="shrink-0 whitespace-nowrap text-sm text-gray-200 tabular-nums">🕒 {age}</span>
         ) : null}
       </Link>
     </li>
@@ -231,7 +234,7 @@ function FeedLineList({
   }
   if (lineLayout === 'news-dense') {
     return (
-      <ul className="max-h-[min(11rem,36vh)] min-h-0 overflow-y-auto overscroll-contain px-1 py-0.5">
+      <ul className="max-h-[min(22rem,48vh)] min-h-0 overflow-y-auto overscroll-contain px-1 py-0.5 md:max-h-[min(11rem,36vh)]">
         {safe.map((item, idx) => (
           <NewsDenseRowLink key={item?.id ? String(item.id) : `nd-${idx}`} item={item} />
         ))}
@@ -239,16 +242,19 @@ function FeedLineList({
     );
   }
   return (
-    <ul className="max-h-[min(9.5rem,32vh)] min-h-0 overflow-y-auto overscroll-contain px-1.5 py-0.5">
+    <ul className="max-h-[min(18rem,45vh)] min-h-0 overflow-y-auto overscroll-contain px-1.5 py-0.5 md:max-h-[min(9.5rem,32vh)]">
       {safe.map((item, idx) => (
         <li
           key={item?.id ? String(item.id) : `feed-${idx}`}
-          className="border-b border-slate-800/80 py-0.5 text-[10px] leading-tight text-slate-200 last:border-b-0"
+          className="border-b border-slate-800/80 py-1 text-base leading-snug text-gray-100 last:border-b-0"
         >
-          <Link href={item?.href?.trim() ? item.href : '/community/boards'} className="block hover:text-amber-200">
-            <span className="line-clamp-2 font-medium text-slate-100">{item?.title ?? ''}</span>
+          <Link
+            href={item?.href?.trim() ? item.href : '/community/boards'}
+            className="flex min-h-11 flex-col justify-center py-0.5 hover:text-amber-200"
+          >
+            <span className="line-clamp-2 font-medium text-white">{item?.title ?? ''}</span>
             {item?.subtitle ? (
-              <span className="mt-0.5 block line-clamp-1 text-[9px] text-slate-500">{item.subtitle}</span>
+              <span className="mt-0.5 block line-clamp-1 text-sm text-gray-200">{item.subtitle}</span>
             ) : null}
           </Link>
         </li>
@@ -278,7 +284,7 @@ function LiveFeedList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyM
   const safe = normalizeLines(lines ?? []);
   if (safe.length === 0) return <EmptyState message={emptyMessage} />;
   return (
-    <ul className="max-h-[280px] min-h-0 overflow-y-auto overscroll-contain px-2 py-1">
+    <ul className="max-h-[min(24rem,55vh)] min-h-0 overflow-y-auto overscroll-contain px-2 py-1 md:max-h-[280px]">
       {safe.map((item, idx) => {
         const hot = isLiveGamificationLine(item);
         const title = item?.title ?? '';
@@ -286,21 +292,21 @@ function LiveFeedList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyM
         return (
           <li
             key={item?.id ? String(item.id) : `live-${idx}`}
-            className={`border-b border-slate-800/90 py-1 text-[11px] leading-snug last:border-b-0 ${
-              hot ? styles.liveFeedRowHot : 'text-slate-200'
+            className={`border-b border-slate-800/90 py-1.5 text-base leading-snug last:border-b-0 ${
+              hot ? styles.liveFeedRowHot : 'text-gray-100'
             }`}
           >
             <Link
               href={item?.href?.trim() ? item.href : '/community/boards'}
-              className={`block hover:text-amber-200 ${hot ? 'px-0.5' : ''}`}
+              className={`flex min-h-11 flex-col justify-center hover:text-amber-200 ${hot ? 'px-0.5' : ''}`}
             >
-              <span className={`line-clamp-2 ${hot ? 'font-semibold text-slate-100' : 'font-normal text-slate-100'}`}>
+              <span className={`line-clamp-2 ${hot ? 'font-semibold text-white' : 'font-normal text-gray-100'}`}>
                 {hot ? splitLiveHotKeywords(title) : title}
               </span>
               {sub ? (
                 <span
-                  className={`mt-0.5 block line-clamp-1 text-[10px] ${
-                    hot ? 'font-medium text-slate-300' : 'text-slate-500'
+                  className={`mt-0.5 block line-clamp-1 text-sm ${
+                    hot ? 'font-medium text-gray-200' : 'text-gray-200'
                   }`}
                 >
                   {hot ? splitLiveHotKeywords(sub) : sub}
@@ -385,10 +391,10 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
   return (
     <div className={styles.root} data-tj-root="portal-2026-ssr" role="main" aria-label="태자월드 2026 포털">
       <div className={styles.grid}>
-        <aside className="hidden min-h-0 min-w-0 min-[1181px]:block">
+        <aside className="hidden min-h-0 min-w-0 min-[769px]:block">
           <div className={styles.stickyWing}>
             <section className={`${styles.glassBlue} p-2.5`}>
-              <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">{sponsorTitle}</p>
+              <p className="text-lg font-black uppercase tracking-wide text-blue-200">{sponsorTitle}</p>
               {(wingBanners?.length ?? 0) === 0 ? (
                 <EmptyState message={EMPTY_WING} />
               ) : (
@@ -402,11 +408,11 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                       <li key={bid}>
                         <Link
                           href={href}
-                          className="block rounded-lg border border-white/5 bg-slate-950/30 p-2 text-[10px] leading-tight hover:border-amber-300/30"
+                          className="flex min-h-11 flex-col justify-center rounded-lg border border-white/5 bg-slate-950/30 p-2 text-base leading-snug hover:border-amber-300/30"
                         >
-                          <span className="font-semibold text-slate-100">{title}</span>
+                          <span className="font-semibold text-white">{title}</span>
                           {b?.subtitle != null && String(b.subtitle).trim() ? (
-                            <span className="mt-1 block text-slate-500">{String(b.subtitle)}</span>
+                            <span className="mt-1 block text-sm text-gray-200">{String(b.subtitle)}</span>
                           ) : null}
                         </Link>
                       </li>
@@ -416,43 +422,49 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
               )}
             </section>
             <section className={`${styles.glassGold} p-2.5`}>
-              <p className="text-[11px] font-black text-amber-300">{scaleTitle}</p>
+              <p className="text-lg font-black text-amber-200">{scaleTitle}</p>
               {profileCount != null && communityItemCount != null ? (
-                <p className="mt-1 text-xs leading-snug text-slate-100">
+                <p className="mt-1 text-base leading-snug text-gray-100">
                   {profileLabel} 약 {profileCount.toLocaleString('ko-KR')} · {postsLabel}{' '}
                   {communityItemCount.toLocaleString('ko-KR')}
                 </p>
               ) : (
-                <p className="mt-1 text-[11px] leading-snug text-slate-500">{statsUnavailable}</p>
+                <p className="mt-1 text-base leading-snug text-gray-200">{statsUnavailable}</p>
               )}
             </section>
-            <section className={`${styles.glassCenter} p-2 text-[10px] text-slate-400`}>
-              <p className="font-semibold text-slate-300">{shortcutTitle}</p>
-              <ul className="mt-1.5 space-y-1">
+            <section className={`${styles.glassCenter} p-2 text-base text-gray-100`}>
+              <p className="text-lg font-semibold text-white">{shortcutTitle}</p>
+              <ul className="mt-1.5 space-y-0">
                 <li>
-                  <Link href="/community/boards" className="hover:text-amber-200 hover:underline">
+                  <Link
+                    href="/community/boards"
+                    className="inline-flex min-h-11 items-center text-gray-100 hover:text-amber-200 hover:underline"
+                  >
                     {hubBoardLabel}
                   </Link>
                 </li>
                 <li>
-                  <Link href="/community/trade" className="hover:text-amber-200 hover:underline">
+                  <Link
+                    href="/community/trade"
+                    className="inline-flex min-h-11 items-center text-gray-100 hover:text-amber-200 hover:underline"
+                  >
                     {tradeLabel}
                   </Link>
                 </li>
                 <li>
-                  <Link href="/news" className="hover:text-amber-200 hover:underline">
+                  <Link href="/news" className="inline-flex min-h-11 items-center text-gray-100 hover:text-amber-200 hover:underline">
                     뉴스
                   </Link>
                 </li>
               </ul>
             </section>
             <section className={`${styles.glassGold} p-2.5`}>
-              <p className="text-[11px] font-black text-amber-300">{rankTitle}</p>
-              <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-200/70">
+              <p className="text-lg font-black text-amber-200">{rankTitle}</p>
+              <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-amber-100">
                 이번 주 서울 주간 퀘스트 집계
               </p>
               {(weeklyRankSorted?.length ?? 0) === 0 ? (
-                <p className="mt-1 text-[10px] leading-snug text-slate-500">{EMPTY_RANK}</p>
+                <p className="mt-1 text-base leading-snug text-gray-200">{EMPTY_RANK}</p>
               ) : (
                 <div className="mt-2 space-y-1">
                   {weeklyRankSorted.map((row) => {
@@ -500,15 +512,15 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
 
               return (
                 <article key={board.key} className={styles.boardColumn}>
-                  <header className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-slate-700/50 px-1.5 py-1">
-                    <h2 className="text-[11px] font-bold tracking-tight text-slate-100">{board.title}</h2>
+                  <header className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-slate-700/50 px-1.5 py-1.5">
+                    <h2 className="text-lg font-bold tracking-tight text-white">{board.title}</h2>
                     <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
                       {showQuestBadge && questCat ? (
                         <PortalQuestWriteCta category={questCat} variant="badge" />
                       ) : null}
                       <Link
                         href={board.moreHref ?? '/community/boards'}
-                        className="shrink-0 text-[10px] font-semibold text-amber-300 hover:underline"
+                        className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-amber-200 hover:underline"
                       >
                         {moreLabel}
                       </Link>
@@ -527,17 +539,17 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
           </div>
 
           <section className={`${styles.glassBlue} overflow-hidden`}>
-            <header className="border-b border-slate-700/70 px-2 py-1.5 text-xs font-black text-blue-300">
+            <header className="border-b border-slate-700/70 px-2 py-2 text-lg font-black text-blue-200">
               {liveFeedTitle}
             </header>
             <LiveFeedList lines={liveFeed ?? []} emptyMessage={EMPTY_LIVE_FEED} />
           </section>
         </section>
 
-        <aside className="hidden min-h-0 min-w-0 min-[1181px]:block">
+        <aside className="hidden min-h-0 min-w-0 min-[769px]:block">
           <div className={styles.stickyWing}>
             <section className={`${styles.glassBlue} p-2.5`}>
-              <p className="text-[11px] font-black text-blue-300">{newsAsideTitle}</p>
+              <p className="text-lg font-black text-blue-200">{newsAsideTitle}</p>
               {(newsWing?.length ?? 0) === 0 ? (
                 <NewsLinesSkeleton rows={6} />
               ) : (
@@ -549,7 +561,7 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
               )}
             </section>
             <section className={`${styles.glassGold} p-2.5`}>
-              <p className="text-[11px] font-black text-amber-300">{localAsideTitle}</p>
+              <p className="text-lg font-black text-amber-200">{localAsideTitle}</p>
               {localBizFromDemoFallback && localDemoWingCards.length > 0 ? (
                 <PortalLocalDemoWingRolling cards={localDemoWingCards} />
               ) : (localWing?.length ?? 0) > 0 ? (
@@ -558,11 +570,11 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                     <li key={l?.id != null ? String(l.id) : `rw-${i}`}>
                       <Link
                         href={l.href?.trim() ? String(l.href) : '/local'}
-                        className="block text-[10px] leading-tight text-slate-200 hover:text-amber-200"
+                        className="flex min-h-11 flex-col justify-center text-base leading-snug text-gray-100 hover:text-amber-200"
                       >
-                        <span className="line-clamp-2 font-semibold text-slate-100">{l.title}</span>
+                        <span className="line-clamp-2 font-semibold text-white">{l.title}</span>
                         {l.subtitle ? (
-                          <span className="mt-0.5 block text-[9px] text-slate-500">{l.subtitle}</span>
+                          <span className="mt-0.5 block text-sm text-gray-200">{l.subtitle}</span>
                         ) : null}
                       </Link>
                     </li>
@@ -572,9 +584,9 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                 <EmptyState message={EMPTY_LOCAL} />
               )}
             </section>
-            <section className={`${styles.glassCenter} p-2 text-[10px] text-slate-400`}>
-              <p className="font-semibold text-slate-300">{contactTitle}</p>
-              <p className="mt-1.5 leading-relaxed text-slate-500">{contactBody}</p>
+            <section className={`${styles.glassCenter} p-2 text-base text-gray-100`}>
+              <p className="text-lg font-semibold text-white">{contactTitle}</p>
+              <p className="mt-1.5 leading-relaxed text-gray-200">{contactBody}</p>
             </section>
           </div>
         </aside>

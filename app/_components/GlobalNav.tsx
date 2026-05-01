@@ -38,21 +38,21 @@ export default function GlobalNav() {
 
         <div className="flex flex-wrap items-center gap-3">
           <div
-            className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-slate-500"
+            className="flex shrink-0 items-center gap-1 text-sm font-semibold text-gray-200"
             aria-label="언어"
           >
             <a
               href="?lang=ko"
-              className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400 no-underline transition-colors hover:border-white/25 hover:text-slate-200"
+              className="inline-flex min-h-11 items-center rounded border border-white/15 px-2.5 text-gray-100 no-underline transition-colors hover:border-white/30 hover:text-white"
             >
               한국어
             </a>
-            <span className="text-slate-600" aria-hidden>
+            <span className="text-gray-300" aria-hidden>
               |
             </span>
             <a
               href="?lang=th"
-              className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400 no-underline transition-colors hover:border-white/25 hover:text-slate-200"
+              className="inline-flex min-h-11 items-center rounded border border-white/15 px-2.5 text-gray-100 no-underline transition-colors hover:border-white/30 hover:text-white"
             >
               ไทย
             </a>
@@ -69,10 +69,10 @@ export default function GlobalNav() {
                   type="search"
                   placeholder="검색어를 입력하세요"
                   autoComplete="off"
-                  className="w-full rounded-full border border-white/15 bg-slate-900/70 px-4 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-500"
+                  className="w-full min-h-11 rounded-full border border-white/15 bg-slate-900/70 px-4 py-2 text-base text-gray-100 outline-none placeholder:text-gray-300"
                 />
               </form>
-              <p className="mt-1 text-center text-[10px] text-slate-600 md:text-left">
+              <p className="mt-1 text-center text-sm text-gray-200 md:text-left">
                 메뉴·뉴스·게시판을 통합 검색합니다
               </p>
             </div>
@@ -87,25 +87,25 @@ export default function GlobalNav() {
       >
         <div className="site-container flex flex-col gap-2">
           <details className="group md:hidden">
-            <summary className="cursor-pointer list-none rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-sm font-semibold text-slate-200 marker:hidden [&::-webkit-details-marker]:hidden">
-              <span className="after:ml-2 after:text-slate-500 after:content-['▾']">메뉴</span>
+            <summary className="min-h-11 cursor-pointer list-none rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2 text-base font-semibold text-gray-100 marker:hidden [&::-webkit-details-marker]:hidden">
+              <span className="after:ml-2 after:text-gray-300 after:content-['▾']">메뉴</span>
             </summary>
             <div className="mt-2 flex flex-col gap-1 rounded-lg border border-white/10 bg-slate-950/95 p-2">
               <a
                 href="/auth/login"
-                className="rounded-md border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-center text-sm font-semibold text-violet-100 no-underline"
+                className="flex min-h-11 items-center justify-center rounded-md border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-center text-base font-semibold text-violet-50 no-underline"
               >
                 로그인
               </a>
               <a
                 href="/auth/signup"
-                className="rounded-md border border-pink-400/30 bg-pink-500/10 px-3 py-2 text-center text-sm font-semibold text-pink-100 no-underline"
+                className="flex min-h-11 items-center justify-center rounded-md border border-pink-400/30 bg-pink-500/10 px-3 py-2 text-center text-base font-semibold text-pink-50 no-underline"
               >
                 회원가입
               </a>
               <Link
                 href={WRITE_HREF}
-                className="rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white no-underline"
+                className="flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-center text-base font-semibold text-white no-underline"
               >
                 ✎ 글 올리기
               </Link>
@@ -113,7 +113,7 @@ export default function GlobalNav() {
                 <Link
                   key={m.href}
                   href={m.href}
-                  className="rounded-md px-3 py-2 text-sm text-slate-200 no-underline hover:bg-slate-800"
+                  className="flex min-h-11 items-center rounded-md px-3 py-2 text-base text-gray-100 no-underline hover:bg-slate-800"
                 >
                   {m.label}
                 </Link>
@@ -126,14 +126,14 @@ export default function GlobalNav() {
               <Link
                 key={m.href}
                 href={m.href}
-                className="rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-200 no-underline hover:border-amber-400/40 hover:text-amber-200"
+                className="inline-flex min-h-11 items-center rounded-full border border-transparent px-3 py-2 text-base font-semibold text-gray-100 no-underline hover:border-amber-400/40 hover:text-amber-200"
               >
                 {m.label}
               </Link>
             ))}
             <Link
               href={WRITE_HREF}
-              className="ml-auto rounded-full bg-blue-600 px-3 py-1.5 text-xs font-bold text-white no-underline shadow-md hover:bg-blue-500"
+              className="ml-auto inline-flex min-h-11 items-center rounded-full bg-blue-600 px-4 py-2 text-base font-bold text-white no-underline shadow-md hover:bg-blue-500"
             >
               ✎ 글 올리기
             </Link>

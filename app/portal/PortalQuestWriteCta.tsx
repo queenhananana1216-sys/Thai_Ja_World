@@ -40,7 +40,7 @@ export default function PortalQuestWriteCta({
     return (
       <button
         type="button"
-        className={`inline-flex max-w-full shrink-0 items-center gap-0.5 rounded-full border border-amber-400/45 bg-gradient-to-r from-amber-500/25 to-amber-600/15 px-2 py-0.5 text-left text-[10px] font-extrabold leading-tight text-amber-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-sm transition hover:border-amber-300/60 hover:text-white ${className ?? ''}`}
+        className={`inline-flex max-w-full min-h-11 shrink-0 items-center gap-0.5 rounded-full border border-amber-400/45 bg-gradient-to-r from-amber-500/25 to-amber-600/15 px-3 py-1.5 text-left text-sm font-extrabold leading-snug text-amber-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-sm transition hover:border-amber-300/60 hover:text-white ${className ?? ''}`}
         onClick={async () => {
           await activateQuest();
           router.push(href);
@@ -55,7 +55,7 @@ export default function PortalQuestWriteCta({
     <div className={className ?? ''}>
       <button
         type="button"
-        className="w-full rounded-lg border border-amber-400/35 bg-gradient-to-br from-amber-500/20 to-amber-700/10 px-2 py-2 text-center text-[11px] font-extrabold leading-snug text-amber-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md transition hover:border-amber-300/55 hover:text-white"
+        className="min-h-11 w-full rounded-lg border border-amber-400/35 bg-gradient-to-br from-amber-500/20 to-amber-700/10 px-3 py-2 text-center text-base font-extrabold leading-snug text-amber-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md transition hover:border-amber-300/55 hover:text-white"
         onClick={async () => {
           await activateQuest();
           router.push(href);
@@ -63,9 +63,9 @@ export default function PortalQuestWriteCta({
       >
         {LABEL_FULL}
       </button>
-      <p className="mt-1.5 px-0.5 text-center text-[9px] text-slate-500">
+      <p className="mt-1.5 px-0.5 text-center text-sm text-gray-200">
         로그인 시 퀘스트가 자동으로 활성화됩니다.{' '}
-        <Link href={href} className="text-slate-400 underline hover:text-amber-200" prefetch={false}>
+        <Link href={href} className="text-gray-100 underline hover:text-amber-200" prefetch={false}>
           바로 이동
         </Link>
       </p>

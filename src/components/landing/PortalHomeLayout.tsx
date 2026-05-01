@@ -116,12 +116,12 @@ export async function PortalHomeLayout({
       <div className="mx-auto w-full max-w-[1320px] px-4 py-5 sm:px-6">
         <div className={`mb-4 ${card} p-3`}>
           <div className="mb-2 flex items-baseline justify-between gap-2">
-            <h2 className="m-0 text-sm font-extrabold text-slate-100">
+            <h2 className="m-0 text-lg font-extrabold text-white">
               {th
                 ? 'เริ่มที่นี่ — ขาย · หางาน · ร้าน · มินิฮอม'
                 : '시작 가이드 — 번개 · 구인 · 로컬 · 미니홈'}
             </h2>
-            <p className="m-0 text-[11px] text-slate-500">
+            <p className="m-0 text-sm text-gray-200">
               {(() => {
                 const raw = entryFlow?.generatedAt;
                 const t = raw ? new Date(raw).getTime() : NaN;
@@ -301,9 +301,9 @@ export async function PortalHomeLayout({
               {fx.mock ? <p className="mt-1 m-0 text-[10px] text-amber-300/80">{th ? 'อัตราชั่วคราว' : '참고용 요율'}</p> : null}
             </div>
 
-            <div className={`${card} p-2 text-xs`} aria-label={th ? 'ลัดไป' : '빠른 메뉴'}>
-              <p className="m-0 mb-2 text-[10px] font-extrabold text-slate-500">{th ? 'ลัด' : '빠른 링크'}</p>
-              <div className="grid grid-cols-3 gap-1">
+            <div className={`${card} p-2 text-base`} aria-label={th ? 'ลัดไป' : '빠른 메뉴'}>
+              <p className="m-0 mb-2 text-sm font-extrabold text-gray-100">{th ? 'ลัด' : '빠른 링크'}</p>
+              <div className="grid grid-cols-1 gap-1 md:grid-cols-3">
                 {[
                   { h: '/community/boards', t: th ? 'กระดาน' : '광장' },
                   { h: '/tips', t: th ? 'เคล็ดลับ' : '꿀팁' },
@@ -319,7 +319,7 @@ export async function PortalHomeLayout({
                     key={l.h}
                     href={l.h}
                     prefetch={false}
-                    className="flex min-h-9 items-center justify-center rounded border border-white/10 bg-slate-800/50 text-center text-[11px] font-bold text-slate-200 no-underline transition hover:bg-slate-800/90 hover:text-slate-50"
+                    className="flex min-h-11 items-center justify-center rounded border border-white/12 bg-slate-800/50 text-center text-base font-bold text-white no-underline transition hover:bg-slate-800/90 hover:text-white"
                   >
                     {l.t}
                   </Link>

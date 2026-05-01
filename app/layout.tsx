@@ -22,12 +22,12 @@ export default function RootLayout({ children }: { children: unknown }) {
   return (
     <html lang="ko" className="overflow-x-hidden">
       <body
-        className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-slate-200"
+        className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-base text-gray-100 antialiased"
         style={{
           margin: 0,
           minHeight: '100vh',
           backgroundColor: '#0b0f19',
-          color: '#e2e8f0',
+          color: '#f1f5f9',
         }}
       >
         {/* CSS 번들 지연·실패 시에도 레이아웃이 “완전 무신호 검정”처럼 보이지 않게 하는 최소 표시 */}

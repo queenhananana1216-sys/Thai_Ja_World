@@ -18,7 +18,7 @@ export const metadata = {
   },
 };
 
-export default async function RootLayout({ children }: { children: unknown }) {
+export default function RootLayout({ children }: { children: unknown }) {
   return (
     <html lang="ko" className="overflow-x-hidden">
       <body className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-slate-200">

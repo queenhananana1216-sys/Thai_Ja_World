@@ -1,33 +1,20 @@
 import Link from 'next/link';
-import type { Dictionary } from '@/i18n/dictionaries';
-import { getDictionary } from '@/i18n/dictionaries';
-import { getLocale } from '@/i18n/get-locale';
-import type { Locale } from '@/i18n/types';
 import AuthBar from './AuthBar';
 
 const WRITE_HREF = '/community/write';
 
-function navItemsFor(dict: Dictionary, loc: Locale): { href: string; label: string }[] {
-  const th = loc === 'th';
-  return [
-    { href: '/', label: dict.nav.home },
-    { href: '/community/boards', label: dict.home.hubBoard },
-    { href: '/community/boards?cat=flea', label: th ? 'ตลาดนัด' : '번개장터' },
-    { href: '/community/boards?cat=job', label: th ? 'หางาน' : '구인구직' },
-    { href: '/local/info', label: th ? 'อสังหาริมทรัพย์' : '부동산' },
-    { href: '/local', label: dict.nav.local },
-    { href: '/news', label: th ? 'ข่าว' : '뉴스' },
-  ];
-}
+const NAV_MENUS: { href: string; label: string }[] = [
+  { href: '/', label: '홈' },
+  { href: '/community/boards', label: '광장' },
+  { href: '/community/boards?cat=flea', label: '번개장터' },
+  { href: '/community/boards?cat=job', label: '구인구직' },
+  { href: '/local/info', label: '부동산' },
+  { href: '/local', label: '로컬' },
+  { href: '/news', label: '뉴스' },
+];
 
-export default async function GlobalNav() {
-  const locale = await getLocale();
-  const dict = getDictionary(locale);
-  const menus = navItemsFor(dict, locale);
-
-  const koActive = locale === 'ko';
-  const thActive = locale === 'th';
-
+/** 헤더 전용 정적 카피 — getLocale/getDictionary 미사용 */
+export default function GlobalNav() {
   return (
     <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
       <div className="border-b border-white/5 bg-slate-950/80">
@@ -35,31 +22,19 @@ export default async function GlobalNav() {
           <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500">
             <a
               href="?lang=ko"
-              className={
-                'rounded border px-1.5 py-0.5 no-underline transition-colors ' +
-                (koActive
-                  ? 'border-amber-400/50 bg-amber-500/10 text-amber-100'
-                  : 'border-white/10 text-slate-400 hover:border-white/25 hover:text-slate-200')
-              }
-              aria-current={koActive ? 'true' : undefined}
+              className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400 no-underline transition-colors hover:border-white/25 hover:text-slate-200"
             >
-              {dict.lang.ko}
+              한국어
             </a>
             <span className="text-slate-600">/</span>
             <a
               href="?lang=th"
-              className={
-                'rounded border px-1.5 py-0.5 no-underline transition-colors ' +
-                (thActive
-                  ? 'border-amber-400/50 bg-amber-500/10 text-amber-100'
-                  : 'border-white/10 text-slate-400 hover:border-white/25 hover:text-slate-200')
-              }
-              aria-current={thActive ? 'true' : undefined}
+              className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400 no-underline transition-colors hover:border-white/25 hover:text-slate-200"
             >
-              {dict.lang.th}
+              ไทย
             </a>
           </div>
-          <AuthBar loginLabel={dict.board.login} signupLabel={dict.board.signup} />
+          <AuthBar />
         </div>
       </div>
 
@@ -67,7 +42,7 @@ export default async function GlobalNav() {
         <Link
           href="/"
           className="inline-flex items-center gap-2 no-underline"
-          aria-label={dict.logoAria}
+          aria-label="태자월드 홈"
         >
           <span
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-400/35 bg-gradient-to-br from-violet-600/40 to-slate-900 text-lg font-black text-white shadow-inner md:h-11 md:w-11"
@@ -78,32 +53,34 @@ export default async function GlobalNav() {
           <span className="text-base font-black tracking-tight text-white md:text-lg">
             태자<span className="text-amber-300">월드</span>
           </span>
-          <span className="sr-only">{dict.brandSuffix}</span>
+          <span className="sr-only">태자월드</span>
         </Link>
 
         <div className="order-3 w-full min-w-0 max-w-xl flex-1 md:order-none md:w-auto md:max-w-md">
           <div className="w-full min-w-0">
             <label className="sr-only" htmlFor="tj-header-search-rsc">
-              {dict.search.ariaLabel}
+              통합 검색
             </label>
             <form action="/search" method="GET" className="m-0">
               <input
                 id="tj-header-search-rsc"
                 name="q"
                 type="search"
-                placeholder={dict.search.placeholder}
+                placeholder="검색어를 입력하세요"
                 autoComplete="off"
                 className="w-full rounded-full border border-white/15 bg-slate-900/70 px-4 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-500"
               />
             </form>
-            <p className="mt-1 text-center text-[10px] text-slate-600 md:text-left">{dict.search.headerBarLabel}</p>
+            <p className="mt-1 text-center text-[10px] text-slate-600 md:text-left">
+              메뉴·뉴스·게시판을 통합 검색합니다
+            </p>
           </div>
         </div>
       </div>
 
       <nav
         className="border-t border-white/5 bg-gradient-to-b from-slate-950/90 to-slate-900/95 py-2"
-        aria-label={dict.nav.mainNavAria}
+        aria-label="주요 메뉴"
       >
         <div className="site-container flex flex-col gap-2">
           <details className="group md:hidden">
@@ -115,21 +92,21 @@ export default async function GlobalNav() {
                 href="/auth/login"
                 className="rounded-md border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-center text-sm font-semibold text-violet-100 no-underline"
               >
-                {dict.board.login}
+                로그인
               </a>
               <a
                 href="/auth/signup"
                 className="rounded-md border border-pink-400/30 bg-pink-500/10 px-3 py-2 text-center text-sm font-semibold text-pink-100 no-underline"
               >
-                {dict.board.signup}
+                회원가입
               </a>
               <Link
                 href={WRITE_HREF}
                 className="rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white no-underline"
               >
-                ✎ {dict.board.newPost}
+                ✎ 글 올리기
               </Link>
-              {menus.map((m) => (
+              {NAV_MENUS.map((m) => (
                 <Link
                   key={m.href}
                   href={m.href}
@@ -142,7 +119,7 @@ export default async function GlobalNav() {
           </details>
 
           <div className="hidden flex-wrap items-center gap-2 md:flex">
-            {menus.map((m) => (
+            {NAV_MENUS.map((m) => (
               <Link
                 key={m.href}
                 href={m.href}
@@ -155,7 +132,7 @@ export default async function GlobalNav() {
               href={WRITE_HREF}
               className="ml-auto rounded-full bg-blue-600 px-3 py-1.5 text-xs font-bold text-white no-underline shadow-md hover:bg-blue-500"
             >
-              ✎ {dict.board.newPost}
+              ✎ 글 올리기
             </Link>
           </div>
         </div>

@@ -6,6 +6,7 @@ import AuthBarClient from './AuthBarClient';
 import { getLocale } from '@/i18n/get-locale';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/types';
+import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
 const WRITE_HREF = '/community/write';
@@ -22,6 +23,7 @@ function headerExtraLabels(locale: Locale) {
       searchPlaceholder: 'ค้นหา',
       searchHint: 'ค้นหาเมนู·ข่าว·บอร์ด',
       myMinihome: 'มินิโฮมของฉัน',
+      masterAdmin: 'มาสเตอร์แอดมิน',
     };
   }
   return {
@@ -33,6 +35,7 @@ function headerExtraLabels(locale: Locale) {
     searchPlaceholder: '검색어를 입력하세요',
     searchHint: '메뉴·뉴스·게시판을 통합 검색합니다',
     myMinihome: '내 미니홈',
+    masterAdmin: '마스터 관리자',
   };
 }
 
@@ -86,6 +89,10 @@ export default async function GlobalNav() {
     profileDisplayName = null;
   }
 
+  /** `/admin`·관리자 API와 동일한 게이트 — 일반 유저·비회원에는 절대 노출 안 함 */
+  const adminAccess = await resolveAdminAccess();
+  const showMasterAdmin = adminAccess !== false;
+
   const authLabels = {
     login: d.board.login,
     signup: d.board.signup,
@@ -117,6 +124,13 @@ export default async function GlobalNav() {
     'inline-flex min-h-11 items-center rounded-full border border-transparent px-3 py-2 text-base font-semibold text-gray-100 no-underline hover:border-amber-400/40 hover:text-amber-200';
   const navLinkDefaultMobile =
     'flex min-h-11 items-center rounded-md px-3 py-2 text-base text-gray-100 no-underline hover:bg-slate-800';
+
+  const masterAdminTopClass =
+    'inline-flex min-h-11 shrink-0 items-center rounded-full border border-amber-400/50 bg-gradient-to-r from-amber-600/30 via-amber-500/15 to-yellow-600/20 px-4 py-2 text-sm font-bold text-amber-50 no-underline shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_32px_rgba(251,191,36,0.24)] backdrop-blur-md transition hover:border-amber-300/70 hover:from-amber-500/40 hover:to-yellow-500/30';
+  const masterAdminMobileClass =
+    'flex min-h-11 items-center justify-center rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-600/40 to-amber-950/50 px-3 py-2 text-center text-base font-bold text-amber-50 no-underline shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_12px_40px_rgba(251,191,36,0.18)] backdrop-blur-md';
+  const masterAdminSubnavClass =
+    'inline-flex min-h-11 items-center rounded-full border border-amber-400/40 bg-amber-950/50 px-3 py-2 text-base font-bold text-amber-100 no-underline shadow-[0_0_24px_rgba(251,191,36,0.2)] backdrop-blur-sm hover:border-amber-300/60 hover:bg-amber-900/60';
 
   return (
     <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
@@ -192,6 +206,11 @@ export default async function GlobalNav() {
               🏠 {x.myMinihome}
             </Link>
           ) : null}
+          {showMasterAdmin ? (
+            <Link href="/admin" className={masterAdminTopClass}>
+              ⚙️ {x.masterAdmin}
+            </Link>
+          ) : null}
           <AuthBarClient
             initialUser={authUser}
             initialDisplayName={profileDisplayName}
@@ -217,6 +236,11 @@ export default async function GlobalNav() {
                   className="flex min-h-11 items-center justify-center rounded-md border border-fuchsia-400/40 bg-gradient-to-r from-fuchsia-600/40 to-violet-600/35 px-3 py-2 text-center text-base font-bold text-fuchsia-50 no-underline"
                 >
                   🏠 {x.myMinihome}
+                </Link>
+              ) : null}
+              {showMasterAdmin ? (
+                <Link href="/admin" className={masterAdminMobileClass}>
+                  ⚙️ {x.masterAdmin}
                 </Link>
               ) : null}
               <AuthBarClient
@@ -260,6 +284,11 @@ export default async function GlobalNav() {
                 className="inline-flex min-h-11 items-center rounded-full border border-fuchsia-400/35 bg-fuchsia-950/40 px-3 py-2 text-base font-bold text-fuchsia-100 no-underline hover:border-fuchsia-300/55 hover:bg-fuchsia-900/50"
               >
                 🏠 {x.myMinihome}
+              </Link>
+            ) : null}
+            {showMasterAdmin ? (
+              <Link href="/admin" className={masterAdminSubnavClass}>
+                ⚙️ {x.masterAdmin}
               </Link>
             ) : null}
             <Link

@@ -2,6 +2,11 @@ import './globals.css';
 import GlobalNav from './_components/GlobalNav';
 import { SiteFooterFallback } from './_components/SiteFooterFallback';
 
+/** 라우트·Data Cache 무력화 — 프로덕션에서 스테일 HTML 방지 */
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
 export const metadata = {
   title: {
     default: '태자월드',

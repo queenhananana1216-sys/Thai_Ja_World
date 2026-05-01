@@ -1,6 +1,10 @@
 import 'server-only';
 
-/** 홈 공개 피드 — DB 접근은 `home-queries.ts` 의 anon 전용 클라이언트만 사용(쿠키·SSR 없음). */
+/**
+ * 홈 공개 피드 — DB 접근은 `home-queries.ts` 의 anon 전용 클라이언트만 사용(쿠키·SSR 없음).
+ * Next Data Cache: 라우트는 `app/page.tsx`의 `dynamic`/`fetchCache`와 별개로,
+ * 여기서는 Supabase 경로가 항상 실시간이 되도록 `home-queries` fetch에 `no-store`가 걸려 있음.
+ */
 
 import {
   fetchHomeJobs,

@@ -2541,6 +2541,7 @@ export type Database = {
           language: string | null
           published: boolean
           raw_news_id: string
+          seo_keywords: string[]
           title_kr: string | null
           title_th: string | null
         }
@@ -2553,6 +2554,7 @@ export type Database = {
           language?: string | null
           published?: boolean
           raw_news_id: string
+          seo_keywords?: string[]
           title_kr?: string | null
           title_th?: string | null
         }
@@ -2565,6 +2567,7 @@ export type Database = {
           language?: string | null
           published?: boolean
           raw_news_id?: string
+          seo_keywords?: string[]
           title_kr?: string | null
           title_th?: string | null
         }

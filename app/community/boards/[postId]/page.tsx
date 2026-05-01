@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const supabase = await createServerSupabaseAuthClient();
   const { data: post } = await supabase
     .from('posts')
-    .select('id, title, content, created_at, image_urls, author_hidden')
+    .select('id, title, content, created_at, image_urls, author_hidden, category')
     .eq('id', postId)
     .eq('moderation_status', 'safe')
     .maybeSingle();
@@ -37,10 +37,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const images = Array.isArray(post.image_urls) ? (post.image_urls as string[]) : [];
   const ogImage = typeof images[0] === 'string' ? images[0] : undefined;
   const titleStr = String(post.title ?? '');
+  const catKey = String(post.category ?? '');
+  const catLabel = categoryLabel(catKey, locale);
+  const keywords = [
+    catLabel,
+    catKey,
+    '태자월드',
+    '태국',
+    '방콕',
+    '교민',
+    locale === 'th' ? 'ชุมชน' : '커뮤니티',
+  ].filter(Boolean);
 
   return {
     title: titleStr,
     description,
+    keywords,
     alternates: { canonical: url },
     openGraph: {
       title: titleStr,

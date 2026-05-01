@@ -127,6 +127,45 @@ interface LlmBilingualPayload {
   content_th: string;
   th_blurb: string;
   th_editor_note: string;
+  /** 구글 검색 유입용 키워드(중복 제거·순서 유지, 최대 8개까지 저장) */
+  seo_keywords: string[];
+}
+
+function normalizeSeoKeywords(input: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of input) {
+    const t = raw.replace(/\s+/g, ' ').trim().slice(0, 80);
+    if (!t) continue;
+    const k = t.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(t);
+    if (out.length >= 8) break;
+  }
+  return out;
+}
+
+function parseSeoKeywordsField(raw: unknown): string[] {
+  if (raw === null || raw === undefined) return [];
+  if (Array.isArray(raw)) {
+    return normalizeSeoKeywords(raw.map((x) => String(x)));
+  }
+  if (typeof raw === 'string') {
+    return normalizeSeoKeywords(raw.split(/[,，]/).map((s) => s.trim()));
+  }
+  return [];
+}
+
+function stubSeoKeywordsFromTitle(title: string): string[] {
+  const head = title.trim() || '태국 뉴스';
+  const parts = head
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 1)
+    .slice(0, 5);
+  const base = parts.length > 0 ? parts : ['태국', '뉴스', '방콕', '태자월드', '교민'];
+  return normalizeSeoKeywords(base);
 }
 
 function sanitizeNewsPayloadTone(payload: LlmBilingualPayload): LlmBilingualPayload {
@@ -150,6 +189,7 @@ function sanitizeNewsPayloadTone(payload: LlmBilingualPayload): LlmBilingualPayl
     content_th: sanitizeThai(payload.content_th, 620),
     th_blurb: sanitizeThai(payload.th_blurb, 130),
     th_editor_note: sanitizeThai(payload.th_editor_note, 260),
+    seo_keywords: normalizeSeoKeywords(payload.seo_keywords ?? []),
   };
 }
 
@@ -181,6 +221,7 @@ function parseLlmPayload(raw: unknown): LlmBilingualPayload | null {
   const editorClamp = 300;
   const koEd = isNonEmptyString(o.ko_editor_note) ? clamp(String(o.ko_editor_note), editorClamp) : '';
   const thEd = isNonEmptyString(o.th_editor_note) ? clamp(String(o.th_editor_note), editorClamp) : '';
+  const seo_keywords = parseSeoKeywordsField(o.seo_keywords);
   return {
     title_kr: titleKr.trim(),
     content_kr: contentKr.trim(),
@@ -190,6 +231,7 @@ function parseLlmPayload(raw: unknown): LlmBilingualPayload | null {
     content_th: contentTh.trim(),
     th_blurb: clamp(String(o.th_blurb), 160),
     th_editor_note: thEd,
+    seo_keywords,
   };
 }
 
@@ -225,11 +267,12 @@ function buildStubBilingualPayload(
         : '(อัตโนมัติ) ยังไม่มีเนื้อหาเพียงพอ — โปรดแก้ไขก่อนเผยแพร่',
     th_blurb: clampPlainText(head, 100),
     th_editor_note: 'ร่างอัตโนมัติ — แก้ภาษาไทยก่อนเผยแพร่',
+    seo_keywords: stubSeoKeywordsFromTitle(head),
   };
 }
 
 const BILINGUAL_SYSTEM_PROMPT =
-  'You are a bilingual newsroom editor for "Thai Ja World" autonomous pipeline. Output valid JSON only.\n\nReturn exactly these 8 keys: title_kr, content_kr, ko_blurb, ko_editor_note, title_th, content_th, th_blurb, th_editor_note.\n\nCritical style rules:\n- title_kr/content_kr: polished native Korean for overseas-Korean readers, concise and practical.\n- title_th/content_th: natural Thai for local Thai readers, not literal machine translation.\n- Do NOT invent facts. Use only supplied title/body/source_url.\n- Remove robotic filler like "결론적으로", "이 글에서는", "กล่าวโดยสรุป", "บทความนี้".\n- ko_blurb/th_blurb: one-line hook, short and punchy, but no misinformation or hate/political agitation.\n- ko_editor_note/th_editor_note: warm desk-note tone, 1~3 short sentences, no hard-sell CTA, no fact repetition.\n\nOutput only one JSON object with these fields.';
+  'You are a bilingual newsroom editor for "Thai Ja World" autonomous pipeline. Output valid JSON only.\n\nReturn exactly these 9 keys: title_kr, content_kr, ko_blurb, ko_editor_note, title_th, content_th, th_blurb, th_editor_note, seo_keywords.\n\nCritical style rules:\n- title_kr/content_kr: polished native Korean for overseas-Korean readers, concise and practical.\n- title_th/content_th: natural Thai for local Thai readers, not literal machine translation.\n- Do NOT invent facts. Use only supplied title/body/source_url.\n- Remove robotic filler like "결론적으로", "이 글에서는", "กล่าวโดยสรุป", "บทความนี้".\n- ko_blurb/th_blurb: one-line hook, short and punchy, but no misinformation or hate/political agitation.\n- ko_editor_note/th_editor_note: warm desk-note tone, 1~3 short sentences, no hard-sell CTA, no fact repetition.\n- seo_keywords: one string containing exactly five comma-separated phrases (no numbering, no quotes inside) that people might type into Google about this story — high-intent search queries in Korean and/or Thai as appropriate.\n\nOutput only one JSON object with these fields.';
 
 function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: string): string {
   const sanitizedTitle = sanitizeAiKoreanPhrases(title);
@@ -240,9 +283,9 @@ function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: 
     `출처 URL: ${sourceUrl}`,
     '',
     '아래는 태국·동남아 지역과 관련된 원문 제목·본문 발췌·출처입니다. 사람이 읽기 좋은 헤드라인과 요약으로 다듬어 주세요.',
-    '원문 언어와 관계없이 아래 여덟 필드를 모두 채우세요. title_kr/title_th에는 "메타데이터" 같은 내부 용어를 넣지 마세요.',
+    '원문 언어와 관계없이 아래 아홉 필드를 모두 채우세요. title_kr/title_th에는 "메타데이터" 같은 내부 용어를 넣지 마세요.',
     '반드시 아래 키만 가진 JSON 객체 한 개만 출력하세요 (다른 텍스트 금지):',
-    '{"title_kr":"","content_kr":"","ko_blurb":"","ko_editor_note":"","title_th":"","content_th":"","th_blurb":"","th_editor_note":""}',
+    '{"title_kr":"","content_kr":"","ko_blurb":"","ko_editor_note":"","title_th":"","content_th":"","th_blurb":"","th_editor_note":"","seo_keywords":""}',
     '- title_kr: 한국어 한 줄 헤드라인(팩트 기반, 제공된 제목/본문/출처 범위 내에서만). 영어 원문 제목을 그대로 복사하지 말고 한국어로 재작성.',
     '- content_kr: 한국어 2~4문장 요약. 반드시 첫 문장부터 “클릭을 부르는 훅”이 되게 작성하되, 검증되지 않은 내용(예: 확정된 범죄 여부, 특정 개인 신상, 확실하지 않은 수사 결과)은 절대 단정하지 말 것. 원문에 근거가 없으면 “보도에 따르면/관계자는/현지 매체는” 같은 완충 표현을 사용.',
     '- ko_blurb: 피드 카드에 쓰는 1문장(짧은 첫줄) 훅. 40~90자 내외. 자극적이어도 되지만 과장/허위/명예훼손/혐오/정치 선동 금지. “보도에 따르면” 같은 근거 표현을 우선.',
@@ -250,6 +293,7 @@ function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: 
     '- title_th, content_th: 자연스러운 태국어(공손한 뉴스 톤).',
     '- th_blurb: 태국어로 같은 뉘앙스의 짧은 한마디(길이는 한국어 blurb 와 비슷하게).',
     '- th_editor_note: 태국어로 ko_editor_note 와 같은 역할·톤. 요약(content_th) 내용을 반복하지 말 것.',
+    '- seo_keywords: 이 기사와 관련하여 사람들이 구글에 가장 많이 검색할 만한 높은 트래픽의 SEO 키워드 5개를 **쉼표로만 구분**한 한 줄 문자열로 넣으세요 (따옴표·번호 없이). 예: 방콕 교통, 태국 비자, 한국인 거주, 스쿨버스, 최신 뉴스',
   ].join('\n');
 }
 
@@ -432,7 +476,7 @@ function parseBilingualPayloadFromContent(content: string, label: string): LlmBi
     const parsed = JSON.parse(raw) as unknown;
     const payload = parseLlmPayload(parsed);
     if (!payload) {
-      throw new Error(`${label} JSON 스키마 불일치 (ko_/th_ 제목·요약·블러브 필수, editor_note는 선택)`);
+      throw new Error(`${label} JSON 스키마 불일치 (ko_/th_ 제목·요약·블러브 필수, editor_note·seo_keywords는 선택)`);
     }
     return payload;
   } catch {
@@ -470,7 +514,7 @@ function parseBilingualPayloadFromContent(content: string, label: string): LlmBi
 
     const payload = parseLlmPayload(parsed);
     if (!payload) {
-      throw new Error(`${label} JSON 스키마 불일치 (ko_/th_ 제목·요약·블러브 필수, editor_note는 선택)`);
+      throw new Error(`${label} JSON 스키마 불일치 (ko_/th_ 제목·요약·블러브 필수, editor_note·seo_keywords는 선택)`);
     }
     return payload;
   }
@@ -699,7 +743,7 @@ async function callBilingualSummary(
     { role: 'system', content: BILINGUAL_SYSTEM_PROMPT },
     { role: 'user', content: userBlock },
   ];
-  return runNewsSummaryProviders(messages, parseBilingualPayloadFromContent, 2800);
+  return runNewsSummaryProviders(messages, parseBilingualPayloadFromContent, 3100);
 }
 
 const EDITOR_NOTES_ONLY_SYSTEM_PROMPT =
@@ -995,6 +1039,7 @@ async function persistBilingualProcessedNews(
       content_kr: sanitized.content_kr,
       title_th: sanitized.title_th,
       content_th: sanitized.content_th,
+      seo_keywords: sanitized.seo_keywords.length > 0 ? sanitized.seo_keywords : stubSeoKeywordsFromTitle(sanitized.title_kr),
     })
     .select('id')
     .single();

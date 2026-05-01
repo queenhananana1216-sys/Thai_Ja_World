@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { data: row } = await supabase
     .from('processed_news')
     .select(
-      'id, clean_body, created_at, raw_news(title, external_url, published_at), summaries(summary_text, model)',
+      'id, clean_body, created_at, seo_keywords, raw_news(title, external_url, published_at), summaries(summary_text, model)',
     )
     .eq('id', id)
     .eq('published', true)
@@ -76,10 +76,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   );
   const url = absoluteUrl(`/news/${id}`);
   const datePublished = rn?.published_at ?? (row.created_at as string);
+  const seoKw = Array.isArray(row.seo_keywords)
+    ? (row.seo_keywords as string[]).map((s) => String(s).trim()).filter(Boolean)
+    : [];
 
   return {
     title: detail.title,
     description,
+    ...(seoKw.length > 0 ? { keywords: seoKw } : {}),
     alternates: { canonical: url },
     openGraph: {
       title: detail.title,
@@ -110,7 +114,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
   const { data: row, error } = await supabase
     .from('processed_news')
     .select(
-      'id, clean_body, created_at, raw_news(title, external_url, published_at), summaries(summary_text, model)',
+      'id, clean_body, created_at, seo_keywords, raw_news(title, external_url, published_at), summaries(summary_text, model)',
     )
     .eq('id', id)
     .eq('published', true)
@@ -179,6 +183,10 @@ export default async function NewsStoryPage({ params }: PageProps) {
       : [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
     8000,
   );
+  const seoKeywords =
+    Array.isArray(row.seo_keywords) && row.seo_keywords.length > 0
+      ? (row.seo_keywords as string[]).map((s) => String(s).trim()).filter(Boolean)
+      : [];
   const [{ data: relatedNewsRaw }, { data: relatedPostsRaw }] = await Promise.all([
     supabase
       .from('processed_news')
@@ -226,6 +234,11 @@ export default async function NewsStoryPage({ params }: PageProps) {
             name: d.seo.defaultTitle,
             url: absoluteUrl('/'),
           },
+          ...(seoKeywords.length > 0
+            ? {
+                keywords: seoKeywords.join(', '),
+              }
+            : {}),
           ...(detail.sourceUrl
             ? {
                 isBasedOn: detail.sourceUrl,

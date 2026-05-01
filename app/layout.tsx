@@ -1,26 +1,49 @@
 import './globals.css';
+import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import AnalyticsTracker from './_components/AnalyticsTracker';
 import GlobalNav from './_components/GlobalNav';
 import { SiteFooterFallback } from './_components/SiteFooterFallback';
 import { isLocale, LOCALE_COOKIE } from '@/i18n/types';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
+import { getSiteBaseUrl } from '@/lib/seo/site';
 
-export const metadata = {
-  title: {
-    default: '태자월드',
-    template: '%s | 태자월드',
-  },
-  description: '태국 교민 커뮤니티 태자월드',
-  icons: {
-    icon: [{ url: '/icon.svg', type: 'image/svg+xml', sizes: '48x48' }],
-  },
-  verification: {
-    other: {
-      'naver-site-verification': 'a5e68e7ff5120e3afa1c6c2c5c49d59e193760bb',
+export async function generateMetadata(): Promise<Metadata> {
+  const base = getSiteBaseUrl();
+  const title = '태자월드';
+  const description = '태국 교민 커뮤니티 태자월드 — 뉴스·로컬·광장 한 번에.';
+  return {
+    metadataBase: new URL(base),
+    title: {
+      default: title,
+      template: '%s | 태자월드',
     },
-  },
-};
+    description,
+    keywords: ['태자월드', '태국', '방콕', '교민', '커뮤니티', '한인', '뉴스'],
+    alternates: { canonical: '/' },
+    openGraph: {
+      type: 'website',
+      locale: 'ko_KR',
+      url: base,
+      siteName: title,
+      title,
+      description,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+    icons: {
+      icon: [{ url: '/icon.svg', type: 'image/svg+xml', sizes: '48x48' }],
+    },
+    verification: {
+      other: {
+        'naver-site-verification': 'a5e68e7ff5120e3afa1c6c2c5c49d59e193760bb',
+      },
+    },
+  };
+}
 
 export default async function RootLayout({ children }: { children: unknown }) {
   const jar = await cookies();

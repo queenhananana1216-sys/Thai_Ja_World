@@ -12,6 +12,7 @@ import { getSiteBaseUrl } from '@/lib/seo/site';
 const MAX_NEWS = 800;
 const MAX_POSTS = 800;
 const MAX_MINIHOMES = 400;
+const MAX_LOCAL_SPOTS = 500;
 
 /** 뉴스·게시 반영 — 커뮤니티 우선 전략에 맞춰 30분 */
 export const revalidate = 1800;
@@ -48,11 +49,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const postsEntries: MetadataRoute.Sitemap = [];
   const newsEntries: MetadataRoute.Sitemap = [];
   const minihomeEntries: MetadataRoute.Sitemap = [];
+  const localSpotEntries: MetadataRoute.Sitemap = [];
 
   try {
     const supabase = createServerClient();
 
-    const [newsRes, postsRes, homesRes] = await Promise.all([
+    const [newsRes, postsRes, homesRes, localSpotsRes] = await Promise.all([
       supabase
         .from('processed_news')
         .select('id, created_at')
@@ -71,6 +73,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq('is_public', true)
         .order('updated_at', { ascending: false })
         .limit(MAX_MINIHOMES),
+      supabase
+        .from('local_spots')
+        .select('slug, minihome_public_slug, updated_at')
+        .eq('is_published', true)
+        .order('updated_at', { ascending: false })
+        .limit(MAX_LOCAL_SPOTS),
     ]);
 
     for (const row of postsRes.data ?? []) {
@@ -106,10 +114,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.52,
       });
     }
+
+    for (const row of localSpotsRes.data ?? []) {
+      const slug =
+        String((row as { slug?: string }).slug ?? '').trim() ||
+        String((row as { minihome_public_slug?: string }).minihome_public_slug ?? '').trim();
+      if (!slug) continue;
+      const ts = row.updated_at ? new Date(row.updated_at as string) : fallback;
+      localSpotEntries.push({
+        url: `${base}/local/${encodeURIComponent(slug)}`,
+        lastModified: ts,
+        changeFrequency: 'weekly',
+        priority: 0.74,
+      });
+    }
   } catch {
     // Supabase 미설정·일시 오류 시 정적 URL만
   }
 
-  /** 동적 구간: 커뮤니티 게시 → 뉴스 → 미니홈 순 (배열 앞쪽이 상대적으로 먼저 노출되는 클라이언트가 많음) */
-  return [...staticEntries, ...postsEntries, ...newsEntries, ...minihomeEntries];
+  /** 동적 구간: 커뮤니티 게시 → 로컬 스팟 → 뉴스 → 미니홈 순 */
+  return [...staticEntries, ...postsEntries, ...localSpotEntries, ...newsEntries, ...minihomeEntries];
 }

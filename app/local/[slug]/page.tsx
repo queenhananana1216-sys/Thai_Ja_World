@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import ShopMinihomeClient, { type ShopSpotPayload } from '../../shop/[slug]/ShopMinihomeClient';
 import { createServerClient } from '@/lib/supabase/server';
+import JsonLd from '@/lib/seo/JsonLd';
+import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 
 /**
  * `/local/[category]` 와 `/local/[shopId]` 가 같은 깊이에 다른 동적 이름을 쓰면
@@ -84,14 +86,49 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const spot = await fetchSpotBySlug(slug);
   if (spot) {
     const name = typeof spot.name === 'string' ? spot.name : slug;
+    const pathSlug =
+      String(spot.slug ?? '').trim() || String(spot.minihome_public_slug ?? slug).trim();
+    const url = absoluteUrl(`/local/${encodeURIComponent(pathSlug)}`);
+    const rawDesc =
+      typeof spot.description === 'string' && spot.description.trim()
+        ? spot.description
+        : `${name} 로컬 스팟 미니홈 · 태자월드`;
+    const description = trimForMetaDescription(rawDesc, 160);
+    const photos = spot.photo_urls as unknown;
+    const ogImage =
+      Array.isArray(photos) && typeof photos[0] === 'string' ? (photos[0] as string) : undefined;
     return {
       title: `${name} | 로컬 미니홈`,
-      description: `${name} 로컬 스팟 미니홈`,
+      description,
+      keywords: [name, '태국 로컬', '방콕', '태자월드', '미니홈', 'B2B'],
+      alternates: { canonical: url },
+      openGraph: {
+        title: `${name} | 로컬 미니홈`,
+        description,
+        url,
+        type: 'website',
+        ...(ogImage ? { images: [{ url: ogImage }] } : {}),
+      },
+      twitter: {
+        card: ogImage ? 'summary_large_image' : 'summary',
+        title: `${name} | 로컬 미니홈`,
+        description,
+      },
+      robots: { index: true, follow: true },
     };
   }
+  const hubDesc = `${slug} 카테고리의 로컬 업체와 게시글을 한 화면에서 확인합니다.`;
   return {
     title: `${slug} | 로컬 인텔`,
-    description: `${slug} 카테고리의 로컬 업체와 게시글을 한 화면에서 확인합니다.`,
+    description: hubDesc,
+    keywords: [slug, '로컬 인텔', '태국', '태자월드'],
+    openGraph: {
+      title: `${slug} | 로컬 인텔`,
+      description: hubDesc,
+      url: absoluteUrl(`/local/${encodeURIComponent(slug)}`),
+      type: 'website',
+    },
+    robots: { index: true, follow: true },
   };
 }
 
@@ -148,8 +185,39 @@ async function renderMinihome(spot: NonNullable<Awaited<ReturnType<typeof fetchS
         .join(' · '),
   };
 
+  const slugForUrl =
+    String(spot.slug ?? '').trim() || String(spot.minihome_public_slug ?? '').trim() || 'local';
+  const pageUrl = absoluteUrl(`/local/${encodeURIComponent(slugForUrl)}`);
+  const spotName = typeof spot.name === 'string' ? spot.name : slugForUrl;
+  const descForLd = trimForMetaDescription(
+    (typeof spot.description === 'string' && spot.description.trim()
+      ? spot.description
+      : payload.minihome_intro) ?? spotName,
+    4000,
+  );
+  const photoUrls = Array.isArray(spot.photo_urls) ? (spot.photo_urls as string[]) : [];
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'LocalBusiness',
+          name: spotName,
+          description: descForLd,
+          url: pageUrl,
+          ...(photoUrls[0] ? { image: photoUrls[0] } : {}),
+          ...(biz?.category ? { knowsAbout: biz.category } : {}),
+          ...(biz?.region
+            ? {
+                address: {
+                  '@type': 'PostalAddress',
+                  addressRegion: biz.region,
+                },
+              }
+            : {}),
+        }}
+      />
       <div className="mx-auto max-w-[1320px] px-4 pt-6">
         <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur-md">
           <p className="text-xs font-semibold tracking-wide text-violet-200">B2B LOCAL MINI-HOME</p>

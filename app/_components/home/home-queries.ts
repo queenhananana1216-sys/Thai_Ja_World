@@ -7,7 +7,8 @@
 import 'server-only';
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
+import { listTitleSummaryFromProcessedNoRaw } from '@/lib/news/processedNewsDisplay';
+import { getLocale } from '@/i18n/get-locale';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import type { JobPost, MarketPost, PortalPostRow, PremiumBannerRow } from '../../portal/types';
 import type { LocalBusiness } from '@/types/taeworld';
@@ -210,24 +211,23 @@ export async function fetchHomeNewsMarqueeTitles(limit = 24): Promise<{ titles: 
 
   const { data, error } = await sb
     .from('processed_news')
-    .select('id, clean_body, raw_news(title), summaries(summary_text, model)')
+    .select('id, clean_body, summaries(summary_text, model)')
     .eq('published', true)
     .order('created_at', { ascending: false })
     .limit(limit);
 
   if (error) return { titles: [], error: error.message };
 
+  const locale = await getLocale().catch(() => 'ko' as const);
   const titles: string[] = [];
   for (const pn of data ?? []) {
-    const rn = pn.raw_news as { title?: string } | null;
     const sums = pn.summaries as { summary_text: string; model: string | null }[] | null;
-    const { title } = titleAndSummaryFromProcessed(
+    const parsed = listTitleSummaryFromProcessedNoRaw(
       (pn.clean_body as string | null) ?? null,
-      rn?.title ?? null,
       sums ?? null,
-      'ko',
+      locale === 'th' ? 'th' : 'ko',
     );
-    if (title?.trim()) titles.push(title.trim());
+    if (parsed?.title?.trim()) titles.push(parsed.title.trim());
   }
 
   return { titles, error: null };
@@ -340,31 +340,31 @@ export async function fetchHomeNewsDigest(limit = 5): Promise<{ rows: HomeNewsRo
 
   const { data, error } = await sb
     .from('processed_news')
-    .select('id, clean_body, raw_news(title), summaries(summary_text, model)')
+    .select('id, clean_body, summaries(summary_text, model)')
     .eq('published', true)
     .order('created_at', { ascending: false })
     .limit(limit);
 
   if (error) return { rows: [], error: error.message };
 
+  const locale = await getLocale().catch(() => 'ko' as const);
   const rows: HomeNewsRow[] = [];
   for (const pn of data ?? []) {
     const id = String(pn.id);
-    const rn = pn.raw_news as { title?: string } | null;
     const sums = pn.summaries as { summary_text: string; model: string | null }[] | null;
-    const { title, summary_text } = titleAndSummaryFromProcessed(
+    const parsed = listTitleSummaryFromProcessedNoRaw(
       (pn.clean_body as string | null) ?? null,
-      rn?.title ?? null,
       sums ?? null,
-      'ko',
+      locale === 'th' ? 'th' : 'ko',
     );
-    const t = (title ?? '').trim();
+    if (!parsed) continue;
+    const t = parsed.title.trim();
     if (!t) continue;
     rows.push({
       id,
       title: t,
-      summary: (summary_text ?? '').trim(),
-      href: `/news/${id}`,
+      summary: (parsed.summary_text ?? '').trim(),
+      href: `/news/${encodeURIComponent(id)}`,
     });
   }
 

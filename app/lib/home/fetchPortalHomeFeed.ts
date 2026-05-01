@@ -245,7 +245,7 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
         return {
           id,
           title,
-          href: r.href?.trim() ? r.href : `/news/${encodeURIComponent(id)}`,
+          href: `/news/${encodeURIComponent(id)}`,
           subtitle: r.summary?.trim() ? r.summary.trim().slice(0, 100) : null,
         };
       }),

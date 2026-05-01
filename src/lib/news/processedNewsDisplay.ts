@@ -58,6 +58,21 @@ function clampTitle(s: string, max: number): string {
   return `${t.slice(0, max - 1).trim()}…`;
 }
 
+/** 홈·포털 목록: 가공되지 않은 영문 헤드라인(원문 RSS 톤) 노출 방지 */
+function isMostlyAsciiNewsHeadline(s: string): boolean {
+  const t = s.trim();
+  if (t.length < 14) return false;
+  let ascii = 0;
+  let latinLetters = 0;
+  for (const ch of t) {
+    if (/[A-Za-z]/.test(ch)) {
+      latinLetters += 1;
+      ascii += 1;
+    } else if (ch <= '~') ascii += 1;
+  }
+  return latinLetters >= 12 && ascii / Math.max(t.length, 1) > 0.72;
+}
+
 function titleFromSummaryFirstLine(summary: string | null, max: number): string | null {
   if (!summary?.trim()) return null;
   const line = summary
@@ -120,6 +135,48 @@ export function titleAndSummaryFromProcessed(
   const titleDisplay = humanizeNewsTitle(title, summary_text, rawTitle, locale);
 
   return { title: titleDisplay, summary_text };
+}
+
+/**
+ * 목록용: `processed_news`만 사용 — `raw_news.title`(영문 원문)은 절대 쓰지 않음.
+ * clean_body(ko/th) + summaries 만으로 제목·요약을 만들고, 부족하면 행 자체를 버림(null).
+ */
+export function listTitleSummaryFromProcessedNoRaw(
+  cleanBody: string | null | undefined,
+  summaries:
+    | { summary_text: string; model?: string | null }[]
+    | null
+    | undefined,
+  locale: Locale = 'ko',
+): { title: string; summary_text: string | null } | null {
+  const { ko, th } = parseCleanBodyFull(cleanBody);
+  const primary = locale === 'th' ? th : ko;
+  const fallback = locale === 'th' ? ko : th;
+
+  const fromCleanSummary =
+    nonEmpty(primary?.summary) || nonEmpty(fallback?.summary) || null;
+  const koRow = summaries?.find((s) => s.model === 'ko')?.summary_text?.trim();
+  const thRow = summaries?.find((s) => s.model === 'th')?.summary_text?.trim();
+  const summaryFromTable = locale === 'th' ? thRow || koRow : koRow || thRow;
+  const anyFirst = summaries?.[0]?.summary_text?.trim();
+  const summary_text = fromCleanSummary || summaryFromTable || anyFirst || null;
+
+  let title = nonEmpty(primary?.title) || nonEmpty(fallback?.title) || null;
+  if (title && looksRoboticOrInternalNewsTitle(title)) title = null;
+  if (title && locale === 'ko' && isMostlyAsciiNewsHeadline(title)) {
+    title = titleFromSummaryFirstLine(summary_text, 200);
+  }
+
+  if (!title && summary_text) {
+    title = titleFromSummaryFirstLine(summary_text, 200);
+  }
+  if (!title?.trim()) return null;
+
+  const finalTitle = humanizeNewsTitle(title, summary_text, null, locale);
+  if (!finalTitle.trim() || finalTitle === '(제목 없음)') return null;
+  if (locale === 'ko' && isMostlyAsciiNewsHeadline(finalTitle)) return null;
+
+  return { title: clampTitle(finalTitle, 200), summary_text };
 }
 
 export type NewsDetailParts = {

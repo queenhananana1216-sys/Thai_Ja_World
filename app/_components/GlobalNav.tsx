@@ -36,6 +36,26 @@ export default function GlobalNav() {
         </Link>
 
         <div className="flex flex-wrap items-center gap-3">
+          <div
+            className="flex shrink-0 items-center gap-1 text-[10px] font-semibold text-slate-500"
+            aria-label="언어"
+          >
+            <a
+              href="?lang=ko"
+              className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400 no-underline transition-colors hover:border-white/25 hover:text-slate-200"
+            >
+              한국어
+            </a>
+            <span className="text-slate-600" aria-hidden>
+              |
+            </span>
+            <a
+              href="?lang=th"
+              className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400 no-underline transition-colors hover:border-white/25 hover:text-slate-200"
+            >
+              ไทย
+            </a>
+          </div>
           <div className="order-3 w-full min-w-0 max-w-xl flex-1 md:order-none md:w-auto md:max-w-md">
             <div className="w-full min-w-0">
               <label className="sr-only" htmlFor="tj-header-search-rsc">

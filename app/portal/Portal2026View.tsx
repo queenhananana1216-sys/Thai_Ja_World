@@ -310,7 +310,11 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                   {(newsWing ?? []).map((n, i) => (
                     <li key={n?.id != null ? String(n.id) : `nw-${i}`}>
                       <Link
-                        href={n?.href?.trim() ? String(n.href) : '/news'}
+                        href={
+                          n?.id?.trim()
+                            ? `/news/${encodeURIComponent(String(n.id).trim())}`
+                            : '/news'
+                        }
                         className="block text-[10px] leading-tight text-slate-200 hover:text-amber-200"
                       >
                         <span className="line-clamp-2 font-medium">{n?.title != null ? String(n.title) : ''}</span>

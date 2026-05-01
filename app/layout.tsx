@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: unknown }) {
     <html lang="ko" className="overflow-x-hidden">
       <body className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-slate-200">
         <GlobalNav />
-        <main className="min-h-0 w-full flex-1 overflow-x-hidden">
+        <main className="relative z-0 min-h-[45vh] w-full flex-1 overflow-x-hidden">
           {children as import('react').ReactNode}
         </main>
         <SiteFooterFallback />

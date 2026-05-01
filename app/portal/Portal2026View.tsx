@@ -202,7 +202,7 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
   const tradeLabel = LABELS.board.tradeHubTitle;
 
   return (
-    <main className={styles.root} data-tj-root="portal-2026-ssr">
+    <div className={styles.root} data-tj-root="portal-2026-ssr" role="main" aria-label="태자월드 2026 포털">
       <div className={styles.grid}>
         <aside className="hidden min-h-0 min-w-0 min-[1181px]:block">
           <div className={styles.stickyWing}>
@@ -353,6 +353,6 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
           </div>
         </aside>
       </div>
-    </main>
+    </div>
   );
 }

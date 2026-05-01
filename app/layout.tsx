@@ -1,10 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Nunito } from 'next/font/google';
-
-/** Vercel·CDN이 예전 HTML/헤더를 붙잡지 않도록 루트 세그먼트 전체 동적 렌더 */
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 import { cookies } from 'next/headers';
 import AnalyticsTracker from './_components/AnalyticsTracker';
 import GlobalNav from './_components/GlobalNav';
@@ -19,6 +15,10 @@ const brandNunito = Nunito({
   display: 'swap',
   variable: '--tj-brand-nunito',
 });
+
+/** Vercel·CDN이 예전 HTML/헤더를 붙잡지 않도록 루트 세그먼트 전체 동적 렌더 */
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
   const base = getSiteBaseUrl();

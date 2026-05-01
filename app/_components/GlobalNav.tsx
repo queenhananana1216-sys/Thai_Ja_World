@@ -6,6 +6,8 @@ import AuthBar from './AuthBar';
 import { getLocale } from '@/i18n/get-locale';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/types';
+import { createServerClient } from '@/lib/supabase/server';
+import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
 const WRITE_HREF = '/community/write';
 
@@ -20,6 +22,7 @@ function headerExtraLabels(locale: Locale) {
       menu: 'เมนู',
       searchPlaceholder: 'ค้นหา',
       searchHint: 'ค้นหาเมนู·ข่าว·บอร์ด',
+      myMinihome: 'มินิโฮมของฉัน',
     };
   }
   return {
@@ -30,6 +33,7 @@ function headerExtraLabels(locale: Locale) {
     menu: '메뉴',
     searchPlaceholder: '검색어를 입력하세요',
     searchHint: '메뉴·뉴스·게시판을 통합 검색합니다',
+    myMinihome: '내 미니홈',
   };
 }
 
@@ -37,6 +41,26 @@ export default async function GlobalNav() {
   const locale = await getLocale();
   const d = getDictionary(locale);
   const x = headerExtraLabels(locale);
+
+  let myMinihomeHref: string | null = null;
+  try {
+    const authSb = await createServerSupabaseAuthClient();
+    const {
+      data: { user },
+    } = await authSb.auth.getUser();
+    if (user?.id) {
+      const sb = createServerClient();
+      const { data: hm } = await sb
+        .from('user_minihomes')
+        .select('public_slug')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+      const slug = typeof hm?.public_slug === 'string' ? hm.public_slug.trim() : '';
+      myMinihomeHref = slug ? `/minihome/${encodeURIComponent(slug)}` : '/minihome';
+    }
+  } catch {
+    myMinihomeHref = null;
+  }
 
   const NAV_MENUS: { href: string; label: string }[] = [
     { href: '/', label: d.nav.home },
@@ -115,6 +139,14 @@ export default async function GlobalNav() {
               <p className="mt-1 text-center text-sm text-gray-200 md:text-left">{x.searchHint}</p>
             </div>
           </div>
+          {myMinihomeHref ? (
+            <Link
+              href={myMinihomeHref}
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-fuchsia-400/35 bg-gradient-to-r from-fuchsia-600/35 to-violet-600/35 px-4 py-2 text-sm font-bold text-fuchsia-50 no-underline shadow-[0_0_24px_rgba(192,38,211,0.25)] transition hover:border-fuchsia-300/60 hover:from-fuchsia-500/45 hover:to-violet-500/45"
+            >
+              🏠 {x.myMinihome}
+            </Link>
+          ) : null}
           <AuthBar />
         </div>
       </div>
@@ -129,6 +161,14 @@ export default async function GlobalNav() {
               <span className="after:ml-2 after:text-gray-300 after:content-['▾']">{x.menu}</span>
             </summary>
             <div className="mt-2 flex flex-col gap-1 rounded-lg border border-white/10 bg-slate-950/95 p-2">
+              {myMinihomeHref ? (
+                <Link
+                  href={myMinihomeHref}
+                  className="flex min-h-11 items-center justify-center rounded-md border border-fuchsia-400/40 bg-gradient-to-r from-fuchsia-600/40 to-violet-600/35 px-3 py-2 text-center text-base font-bold text-fuchsia-50 no-underline"
+                >
+                  🏠 {x.myMinihome}
+                </Link>
+              ) : null}
               <a
                 href="/auth/login"
                 className="flex min-h-11 items-center justify-center rounded-md border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-center text-base font-semibold text-violet-50 no-underline"
@@ -169,6 +209,14 @@ export default async function GlobalNav() {
                 {m.label}
               </Link>
             ))}
+            {myMinihomeHref ? (
+              <Link
+                href={myMinihomeHref}
+                className="inline-flex min-h-11 items-center rounded-full border border-fuchsia-400/35 bg-fuchsia-950/40 px-3 py-2 text-base font-bold text-fuchsia-100 no-underline hover:border-fuchsia-300/55 hover:bg-fuchsia-900/50"
+              >
+                🏠 {x.myMinihome}
+              </Link>
+            ) : null}
             <Link
               href={WRITE_HREF}
               className="ml-auto inline-flex min-h-11 items-center rounded-full bg-blue-600 px-4 py-2 text-base font-bold text-white no-underline shadow-md hover:bg-blue-500"

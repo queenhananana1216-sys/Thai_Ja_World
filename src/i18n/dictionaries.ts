@@ -1260,6 +1260,22 @@ const ko: Dictionary = {
   },
   quests: {
     feedPhraseMap: [
+      {
+        en: 'Write 8 warm guestbook messages this month',
+        ko: '이번 달 따뜻한 방명록 8개 남기기',
+        th: 'เขียนข้อความอบอุ่นในสมุดเยี่ยมชม 8 ข้อเดือนนี้',
+      },
+      {
+        en: 'Write 2 weekly posts this week',
+        ko: '이번 주 게시글 2개 작성하기',
+        th: 'เขียนโพสต์รายสัปดาห์ 2 โพสต์ในสัปดาห์นี้',
+      },
+      {
+        en: 'Leave 3 comments today',
+        ko: '오늘 댓글 3개 남기기',
+        th: 'คอมเมนต์วันนี้ 3 ครั้ง',
+      },
+      { en: 'warm guestbook messages', ko: '따뜻한 방명록 메시지', th: 'ข้อความอบอุ่นในสมุดเยี่ยมชม' },
       { en: 'Guestbook cheers', ko: '방명록 응원', th: 'เขียนสมุดเยี่ยมชม' },
       { en: 'guestbook cheers', ko: '방명록 응원', th: 'เขียนสมุดเยี่ยมชม' },
       { en: 'Weekly post', ko: '주간 게시물 작성', th: 'โพสต์ประจำสัปดาห์' },
@@ -1923,6 +1939,22 @@ const th: Dictionary = {
   },
   quests: {
     feedPhraseMap: [
+      {
+        en: 'Write 8 warm guestbook messages this month',
+        ko: '이번 달 따뜻한 방명록 8개 남기기',
+        th: 'เขียนข้อความอบอุ่นในสมุดเยี่ยมชม 8 ข้อเดือนนี้',
+      },
+      {
+        en: 'Write 2 weekly posts this week',
+        ko: '이번 주 게시글 2개 작성하기',
+        th: 'เขียนโพสต์รายสัปดาห์ 2 โพสต์ในสัปดาห์นี้',
+      },
+      {
+        en: 'Leave 3 comments today',
+        ko: '오늘 댓글 3개 남기기',
+        th: 'คอมเมนต์วันนี้ 3 ครั้ง',
+      },
+      { en: 'warm guestbook messages', ko: '따뜻한 방명록 메시지', th: 'ข้อความอบอุ่นในสมุดเยี่ยมชม' },
       { en: 'Guestbook cheers', ko: '방명록 응원', th: 'เขียนสมุดเยี่ยมชม' },
       { en: 'guestbook cheers', ko: '방명록 응원', th: 'เขียนสมุดเยี่ยมชม' },
       { en: 'Weekly post', ko: '주간 게시물 작성', th: 'โพสต์ประจำสัปดาห์' },

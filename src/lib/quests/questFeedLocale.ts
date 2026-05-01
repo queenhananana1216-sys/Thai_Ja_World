@@ -23,6 +23,8 @@ export function localizeQuestFeedText(
 ): string {
   let out = stripQuestFeedWeatherClutter(text);
   const loc = locale === 'th' ? 'th' : 'ko';
+  /** DB·RPC가 `[Quest] …` 형태로 붙이는 경우 영문 접두 제거 */
+  out = out.replace(/\[\s*Quest\s*\]/gi, loc === 'th' ? '[เควสต์]' : '[퀘스트]');
   const sorted = [...feedPhraseMap].sort((a, b) => b.en.length - a.en.length);
   for (const row of sorted) {
     const pattern = row.en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

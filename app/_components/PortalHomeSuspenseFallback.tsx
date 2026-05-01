@@ -15,8 +15,43 @@ export default function PortalHomeSuspenseFallback() {
         color: '#fbbf24',
       }}
     >
-      <p style={{ margin: '0 0 0.5rem', fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-        태자<span style={{ color: '#fde68a' }}>월드</span>
+      <p
+        style={{
+          margin: '0 0 0.5rem',
+          fontSize: '1rem',
+          fontWeight: 800,
+          letterSpacing: '-0.02em',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.6rem',
+          color: '#f8fafc',
+        }}
+      >
+        <span style={{ fontSize: '1.85rem', lineHeight: 1 }} aria-hidden>
+          🐘
+        </span>
+        <span
+          style={{
+            display: 'inline-block',
+            borderRadius: '1rem',
+            border: '1px solid rgba(251, 191, 36, 0.4)',
+            background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(69, 26, 3, 0.35))',
+            padding: '0.35rem 0.75rem',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.09), 0 8px 28px rgba(0,0,0,0.35)',
+          }}
+        >
+          <span
+            style={{
+              background: 'linear-gradient(90deg, #fffbeb, #fcd34d, #fef08a)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+              fontWeight: 800,
+            }}
+          >
+            태국에, 살자
+          </span>
+        </span>
       </p>
       <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 500, color: '#cbd5e1', lineHeight: 1.6 }}>
         포털 데이터를 불러오는 중입니다. 이 문구가 계속만 보이면 브라우저 개발자 도구(F12) → Console 탭 오류를 확인해 주세요.

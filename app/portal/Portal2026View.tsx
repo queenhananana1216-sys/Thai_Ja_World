@@ -38,7 +38,8 @@ function formatPortalNewsAge(iso: string | null | undefined, locale: Locale): st
 }
 
 function splitLiveHotKeywords(text: string): ReactNode {
-  const re = /(\[(?:quest)\]|도토리|방명록|Guestbook|guestbook|퀘스트|옥수수|cheers|Cheer)/gi;
+  const re =
+    /(\[(?:quest|퀘스트|เควสต์)\]|도토리|방명록|Guestbook|guestbook|퀘스트|옥수수|cheers|Cheer)/gi;
   const parts = text.split(re);
   if (parts.length <= 1) return text;
   return parts.map((part, i) =>
@@ -282,7 +283,7 @@ function isLiveGamificationLine(item: PortalFeedLine): boolean {
   const t = `${item.title} ${item.subtitle ?? ''}`;
   const lower = t.toLowerCase();
   return (
-    /\[(?:quest)\]/i.test(t) ||
+    /\[(?:quest|퀘스트|เควสต์)\]/i.test(t) ||
     lower.includes('도토리') ||
     lower.includes('방명록') ||
     lower.includes('guestbook') ||

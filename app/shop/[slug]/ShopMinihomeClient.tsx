@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import ShopDeliveryRequestPanel from './ShopDeliveryRequestPanel';
 import ShopGuestbookPanel from './ShopGuestbookPanel';
@@ -8,6 +9,8 @@ import { DepthCard } from '@/components/3d/DepthCard';
 import { HoloButton } from '@/components/3d/HoloButton';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { SURFACE_DEFAULT_TIER } from '@/lib/3d/system';
+import QRCodeGenerator from '@/components/local/QRCodeGenerator';
+import { absoluteUrl } from '@/lib/seo/site';
 
 export type ShopSpotPayload = {
   id: string;
@@ -127,6 +130,13 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
 
   const bgmUrl = spot.minihome_bgm_url?.trim() || '';
   const effectiveSlug = (spot.minihome_public_slug?.trim() || spot.slug || '').trim();
+  const pathSlugForLocal = (
+    String(spot.slug ?? '').trim() ||
+    String(spot.minihome_public_slug ?? '').trim() ||
+    effectiveSlug
+  ).trim();
+  const digitalMenuPath = `/local/${encodeURIComponent(pathSlugForLocal)}/minihome`;
+  const digitalMenuAbsUrl = absoluteUrl(digitalMenuPath);
 
   function toggleBgm() {
     const el = audioRef.current;
@@ -142,7 +152,6 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
     typeof window !== 'undefined'
       ? `${window.location.origin}/shop/${encodeURIComponent(effectiveSlug)}`
       : `/shop/${encodeURIComponent(effectiveSlug)}`;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(roomUrl)}`;
   const isMobile =
     typeof window !== 'undefined'
       ? window.matchMedia('(max-width: 768px)').matches
@@ -152,10 +161,19 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
     cart.reduce((sum, row) => sum + row.quantity * row.unitPriceThb, 0).toFixed(2),
   );
 
-  async function copyRoomUrl() {
+  async function copyDigitalMenuUrl() {
+    try {
+      await navigator.clipboard.writeText(digitalMenuAbsUrl);
+      setCopyMsg(locale === 'th' ? 'คัดลอกลิงก์เมนูแล้ว' : '메뉴판 링크를 복사했어요.');
+    } catch {
+      setCopyMsg(locale === 'th' ? 'คัดลอกไม่สำเร็จ' : '복사에 실패했어요.');
+    }
+  }
+
+  async function copyShopUrl() {
     try {
       await navigator.clipboard.writeText(roomUrl);
-      setCopyMsg(locale === 'th' ? 'คัดลอกลิงก์แล้ว' : '링크를 복사했어요.');
+      setCopyMsg(locale === 'th' ? 'คัดลอกลิงก์แล้ว' : '샵 링크를 복사했어요.');
     } catch {
       setCopyMsg(locale === 'th' ? 'คัดลอกไม่สำเร็จ' : '복사에 실패했어요.');
     }
@@ -417,20 +435,77 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
           ) : null}
         </Section>
 
-        <div style={{ marginTop: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <a
-            href={qrUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="board-form__submit"
-            style={{ textDecoration: 'none', padding: '6px 12px', background: '#fff', color: '#111827', border: '1px solid #e2e8f0' }}
-          >
-            {locale === 'th' ? 'ดู QR' : 'QR 보기'}
-          </a>
-          <HoloButton className="board-form__submit" tier={tier} style={{ padding: '6px 12px' }} onClick={() => void copyRoomUrl()}>
-            {locale === 'th' ? 'คัดลอกลิงก์' : '링크 복사'}
-          </HoloButton>
-          {copyMsg ? <span style={{ fontSize: 12, color: '#cbd5e1' }}>{copyMsg}</span> : null}
+        <div
+          style={{
+            marginTop: 16,
+            display: 'flex',
+            gap: 14,
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            flexDirection: isMobile ? 'column' : 'row',
+          }}
+        >
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Link
+              href={digitalMenuPath}
+              className="board-form__submit"
+              style={{
+                textDecoration: 'none',
+                padding: '8px 14px',
+                borderRadius: 10,
+                background: `${accent}33`,
+                color: '#f8fafc',
+                border: `1px solid ${accent}66`,
+                fontWeight: 700,
+                fontSize: 13,
+              }}
+            >
+              {locale === 'th' ? 'เมนูดิจิทัล' : '디지털 메뉴판'}
+            </Link>
+            <Link
+              href={`/local/${encodeURIComponent(pathSlugForLocal)}`}
+              className="board-form__submit"
+              style={{
+                textDecoration: 'none',
+                padding: '8px 14px',
+                borderRadius: 10,
+                background: 'rgba(15,23,42,0.65)',
+                color: '#e2e8f0',
+                border: '1px solid rgba(255,255,255,0.12)',
+                fontWeight: 700,
+                fontSize: 13,
+              }}
+            >
+              {locale === 'th' ? 'มินิโฮม' : '미니홈 보기'}
+            </Link>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+            <QRCodeGenerator
+              value={digitalMenuAbsUrl}
+              size={isMobile ? 132 : 156}
+              caption={locale === 'th' ? 'สแกน → เมนูบอร์ด' : '스캔 시 디지털 메뉴판'}
+              className="inline-flex flex-col items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.04] p-2 shadow-inner shadow-black/30"
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <HoloButton
+                className="board-form__submit"
+                tier={tier}
+                style={{ padding: '8px 12px', fontSize: 12 }}
+                onClick={() => void copyDigitalMenuUrl()}
+              >
+                {locale === 'th' ? 'คัดลอกลิงก์เมนู' : '메뉴판 링크 복사'}
+              </HoloButton>
+              <HoloButton
+                className="board-form__submit"
+                tier={tier}
+                style={{ padding: '8px 12px', fontSize: 12, opacity: 0.92 }}
+                onClick={() => void copyShopUrl()}
+              >
+                {locale === 'th' ? 'คัดลอกลิงก์ร้าน' : '샵 링크 복사'}
+              </HoloButton>
+            </div>
+          </div>
+          {copyMsg ? <span style={{ fontSize: 12, color: '#cbd5e1', width: '100%' }}>{copyMsg}</span> : null}
         </div>
 
         <Section id="photos">

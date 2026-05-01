@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import NewsComments, { type NewsCommentRow } from '../_components/NewsComments';
-import portalStyles from '../portal/portal-2026.module.css';
+import portalStyles from '@app/portal/portal-2026.module.css';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

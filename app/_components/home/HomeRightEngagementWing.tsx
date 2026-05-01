@@ -10,6 +10,17 @@ type QuestProgressSummary = {
   ratio: number;
 };
 
+async function readMyMinihomeHref(uid: string): Promise<string> {
+  try {
+    const sb = createServerClient();
+    const { data } = await sb.from('user_minihomes').select('public_slug').eq('owner_id', uid).maybeSingle();
+    const slug = typeof data?.public_slug === 'string' ? data.public_slug.trim() : '';
+    return slug ? `/minihome/${encodeURIComponent(slug)}` : '/minihome';
+  } catch {
+    return '/minihome';
+  }
+}
+
 async function readMyPoint(): Promise<number | null> {
   try {
     const sb = createServerClient();
@@ -87,6 +98,7 @@ function buildUxCuration(totals: Awaited<ReturnType<typeof fetchHomeUxSnapshot>>
 export async function HomeRightEngagementWing() {
   let uid: string | null = null;
   let point: number | null = null;
+  let myMinihomeHref: string | null = null;
   let weather = '방콕 날씨 업데이트 대기중';
   let ticker: Awaited<ReturnType<typeof fetchHomeRecentCommentTicker>> = { rows: [], error: null };
   let fx: Awaited<ReturnType<typeof fetchUsdFx>> = FX_SNAPSHOT_FALLBACK;
@@ -105,6 +117,9 @@ export async function HomeRightEngagementWing() {
       uid ? readQuestProgress(uid) : Promise.resolve(null),
       fetchHomeUxSnapshot(),
     ]);
+    if (uid) {
+      myMinihomeHref = await readMyMinihomeHref(uid);
+    }
   } catch {
     // 우측 윙은 실패해도 전체 홈 렌더를 깨지 않게 안전 기본값 유지
   }
@@ -129,6 +144,14 @@ export async function HomeRightEngagementWing() {
                 style={{ width: `${Math.max(0, Math.min(100, quest?.ratio ?? 0))}%` }}
               />
             </div>
+            {myMinihomeHref ? (
+              <Link
+                href={myMinihomeHref}
+                className={`${styles.loginQuestCta} mt-3 block text-center`}
+              >
+                🏠 내 미니홈 열기
+              </Link>
+            ) : null}
           </div>
         ) : (
           <Link href="/auth/login?next=%2F" className={styles.loginQuestCta}>

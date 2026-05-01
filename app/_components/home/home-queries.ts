@@ -21,11 +21,7 @@ const PUBLIC_FETCH_TIMEOUT_MS = 10_000;
 function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), PUBLIC_FETCH_TIMEOUT_MS);
-  return fetch(input, {
-    ...init,
-    signal: ctrl.signal,
-    cache: init?.cache ?? 'no-store',
-  }).finally(() => clearTimeout(tid));
+  return fetch(input, { ...init, signal: ctrl.signal }).finally(() => clearTimeout(tid));
 }
 
 /** 익명 공개 읽기 전용 — SSR 쿠키/세션 미연동 */

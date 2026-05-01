@@ -3,10 +3,8 @@ import Portal2026View from './portal/Portal2026View';
 import { fetchPortalHomeFeed } from './lib/home/fetchPortalHomeFeed';
 import { absoluteUrl } from '@/lib/seo/site';
 
-/** 홈(/) 전용 — 풀 다이나믹 + fetch 캐시 미사용 (레이아웃과 이중 선언으로 명시) */
+/** 홈(/)만 SSR 데이터 페치 — 레이아웃은 정적 뼈대 유지 */
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const fetchCache = 'force-no-store';
 
 const HOME_METADATA = {
   title: '태자월드',

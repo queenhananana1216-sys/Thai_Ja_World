@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import AdminQuickOpsPanel from './_components/AdminQuickOpsPanel';
+import MainQrGenerator from './_components/MainQrGenerator';
 import { fetchLatestPipelineTouch, probeSiteReachability } from '@/lib/admin/adminDashboardSignals';
 import { fetchSiteTrafficSummary24h } from '@/lib/admin/siteTrafficSummary';
 import { getKstDayRangeISO } from '@/lib/admin/kstDayRange';
@@ -14,8 +15,10 @@ import {
   newsPublishPipelineHint,
 } from '@/lib/news/newsPublishMode';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
+import { getSiteBaseUrl } from '@/lib/seo/site';
 
 export default async function AdminDashboardPage() {
+  const mainSiteUrl = getSiteBaseUrl();
   const [reach, pipelineTouch, traffic24h] = await Promise.all([
     probeSiteReachability(),
     fetchLatestPipelineTouch(),
@@ -126,6 +129,8 @@ export default async function AdminDashboardPage() {
         태자 월드 회원·접속·뉴스 초안 지표입니다. <strong>마지막 접속</strong>은 사이트 하트비트로 갱신되는{' '}
         <code>profiles.last_seen_at</code> 기준이며, Supabase Auth의 “최종 로그인”과는 다를 수 있습니다.
       </p>
+
+      <MainQrGenerator mainSiteUrl={mainSiteUrl} />
 
       <section className="admin-dash__master-row" aria-label="마스터 상태 보드">
         <article className="admin-dash__master-card">

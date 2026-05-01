@@ -1,30 +1,31 @@
 import Link from 'next/link';
-import {
-  fetchPortalHomeFeed,
-  HONEST_EMPTY_PORTAL_HOME_FEED,
-  type PortalFeedLine,
-  type PortalHomeFeed,
-} from '../lib/home/fetchPortalHomeFeed';
+import type { PortalFeedLine, PortalHomeFeed } from '../lib/home/fetchPortalHomeFeed';
+import type { Dictionary } from '@/i18n/dictionaries';
+import type { Locale } from '@/i18n/types';
 import styles from './portal-2026.module.css';
 
-const EMPTY_COPY = '아직 등록된 글이 없습니다. 첫 글의 주인공이 되어보세요!';
+export type Portal2026ViewProps = {
+  feed: PortalHomeFeed;
+  dict: Dictionary;
+  locale: Locale;
+};
 
 function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedLine[] {
   if (!Array.isArray(lines)) return [];
   return lines.filter((l) => l && typeof l.id === 'string' && typeof l.title === 'string');
 }
 
-function EmptyBoardState() {
+function EmptyBoardState({ message }: { message: string }) {
   return (
     <div className="rounded-lg border border-slate-700/50 bg-slate-950/40 px-3 py-8 text-center">
-      <p className="text-[11px] font-medium leading-relaxed text-slate-400">{EMPTY_COPY}</p>
+      <p className="text-[11px] font-medium leading-relaxed text-slate-400">{message}</p>
     </div>
   );
 }
 
-function FeedLineList({ lines }: { lines: PortalFeedLine[] }) {
+function FeedLineList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyMessage: string }) {
   const safe = normalizeLines(lines);
-  if (safe.length === 0) return <EmptyBoardState />;
+  if (safe.length === 0) return <EmptyBoardState message={emptyMessage} />;
   return (
     <ul className="max-h-[220px] overflow-y-auto px-2 py-1">
       {safe.map((item) => (
@@ -44,9 +45,9 @@ function FeedLineList({ lines }: { lines: PortalFeedLine[] }) {
   );
 }
 
-function LiveFeedList({ lines }: { lines: PortalFeedLine[] }) {
+function LiveFeedList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyMessage: string }) {
   const safe = normalizeLines(lines);
-  if (safe.length === 0) return <EmptyBoardState />;
+  if (safe.length === 0) return <EmptyBoardState message={emptyMessage} />;
   return (
     <ul className="max-h-[280px] overflow-y-auto px-2 py-1">
       {safe.map((item) => (
@@ -67,40 +68,55 @@ function LiveFeedList({ lines }: { lines: PortalFeedLine[] }) {
 }
 
 /**
- * 2026 고밀도 3열 포털 — SSR 전용, 서버에서만 Supabase anon 피드 로드 (fetchPortalHomeFeed).
+ * 2026 3열 포털 — 데이터는 page.tsx(SSR 컨트롤러)에서만 로드·주입.
  */
-export default async function Portal2026View() {
-  let feed: PortalHomeFeed;
-  try {
-    const loaded = await fetchPortalHomeFeed();
-    feed = loaded && typeof loaded === 'object' ? loaded : HONEST_EMPTY_PORTAL_HOME_FEED;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return (
-      <div className="p-10 text-red-500 text-xl font-bold bg-black">치명적 에러 발생: {message}</div>
-    );
-  }
+export default function Portal2026View({ feed, dict, locale }: Portal2026ViewProps) {
+  const th = locale === 'th';
+  const emptyMsg = dict.board.empty;
+  const moreLabel = dict.home.shopsMore.replace(/\s*→\s*$/, '').replace(/\s*›\s*$/, '').trim() || '더보기';
 
-  const jobs = normalizeLines(feed.jobs);
-  const market = normalizeLines(feed.market);
-  const freeBoard = normalizeLines(feed.freeBoard);
-  const qna = normalizeLines(feed.qna);
-  const localBiz = normalizeLines(feed.localBiz);
-  const news = normalizeLines(feed.news);
-  const wingBanners = normalizeLines(feed.wingBanners);
-  const liveFeed = normalizeLines(feed.liveFeed);
+  const raw = feed ?? ({} as Partial<PortalHomeFeed>);
+  const jobs = normalizeLines(raw.jobs);
+  const market = normalizeLines(raw.market);
+  const freeBoard = normalizeLines(raw.freeBoard);
+  const qna = normalizeLines(raw.qna);
+  const localBiz = normalizeLines(raw.localBiz);
+  const news = normalizeLines(raw.news);
+  const wingBanners = normalizeLines(raw.wingBanners);
+  const liveFeed = normalizeLines(raw.liveFeed);
 
   const boards = [
-    { title: '구인구직', moreHref: '/community/boards?cat=job', lines: jobs },
-    { title: '번개장터', moreHref: '/community/boards?cat=flea', lines: market },
-    { title: '자유게시판', moreHref: '/community/boards?cat=free', lines: freeBoard },
-    { title: '로컬 업체', moreHref: '/local', lines: localBiz },
-    { title: '태국 뉴스', moreHref: '/news', lines: news },
-    { title: '생활 Q&A', moreHref: '/community/boards?cat=qna', lines: qna },
+    { title: th ? 'หางาน' : '구인구직', moreHref: '/community/boards?cat=job', lines: jobs },
+    { title: th ? 'ตลาดนัด' : '번개장터', moreHref: '/community/boards?cat=flea', lines: market },
+    { title: th ? 'บอร์ดทั่วไป' : '자유게시판', moreHref: '/community/boards?cat=free', lines: freeBoard },
+    { title: th ? 'ร้านท้องถิ่น' : '로컬 업체', moreHref: '/local', lines: localBiz },
+    { title: th ? 'ข่าว' : '태국 뉴스', moreHref: '/news', lines: news },
+    { title: th ? 'ถาม-ตอบ' : '생활 Q&A', moreHref: '/community/boards?cat=qna', lines: qna },
   ] as const;
 
   const newsWing = news.slice(0, 6);
   const localWing = localBiz.slice(0, 5);
+
+  const sponsorTitle = th ? 'สปอนเซอร์ · แนะนำ' : '스폰서 · 안내';
+  const scaleTitle = th ? 'ขนาดชุมชน' : '커뮤니티 규모';
+  const shortcutTitle = th ? 'ทางลัด' : '바로가기';
+  const liveFeedTitle = th ? 'ฟีดรวมแบบเรียลไทม์' : '실시간 통합 피드';
+  const newsAsideTitle = th ? 'ข่าวล่าสุด' : '최신 뉴스';
+  const localAsideTitle = th ? 'ร้านท้องถิ่น' : '로컬 업체';
+  const contactTitle = dict.footerNav.contact;
+  const contactBody = th
+    ? 'ลงทะเบียนกระดาน·ร้านค้าได้จากเมนูแต่ละส่วน'
+    : '게시판·업체 등록은 각 메뉴에서 진행됩니다.';
+
+  const statsUnavailable = th ? 'โหลดสถิติไม่ได้' : '통계를 불러오지 못했습니다.';
+  const profileLabel = th ? 'โปรไฟล์' : '프로필';
+  const postsLabel = th ? 'โพสต์·เทรด' : '공개 글·거래';
+
+  const totals = raw.siteTotals;
+  const profileCount =
+    totals && typeof totals.profileCount === 'number' ? totals.profileCount : null;
+  const communityItemCount =
+    totals && typeof totals.communityItemCount === 'number' ? totals.communityItemCount : null;
 
   return (
     <main className={styles.root} data-tj-root="portal-2026-ssr">
@@ -108,12 +124,12 @@ export default async function Portal2026View() {
         <aside className="hidden min-[1181px]:block">
           <div className="sticky space-y-2" style={{ top: 'var(--tj-home-sticky-top, 14rem)' }}>
             <section className="rounded-xl border border-blue-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
-              <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">스폰서 · 안내</p>
-              {wingBanners.length === 0 ? (
-                <EmptyBoardState />
+              <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">{sponsorTitle}</p>
+              {(wingBanners?.length ?? 0) === 0 ? (
+                <EmptyBoardState message={emptyMsg} />
               ) : (
                 <ul className="mt-2 space-y-2">
-                  {wingBanners.map((b) => (
+                  {(wingBanners ?? []).map((b) => (
                     <li key={b.id}>
                       <Link
                         href={b.href || '/ads'}
@@ -128,32 +144,32 @@ export default async function Portal2026View() {
               )}
             </section>
             <section className="rounded-xl border border-amber-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
-              <p className="text-[11px] font-black text-amber-300">커뮤니티 규모</p>
-              {feed.siteTotals ? (
+              <p className="text-[11px] font-black text-amber-300">{scaleTitle}</p>
+              {profileCount != null && communityItemCount != null ? (
                 <p className="mt-1 text-xs leading-snug text-slate-100">
-                  프로필 약 {feed.siteTotals.profileCount.toLocaleString('ko-KR')} · 공개 글·거래{' '}
-                  {feed.siteTotals.communityItemCount.toLocaleString('ko-KR')}
+                  {profileLabel} 약 {profileCount.toLocaleString(th ? 'th-TH' : 'ko-KR')} · {postsLabel}{' '}
+                  {communityItemCount.toLocaleString(th ? 'th-TH' : 'ko-KR')}
                 </p>
               ) : (
-                <p className="mt-1 text-[11px] leading-snug text-slate-500">통계를 불러오지 못했습니다.</p>
+                <p className="mt-1 text-[11px] leading-snug text-slate-500">{statsUnavailable}</p>
               )}
             </section>
             <section className="rounded-xl border border-white/10 bg-slate-900/40 p-2 text-[10px] text-slate-400">
-              <p className="font-semibold text-slate-300">바로가기</p>
+              <p className="font-semibold text-slate-300">{shortcutTitle}</p>
               <ul className="mt-1.5 space-y-1">
                 <li>
                   <Link href="/community/boards" className="hover:text-amber-200 hover:underline">
-                    광장
+                    {dict.home.hubBoard}
                   </Link>
                 </li>
                 <li>
                   <Link href="/community/trade" className="hover:text-amber-200 hover:underline">
-                    중고·알바
+                    {dict.board.tradeHubTitle}
                   </Link>
                 </li>
                 <li>
                   <Link href="/news" className="hover:text-amber-200 hover:underline">
-                    뉴스
+                    {th ? 'ข่าว' : '뉴스'}
                   </Link>
                 </li>
               </ul>
@@ -163,9 +179,11 @@ export default async function Portal2026View() {
 
         <section className="min-w-0 space-y-2">
           <div className="rounded-xl border border-slate-600/60 bg-slate-900/60 p-2.5 backdrop-blur-md">
-            <p className="text-xs font-black text-amber-300">2026 Taeja World · 커뮤니티 포털</p>
+            <p className="text-xs font-black text-amber-300">
+              {dict.home.portalMastTitle || '2026 Taeja World · 커뮤니티 포털'}
+            </p>
             <p className="mt-1 text-[11px] leading-relaxed text-slate-300">
-              Supabase 실데이터를 서버에서만 불러옵니다. (SSR · 클라이언트 데이터 페치 없음)
+              {dict.home.portalMastSub || dict.home.tag}
             </p>
           </div>
 
@@ -181,28 +199,28 @@ export default async function Portal2026View() {
                     href={board.moreHref}
                     className="shrink-0 text-[11px] font-bold text-amber-300 hover:underline"
                   >
-                    더보기
+                    {moreLabel}
                   </Link>
                 </header>
-                <FeedLineList lines={board.lines} />
+                <FeedLineList lines={board.lines} emptyMessage={emptyMsg} />
               </article>
             ))}
           </div>
 
           <section className="rounded-xl border border-slate-600/60 bg-slate-900/55 backdrop-blur-md">
             <header className="border-b border-slate-700/70 px-2 py-1.5 text-xs font-black text-blue-300">
-              실시간 통합 피드
+              {liveFeedTitle}
             </header>
-            <LiveFeedList lines={liveFeed} />
+            <LiveFeedList lines={liveFeed} emptyMessage={emptyMsg} />
           </section>
         </section>
 
         <aside className="hidden min-[1181px]:block">
           <div className="sticky space-y-2" style={{ top: 'var(--tj-home-sticky-top, 14rem)' }}>
             <section className="rounded-xl border border-blue-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
-              <p className="text-[11px] font-black text-blue-300">최신 뉴스</p>
+              <p className="text-[11px] font-black text-blue-300">{newsAsideTitle}</p>
               {newsWing.length === 0 ? (
-                <EmptyBoardState />
+                <EmptyBoardState message={emptyMsg} />
               ) : (
                 <ul className="mt-2 space-y-1.5">
                   {newsWing.map((n) => (
@@ -216,9 +234,9 @@ export default async function Portal2026View() {
               )}
             </section>
             <section className="rounded-xl border border-amber-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
-              <p className="text-[11px] font-black text-amber-300">로컬 업체</p>
+              <p className="text-[11px] font-black text-amber-300">{localAsideTitle}</p>
               {localWing.length === 0 ? (
-                <EmptyBoardState />
+                <EmptyBoardState message={emptyMsg} />
               ) : (
                 <ul className="mt-2 space-y-1.5">
                   {localWing.map((l) => (
@@ -233,10 +251,8 @@ export default async function Portal2026View() {
               )}
             </section>
             <section className="rounded-xl border border-white/10 bg-slate-900/40 p-2 text-[10px] text-slate-400">
-              <p className="font-semibold text-slate-300">문의</p>
-              <p className="mt-1.5 leading-relaxed text-slate-500">
-                게시판·업체 등록은 각 메뉴에서 진행됩니다.
-              </p>
+              <p className="font-semibold text-slate-300">{contactTitle}</p>
+              <p className="mt-1.5 leading-relaxed text-slate-500">{contactBody}</p>
             </section>
           </div>
         </aside>

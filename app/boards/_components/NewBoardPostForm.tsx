@@ -4,6 +4,11 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { uploadBoardImage } from '@/lib/board/uploadBoardImage';
+import {
+  fireDbErrorRadar,
+  shouldMaskRawDbError,
+  USER_DB_SYNC_TOAST_MESSAGE,
+} from '@/lib/db/dbErrorDefense';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { LocationPicker, type LocationValue } from './LocationPicker';
 import type { BoardPostRow } from './types';
@@ -110,7 +115,12 @@ export function NewBoardPostForm({
       });
       setLoading(false);
       if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        const j = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+        if (j.code === 'SCHEMA_SYNC' || shouldMaskRawDbError(String(j.error ?? ''))) {
+          toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
+          fireDbErrorRadar('NewBoardPostForm:edit');
+          return;
+        }
         setError(j.error ?? '수정 실패');
         return;
       }
@@ -129,10 +139,19 @@ export function NewBoardPostForm({
       body: JSON.stringify(body),
     });
 
-    const json = (await res.json().catch(() => ({}))) as { id?: string; error?: string };
+    const json = (await res.json().catch(() => ({}))) as {
+      id?: string;
+      error?: string;
+      code?: string;
+    };
     setLoading(false);
 
     if (!res.ok || !json.id) {
+      if (json.code === 'SCHEMA_SYNC' || shouldMaskRawDbError(String(json.error ?? ''))) {
+        toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
+        fireDbErrorRadar('NewBoardPostForm:create');
+        return;
+      }
       setError(json.error ?? '등록 실패');
       return;
     }

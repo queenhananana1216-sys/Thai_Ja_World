@@ -4,6 +4,7 @@
  */
 import { NextResponse } from 'next/server';
 import { parseBoardPostBody } from './boardPayload';
+import { publicBodyFromSupabaseMessage } from '@/lib/db/dbErrorDefense';
 import { recordQuestProgress } from '@/lib/quests/progress';
 import { createServerClient } from '@/lib/supabase/server';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
@@ -40,7 +41,8 @@ export async function GET(req: Request): Promise<NextResponse> {
 
   const { data, error } = await query;
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const { status, body } = publicBodyFromSupabaseMessage(error.message);
+    return NextResponse.json(body, { status });
   }
 
   return NextResponse.json({ posts: data ?? [], limit, offset });
@@ -91,7 +93,8 @@ export async function POST(req: Request): Promise<NextResponse> {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const { status, body } = publicBodyFromSupabaseMessage(error.message);
+    return NextResponse.json(body, { status });
   }
 
   const postId = data?.id;

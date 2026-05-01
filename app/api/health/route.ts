@@ -53,6 +53,28 @@ async function readSafeMode(): Promise<boolean> {
   }
 }
 
+/** 클라이언트 DB 에러 레이더 — 관리자 로그(Vercel/호스트 콘솔) 전용, 본문은 노출하지 않음 */
+export async function POST(req: Request): Promise<NextResponse> {
+  let body: { kind?: string; context?: string } = {};
+  try {
+    body = (await req.json()) as typeof body;
+  } catch {
+    return NextResponse.json({ ok: false }, { status: 400 });
+  }
+  const kind = typeof body.kind === 'string' ? body.kind : 'unknown';
+  const context = typeof body.context === 'string' ? body.context : '';
+  console.error(
+    JSON.stringify({
+      level: 'warn',
+      service: 'db_error_radar',
+      kind,
+      context,
+      at: new Date().toISOString(),
+    }),
+  );
+  return NextResponse.json({ ok: true });
+}
+
 export async function GET(): Promise<NextResponse> {
   const [dbOk, origin, safeModeBefore] = await Promise.all([checkDatabase(), checkOrigin(), readSafeMode()]);
 

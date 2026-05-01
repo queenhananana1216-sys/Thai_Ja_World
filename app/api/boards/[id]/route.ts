@@ -4,6 +4,7 @@
  */
 import { NextResponse } from 'next/server';
 import { parseBoardPostBody } from '../boardPayload';
+import { publicBodyFromSupabaseMessage } from '@/lib/db/dbErrorDefense';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
 export const runtime = 'nodejs';
@@ -67,7 +68,8 @@ export async function PUT(req: Request, ctx: Ctx): Promise<NextResponse> {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const { status, body } = publicBodyFromSupabaseMessage(error.message);
+    return NextResponse.json(body, { status });
   }
   if (!data) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
@@ -104,7 +106,8 @@ export async function DELETE(req: Request, ctx: Ctx): Promise<NextResponse> {
     .select('id');
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const { status, body } = publicBodyFromSupabaseMessage(error.message);
+    return NextResponse.json(body, { status });
   }
   if (!deleted?.length) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });

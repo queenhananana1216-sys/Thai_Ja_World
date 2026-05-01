@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { toast } from 'sonner';
 import type { Locale } from '@/i18n/types';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { boardModMessage } from '@/lib/community/moderationMessages';
@@ -9,6 +10,11 @@ import {
   categoryOptionsForPosting,
   type PostCategorySlug,
 } from '@/lib/community/postCategories';
+import {
+  fireDbErrorRadar,
+  shouldMaskRawDbError,
+  USER_DB_SYNC_TOAST_MESSAGE,
+} from '@/lib/db/dbErrorDefense';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 function safeFileName(name: string): string {
@@ -132,6 +138,16 @@ export default function NewPostForm({
 
     setLoading(false);
     if (!res.ok) {
+      if (payload.code === 'schema_sync') {
+        toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
+        fireDbErrorRadar('NewPostForm:submit');
+        return;
+      }
+      if (payload.message?.trim() && shouldMaskRawDbError(payload.message)) {
+        toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
+        fireDbErrorRadar('NewPostForm:submit');
+        return;
+      }
       setError(
         payload.message?.trim()
           ? payload.message

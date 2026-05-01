@@ -11,6 +11,7 @@ import {
   runLocalPostChecks,
 } from '@/lib/moderation/promoAndSpam';
 import { hashPostOwnerPassword } from '@/lib/community/postOwnerPassword';
+import { shouldMaskRawDbError } from '@/lib/db/dbErrorDefense';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
@@ -22,7 +23,8 @@ export type ModerationErrorCode =
   | 'nsfw'
   | 'imagePolicy'
   | 'server'
-  | 'scam';
+  | 'scam'
+  | 'schema_sync';
 
 export type PostPipelineResult =
   | { ok: true; postId: string }
@@ -99,6 +101,9 @@ export async function createModeratedPost(
     profile = await loadProfile(admin, userId);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    if (shouldMaskRawDbError(msg)) {
+      return { ok: false, status: 503, code: 'schema_sync' };
+    }
     return { ok: false, status: 503, code: 'server', message: msg };
   }
 
@@ -238,11 +243,15 @@ export async function createModeratedPost(
     .single();
 
   if (insErr || !inserted?.id) {
+    const raw = insErr?.message ?? 'insert failed';
+    if (shouldMaskRawDbError(raw)) {
+      return { ok: false, status: 503, code: 'schema_sync' };
+    }
     return {
       ok: false,
       status: 500,
       code: 'server',
-      message: insErr?.message ?? 'insert failed',
+      message: raw,
     };
   }
 
@@ -256,11 +265,15 @@ export async function createModeratedPost(
     });
     if (secErr) {
       await admin.from('posts').delete().eq('id', newId);
+      const raw = secErr.message ?? 'post_edit_secrets insert failed';
+      if (shouldMaskRawDbError(raw)) {
+        return { ok: false, status: 503, code: 'schema_sync' };
+      }
       return {
         ok: false,
         status: 500,
         code: 'server',
-        message: secErr.message ?? 'post_edit_secrets insert failed',
+        message: raw,
       };
     }
     const { error: flagErr } = await admin
@@ -270,11 +283,15 @@ export async function createModeratedPost(
     if (flagErr) {
       await admin.from('post_edit_secrets').delete().eq('post_id', newId);
       await admin.from('posts').delete().eq('id', newId);
+      const raw = flagErr.message ?? 'owner flag update failed';
+      if (shouldMaskRawDbError(raw)) {
+        return { ok: false, status: 503, code: 'schema_sync' };
+      }
       return {
         ok: false,
         status: 500,
         code: 'server',
-        message: flagErr.message ?? 'owner flag update failed',
+        message: raw,
       };
     }
   }

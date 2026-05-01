@@ -1,13 +1,28 @@
 import Link from 'next/link';
 import type { PortalFeedLine, PortalHomeFeed } from '../lib/home/fetchPortalHomeFeed';
-import type { Dictionary } from '@/i18n/dictionaries';
-import type { Locale } from '@/i18n/types';
 import styles from './portal-2026.module.css';
+
+/** page.tsx 정적 한국어 사전 — Dynamic Dictionary 금지 */
+export type Portal2026KoDict = {
+  board: {
+    empty: string;
+    tradeHubTitle: string;
+  };
+  home: {
+    hubBoard: string;
+    shopsMore: string;
+    portalMastTitle: string;
+    portalMastSub: string;
+    tag: string;
+  };
+  footerNav: {
+    contact: string;
+  };
+};
 
 export type Portal2026ViewProps = {
   feed: PortalHomeFeed;
-  dict: Dictionary;
-  locale: Locale;
+  dict: Portal2026KoDict;
 };
 
 function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedLine[] {
@@ -68,12 +83,12 @@ function LiveFeedList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyM
 }
 
 /**
- * 2026 3열 포털 — 데이터는 page.tsx(SSR 컨트롤러)에서만 로드·주입.
+ * 2026 3열 포털 — feed·dict는 page.tsx(SSR 컨트롤러)에서만 주입. 한국어 고정.
  */
-export default function Portal2026View({ feed, dict, locale }: Portal2026ViewProps) {
-  const th = locale === 'th';
+export default function Portal2026View({ feed, dict }: Portal2026ViewProps) {
   const emptyMsg = dict.board.empty;
-  const moreLabel = dict.home.shopsMore.replace(/\s*→\s*$/, '').replace(/\s*›\s*$/, '').trim() || '더보기';
+  const moreLabel =
+    dict.home.shopsMore.replace(/\s*→\s*$/, '').replace(/\s*›\s*$/, '').trim() || '더보기';
 
   const raw = feed ?? ({} as Partial<PortalHomeFeed>);
   const jobs = normalizeLines(raw.jobs);
@@ -86,31 +101,29 @@ export default function Portal2026View({ feed, dict, locale }: Portal2026ViewPro
   const liveFeed = normalizeLines(raw.liveFeed);
 
   const boards = [
-    { title: th ? 'หางาน' : '구인구직', moreHref: '/community/boards?cat=job', lines: jobs },
-    { title: th ? 'ตลาดนัด' : '번개장터', moreHref: '/community/boards?cat=flea', lines: market },
-    { title: th ? 'บอร์ดทั่วไป' : '자유게시판', moreHref: '/community/boards?cat=free', lines: freeBoard },
-    { title: th ? 'ร้านท้องถิ่น' : '로컬 업체', moreHref: '/local', lines: localBiz },
-    { title: th ? 'ข่าว' : '태국 뉴스', moreHref: '/news', lines: news },
-    { title: th ? 'ถาม-ตอบ' : '생활 Q&A', moreHref: '/community/boards?cat=qna', lines: qna },
+    { title: '구인구직', moreHref: '/community/boards?cat=job', lines: jobs },
+    { title: '번개장터', moreHref: '/community/boards?cat=flea', lines: market },
+    { title: '자유게시판', moreHref: '/community/boards?cat=free', lines: freeBoard },
+    { title: '로컬 업체', moreHref: '/local', lines: localBiz },
+    { title: '태국 뉴스', moreHref: '/news', lines: news },
+    { title: '생활 Q&A', moreHref: '/community/boards?cat=qna', lines: qna },
   ] as const;
 
   const newsWing = news.slice(0, 6);
   const localWing = localBiz.slice(0, 5);
 
-  const sponsorTitle = th ? 'สปอนเซอร์ · แนะนำ' : '스폰서 · 안내';
-  const scaleTitle = th ? 'ขนาดชุมชน' : '커뮤니티 규모';
-  const shortcutTitle = th ? 'ทางลัด' : '바로가기';
-  const liveFeedTitle = th ? 'ฟีดรวมแบบเรียลไทม์' : '실시간 통합 피드';
-  const newsAsideTitle = th ? 'ข่าวล่าสุด' : '최신 뉴스';
-  const localAsideTitle = th ? 'ร้านท้องถิ่น' : '로컬 업체';
+  const sponsorTitle = '스폰서 · 안내';
+  const scaleTitle = '커뮤니티 규모';
+  const shortcutTitle = '바로가기';
+  const liveFeedTitle = '실시간 통합 피드';
+  const newsAsideTitle = '최신 뉴스';
+  const localAsideTitle = '로컬 업체';
   const contactTitle = dict.footerNav.contact;
-  const contactBody = th
-    ? 'ลงทะเบียนกระดาน·ร้านค้าได้จากเมนูแต่ละส่วน'
-    : '게시판·업체 등록은 각 메뉴에서 진행됩니다.';
+  const contactBody = '게시판·업체 등록은 각 메뉴에서 진행됩니다.';
 
-  const statsUnavailable = th ? 'โหลดสถิติไม่ได้' : '통계를 불러오지 못했습니다.';
-  const profileLabel = th ? 'โปรไฟล์' : '프로필';
-  const postsLabel = th ? 'โพสต์·เทรด' : '공개 글·거래';
+  const statsUnavailable = '통계를 불러오지 못했습니다.';
+  const profileLabel = '프로필';
+  const postsLabel = '공개 글·거래';
 
   const totals = raw.siteTotals;
   const profileCount =
@@ -147,8 +160,8 @@ export default function Portal2026View({ feed, dict, locale }: Portal2026ViewPro
               <p className="text-[11px] font-black text-amber-300">{scaleTitle}</p>
               {profileCount != null && communityItemCount != null ? (
                 <p className="mt-1 text-xs leading-snug text-slate-100">
-                  {profileLabel} 약 {profileCount.toLocaleString(th ? 'th-TH' : 'ko-KR')} · {postsLabel}{' '}
-                  {communityItemCount.toLocaleString(th ? 'th-TH' : 'ko-KR')}
+                  {profileLabel} 약 {profileCount.toLocaleString('ko-KR')} · {postsLabel}{' '}
+                  {communityItemCount.toLocaleString('ko-KR')}
                 </p>
               ) : (
                 <p className="mt-1 text-[11px] leading-snug text-slate-500">{statsUnavailable}</p>
@@ -169,7 +182,7 @@ export default function Portal2026View({ feed, dict, locale }: Portal2026ViewPro
                 </li>
                 <li>
                   <Link href="/news" className="hover:text-amber-200 hover:underline">
-                    {th ? 'ข่าว' : '뉴스'}
+                    뉴스
                   </Link>
                 </li>
               </ul>
@@ -179,12 +192,8 @@ export default function Portal2026View({ feed, dict, locale }: Portal2026ViewPro
 
         <section className="min-w-0 space-y-2">
           <div className="rounded-xl border border-slate-600/60 bg-slate-900/60 p-2.5 backdrop-blur-md">
-            <p className="text-xs font-black text-amber-300">
-              {dict.home.portalMastTitle || '2026 Taeja World · 커뮤니티 포털'}
-            </p>
-            <p className="mt-1 text-[11px] leading-relaxed text-slate-300">
-              {dict.home.portalMastSub || dict.home.tag}
-            </p>
+            <p className="text-xs font-black text-amber-300">{dict.home.portalMastTitle}</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-300">{dict.home.portalMastSub || dict.home.tag}</p>
           </div>
 
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2">

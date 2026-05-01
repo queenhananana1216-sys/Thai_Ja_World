@@ -1,27 +1,9 @@
-import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
-import Link from 'next/link';
-import { Noto_Sans_KR, Noto_Sans_Thai } from 'next/font/google';
-import { getSiteBaseUrl } from '@/lib/seo/site';
 import './globals.css';
 
-const notoSansKr = Noto_Sans_KR({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-noto-kr',
-  display: 'swap',
-});
+/* Emergency root: only `<a>` for nav (zero `next/link` import). */
+/* eslint-disable @next/next/no-html-link-for-pages -- owner directive: single-import layout */
 
-const notoSansThai = Noto_Sans_Thai({
-  subsets: ['latin', 'thai'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-noto-th',
-  display: 'swap',
-});
-
-/** 레이아웃 파일 외부 React 컴포넌트 0개 — 메타만 정적 */
-export const metadata: Metadata = {
-  metadataBase: new URL(getSiteBaseUrl()),
+export const metadata = {
   title: {
     default: '태자월드',
     template: '%s | 태자월드',
@@ -38,18 +20,14 @@ export const metadata: Metadata = {
 };
 
 /**
- * 비상 루트: GlobalNav / SiteFooter 등 어떤 import 컴포넌트도 없음.
- * <body> 안은 순수 HTML + Tailwind 클래스만.
+ * 비상 루트: import는 globals.css 단일. 메타·마크업은 문자열/정적만.
  */
-export default function RootLayout({ children }: { children: ReactNode }) {
-  const deploySha = process.env.VERCEL_GIT_COMMIT_SHA ?? '';
-
+export default function RootLayout({ children }: { children: unknown }) {
   return (
-    <html lang="ko" className={`${notoSansKr.variable} ${notoSansThai.variable} overflow-x-hidden`}>
+    <html lang="ko" className="overflow-x-hidden">
       <body
         className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-slate-200"
-        data-tj-deploy-sha={deploySha || undefined}
-        data-tj-layout="inline-static-chrome"
+        data-tj-layout="inline-static-chrome-zero-imports"
       >
         <header className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
           <div className="border-b border-white/5 bg-slate-950/80">
@@ -60,24 +38,24 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <span className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400">ไทย</span>
               </div>
               <div className="inline-flex flex-wrap items-center justify-end gap-1 rounded-full border border-amber-200/25 bg-gradient-to-r from-white/10 to-indigo-950/40 px-2 py-1">
-                <Link
+                <a
                   href="/auth/login?next=%2F"
                   className="rounded-full bg-violet-600/90 px-2.5 py-1 text-[10px] font-extrabold text-white no-underline"
                 >
                   로그인
-                </Link>
-                <Link
+                </a>
+                <a
                   href="/auth/signup?next=%2F"
                   className="rounded-full border border-white/25 px-2.5 py-1 text-[10px] font-extrabold text-slate-100 no-underline"
                 >
                   회원가입
-                </Link>
+                </a>
               </div>
             </div>
           </div>
 
           <div className="mx-auto flex max-w-[1320px] flex-wrap items-center justify-between gap-3 px-4 py-2.5">
-            <Link href="/" className="inline-flex items-center gap-2 no-underline" aria-label="태자월드 홈">
+            <a href="/" className="inline-flex items-center gap-2 no-underline" aria-label="태자월드 홈">
               <span
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-400/35 bg-gradient-to-br from-violet-600/40 to-slate-900 text-lg font-black text-white md:h-11 md:w-11"
                 aria-hidden
@@ -87,7 +65,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <span className="text-base font-black tracking-tight text-white md:text-lg">
                 태자<span className="text-amber-300">월드</span>
               </span>
-            </Link>
+            </a>
 
             <div className="order-3 w-full min-w-0 max-w-xl flex-1 md:order-none md:w-auto md:max-w-md">
               <label className="sr-only" htmlFor="tj-inline-search">
@@ -116,123 +94,125 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   메뉴 <span className="text-slate-500">▾</span>
                 </summary>
                 <div className="mt-2 flex flex-col gap-1 rounded-lg border border-white/10 bg-slate-950/95 p-2">
-                  <Link
+                  <a
                     href="/auth/login?next=%2F"
                     className="rounded-md border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-center text-sm font-semibold text-violet-100 no-underline"
                   >
                     로그인
-                  </Link>
-                  <Link
+                  </a>
+                  <a
                     href="/auth/signup?next=%2F"
                     className="rounded-md border border-pink-400/30 bg-pink-500/10 px-3 py-2 text-center text-sm font-semibold text-pink-100 no-underline"
                   >
                     회원가입
-                  </Link>
-                  <Link
+                  </a>
+                  <a
                     href="/community/write"
                     className="rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white no-underline"
                   >
                     ✎ 글쓰기
-                  </Link>
-                  <Link href="/" className="rounded-md px-3 py-2 text-sm text-slate-200 no-underline hover:bg-slate-800">
+                  </a>
+                  <a href="/" className="rounded-md px-3 py-2 text-sm text-slate-200 no-underline hover:bg-slate-800">
                     홈
-                  </Link>
-                  <Link
+                  </a>
+                  <a
                     href="/community/boards"
                     className="rounded-md px-3 py-2 text-sm text-slate-200 no-underline hover:bg-slate-800"
                   >
                     자유게시판
-                  </Link>
-                  <Link
+                  </a>
+                  <a
                     href="/community/boards?cat=flea"
                     className="rounded-md px-3 py-2 text-sm text-slate-200 no-underline hover:bg-slate-800"
                   >
                     번개장터
-                  </Link>
-                  <Link
+                  </a>
+                  <a
                     href="/community/boards?cat=job"
                     className="rounded-md px-3 py-2 text-sm text-slate-200 no-underline hover:bg-slate-800"
                   >
                     구인구직
-                  </Link>
-                  <Link href="/news" className="rounded-md px-3 py-2 text-sm text-slate-200 no-underline hover:bg-slate-800">
+                  </a>
+                  <a href="/news" className="rounded-md px-3 py-2 text-sm text-slate-200 no-underline hover:bg-slate-800">
                     뉴스
-                  </Link>
-                  <Link href="/local" className="rounded-md px-3 py-2 text-sm text-slate-200 no-underline hover:bg-slate-800">
+                  </a>
+                  <a href="/local" className="rounded-md px-3 py-2 text-sm text-slate-200 no-underline hover:bg-slate-800">
                     로컬
-                  </Link>
+                  </a>
                 </div>
               </details>
 
               <div className="hidden flex-wrap items-center gap-2 md:flex">
-                <Link
+                <a
                   href="/"
                   className="rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-200 no-underline hover:border-amber-400/40 hover:text-amber-200"
                 >
                   홈
-                </Link>
-                <Link
+                </a>
+                <a
                   href="/community/boards"
                   className="rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-200 no-underline hover:border-amber-400/40 hover:text-amber-200"
                 >
                   자유게시판
-                </Link>
-                <Link
+                </a>
+                <a
                   href="/community/boards?cat=flea"
                   className="rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-200 no-underline hover:border-amber-400/40 hover:text-amber-200"
                 >
                   번개장터
-                </Link>
-                <Link
+                </a>
+                <a
                   href="/community/boards?cat=job"
                   className="rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-200 no-underline hover:border-amber-400/40 hover:text-amber-200"
                 >
                   구인구직
-                </Link>
-                <Link
+                </a>
+                <a
                   href="/local/info"
                   className="rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-200 no-underline hover:border-amber-400/40 hover:text-amber-200"
                 >
                   부동산
-                </Link>
-                <Link
+                </a>
+                <a
                   href="/local"
                   className="rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-200 no-underline hover:border-amber-400/40 hover:text-amber-200"
                 >
                   로컬예약
-                </Link>
-                <Link
+                </a>
+                <a
                   href="/news"
                   className="rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-200 no-underline hover:border-amber-400/40 hover:text-amber-200"
                 >
                   뉴스
-                </Link>
-                <Link
+                </a>
+                <a
                   href="/community/write"
                   className="ml-auto rounded-full bg-blue-600 px-3 py-1.5 text-xs font-bold text-white no-underline hover:bg-blue-500"
                 >
                   ✎ 글쓰기
-                </Link>
+                </a>
               </div>
             </div>
           </nav>
         </header>
 
-        <div className="min-h-0 w-full flex-1 overflow-x-hidden">{children}</div>
+        <div className="min-h-0 w-full flex-1 overflow-x-hidden">
+          {children as import('react').ReactNode}
+        </div>
 
         <footer className="mt-auto border-t border-white/10 bg-[#060814] px-4 py-6 text-center text-[11px] text-slate-500">
           <nav className="mb-3 flex flex-wrap justify-center gap-x-4 gap-y-2" aria-label="약관·안내">
-            <Link href="/terms" className="text-slate-400 no-underline hover:text-white hover:underline">
+            <a href="/terms" className="text-slate-400 no-underline hover:text-white hover:underline">
               이용약관
-            </Link>
-            <Link href="/privacy" className="text-slate-400 no-underline hover:text-white hover:underline">
+            </a>
+            <a href="/privacy" className="text-slate-400 no-underline hover:text-white hover:underline">
               개인정보
-            </Link>
-            <Link href="/contact" className="text-slate-400 no-underline hover:text-white hover:underline">
+            </a>
+            <a href="/contact" className="text-slate-400 no-underline hover:text-white hover:underline">
               문의
-            </Link>
+            </a>
           </nav>
-          <p className="m-0">&copy; {new Date().getFullYear()} 태자월드</p>
+          <p className="m-0">&copy; 2026 태자월드</p>
         </footer>
       </body>
     </html>

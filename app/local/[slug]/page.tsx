@@ -1,9 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import ShopMinihomeClient, { type ShopSpotPayload } from '../../shop/[slug]/ShopMinihomeClient';
 import { createServerClient } from '@/lib/supabase/server';
 
+/**
+ * `/local/[category]` 와 `/local/[shopId]` 가 같은 깊이에 다른 동적 이름을 쓰면
+ * Next.js 런타임에서 `You cannot use different slug names for the same dynamic path` 로 서버가 깨질 수 있음.
+ * 단일 `[slug]` 로 통합: 먼저 로컬 스팟(미니홈) 매칭, 없으면 카테고리 허브.
+ */
+
 type PageProps = {
-  params: Promise<{ category: string }>;
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ view?: string }>;
 };
 
@@ -48,11 +56,42 @@ function toBoardCategory(category: string): string | null {
   return POST_CAT_ALIAS[normalizeCategory(category)] ?? null;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ category: string }> }): Promise<Metadata> {
-  const { category } = await params;
+async function fetchSpotBySlug(raw: string) {
+  const slug = raw.trim();
+  if (!slug) return null;
+  const sb = createServerClient();
+  const { data: bySlug, error: e1 } = await sb
+    .from('local_spots')
+    .select(
+      'id,slug,name,description,line_url,photo_urls,owner_profile_id,minihome_public_slug,minihome_intro,minihome_theme,minihome_bgm_url,minihome_menu,minihome_layout_modules,minihome_extra,is_published,minihome_guestbook_enabled',
+    )
+    .eq('slug', slug)
+    .maybeSingle();
+  if (!e1 && bySlug) return bySlug;
+  const { data: byPublic, error: e2 } = await sb
+    .from('local_spots')
+    .select(
+      'id,slug,name,description,line_url,photo_urls,owner_profile_id,minihome_public_slug,minihome_intro,minihome_theme,minihome_bgm_url,minihome_menu,minihome_layout_modules,minihome_extra,is_published,minihome_guestbook_enabled',
+    )
+    .eq('minihome_public_slug', slug)
+    .maybeSingle();
+  if (!e2 && byPublic) return byPublic;
+  return null;
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const spot = await fetchSpotBySlug(slug);
+  if (spot) {
+    const name = typeof spot.name === 'string' ? spot.name : slug;
+    return {
+      title: `${name} | 로컬 미니홈`,
+      description: `${name} 로컬 스팟 미니홈`,
+    };
+  }
   return {
-    title: `${category} | 로컬 인텔`,
-    description: `${category} 카테고리의 로컬 업체와 게시글을 한 화면에서 확인합니다.`,
+    title: `${slug} | 로컬 인텔`,
+    description: `${slug} 카테고리의 로컬 업체와 게시글을 한 화면에서 확인합니다.`,
   };
 }
 
@@ -85,12 +124,48 @@ async function fetchCategoryPosts(category: string): Promise<PostRow[]> {
   return (data ?? []) as PostRow[];
 }
 
-export default async function LocalCategoryPage({ params, searchParams }: PageProps) {
-  const { category } = await params;
-  const { view } = await searchParams;
-  const normalizedCategory = normalizeCategory(category);
-  const asGrid = view === 'grid';
+async function renderMinihome(spot: NonNullable<Awaited<ReturnType<typeof fetchSpotBySlug>>>) {
+  const sb = createServerClient();
+  const { data: biz } = await sb
+    .from('local_businesses')
+    .select('owner_id,name,category,region,mini_home')
+    .eq('owner_id', spot.owner_profile_id ?? '')
+    .limit(1)
+    .maybeSingle();
 
+  const { data: minihome } = await sb
+    .from('user_minihomes')
+    .select('owner_id,title,tagline,theme')
+    .eq('owner_id', spot.owner_profile_id ?? '')
+    .maybeSingle();
+
+  const payload: ShopSpotPayload = {
+    ...(spot as ShopSpotPayload),
+    minihome_intro:
+      spot.minihome_intro ||
+      [biz?.name ? `${biz.name} (${biz.category ?? 'LOCAL'})` : null, minihome?.tagline ?? null]
+        .filter(Boolean)
+        .join(' · '),
+  };
+
+  return (
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="mx-auto max-w-[1320px] px-4 pt-6">
+        <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur-md">
+          <p className="text-xs font-semibold tracking-wide text-violet-200">B2B LOCAL MINI-HOME</p>
+          <p className="mt-1 truncate text-sm text-slate-300">
+            {biz?.region ? `${biz.region} · ` : ''}
+            {biz?.category ?? 'LOCAL'} · 광고주 QR 진입 쇼룸
+          </p>
+        </div>
+      </div>
+      <ShopMinihomeClient spot={payload} />
+    </main>
+  );
+}
+
+async function renderCategoryHub(normalizedCategory: string, view: string | undefined) {
+  const asGrid = view === 'grid';
   const [businesses, posts] = await Promise.all([
     fetchLocalBusinesses(normalizedCategory),
     fetchCategoryPosts(normalizedCategory),
@@ -168,4 +243,19 @@ export default async function LocalCategoryPage({ params, searchParams }: PagePr
       </section>
     </main>
   );
+}
+
+export default async function LocalSlugPage({ params, searchParams }: PageProps) {
+  const { slug } = await params;
+  const trimmed = (slug || '').trim();
+  if (!trimmed) notFound();
+
+  const spot = await fetchSpotBySlug(trimmed);
+  if (spot) {
+    return renderMinihome(spot);
+  }
+
+  const { view } = await searchParams;
+  const normalizedCategory = normalizeCategory(trimmed);
+  return renderCategoryHub(normalizedCategory, view);
 }

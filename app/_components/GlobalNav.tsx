@@ -6,7 +6,6 @@ import AuthBar from './AuthBar';
 import { getLocale } from '@/i18n/get-locale';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/types';
-import { createServerClient } from '@/lib/supabase/server';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
 const WRITE_HREF = '/community/write';
@@ -42,21 +41,28 @@ export default async function GlobalNav() {
   const d = getDictionary(locale);
   const x = headerExtraLabels(locale);
 
+  /** 비로그인이면 null — 버튼 미렌더. 로그인만 동일 Supabase(쿠키 JWT)로 슬러그 조회 (anon 분리 조회 금지). */
   let myMinihomeHref: string | null = null;
   try {
     const authSb = await createServerSupabaseAuthClient();
     const {
       data: { user },
+      error: userErr,
     } = await authSb.auth.getUser();
-    if (user?.id) {
-      const sb = createServerClient();
-      const { data: hm } = await sb
+    if (userErr || !user?.id) {
+      myMinihomeHref = null;
+    } else {
+      const { data: hm, error: hmErr } = await authSb
         .from('user_minihomes')
         .select('public_slug')
         .eq('owner_id', user.id)
         .maybeSingle();
-      const slug = typeof hm?.public_slug === 'string' ? hm.public_slug.trim() : '';
-      myMinihomeHref = slug ? `/minihome/${encodeURIComponent(slug)}` : '/minihome';
+      if (hmErr) {
+        myMinihomeHref = '/minihome';
+      } else {
+        const slug = typeof hm?.public_slug === 'string' ? hm.public_slug.trim() : '';
+        myMinihomeHref = slug ? `/minihome/${encodeURIComponent(slug)}` : '/minihome';
+      }
     }
   } catch {
     myMinihomeHref = null;

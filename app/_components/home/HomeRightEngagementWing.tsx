@@ -2,7 +2,9 @@ import Link from 'next/link';
 import styles from './home-hub.module.css';
 import { fetchHomeRecentCommentTicker, fetchHomeUxSnapshot } from './home-queries';
 import { fetchUsdFx, FX_SNAPSHOT_FALLBACK } from '@/lib/fx/fetchUsdFx';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@/lib/supabase/server';
+import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
 type QuestProgressSummary = {
   completed: number;
@@ -10,24 +12,27 @@ type QuestProgressSummary = {
   ratio: number;
 };
 
-async function readMyMinihomeHref(uid: string): Promise<string> {
+async function readMyMinihomeHref(
+  authSb: SupabaseClient,
+  uid: string,
+): Promise<string | null> {
   try {
-    const sb = createServerClient();
-    const { data } = await sb.from('user_minihomes').select('public_slug').eq('owner_id', uid).maybeSingle();
+    const { data, error } = await authSb
+      .from('user_minihomes')
+      .select('public_slug')
+      .eq('owner_id', uid)
+      .maybeSingle();
+    if (error) return '/minihome';
     const slug = typeof data?.public_slug === 'string' ? data.public_slug.trim() : '';
     return slug ? `/minihome/${encodeURIComponent(slug)}` : '/minihome';
   } catch {
-    return '/minihome';
+    return null;
   }
 }
 
-async function readMyPoint(): Promise<number | null> {
+async function readMyPoint(authSb: SupabaseClient, uid: string): Promise<number | null> {
   try {
-    const sb = createServerClient();
-    const { data: auth } = await sb.auth.getUser();
-    const uid = auth.user?.id;
-    if (!uid) return null;
-    const { data } = await sb
+    const { data } = await authSb
       .from('profiles')
       .select('point_balance, dotori_balance')
       .eq('id', uid)
@@ -106,11 +111,14 @@ export async function HomeRightEngagementWing() {
   let uxSnapshot: Awaited<ReturnType<typeof fetchHomeUxSnapshot>> = { window_start: null, totals: null, error: null };
 
   try {
-    const sb = createServerClient();
-    const { data: auth } = await sb.auth.getUser();
-    uid = auth.user?.id ?? null;
+    const authSb = await createServerSupabaseAuthClient();
+    const {
+      data: { user: authUser },
+      error: authErr,
+    } = await authSb.auth.getUser();
+    uid = !authErr && authUser?.id ? authUser.id : null;
     [point, weather, ticker, fx, quest, uxSnapshot] = await Promise.all([
-      uid ? readMyPoint() : Promise.resolve(null),
+      uid ? readMyPoint(authSb, uid) : Promise.resolve(null),
       readWeatherSummary(),
       fetchHomeRecentCommentTicker(6),
       fetchUsdFx({ next: { revalidate: 1800 } }),
@@ -118,7 +126,7 @@ export async function HomeRightEngagementWing() {
       fetchHomeUxSnapshot(),
     ]);
     if (uid) {
-      myMinihomeHref = await readMyMinihomeHref(uid);
+      myMinihomeHref = await readMyMinihomeHref(authSb, uid);
     }
   } catch {
     // 우측 윙은 실패해도 전체 홈 렌더를 깨지 않게 안전 기본값 유지

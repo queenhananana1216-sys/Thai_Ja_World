@@ -60,10 +60,8 @@ export default async function GlobalNav() {
     } else {
       authUser = { id: user.id, email: user.email ?? null };
       const emailLower = user.email?.trim().toLowerCase() ?? '';
-      if (emailLower) {
-        const adminRes = await resolveAdminForUser(authSb, user.id, emailLower);
-        showMasterAdmin = adminRes !== false;
-      }
+      const adminRes = await resolveAdminForUser(authSb, user.id, emailLower);
+      showMasterAdmin = adminRes !== false;
       const { data: prof } = await authSb
         .from('profiles')
         .select('display_name')
@@ -125,13 +123,6 @@ export default async function GlobalNav() {
   const navLinkDefaultMobile =
     'flex min-h-11 items-center rounded-md px-3 py-2 text-base text-gray-100 no-underline hover:bg-slate-800';
 
-  const masterAdminTopClass =
-    'inline-flex min-h-11 shrink-0 items-center rounded-full border border-amber-400/50 bg-gradient-to-r from-amber-600/30 via-amber-500/15 to-yellow-600/20 px-4 py-2 text-sm font-bold text-amber-50 no-underline shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_32px_rgba(251,191,36,0.24)] backdrop-blur-md transition hover:border-amber-300/70 hover:from-amber-500/40 hover:to-yellow-500/30';
-  const masterAdminMobileClass =
-    'flex min-h-11 items-center justify-center rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-600/40 to-amber-950/50 px-3 py-2 text-center text-base font-bold text-amber-50 no-underline shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_12px_40px_rgba(251,191,36,0.18)] backdrop-blur-md';
-  const masterAdminSubnavClass =
-    'inline-flex min-h-11 items-center rounded-full border border-amber-400/40 bg-amber-950/50 px-3 py-2 text-base font-bold text-amber-100 no-underline shadow-[0_0_24px_rgba(251,191,36,0.2)] backdrop-blur-sm hover:border-amber-300/60 hover:bg-amber-900/60';
-
   return (
     <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
       <div className="site-container flex flex-wrap items-center justify-between gap-3 py-2.5">
@@ -185,24 +176,14 @@ export default async function GlobalNav() {
               <SpotlightNavSearch />
             </div>
           </div>
-          {myMinihomeHref ? (
-            <Link
-              href={myMinihomeHref}
-              className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-fuchsia-400/35 bg-gradient-to-r from-fuchsia-600/35 to-violet-600/35 px-4 py-2 text-sm font-bold text-fuchsia-50 no-underline shadow-[0_0_24px_rgba(192,38,211,0.25)] transition hover:border-fuchsia-300/60 hover:from-fuchsia-500/45 hover:to-violet-500/45"
-            >
-              🏠 {x.myMinihome}
-            </Link>
-          ) : null}
-          {showMasterAdmin ? (
-            <Link href="/admin" className={masterAdminTopClass}>
-              ⚙️ {x.masterAdmin}
-            </Link>
-          ) : null}
           <AuthBarClient
             initialUser={authUser}
             initialDisplayName={profileDisplayName}
             labels={authLabels}
             profileHref={myMinihomeHref}
+            myMinihomeLabel={x.myMinihome}
+            masterAdminLabel={x.masterAdmin}
+            showMasterAdmin={showMasterAdmin}
           />
         </div>
       </div>
@@ -217,25 +198,15 @@ export default async function GlobalNav() {
               <span className="after:ml-2 after:text-gray-300 after:content-['▾']">{x.menu}</span>
             </summary>
             <div className="mt-2 flex flex-col gap-1 rounded-lg border border-white/10 bg-slate-950/95 p-2">
-              {myMinihomeHref ? (
-                <Link
-                  href={myMinihomeHref}
-                  className="flex min-h-11 items-center justify-center rounded-md border border-fuchsia-400/40 bg-gradient-to-r from-fuchsia-600/40 to-violet-600/35 px-3 py-2 text-center text-base font-bold text-fuchsia-50 no-underline"
-                >
-                  🏠 {x.myMinihome}
-                </Link>
-              ) : null}
-              {showMasterAdmin ? (
-                <Link href="/admin" className={masterAdminMobileClass}>
-                  ⚙️ {x.masterAdmin}
-                </Link>
-              ) : null}
               <AuthBarClient
                 variant="mobile"
                 initialUser={authUser}
                 initialDisplayName={profileDisplayName}
                 labels={authLabels}
                 profileHref={myMinihomeHref}
+                myMinihomeLabel={x.myMinihome}
+                masterAdminLabel={x.masterAdmin}
+                showMasterAdmin={showMasterAdmin}
               />
               <Link
                 href={WRITE_HREF}
@@ -265,19 +236,6 @@ export default async function GlobalNav() {
                 {m.label}
               </Link>
             ))}
-            {myMinihomeHref ? (
-              <Link
-                href={myMinihomeHref}
-                className="inline-flex min-h-11 items-center rounded-full border border-fuchsia-400/35 bg-fuchsia-950/40 px-3 py-2 text-base font-bold text-fuchsia-100 no-underline hover:border-fuchsia-300/55 hover:bg-fuchsia-900/50"
-              >
-                🏠 {x.myMinihome}
-              </Link>
-            ) : null}
-            {showMasterAdmin ? (
-              <Link href="/admin" className={masterAdminSubnavClass}>
-                ⚙️ {x.masterAdmin}
-              </Link>
-            ) : null}
             <Link
               href={WRITE_HREF}
               className="ml-auto inline-flex min-h-11 items-center rounded-full bg-blue-600 px-4 py-2 text-base font-bold text-white no-underline shadow-md hover:bg-blue-500"

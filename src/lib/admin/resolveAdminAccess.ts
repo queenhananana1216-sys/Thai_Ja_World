@@ -69,16 +69,17 @@ async function readProfileAdminSignals(
 export async function resolveAdminForUser(
   supabase: SupabaseClient,
   userId: string,
-  emailLower: string,
+  emailLower: string | null | undefined,
 ): Promise<AdminAccessResult> {
-  const email = emailLower.trim().toLowerCase();
-  if (!userId || !email || !email.includes('@')) return false;
+  if (!userId) return false;
+
+  const email = (emailLower ?? '').trim().toLowerCase();
 
   const sig = await readProfileAdminSignals(userId, supabase);
   if (sig) {
     const adminRole = sig.role === 'owner' || sig.role === 'super_admin' || sig.role === 'admin';
     if (sig.isStaff || sig.isAdmin || adminRole) {
-      return { email };
+      return { email: email || 'admin' };
     }
   }
 
@@ -87,8 +88,10 @@ export async function resolveAdminForUser(
       .map((s) => s.trim())
       .filter(Boolean) ?? [];
   if (ownerIds.length > 0 && ownerIds.includes(userId)) {
-    return { email };
+    return { email: email || 'admin' };
   }
+
+  if (!email || !email.includes('@')) return false;
 
   const ownerEmails = parseAdminAllowedEmails();
   return ownerEmails.includes(email) ? { email } : false;
@@ -111,8 +114,8 @@ export async function resolveAdminAccess(): Promise<AdminAccessResult> {
     } = await supabase.auth.getUser();
     if (error) return false;
     const userId = user?.id;
-    const raw = user?.email?.trim().toLowerCase();
-    if (!userId || !raw) return false;
+    const raw = user?.email?.trim().toLowerCase() ?? '';
+    if (!userId) return false;
 
     return resolveAdminForUser(supabase, userId, raw);
   } catch (err) {

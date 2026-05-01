@@ -17,26 +17,40 @@ type Labels = {
   logout: string;
 };
 
-function avatarGlyph(displayName: string | null | undefined, email: string | null | undefined) {
-  const raw = (displayName || email || '?').trim();
-  const ch = raw.codePointAt(0);
-  return ch !== undefined ? String.fromCodePoint(ch).toUpperCase() : '?';
-}
-
 type Props = {
   initialUser: AuthBarInitialUser | null;
   initialDisplayName: string | null;
   labels: Labels;
   /** 로그인 시 미니홈(프로필) 링크 — 서버에서만 계산 */
   profileHref: string | null;
+  /** 「내 미니홈」버튼 라벨 (GlobalNav i18n) */
+  myMinihomeLabel?: string;
+  masterAdminLabel?: string;
+  /** 서버에서 `resolveAdminForUser`로 계산 */
+  showMasterAdmin?: boolean;
   variant?: 'header' | 'mobile';
 };
+
+const masterAdminHeaderClass =
+  'inline-flex min-h-11 shrink-0 items-center rounded-full border border-amber-400/50 bg-gradient-to-r from-amber-600/30 via-amber-500/15 to-yellow-600/20 px-4 py-2 text-sm font-bold text-amber-50 no-underline shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_0_32px_rgba(251,191,36,0.24)] backdrop-blur-md transition hover:border-amber-300/70 hover:from-amber-500/40 hover:to-yellow-500/30';
+
+const minihomeHeaderClass =
+  'inline-flex min-h-11 shrink-0 items-center rounded-full border border-fuchsia-400/35 bg-gradient-to-r from-fuchsia-600/35 to-violet-600/35 px-4 py-2 text-sm font-bold text-fuchsia-50 no-underline shadow-[0_0_24px_rgba(192,38,211,0.25)] transition hover:border-fuchsia-300/60 hover:from-fuchsia-500/45 hover:to-violet-500/45';
+
+const masterAdminMobileClass =
+  'flex min-h-11 items-center justify-center rounded-xl border border-amber-400/50 bg-gradient-to-r from-amber-600/40 to-amber-950/50 px-3 py-2 text-center text-base font-bold text-amber-50 no-underline shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_12px_40px_rgba(251,191,36,0.18)] backdrop-blur-md';
+
+const minihomeMobileClass =
+  'flex min-h-11 items-center justify-center rounded-md border border-fuchsia-400/40 bg-gradient-to-r from-fuchsia-600/40 to-violet-600/35 px-3 py-2 text-center text-base font-bold text-fuchsia-50 no-underline';
 
 export default function AuthBarClient({
   initialUser,
   initialDisplayName,
   labels,
   profileHref,
+  myMinihomeLabel = '내 미니홈',
+  masterAdminLabel = '마스터 관리자',
+  showMasterAdmin = false,
   variant = 'header',
 }: Props) {
   const router = useRouter();
@@ -112,7 +126,6 @@ export default function AuthBarClient({
     return 'Member';
   }, [displayName, user?.email]);
 
-  const glyph = avatarGlyph(displayName, user?.email ?? null);
   const hrefProfile = profileHref || '/minihome';
 
   if (!user) {
@@ -149,17 +162,17 @@ export default function AuthBarClient({
   if (variant === 'mobile') {
     return (
       <>
+        {showMasterAdmin ? (
+          <Link href="/admin" className={masterAdminMobileClass}>
+            ⚙️ {masterAdminLabel}
+          </Link>
+        ) : null}
         <Link
           href={hrefProfile}
-          className="flex min-h-11 items-center justify-center gap-2 rounded-md border border-emerald-400/35 bg-emerald-950/40 px-3 py-2 text-center text-base font-bold text-emerald-50 no-underline"
+          className={minihomeMobileClass}
+          title={shortLabel ? `${shortLabel} · ${myMinihomeLabel}` : myMinihomeLabel}
         >
-          <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-emerald-400/50 bg-emerald-900/80 text-sm font-extrabold text-emerald-100"
-            aria-hidden
-          >
-            {glyph}
-          </span>
-          <span className="min-w-0 truncate">{shortLabel}</span>
+          🏠 {myMinihomeLabel}
         </Link>
         <button
           type="button"
@@ -173,21 +186,22 @@ export default function AuthBarClient({
   }
 
   return (
-    <div className="auth-chrome-pills auth-chrome-pills--member" role="navigation" aria-label="계정">
+    <div
+      className="flex flex-wrap items-center justify-end gap-2"
+      role="navigation"
+      aria-label="계정"
+    >
+      {showMasterAdmin ? (
+        <Link href="/admin" className={masterAdminHeaderClass}>
+          ⚙️ {masterAdminLabel}
+        </Link>
+      ) : null}
       <Link
         href={hrefProfile}
-        className="auth-chrome-pills__link inline-flex items-center gap-2 no-underline"
-        title={shortLabel}
+        className={minihomeHeaderClass}
+        title={shortLabel ? `${shortLabel} · ${myMinihomeLabel}` : myMinihomeLabel}
       >
-        <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-400/45 bg-slate-900/90 text-sm font-extrabold text-amber-100"
-          aria-hidden
-        >
-          {glyph}
-        </span>
-        <span className="auth-chrome-pills__who">
-          <strong>{shortLabel}</strong>
-        </span>
+        🏠 {myMinihomeLabel}
       </Link>
       <button
         type="button"

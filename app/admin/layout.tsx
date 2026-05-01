@@ -47,6 +47,7 @@ const adminSections = [
       { href: '/admin/news', label: '뉴스 큐', icon: '▤' },
       { href: '/admin/knowledge', label: '지식/퀘스트 큐', icon: '▧' },
       { href: '/admin/local-spots', label: '로컬 가게 관리', icon: '▩' },
+      { href: '/admin/korean-biz-submissions', label: '한인 업소 제보', icon: '🏪' },
     ],
   },
 ];

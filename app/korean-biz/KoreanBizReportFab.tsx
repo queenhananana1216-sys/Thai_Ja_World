@@ -1,0 +1,287 @@
+'use client';
+
+import { useCallback, useEffect, useId, useState } from 'react';
+import type { KoreanBizRow } from './KoreanBizHubClient';
+import type { Locale } from '@/i18n/types';
+
+type Props = {
+  defaultRegion: KoreanBizRow['region'];
+  locale: Locale;
+};
+
+const COPY = {
+  ko: {
+    fab: '➕ 우리 동네 한인 업소 제보하기',
+    title: '한인 업소 제보',
+    lead: '목록에 없는 마트·약국·병원을 알려 주세요. 검토 후 반영됩니다.',
+    name: '업소 이름',
+    address: '주소 (선택)',
+    phone: '연락처 (선택)',
+    region: '지역',
+    category: '업종 (선택)',
+    note: '추가 메모 (선택)',
+    submit: '제보 보내기',
+    cancel: '닫기',
+    sending: '전송 중…',
+    ok: '제보해 주셔서 감사합니다. 검토 후 반영할게요.',
+    err: '전송에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+    reqName: '이름을 2글자 이상 입력해 주세요.',
+  },
+  th: {
+    fab: '➕ แจ้งร้านเกาหลีในละแวกคุณ',
+    title: 'แจ้งร้านเกาหลี',
+    lead: 'หากไม่มีในรายการ แจ้งมาร์ท/ร้านยา/โรงพยาบาลได้ที่นี่ — เราจะตรวจแล้วนำเข้า',
+    name: 'ชื่อร้าน',
+    address: 'ที่อยู่ (ถ้ามี)',
+    phone: 'เบอร์โทร (ถ้ามี)',
+    region: 'ภูมิภาค',
+    category: 'ประเภท (ถ้ามี)',
+    note: 'หมายเหตุ (ถ้ามี)',
+    submit: 'ส่งข้อมูล',
+    cancel: 'ปิด',
+    sending: 'กำลังส่ง…',
+    ok: 'ขอบคุณค่ะ — จะตรวจและอัปเดตให้',
+    err: 'ส่งไม่สำเร็จ — ลองใหม่ภายหลัง',
+    reqName: 'กรอกชื่ออย่างน้อย 2 ตัวอักษร',
+  },
+} as const;
+
+const REGIONS: { key: KoreanBizRow['region']; label: Record<Locale, string> }[] = [
+  { key: 'bangkok', label: { ko: '방콕', th: 'กรุงเทพฯ' } },
+  { key: 'pattaya', label: { ko: '파타야', th: 'พัทยา' } },
+  { key: 'chiangmai', label: { ko: '치앙마이', th: 'เชียงใหม่' } },
+];
+
+const CAT_OPTIONS: { key: KoreanBizRow['category']; label: Record<Locale, string> }[] = [
+  { key: 'mart', label: { ko: '🛒 마트', th: '🛒 มาร์ท' } },
+  { key: 'pharmacy', label: { ko: '💊 약국', th: '💊 ร้านยา' } },
+  { key: 'hospital', label: { ko: '🏥 병원·클리닉', th: '🏥 โรงพยาบาล/คลินิก' } },
+];
+
+export default function KoreanBizReportFab({ defaultRegion, locale }: Props) {
+  const t = COPY[locale];
+  const unsetLabel = locale === 'th' ? 'ไม่ระบุ' : '선택 안 함';
+  const baseId = useId();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  const [region, setRegion] = useState<KoreanBizRow['region']>(defaultRegion);
+  const [category, setCategory] = useState<'' | KoreanBizRow['category']>('');
+  const [note, setNote] = useState('');
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState<'idle' | 'ok' | 'err'>('idle');
+
+  const openModal = useCallback(() => {
+    setRegion(defaultRegion);
+    setMessage('idle');
+    setOpen(true);
+  }, [defaultRegion]);
+
+  const closeModal = useCallback(() => {
+    setOpen(false);
+    setPending(false);
+  }, []);
+
+  useEffect(() => {
+    if (!open) setRegion(defaultRegion);
+  }, [defaultRegion, open]);
+
+  const submit = useCallback(async () => {
+    const trimmed = name.trim();
+    if (trimmed.length < 2) {
+      window.alert(t.reqName);
+      return;
+    }
+    setPending(true);
+    setMessage('idle');
+    try {
+      const res = await fetch('/api/korean-biz/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: trimmed,
+          address: address.trim() || null,
+          phone: phone.trim() || null,
+          suggested_region: region,
+          suggested_category: category || null,
+          submitter_note: note.trim() || null,
+          website: '',
+        }),
+      });
+      if (!res.ok) {
+        setMessage('err');
+        return;
+      }
+      setMessage('ok');
+      setName('');
+      setAddress('');
+      setPhone('');
+      setNote('');
+      setCategory('');
+      window.setTimeout(() => {
+        closeModal();
+        setMessage('idle');
+      }, 2200);
+    } catch {
+      setMessage('err');
+    } finally {
+      setPending(false);
+    }
+  }, [address, category, closeModal, name, note, phone, region, t.reqName]);
+
+  return (
+    <>
+      <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-40 flex justify-end p-4 md:p-6">
+        <button
+          type="button"
+          onClick={openModal}
+          className="pointer-events-auto inline-flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border border-amber-400/45 bg-gradient-to-r from-amber-600/35 via-amber-500/25 to-yellow-600/25 px-4 py-3 text-sm font-bold text-amber-50 shadow-[0_12px_40px_rgba(0,0,0,0.45),0_0_28px_rgba(251,191,36,0.22)] backdrop-blur-xl transition hover:border-amber-300/70 hover:from-amber-500/45 md:text-base"
+        >
+          <span aria-hidden>➕</span>
+          <span className="text-left leading-tight">{t.fab}</span>
+        </button>
+      </div>
+
+      {open ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm sm:items-center"
+          role="presentation"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal();
+          }}
+        >
+          <div
+            className="max-h-[min(92vh,720px)] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/15 bg-gradient-to-br from-slate-900/95 via-slate-950/95 to-black/90 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`${baseId}-title`}
+          >
+            <h2 id={`${baseId}-title`} className="text-lg font-black text-white md:text-xl">
+              {t.title}
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-gray-400">{t.lead}</p>
+
+            <div className="mt-5 flex flex-col gap-3">
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  {t.name}
+                </span>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="organization"
+                  className="min-h-11 w-full rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-white outline-none ring-amber-400/0 transition focus:border-amber-400/40 focus:ring-2 focus:ring-amber-400/25"
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  {t.region}
+                </span>
+                <select
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value as KoreanBizRow['region'])}
+                  className="min-h-11 w-full rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-white outline-none focus:border-amber-400/40 focus:ring-2 focus:ring-amber-400/25"
+                >
+                  {REGIONS.map((r) => (
+                    <option key={r.key} value={r.key}>
+                      {r.label[locale]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  {t.category}
+                </span>
+                <select
+                  value={category}
+                  onChange={(e) =>
+                    setCategory((e.target.value || '') as '' | KoreanBizRow['category'])
+                  }
+                  className="min-h-11 w-full rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-white outline-none focus:border-amber-400/40 focus:ring-2 focus:ring-amber-400/25"
+                >
+                  <option value="">{unsetLabel}</option>
+                  {CAT_OPTIONS.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.label[locale]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  {t.address}
+                </span>
+                <textarea
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  rows={2}
+                  className="w-full resize-y rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-amber-400/40 focus:ring-2 focus:ring-amber-400/25"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  {t.phone}
+                </span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  autoComplete="tel"
+                  className="min-h-11 w-full rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-white outline-none focus:border-amber-400/40 focus:ring-2 focus:ring-amber-400/25"
+                />
+              </label>
+              <label className="sr-only" htmlFor={`${baseId}-hp`}>
+                Leave blank
+              </label>
+              <input id={`${baseId}-hp`} type="text" tabIndex={-1} autoComplete="off" className="hidden" />
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  {t.note}
+                </span>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={2}
+                  className="w-full resize-y rounded-xl border border-white/12 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-amber-400/40 focus:ring-2 focus:ring-amber-400/25"
+                />
+              </label>
+            </div>
+
+            {message === 'ok' ? (
+              <p className="mt-4 rounded-xl border border-emerald-400/35 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-100">
+                {t.ok}
+              </p>
+            ) : null}
+            {message === 'err' ? (
+              <p className="mt-4 rounded-xl border border-rose-400/35 bg-rose-950/40 px-3 py-2 text-sm text-rose-100">
+                {t.err}
+              </p>
+            ) : null}
+
+            <div className="mt-6 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => void submit()}
+                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-black shadow-lg hover:bg-amber-400 disabled:opacity-60 sm:flex-none"
+              >
+                {pending ? t.sending : t.submit}
+              </button>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/10 sm:flex-none"
+              >
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}

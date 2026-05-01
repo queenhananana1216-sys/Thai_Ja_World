@@ -6,30 +6,40 @@ import type {
   PortalLocalDemoWingCard,
   PortalWeeklyDotoriRankRow,
 } from '../lib/home/fetchPortalHomeFeed';
+import type { Locale } from '@/i18n/types';
+import type { SiteUiSettings } from '@/lib/site-settings/siteUiSettings';
+import { siteUiDefaults } from '@/lib/site-settings/siteUiSettings';
+import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import PortalLocalDemoWingRolling from './PortalLocalDemoWingRolling';
 import PortalQuestWriteCta from './PortalQuestWriteCta';
+import PortalWeatherWidget from './PortalWeatherWidget';
 import styles from './portal-2026.module.css';
 
-const EMPTY_WING = '등록된 스폰서·안내 슬롯이 없습니다.';
-const EMPTY_LOCAL = '등록된 로컬 업체가 아직 없습니다.';
-const EMPTY_LIVE_FEED = '실시간 통합 피드 항목이 아직 없습니다.';
-const EMPTY_RANK = '이번 주 집계된 랭킹이 아직 없습니다.';
+/** 제목·부제에 실수로 붙은 `(방콕 …°C …)` 형태 제거 */
+function stripTrailingWeatherParen(text: string): string {
+  let t = text.trim();
+  t = t.replace(/\s*\([^)]*(?:방콕|กรุงเทพ|Bangkok)[^)]*\)\s*$/iu, '').trim();
+  t = t.replace(/\s*\([^)]*\d+\s*°?\s*C[^)]*\)\s*$/iu, '').trim();
+  return t;
+}
 
 /** processed_news.created_at → 상대 시간 (SSR·클라 동일 규칙) */
-function formatPortalNewsAge(iso: string | null | undefined): string {
+function formatPortalNewsAge(iso: string | null | undefined, locale: Locale): string {
   if (!iso?.trim()) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   const diffMs = Date.now() - d.getTime();
-  if (diffMs < 45_000) return '방금';
+  const loc = locale === 'th' ? 'th' : 'ko';
+  const rtf = new Intl.RelativeTimeFormat(loc, { numeric: 'auto' });
+  if (diffMs < 45_000) return locale === 'th' ? 'เมื่อกี้' : '방금';
   const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return '방금';
-  if (mins < 60) return `${mins}분 전`;
+  if (mins < 1) return locale === 'th' ? 'เมื่อกี้' : '방금';
+  if (mins < 60) return rtf.format(-mins, 'minute');
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}시간 전`;
+  if (hours < 24) return rtf.format(-hours, 'hour');
   const days = Math.floor(hours / 24);
-  if (days < 10) return `${days}일 전`;
-  return new Intl.DateTimeFormat('ko-KR', { month: 'short', day: 'numeric' }).format(d);
+  if (days < 10) return rtf.format(-days, 'day');
+  return new Intl.DateTimeFormat(loc === 'th' ? 'th-TH' : 'ko-KR', { month: 'short', day: 'numeric' }).format(d);
 }
 
 function splitLiveHotKeywords(text: string): ReactNode {
@@ -47,21 +57,10 @@ function splitLiveHotKeywords(text: string): ReactNode {
   );
 }
 
-const LABELS = {
-  board: {
-    tradeHubTitle: '중고·알바',
-  },
-  home: {
-    hubBoard: '광장',
-    shopsMore: '더 보기 →',
-  },
-  footerNav: {
-    contact: '문의',
-  },
-} as const;
-
 export type Portal2026ViewProps = {
   feed: PortalHomeFeed;
+  locale: Locale;
+  siteUi?: SiteUiSettings;
 };
 
 function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
@@ -133,7 +132,8 @@ function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedL
     const idRaw = (l as { id?: unknown }).id;
     const titleRaw = (l as { title?: unknown }).title;
     const id = typeof idRaw === 'string' ? idRaw : idRaw != null ? String(idRaw) : '';
-    const title = typeof titleRaw === 'string' ? titleRaw : titleRaw != null ? String(titleRaw) : '';
+    const titleRawStr = typeof titleRaw === 'string' ? titleRaw : titleRaw != null ? String(titleRaw) : '';
+    const title = stripTrailingWeatherParen(titleRawStr);
     if (!id?.trim() || !title?.trim()) continue;
     const hrefRaw = (l as { href?: unknown }).href;
     const subRaw = (l as { subtitle?: unknown }).subtitle;
@@ -145,8 +145,12 @@ function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedL
       id: id.trim(),
       title: title.trim(),
       href: typeof hrefRaw === 'string' && hrefRaw.trim() ? hrefRaw : '/community/boards',
-      subtitle:
-        typeof subRaw === 'string' ? subRaw : subRaw != null ? String(subRaw) : null,
+      subtitle: (() => {
+        if (subRaw == null) return null;
+        const raw = typeof subRaw === 'string' ? subRaw : String(subRaw);
+        const s = stripTrailingWeatherParen(raw);
+        return s.trim() ? s : null;
+      })(),
       ...(publishedAt ? { publishedAt } : {}),
     });
   }
@@ -162,7 +166,7 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-function NewsLinesSkeleton({ rows = 7 }: { rows?: number }) {
+function NewsLinesSkeleton({ rows = 7, newsHubMore }: { rows?: number; newsHubMore: string }) {
   const widthClass = ['w-[94%]', 'w-[88%]', 'w-[91%]', 'w-[72%]', 'w-[85%]', 'w-[79%]', 'w-[66%]'];
   return (
     <ul className="space-y-1.5 px-1.5 py-0.5" aria-hidden>
@@ -177,28 +181,28 @@ function NewsLinesSkeleton({ rows = 7 }: { rows?: number }) {
       <li className="pt-0.5">
         <Link
           href="/news"
-          className="inline-flex min-h-11 items-center text-sm font-semibold text-gray-100 hover:text-amber-200"
+          className="inline-flex min-h-11 max-w-full items-center break-words text-sm font-semibold text-gray-100 hover:text-amber-200"
         >
-          뉴스 허브에서 전체 보기 →
+          {newsHubMore}
         </Link>
       </li>
     </ul>
   );
 }
 
-function NewsDenseRowLink({ item }: { item: PortalFeedLine }) {
+function NewsDenseRowLink({ item, locale }: { item: PortalFeedLine; locale: Locale }) {
   const href = item.href?.trim() ? item.href : '/news';
   const summary = item.subtitle?.trim() ?? '';
-  const age = formatPortalNewsAge(item.publishedAt ?? null);
+  const age = formatPortalNewsAge(item.publishedAt ?? null, locale);
   return (
     <li className="border-b border-slate-800/70 py-1 last:border-b-0">
       <Link
         href={href}
-        className="flex min-h-11 min-w-0 flex-nowrap items-center gap-x-1 text-base leading-snug text-gray-100 hover:text-amber-200"
+        className="flex min-h-11 min-w-0 flex-nowrap items-center gap-x-1.5 text-base leading-snug text-gray-100 hover:text-amber-200"
       >
-        <span className="min-w-0 max-w-[46%] shrink truncate font-semibold text-white">{item.title}</span>
+        <span className="min-w-0 max-w-[46%] shrink truncate break-words font-semibold text-white">{item.title}</span>
         <span className="shrink-0 text-gray-300">·</span>
-        <span className="min-w-0 flex-1 truncate text-gray-200">{summary || '—'}</span>
+        <span className="min-w-0 flex-1 truncate break-words text-gray-200">{summary || '—'}</span>
         {age ? (
           <span className="shrink-0 whitespace-nowrap text-sm text-gray-200 tabular-nums">🕒 {age}</span>
         ) : null}
@@ -213,6 +217,8 @@ function FeedLineList({
   emptyMode = 'default',
   omitEmptyPlaceholder,
   lineLayout = 'default',
+  locale,
+  newsHubMore,
 }: {
   lines: PortalFeedLine[];
   emptyMessage: string;
@@ -221,6 +227,8 @@ function FeedLineList({
   omitEmptyPlaceholder?: boolean;
   /** processed_news 한 줄(제목·요약·시간) */
   lineLayout?: 'default' | 'news-dense';
+  locale: Locale;
+  newsHubMore: string;
 }) {
   const safe = normalizeLines(lines ?? []);
   if (safe.length === 0) {
@@ -228,7 +236,7 @@ function FeedLineList({
       return null;
     }
     if (emptyMode === 'news-skeleton') {
-      return <NewsLinesSkeleton />;
+      return <NewsLinesSkeleton newsHubMore={newsHubMore} />;
     }
     return <EmptyState message={emptyMessage} />;
   }
@@ -236,7 +244,7 @@ function FeedLineList({
     return (
       <ul className="max-h-[min(22rem,48vh)] min-h-0 overflow-y-auto overscroll-contain px-1 py-0.5 md:max-h-[min(11rem,36vh)]">
         {safe.map((item, idx) => (
-          <NewsDenseRowLink key={item?.id ? String(item.id) : `nd-${idx}`} item={item} />
+          <NewsDenseRowLink key={item?.id ? String(item.id) : `nd-${idx}`} item={item} locale={locale} />
         ))}
       </ul>
     );
@@ -250,11 +258,11 @@ function FeedLineList({
         >
           <Link
             href={item?.href?.trim() ? item.href : '/community/boards'}
-            className="flex min-h-11 flex-col justify-center py-0.5 hover:text-amber-200"
+            className="flex min-h-11 min-w-0 flex-col justify-center overflow-hidden py-0.5 hover:text-amber-200"
           >
-            <span className="line-clamp-2 font-medium text-white">{item?.title ?? ''}</span>
+            <span className="line-clamp-2 break-words font-medium text-white">{item?.title ?? ''}</span>
             {item?.subtitle ? (
-              <span className="mt-0.5 block line-clamp-1 text-sm text-gray-200">{item.subtitle}</span>
+              <span className="mt-0.5 block line-clamp-2 break-words text-sm text-gray-200">{item.subtitle}</span>
             ) : null}
           </Link>
         </li>
@@ -298,14 +306,16 @@ function LiveFeedList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyM
           >
             <Link
               href={item?.href?.trim() ? item.href : '/community/boards'}
-              className={`flex min-h-11 flex-col justify-center hover:text-amber-200 ${hot ? 'px-0.5' : ''}`}
+              className={`flex min-h-11 min-w-0 flex-col justify-center overflow-hidden hover:text-amber-200 ${hot ? 'px-0.5' : ''}`}
             >
-              <span className={`line-clamp-2 ${hot ? 'font-semibold text-white' : 'font-normal text-gray-100'}`}>
+              <span
+                className={`line-clamp-2 break-words ${hot ? 'font-semibold text-white' : 'font-normal text-gray-100'}`}
+              >
                 {hot ? splitLiveHotKeywords(title) : title}
               </span>
               {sub ? (
                 <span
-                  className={`mt-0.5 block line-clamp-1 text-sm ${
+                  className={`mt-0.5 block line-clamp-2 break-words text-sm ${
                     hot ? 'font-medium text-gray-200' : 'text-gray-200'
                   }`}
                 >
@@ -320,23 +330,15 @@ function LiveFeedList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyM
   );
 }
 
-const BOARD_COLUMNS = [
-  { title: '구인구직', moreHref: '/community/boards?cat=job', key: 'job' as const, questCat: 'job' as const },
-  { title: '번개장터', moreHref: '/community/boards?cat=flea', key: 'flea' as const, questCat: 'flea' as const },
-  { title: '자유게시판', moreHref: '/community/boards?cat=free', key: 'free' as const, questCat: 'free' as const },
-  { title: '로컬 업체', moreHref: '/local', key: 'local' as const },
-  { title: '태국 뉴스', moreHref: '/news', key: 'news' as const },
-  { title: '생활 Q&A', moreHref: '/community/boards?cat=qna', key: 'qna' as const },
-];
-
 /**
  * 2026 3열 포털 — `feed`는 서버에서 `fetchPortalHomeFeed()`로만 채움(DB 실데이터).
  */
-export default function Portal2026View({ feed }: Portal2026ViewProps) {
+export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Portal2026ViewProps) {
+  const siteUi = siteUiProp ?? siteUiDefaults();
+  const copy = getPortal2026Copy(locale);
   const raw = safeFeed(feed);
 
-  const moreLabel =
-    LABELS.home.shopsMore.replace(/\s*→\s*$/, '').replace(/\s*›\s*$/, '').trim() || '더보기';
+  const moreLabel = copy.more;
 
   const jobs = normalizeLines(raw?.jobs ?? []);
   const market = normalizeLines(raw?.market ?? []);
@@ -365,19 +367,7 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
   const newsWing = [...(news ?? [])].slice(0, 6);
   const localWing = [...(localBiz ?? [])].slice(0, 5);
 
-  const sponsorTitle = '스폰서 · 안내';
-  const scaleTitle = '커뮤니티 규모';
-  const shortcutTitle = '바로가기';
-  const rankTitle = '주간 도토리 획득 TOP 5';
-  const liveFeedTitle = '실시간 통합 피드';
-  const newsAsideTitle = '최신 뉴스 (AI 요약)';
-  const localAsideTitle = '로컬 업체';
-  const contactTitle = LABELS.footerNav.contact;
-  const contactBody = '게시판·업체 등록은 각 메뉴에서 진행됩니다.';
-
-  const statsUnavailable = '집계 정보를 불러오지 못했습니다.';
-  const profileLabel = '프로필';
-  const postsLabel = '공개 글·거래';
+  const numLocale = locale === 'th' ? 'th-TH' : 'ko-KR';
 
   const totals = raw?.siteTotals;
   const profileCount =
@@ -385,18 +375,22 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
   const communityItemCount =
     totals && typeof totals.communityItemCount === 'number' ? totals.communityItemCount : null;
 
-  const hubBoardLabel = LABELS.home.hubBoard;
-  const tradeLabel = LABELS.board.tradeHubTitle;
-
   return (
-    <div className={styles.root} data-tj-root="portal-2026-ssr" role="main" aria-label="태자월드 2026 포털">
+    <div
+      className={styles.root}
+      data-tj-root="portal-2026-ssr"
+      data-ai-chrome={siteUi.hideAiChrome ? 'off' : 'on'}
+      role="main"
+      aria-label={copy.rootAria}
+    >
       <div className={styles.grid}>
         <aside className="hidden min-h-0 min-w-0 min-[769px]:block">
           <div className={styles.stickyWing}>
-            <section className={`${styles.glassBlue} p-2.5`}>
-              <p className="text-lg font-black uppercase tracking-wide text-blue-200">{sponsorTitle}</p>
+            {siteUi.weatherWidgetEnabled ? <PortalWeatherWidget locale={locale} /> : null}
+            <section className={`${styles.glassBlue} overflow-hidden p-2.5`}>
+              <p className="text-lg font-black uppercase tracking-wide text-blue-200">{copy.sponsorTitle}</p>
               {(wingBanners?.length ?? 0) === 0 ? (
-                <EmptyState message={EMPTY_WING} />
+                <EmptyState message={copy.emptyWing} />
               ) : (
                 <ul className="mt-2 space-y-2">
                   {(wingBanners ?? []).map((b, i) => {
@@ -405,14 +399,16 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                     if (!title) return null;
                     const href = b?.href?.trim() ? String(b.href) : '/ads';
                     return (
-                      <li key={bid}>
+                      <li key={bid} className="min-w-0 overflow-hidden">
                         <Link
                           href={href}
-                          className="flex min-h-11 flex-col justify-center rounded-lg border border-white/5 bg-slate-950/30 p-2 text-base leading-snug hover:border-amber-300/30"
+                          className="flex min-h-11 min-w-0 flex-col justify-center overflow-hidden rounded-lg border border-white/5 bg-slate-950/30 p-2 text-base leading-snug hover:border-amber-300/30"
                         >
-                          <span className="font-semibold text-white">{title}</span>
+                          <span className="line-clamp-2 break-words font-semibold text-white">{title}</span>
                           {b?.subtitle != null && String(b.subtitle).trim() ? (
-                            <span className="mt-1 block text-sm text-gray-200">{String(b.subtitle)}</span>
+                            <span className="mt-1 block line-clamp-2 break-words text-sm text-gray-200">
+                              {String(b.subtitle)}
+                            </span>
                           ) : null}
                         </Link>
                       </li>
@@ -421,50 +417,62 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                 </ul>
               )}
             </section>
-            <section className={`${styles.glassGold} p-2.5`}>
-              <p className="text-lg font-black text-amber-200">{scaleTitle}</p>
+            <section className={`${styles.glassGold} overflow-hidden p-2.5`}>
+              <p className="text-lg font-black text-amber-200">{copy.scaleTitle}</p>
               {profileCount != null && communityItemCount != null ? (
-                <p className="mt-1 text-base leading-snug text-gray-100">
-                  {profileLabel} 약 {profileCount.toLocaleString('ko-KR')} · {postsLabel}{' '}
-                  {communityItemCount.toLocaleString('ko-KR')}
+                <p className="mt-1 text-base leading-snug text-gray-100 break-words">
+                  {locale === 'th' ? (
+                    <>
+                      {copy.profileLabel} {profileCount.toLocaleString(numLocale)} · {copy.postsLabel}{' '}
+                      {communityItemCount.toLocaleString(numLocale)}
+                    </>
+                  ) : (
+                    <>
+                      {copy.profileLabel} 약 {profileCount.toLocaleString(numLocale)} · {copy.postsLabel}{' '}
+                      {communityItemCount.toLocaleString(numLocale)}
+                    </>
+                  )}
                 </p>
               ) : (
-                <p className="mt-1 text-base leading-snug text-gray-200">{statsUnavailable}</p>
+                <p className="mt-1 text-base leading-snug text-gray-200">{copy.statsUnavailable}</p>
               )}
             </section>
-            <section className={`${styles.glassCenter} p-2 text-base text-gray-100`}>
-              <p className="text-lg font-semibold text-white">{shortcutTitle}</p>
+            <section className={`${styles.glassCenter} overflow-hidden p-2 text-base text-gray-100`}>
+              <p className="text-lg font-semibold text-white">{copy.shortcutTitle}</p>
               <ul className="mt-1.5 space-y-0">
                 <li>
                   <Link
                     href="/community/boards"
-                    className="inline-flex min-h-11 items-center text-gray-100 hover:text-amber-200 hover:underline"
+                    className="inline-flex min-h-11 max-w-full min-w-0 break-words text-gray-100 hover:text-amber-200 hover:underline"
                   >
-                    {hubBoardLabel}
+                    {copy.hubBoard}
                   </Link>
                 </li>
                 <li>
                   <Link
                     href="/community/trade"
-                    className="inline-flex min-h-11 items-center text-gray-100 hover:text-amber-200 hover:underline"
+                    className="inline-flex min-h-11 max-w-full min-w-0 break-words text-gray-100 hover:text-amber-200 hover:underline"
                   >
-                    {tradeLabel}
+                    {copy.tradeHub}
                   </Link>
                 </li>
                 <li>
-                  <Link href="/news" className="inline-flex min-h-11 items-center text-gray-100 hover:text-amber-200 hover:underline">
-                    뉴스
+                  <Link
+                    href="/news"
+                    className="inline-flex min-h-11 max-w-full min-w-0 break-words text-gray-100 hover:text-amber-200 hover:underline"
+                  >
+                    {copy.newsLink}
                   </Link>
                 </li>
               </ul>
             </section>
-            <section className={`${styles.glassGold} p-2.5`}>
-              <p className="text-lg font-black text-amber-200">{rankTitle}</p>
-              <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-amber-100">
-                이번 주 서울 주간 퀘스트 집계
+            <section className={`${styles.glassGold} overflow-hidden p-2.5`}>
+              <p className="text-lg font-black text-amber-200">{copy.rankTitle}</p>
+              <p className="mt-0.5 line-clamp-2 break-words text-xs font-semibold uppercase tracking-wide text-amber-100">
+                {copy.rankSub}
               </p>
               {(weeklyRankSorted?.length ?? 0) === 0 ? (
-                <p className="mt-1 text-base leading-snug text-gray-200">{EMPTY_RANK}</p>
+                <p className="mt-1 text-base leading-snug text-gray-200">{copy.emptyRank}</p>
               ) : (
                 <div className="mt-2 space-y-1">
                   {weeklyRankSorted.map((row) => {
@@ -473,7 +481,7 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                       <div
                         key={row.profileId}
                         className={top ? styles.wingRankFirst : styles.wingRankRow}
-                        title={`${row.rank}위 · ${row.dotoriEarned} 도토리`}
+                        title={`${row.rank} · ${row.dotoriEarned} ${copy.dotoriSuffix}`}
                       >
                         <span
                           className={`${styles.wingRankIdx} ${top ? styles.wingRankIdxGold : ''}`}
@@ -482,13 +490,13 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                           {top ? '👑' : row.rank}
                         </span>
                         <div
-                          className={`${styles.wingRankMeta} flex min-w-0 flex-wrap items-baseline justify-between gap-x-1`}
+                          className={`${styles.wingRankMeta} flex min-w-0 flex-wrap items-baseline justify-between gap-x-1.5 gap-y-0.5`}
                         >
                           <span className={`min-w-0 truncate ${top ? styles.wingRankFirstName : styles.wingRankName}`}>
                             {row.displayName}
                           </span>
                           <span className={`shrink-0 whitespace-nowrap ${top ? styles.wingRankFirstDotori : styles.wingRankDotori}`}>
-                            +{row.dotoriEarned.toLocaleString('ko-KR')} 도토리
+                            +{row.dotoriEarned.toLocaleString(numLocale)} {copy.dotoriSuffix}
                           </span>
                         </div>
                       </div>
@@ -502,7 +510,7 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
 
         <section className="min-h-0 min-w-0 space-y-1.5">
           <div className={`${styles.boardGrid}`}>
-            {BOARD_COLUMNS.map((board) => {
+            {copy.boardColumns.map((board) => {
               const colLines = linesByKey?.[board.key] ?? [];
               const hasPosts = normalizeLines(colLines).length > 0;
               const questCat = board.questCat;
@@ -512,15 +520,15 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
 
               return (
                 <article key={board.key} className={styles.boardColumn}>
-                  <header className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-slate-700/50 px-1.5 py-1.5">
-                    <h2 className="text-lg font-bold tracking-tight text-white">{board.title}</h2>
-                    <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+                  <header className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-slate-700/50 px-1.5 py-1.5">
+                    <h2 className="min-w-0 flex-1 truncate text-lg font-bold tracking-tight text-white">{board.title}</h2>
+                    <div className="ml-auto flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-1.5">
                       {showQuestBadge && questCat ? (
                         <PortalQuestWriteCta category={questCat} variant="badge" />
                       ) : null}
                       <Link
                         href={board.moreHref ?? '/community/boards'}
-                        className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-amber-200 hover:underline"
+                        className="inline-flex min-h-11 max-w-full shrink-0 items-center truncate text-sm font-semibold text-amber-200 hover:underline"
                       >
                         {moreLabel}
                       </Link>
@@ -528,10 +536,12 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                   </header>
                   <FeedLineList
                     lines={colLines}
-                    emptyMessage={board.key === 'local' ? EMPTY_LOCAL : '목록을 불러오지 못했습니다.'}
+                    emptyMessage={board.key === 'local' ? copy.emptyLocal : copy.emptyList}
                     emptyMode={emptyMode}
                     omitEmptyPlaceholder={Boolean(showQuestBadge && questCat)}
                     lineLayout={board.key === 'news' ? 'news-dense' : 'default'}
+                    locale={locale}
+                    newsHubMore={copy.newsHubMore}
                   />
                 </article>
               );
@@ -540,53 +550,55 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
 
           <section className={`${styles.glassBlue} overflow-hidden`}>
             <header className="border-b border-slate-700/70 px-2 py-2 text-lg font-black text-blue-200">
-              {liveFeedTitle}
+              {copy.liveFeedTitle}
             </header>
-            <LiveFeedList lines={liveFeed ?? []} emptyMessage={EMPTY_LIVE_FEED} />
+            <LiveFeedList lines={liveFeed ?? []} emptyMessage={copy.emptyLiveFeed} />
           </section>
         </section>
 
         <aside className="hidden min-h-0 min-w-0 min-[769px]:block">
           <div className={styles.stickyWing}>
-            <section className={`${styles.glassBlue} p-2.5`}>
-              <p className="text-lg font-black text-blue-200">{newsAsideTitle}</p>
+            <section className={`${styles.glassBlue} overflow-hidden p-2.5`}>
+              <p className="line-clamp-2 text-lg font-black text-blue-200 break-words">{copy.newsAsideTitle}</p>
               {(newsWing?.length ?? 0) === 0 ? (
-                <NewsLinesSkeleton rows={6} />
+                <NewsLinesSkeleton rows={6} newsHubMore={copy.newsHubMore} />
               ) : (
-                <ul className="mt-1.5 max-h-[min(14rem,42vh)] space-y-0 overflow-y-auto overscroll-contain px-0.5">
+                <ul className="mt-1.5 max-h-[min(14rem,42vh)] min-w-0 space-y-0 overflow-y-auto overscroll-contain px-0.5">
                   {(newsWing ?? []).map((n, i) => (
-                    <NewsDenseRowLink key={n?.id != null ? String(n.id) : `nw-${i}`} item={n} />
+                    <NewsDenseRowLink key={n?.id != null ? String(n.id) : `nw-${i}`} item={n} locale={locale} />
                   ))}
                 </ul>
               )}
             </section>
-            <section className={`${styles.glassGold} p-2.5`}>
-              <p className="text-lg font-black text-amber-200">{localAsideTitle}</p>
+            <section className={`${styles.glassGold} overflow-hidden p-2.5`}>
+              <p className="line-clamp-2 text-lg font-black text-amber-200 break-words">{copy.localAsideTitle}</p>
               {localBizFromDemoFallback && localDemoWingCards.length > 0 ? (
-                <PortalLocalDemoWingRolling cards={localDemoWingCards} />
+                <div className="min-w-0 overflow-hidden">
+                  <PortalLocalDemoWingRolling cards={localDemoWingCards} />
+                </div>
               ) : (localWing?.length ?? 0) > 0 ? (
-                <ul className="mt-2 space-y-1.5">
+                <ul className="mt-2 min-w-0 space-y-1.5">
                   {(localWing ?? []).map((l, i) => (
-                    <li key={l?.id != null ? String(l.id) : `rw-${i}`}>
+                    <li key={l?.id != null ? String(l.id) : `rw-${i}`} className="min-w-0 overflow-hidden">
                       <Link
                         href={l.href?.trim() ? String(l.href) : '/local'}
-                        className="flex min-h-11 flex-col justify-center text-base leading-snug text-gray-100 hover:text-amber-200"
+                        className="flex min-h-11 min-w-0 flex-col justify-center overflow-hidden text-base leading-snug text-gray-100 hover:text-amber-200"
                       >
-                        <span className="line-clamp-2 font-semibold text-white">{l.title}</span>
+                        <span className="line-clamp-2 break-words font-semibold text-white">{l.title}</span>
                         {l.subtitle ? (
-                          <span className="mt-0.5 block text-sm text-gray-200">{l.subtitle}</span>
+                          <span className="mt-0.5 block line-clamp-2 break-words text-sm text-gray-200">{l.subtitle}</span>
                         ) : null}
                       </Link>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <EmptyState message={EMPTY_LOCAL} />
+                <EmptyState message={copy.emptyLocal} />
               )}
             </section>
-            <section className={`${styles.glassCenter} p-2 text-base text-gray-100`}>
-              <p className="text-lg font-semibold text-white">{contactTitle}</p>
-              <p className="mt-1.5 leading-relaxed text-gray-200">{contactBody}</p>
+            <section className={`${styles.glassCenter} overflow-hidden p-2 text-base text-gray-100`}>
+              <p className="text-lg font-semibold text-white">{copy.contactTitle}</p>
+              <p className="mt-1.5 leading-relaxed break-words text-gray-200">{copy.contactBody}</p>
             </section>
           </div>
         </aside>

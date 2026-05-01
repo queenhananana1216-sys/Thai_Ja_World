@@ -1,6 +1,9 @@
 import './globals.css';
+import { cookies } from 'next/headers';
 import GlobalNav from './_components/GlobalNav';
 import { SiteFooterFallback } from './_components/SiteFooterFallback';
+import { isLocale, LOCALE_COOKIE } from '@/i18n/types';
+import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 
 export const metadata = {
   title: {
@@ -18,9 +21,14 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: unknown }) {
+export default async function RootLayout({ children }: { children: unknown }) {
+  const jar = await cookies();
+  const locRaw = jar.get(LOCALE_COOKIE)?.value ?? '';
+  const htmlLang = isLocale(locRaw) && locRaw === 'th' ? 'th' : 'ko';
+  const ui = await loadSiteUiSettings();
+
   return (
-    <html lang="ko" className="overflow-x-hidden">
+    <html lang={htmlLang} className="overflow-x-hidden" data-tj-text-scale={ui.textScale}>
       <body
         className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-base text-gray-100 antialiased"
         style={{

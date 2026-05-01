@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
+import AdminMobileTabBar from './_components/AdminMobileTabBar';
 import './admin-shell.css';
 
 export const metadata = {
@@ -30,8 +31,9 @@ const adminSections = [
     ],
   },
   {
-    title: '배너 · 노출 제어',
+    title: '사이트 · 노출',
     items: [
+      { href: '/admin/design', label: '사이트 디자인 제어', icon: '◇' },
       { href: '/admin/banners', label: '배너 Control Center', icon: '▣' },
       { href: '/admin/premium-banners', label: '프리미엄 배너', icon: '▦' },
       { href: '/admin/home-hero', label: '홈 메인 문구', icon: '✶' },
@@ -84,6 +86,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       <div className="admin-shell__viewport">
         <div className="admin-shell__viewport-inner">{children}</div>
       </div>
+      <AdminMobileTabBar />
     </div>
   );
 }

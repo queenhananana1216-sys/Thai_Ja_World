@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import AdminQuickOpsPanel from './_components/AdminQuickOpsPanel';
+import { fetchLatestPipelineTouch, probeSiteReachability } from '@/lib/admin/adminDashboardSignals';
 import { getKstDayRangeISO } from '@/lib/admin/kstDayRange';
 import {
   knowledgePublishModeEnvRaw,
@@ -14,6 +15,10 @@ import {
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 export default async function AdminDashboardPage() {
+  const [reach, pipelineTouch] = await Promise.all([
+    probeSiteReachability(),
+    fetchLatestPipelineTouch(),
+  ]);
   const fiveAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   const kstToday = getKstDayRangeISO();
 
@@ -119,6 +124,38 @@ export default async function AdminDashboardPage() {
         태자 월드 회원·접속·뉴스 초안 지표입니다. <strong>마지막 접속</strong>은 사이트 하트비트로 갱신되는{' '}
         <code>profiles.last_seen_at</code> 기준이며, Supabase Auth의 “최종 로그인”과는 다를 수 있습니다.
       </p>
+
+      <section className="admin-dash__master-row" aria-label="마스터 상태 보드">
+        <article className="admin-dash__master-card">
+          <p className="admin-dash__master-kicker">도메인 헬스</p>
+          <div className={reach.ok ? 'admin-dash__pill admin-dash__pill--ok' : 'admin-dash__pill admin-dash__pill--bad'}>
+            {reach.ok ? '🟢 정상' : '🔴 점검 필요'}
+          </div>
+          <p className="admin-dash__master-metric">{reach.latencyMs} ms</p>
+          <p className="admin-dash__master-foot">
+            GET {reach.checkedUrl}
+            <br />
+            HTTP {reach.httpStatus ?? '—'}
+          </p>
+        </article>
+        <article className="admin-dash__master-card">
+          <p className="admin-dash__master-kicker">파이프라인</p>
+          <p className="admin-dash__master-title">봇 최근 활동</p>
+          <p className="admin-dash__master-metric">{pipelineTouch.label}</p>
+          <p className="admin-dash__master-foot">
+            기준: <code>bot_actions</code> 최신 1건 · 크론·수동 실행 포함
+          </p>
+        </article>
+        <article className="admin-dash__master-card">
+          <p className="admin-dash__master-kicker">PHASE 2 예약</p>
+          <p className="admin-dash__master-title">오늘 평균 체류 · 클릭</p>
+          <p className="admin-dash__master-metric">—</p>
+          <p className="admin-dash__master-foot">
+            <code>ux_metrics</code>·이벤트 스트림과 연동하면 여기에 즉시 표시되도록 설계됩니다.
+          </p>
+        </article>
+      </section>
+
       <AdminQuickOpsPanel
         newsDraftCount={draftNews ?? 0}
         knowledgeDraftCount={draftKnowledge ?? 0}

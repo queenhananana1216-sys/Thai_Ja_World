@@ -248,3 +248,21 @@
   font-variant-numeric: tabular-nums;
   color: rgb(251 191 36 / 0.95);
 }
+
+/** 디자인 제어: 과장 이펙트 절제 */
+.root[data-ai-chrome='off'] .liveFeedRowHot {
+  background: transparent;
+  border-left: none;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+.root[data-ai-chrome='off'] .liveFeedKeywordGlow {
+  font-weight: 600;
+  background-image: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  color: rgb(248 250 252);
+  filter: none;
+  animation: none;
+}

@@ -60,6 +60,14 @@ html {
   overflow-x: hidden;
 }
 
+/* 원격 디자인 제어(site_settings) — 루트 글자 크기 */
+html[data-tj-text-scale='compact'] {
+  font-size: 92%;
+}
+html[data-tj-text-scale='large'] {
+  font-size: 108%;
+}
+
 html[lang='th'] body {
   font-family: var(--font-noto-th, 'Noto Sans Thai'), var(--font-noto-kr, 'Noto Sans KR'),
     'Sukhumvit Set', 'Leelawadee UI', system-ui, -apple-system, sans-serif;

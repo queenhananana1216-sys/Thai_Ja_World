@@ -385,7 +385,241 @@
   .admin-shell__sidebar {
     position: static;
     height: auto;
+    max-height: 38vh;
     border-right: none;
     border-bottom: 1px solid var(--admin-line);
   }
+
+  .admin-shell__viewport {
+    padding-bottom: 72px;
+  }
+}
+
+/* 모바일 하단 앱 스타일 탭 */
+.admin-mtab {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .admin-mtab {
+    display: flex;
+    position: fixed;
+    z-index: 60;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-height: 56px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0));
+    border-top: 1px solid var(--admin-line);
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.45);
+    justify-content: space-around;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .admin-mtab__btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 48px;
+    padding: 6px 4px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    color: var(--admin-muted);
+    font-size: 11px;
+    font-weight: 600;
+    max-width: 120px;
+  }
+
+  .admin-mtab__btn--active {
+    color: #ede9fe;
+    border-color: rgba(139, 92, 246, 0.55);
+    background: rgba(88, 28, 135, 0.35);
+  }
+
+  .admin-mtab__ico {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .admin-mtab__lbl {
+    letter-spacing: -0.02em;
+  }
+}
+
+/* 마스터 대시보드 상단 상태 카드 */
+.admin-dash__master-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.admin-dash__master-card {
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--admin-line);
+  background: linear-gradient(155deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.72));
+  box-shadow: 0 14px 36px rgba(2, 6, 23, 0.38);
+}
+
+.admin-dash__master-kicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #93c5fd;
+}
+
+.admin-dash__master-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.admin-dash__master-metric {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.admin-dash__master-foot {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--admin-muted);
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.admin-dash__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-dash__pill--ok {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  color: #a7f3d0;
+}
+
+.admin-dash__pill--bad {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(248, 113, 113, 0.42);
+  color: #fecaca;
+}
+
+/* 사이트 디자인 제어 */
+.admin-design__card {
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--admin-line);
+  background: var(--admin-surface);
+}
+
+.admin-design__card h2 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #e0e7ff;
+}
+
+.admin-design__hint {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--admin-muted);
+  line-height: 1.55;
+}
+
+.admin-design__hint code {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.admin-design__seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-design__seg-btn {
+  flex: 1;
+  min-width: 92px;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.65);
+  color: #e2e8f0;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.admin-design__seg-btn--on {
+  border-color: rgba(139, 92, 246, 0.75);
+  background: rgba(88, 28, 135, 0.45);
+  color: #fff;
+}
+
+.admin-design__seg-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.admin-design__toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-design__toggle input {
+  width: 22px;
+  height: 22px;
+  accent-color: #8b5cf6;
+}
+
+.admin-design__card--muted {
+  opacity: 0.92;
+}
+
+.admin-design__pre {
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow: auto;
+  max-height: 240px;
+  background: rgba(2, 6, 23, 0.66);
+  border: 1px solid rgba(51, 65, 85, 0.65);
+  color: #cbd5e1;
+}
+
+.admin-design__state {
+  margin: 0;
+  padding: 16px;
+  font-size: 14px;
+  color: var(--admin-muted);
 }

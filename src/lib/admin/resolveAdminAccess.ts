@@ -43,6 +43,14 @@ export async function resolveAdminAccess(): Promise<false | { email: string }> {
       return { email };
     }
 
+    const ownerIds =
+      process.env.ADMIN_OWNER_USER_IDS?.split(/[,;\s]+/)
+        .map((s) => s.trim())
+        .filter(Boolean) ?? [];
+    if (userId && ownerIds.length > 0 && ownerIds.includes(userId)) {
+      return { email };
+    }
+
     const ownerEmails = parseAdminAllowedEmails();
     return ownerEmails.includes(email) ? { email } : false;
   } catch (err) {

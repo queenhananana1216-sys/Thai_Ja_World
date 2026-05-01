@@ -1,81 +1,36 @@
-'use client';
-
 import Link from 'next/link';
-import { useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import type { Dictionary } from '@/i18n/dictionaries';
-import type { Locale } from '@/i18n/types';
-import { useGlobalLanguage } from '@/contexts/GlobalLanguageContext';
 import AuthBar from './AuthBar';
-import GlobalNavSearchIsland from './GlobalNavSearchIsland';
+
+const STATIC_MENUS = [
+  { href: '/', label: '홈' },
+  { href: '/community/boards', label: '자유게시판' },
+  { href: '/community/boards?cat=flea', label: '번개장터' },
+  { href: '/community/boards?cat=job', label: '구인구직' },
+  { href: '/local/info', label: '부동산' },
+  { href: '/local', label: '로컬예약' },
+] as const;
 
 const WRITE_HREF = '/community/write';
 
-function navItemsFor(dict: Dictionary, loc: Locale): { href: string; label: string }[] {
-  const th = loc === 'th';
-  return [
-    { href: '/', label: dict.nav.home },
-    { href: '/community/boards', label: dict.home.hubBoard },
-    { href: '/community/boards?cat=flea', label: th ? 'ตลาดนัด' : '번개장터' },
-    { href: '/community/boards?cat=job', label: th ? 'หางาน' : '구인구직' },
-    { href: '/local/info', label: th ? 'อสังหาริมทรัพย์' : '부동산' },
-    { href: '/local', label: dict.nav.local },
-    { href: '/news', label: th ? 'ข่าว' : '뉴스' },
-  ];
-}
+type Props = {
+  dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'search'>;
+};
 
 /**
- * 태자월드 글로벌 헤더 — 언어 토글·통합 검색(SiteSearch)·계정 영역.
- * 일부 하위 트리 오류 시에도 상단 띠·토글은 유지되도록 검색은 GlobalNavSearchIsland에서 격리.
+ * 2026 비상 정적 헤더 — DB·Supabase·useEffect·인증 분기 없음. 시각적 껍데기만.
  */
-export default function GlobalNav() {
-  const { locale, dict, setLocale } = useGlobalLanguage();
-  const router = useRouter();
-  const menus = useMemo(() => navItemsFor(dict, locale), [dict, locale]);
-
-  async function onSelectLocale(next: 'ko' | 'th') {
-    try {
-      const ok = await setLocale(next);
-      if (ok) router.refresh();
-    } catch {
-      /* noop — 토글 UI는 유지 */
-    }
-  }
-
+export default function GlobalNav({ dict }: Props) {
   return (
     <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
       <div className="border-b border-white/5 bg-slate-950/80">
         <div className="site-container flex flex-wrap items-center justify-between gap-2 py-1.5">
           <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500">
-            <button
-              type="button"
-              onClick={() => void onSelectLocale('ko')}
-              className={
-                'rounded border px-1.5 py-0.5 transition-colors ' +
-                (locale === 'ko'
-                  ? 'border-amber-400/50 bg-amber-500/10 text-amber-100'
-                  : 'border-white/10 text-slate-400 hover:border-white/25 hover:text-slate-200')
-              }
-              aria-pressed={locale === 'ko'}
-            >
-              {dict.lang.ko}
-            </button>
+            <span className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400">{dict.lang.ko}</span>
             <span className="text-slate-600">/</span>
-            <button
-              type="button"
-              onClick={() => void onSelectLocale('th')}
-              className={
-                'rounded border px-1.5 py-0.5 transition-colors ' +
-                (locale === 'th'
-                  ? 'border-amber-400/50 bg-amber-500/10 text-amber-100'
-                  : 'border-white/10 text-slate-400 hover:border-white/25 hover:text-slate-200')
-              }
-              aria-pressed={locale === 'th'}
-            >
-              {dict.lang.th}
-            </button>
+            <span className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400">{dict.lang.th}</span>
           </div>
-          <AuthBar loginLabel={dict.board.login} signupLabel={dict.board.signup} />
+          <AuthBar />
         </div>
       </div>
 
@@ -98,7 +53,19 @@ export default function GlobalNav() {
         </Link>
 
         <div className="order-3 w-full min-w-0 max-w-xl flex-1 md:order-none md:w-auto md:max-w-md">
-          <GlobalNavSearchIsland dict={dict} />
+          <label className="sr-only" htmlFor="tj-header-search-dumb">
+            {dict.search.ariaLabel}
+          </label>
+          <input
+            id="tj-header-search-dumb"
+            type="search"
+            name="tj-header-search-dumb"
+            readOnly
+            tabIndex={-1}
+            placeholder={dict.search.placeholder}
+            className="w-full rounded-full border border-white/15 bg-slate-900/70 px-4 py-2 text-sm text-slate-200 outline-none ring-0 placeholder:text-slate-500"
+          />
+          <p className="mt-1 text-center text-[10px] text-slate-600 md:text-left">{dict.search.headerBarLabel}</p>
         </div>
       </div>
 
@@ -116,21 +83,21 @@ export default function GlobalNav() {
                 href="/auth/login?next=%2F"
                 className="rounded-md border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-center text-sm font-semibold text-violet-100 no-underline"
               >
-                {dict.board.login}
+                로그인
               </Link>
               <Link
                 href="/auth/signup?next=%2F"
                 className="rounded-md border border-pink-400/30 bg-pink-500/10 px-3 py-2 text-center text-sm font-semibold text-pink-100 no-underline"
               >
-                {dict.board.signup}
+                회원가입
               </Link>
               <Link
                 href={WRITE_HREF}
                 className="rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white no-underline"
               >
-                ✎ {dict.board.newPost}
+                ✎ 글쓰기
               </Link>
-              {menus.map((m) => (
+              {STATIC_MENUS.map((m) => (
                 <Link
                   key={m.href}
                   href={m.href}
@@ -143,7 +110,7 @@ export default function GlobalNav() {
           </details>
 
           <div className="hidden flex-wrap items-center gap-2 md:flex">
-            {menus.map((m) => (
+            {STATIC_MENUS.map((m) => (
               <Link
                 key={m.href}
                 href={m.href}
@@ -156,7 +123,7 @@ export default function GlobalNav() {
               href={WRITE_HREF}
               className="ml-auto rounded-full bg-blue-600 px-3 py-1.5 text-xs font-bold text-white no-underline shadow-md hover:bg-blue-500"
             >
-              ✎ {dict.board.newPost}
+              ✎ 글쓰기
             </Link>
           </div>
         </div>

@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import Portal2026View from './portal/Portal2026View';
-import { fetchPortalHomeFeed } from './lib/home/fetchPortalHomeFeed';
+import {
+  fetchPortalHomeFeed,
+  HONEST_EMPTY_PORTAL_HOME_FEED,
+} from './lib/home/fetchPortalHomeFeed';
 import { absoluteUrl } from '@/lib/seo/site';
 
 /** 홈(/)만 SSR 데이터 페치 — 레이아웃은 정적 뼈대 유지 */
@@ -29,8 +32,14 @@ export function generateMetadata(): Metadata {
   };
 }
 
-/** 데이터는 `fetchPortalHomeFeed()` → `home-queries`의 `createPublicAnonClient()` 경로만 사용 */
+/**
+ * 메인 컨트롤러 — `fetchPortalHomeFeed()`(anon)만 사용. 예외 시에도 빈 피드로 포털 렌더(블랙아웃 방지).
+ */
 export default async function HomePage() {
-  const feed = await fetchPortalHomeFeed();
-  return <Portal2026View feed={feed} />;
+  try {
+    const feed = await fetchPortalHomeFeed();
+    return <Portal2026View feed={feed} />;
+  } catch {
+    return <Portal2026View feed={HONEST_EMPTY_PORTAL_HOME_FEED} />;
+  }
 }

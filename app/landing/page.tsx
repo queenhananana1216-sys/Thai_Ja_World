@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 /**
  * 랜딩 페이지는 절대 throw 하지 않는다.
  * 서버 호출은 각각 try/catch·`Promise.allSettled` 폴백으로 한 소스만 죽어도 다른 섹션은 렌더.
- * 무거운 3D(Spline) 파이프라인은 제거됨 — 히어로 배경은 정적 그라디언트만 사용.
+ * 히어로 배경은 정적 그라디언트만 사용(외부 3D 런타임 없음).
  */
 export default async function LandingPage() {
   const fallbackEntryFlow: EntryFlowResponse = {

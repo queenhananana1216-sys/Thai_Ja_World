@@ -1,18 +1,20 @@
 /**
- * 2026 홈 포털 — 루트 전용. 클라이언트 · Auth 래퍼 없음.
- * 블루/골드 글라스 톤 (라이트 누출 + 다크 베이스)
+ * 2026 홈 포털 — 블루/골드 글라스, 3열 고밀도 그리드, 좌우 스티키 윙
  */
 .root {
+  --tj-portal-glass-blue: rgba(59, 130, 246, 0.14);
+  --tj-portal-glass-gold: rgba(245, 158, 11, 0.12);
+  --tj-portal-border-blue: rgba(147, 197, 253, 0.35);
+  --tj-portal-border-gold: rgba(251, 191, 36, 0.32);
+  --tj-portal-sticky-top: 5.5rem;
+
   min-height: 100vh;
-  padding-left: 0.375rem;
-  padding-right: 0.375rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+  padding: 0.5rem 0.375rem 1rem;
   background-color: #0b0f19;
   background-image:
-    radial-gradient(ellipse 130% 90% at 50% -15%, rgba(59, 130, 246, 0.14), transparent 55%),
-    radial-gradient(ellipse 80% 70% at 100% 20%, rgba(245, 158, 11, 0.1), transparent 50%),
-    radial-gradient(ellipse 70% 50% at 0% 80%, rgba(59, 130, 246, 0.06), transparent 45%);
+    radial-gradient(ellipse 130% 90% at 50% -15%, var(--tj-portal-glass-blue), transparent 55%),
+    radial-gradient(ellipse 80% 70% at 100% 18%, var(--tj-portal-glass-gold), transparent 50%),
+    radial-gradient(ellipse 70% 55% at 0% 85%, rgba(59, 130, 246, 0.07), transparent 48%);
   color: rgb(226 232 240);
 }
 
@@ -24,11 +26,77 @@
   max-width: 1600px;
   grid-template-columns: 1fr;
   align-items: start;
-  gap: 0.5rem;
+  gap: 0.625rem;
+  min-width: 0;
 }
 
 @media (min-width: 1181px) {
   .grid {
-    grid-template-columns: minmax(10rem, 12rem) minmax(0, 1fr) minmax(11rem, 14rem);
+    grid-template-columns: minmax(11rem, 13rem) minmax(0, 1fr) minmax(11rem, 14rem);
+    gap: 0.75rem;
   }
+}
+
+/** 패널 공통 — 글라스 + 블루 림 */
+.glassBlue {
+  border-radius: 0.75rem;
+  border: 1px solid var(--tj-portal-border-blue);
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.42));
+  box-shadow:
+    0 4px 28px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/** 골드 액센트 패널 */
+.glassGold {
+  border-radius: 0.75rem;
+  border: 1px solid var(--tj-portal-border-gold);
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.76), rgba(30, 27, 20, 0.38));
+  box-shadow:
+    0 4px 28px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/** 중앙 컬럼 카드 — 중립 슬레이트 + 미세 블루 */
+.glassCenter {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.5));
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.stickyWing {
+  position: sticky;
+  top: var(--tj-portal-sticky-top);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.boardGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .boardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.emptyState {
+  border-radius: 0.5rem;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  background: rgba(2, 6, 23, 0.35);
+  padding: 1.75rem 0.75rem;
+  text-align: center;
 }

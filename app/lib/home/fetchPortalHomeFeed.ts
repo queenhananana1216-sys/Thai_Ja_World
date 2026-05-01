@@ -36,7 +36,7 @@ export type PortalHomeFeed = {
   siteTotals: { profileCount: number; communityItemCount: number } | null;
 };
 
-/** DB·네트워크 실패 시에도 내용 없음: 가짜 게시글 문자열을 넣지 않음 */
+/** DB·네트워크 실패·타임아웃 시 — 빈 배열만(플레이스홀더 글·샘플 제목 없음) */
 export const HONEST_EMPTY_PORTAL_HOME_FEED: PortalHomeFeed = {
   jobs: [],
   market: [],
@@ -119,8 +119,8 @@ function compactLines(lines: (PortalFeedLine | null)[]): PortalFeedLine[] {
 }
 
 /**
- * 루트 포털 3열 — Supabase 실데이터만.
- * 타임아웃·에러·빈 결과는 항상 빈 배열; 샘플/데모/임의 문구를 넣지 않음.
+ * 루트 포털 3열 — Supabase 실데이터만 (`home-queries` → `createPublicAnonClient()`: jobs, market, posts, processed_news, premium_banners, RPC).
+ * 타임아웃·에러·빈 결과는 빈 배열; 샘플 글이나 임의 기사 제목을 넣지 않음.
  */
 export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
   const out: PortalHomeFeed = {
@@ -145,7 +145,7 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
         return {
           id,
           title,
-          href: `/community/boards?cat=job`,
+          href: '/community/boards?cat=job',
           subtitle: jobSubtitle(r),
         };
       }),
@@ -164,7 +164,7 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
         return {
           id,
           title,
-          href: `/community/boards?cat=flea`,
+          href: '/community/boards?cat=flea',
           subtitle: marketSubtitle(r),
         };
       }),

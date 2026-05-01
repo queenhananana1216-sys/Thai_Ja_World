@@ -2,86 +2,31 @@ import Link from 'next/link';
 import type { PortalFeedLine, PortalHomeFeed } from '../lib/home/fetchPortalHomeFeed';
 import styles from './portal-2026.module.css';
 
-/** page.tsx 정적 한국어 사전 — Dynamic Dictionary 금지 */
-export type Portal2026KoDict = {
-  board: {
-    empty: string;
-    tradeHubTitle: string;
-  };
-  home: {
-    hubBoard: string;
-    shopsMore: string;
-    portalMastTitle: string;
-    portalMastSub: string;
-    tag: string;
-  };
-  footerNav: {
-    contact: string;
-  };
-};
+const EMPTY_POST = '아직 등록된 글이 없습니다.';
+const EMPTY_WING = '등록된 스폰서·안내 슬롯이 없습니다.';
+const EMPTY_NEWS = '최신 뉴스가 아직 없습니다.';
+const EMPTY_LOCAL = '등록된 로컬 업체가 아직 없습니다.';
 
-export type Portal2026ViewProps = {
-  /** SSR 컨트롤러에서만 주입 — 클라이언트 페치 금지 */
-  feed: PortalHomeFeed;
-};
-
-/** 페이지 외부로 노출하지 않는 고정 한국어 사본 (PROP 드릴링: feed 단일 채널) */
-const SSR_PORTAL_KO_DICT: Portal2026KoDict = {
+const LABELS = {
   board: {
-    empty: '아직 등록된 글이 없습니다. 첫 글의 주인공이 되어보세요!',
+    empty: EMPTY_POST,
     tradeHubTitle: '중고·알바',
   },
   home: {
     hubBoard: '광장',
     shopsMore: '더 보기 →',
-    portalMastTitle: '2026 Taeja World · 커뮤니티 포털',
-    portalMastSub: 'Supabase 공개 데이터를 서버에서만 불러옵니다. (SSR)',
-    tag: '태국 교민 커뮤니티 태자월드',
+    portalMastTitle: '2026 Taeja World',
+    portalMastSub: '태국 교민을 위한 광장·거래·뉴스·로컬 허브',
+    tag: '태자월드 커뮤니티',
   },
   footerNav: {
     contact: '문의',
   },
-};
+} as const;
 
-const FALLBACK_EMPTY = '아직 등록된 글이 없습니다.';
-const FALLBACK_DICT: Portal2026KoDict = {
-  board: { empty: FALLBACK_EMPTY, tradeHubTitle: '중고·알바' },
-  home: {
-    hubBoard: '광장',
-    shopsMore: '더 보기 →',
-    portalMastTitle: '2026 Taeja World · 커뮤니티 포털',
-    portalMastSub: '',
-    tag: '태자월드',
-  },
-  footerNav: { contact: '문의' },
+export type Portal2026ViewProps = {
+  feed: PortalHomeFeed;
 };
-
-function safeDict(input: Portal2026KoDict | null | undefined): Portal2026KoDict {
-  if (!input || typeof input !== 'object') return FALLBACK_DICT;
-  const b = input.board;
-  const h = input.home;
-  const f = input.footerNav;
-  const shopsMore =
-    typeof h?.shopsMore === 'string' ? h.shopsMore : FALLBACK_DICT.home.shopsMore;
-  return {
-    board: {
-      empty: typeof b?.empty === 'string' ? b.empty : FALLBACK_EMPTY,
-      tradeHubTitle:
-        typeof b?.tradeHubTitle === 'string' ? b.tradeHubTitle : FALLBACK_DICT.board.tradeHubTitle,
-    },
-    home: {
-      hubBoard: typeof h?.hubBoard === 'string' ? h.hubBoard : FALLBACK_DICT.home.hubBoard,
-      shopsMore,
-      portalMastTitle:
-        typeof h?.portalMastTitle === 'string' ? h.portalMastTitle : FALLBACK_DICT.home.portalMastTitle,
-      portalMastSub: typeof h?.portalMastSub === 'string' ? h.portalMastSub : '',
-      tag: typeof h?.tag === 'string' ? h.tag : FALLBACK_DICT.home.tag,
-    },
-    footerNav: {
-      contact: typeof f?.contact === 'string' ? f.contact : FALLBACK_DICT.footerNav.contact,
-    },
-  };
-}
 
 function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
   if (!input || typeof input !== 'object') {
@@ -136,30 +81,26 @@ function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedL
       title: title.trim(),
       href: typeof hrefRaw === 'string' && hrefRaw.trim() ? hrefRaw : '/community/boards',
       subtitle:
-        typeof subRaw === 'string'
-          ? subRaw
-          : subRaw != null
-            ? String(subRaw)
-            : null,
+        typeof subRaw === 'string' ? subRaw : subRaw != null ? String(subRaw) : null,
     });
   }
   return out;
 }
 
-function EmptyBoardState({ message }: { message: string }) {
-  const text = message?.trim() ? message : FALLBACK_EMPTY;
+function EmptyState({ message }: { message: string }) {
+  const text = message?.trim() ? message : EMPTY_POST;
   return (
-    <div className="rounded-lg border border-slate-700/50 bg-slate-950/40 px-3 py-8 text-center">
-      <p className="text-[11px] font-medium leading-relaxed text-slate-400">{text}</p>
+    <div className={styles.emptyState}>
+      <p className="m-0 text-[11px] font-medium leading-relaxed text-slate-400">{text}</p>
     </div>
   );
 }
 
 function FeedLineList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyMessage: string }) {
   const safe = normalizeLines(lines ?? []);
-  if (safe.length === 0) return <EmptyBoardState message={emptyMessage} />;
+  if (safe.length === 0) return <EmptyState message={emptyMessage} />;
   return (
-    <ul className="max-h-[220px] overflow-y-auto px-2 py-1">
+    <ul className="max-h-[220px] min-h-0 overflow-y-auto overscroll-contain px-2 py-1">
       {safe.map((item, idx) => (
         <li
           key={item?.id ? String(item.id) : `feed-${idx}`}
@@ -179,9 +120,9 @@ function FeedLineList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyM
 
 function LiveFeedList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyMessage: string }) {
   const safe = normalizeLines(lines ?? []);
-  if (safe.length === 0) return <EmptyBoardState message={emptyMessage} />;
+  if (safe.length === 0) return <EmptyState message={emptyMessage} />;
   return (
-    <ul className="max-h-[280px] overflow-y-auto px-2 py-1">
+    <ul className="max-h-[280px] min-h-0 overflow-y-auto overscroll-contain px-2 py-1">
       {safe.map((item, idx) => (
         <li
           key={item?.id ? String(item.id) : `live-${idx}`}
@@ -199,7 +140,7 @@ function LiveFeedList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyM
   );
 }
 
-const STATIC_BOARDS = [
+const BOARD_COLUMNS = [
   { title: '구인구직', moreHref: '/community/boards?cat=job', key: 'job' },
   { title: '번개장터', moreHref: '/community/boards?cat=flea', key: 'flea' },
   { title: '자유게시판', moreHref: '/community/boards?cat=free', key: 'free' },
@@ -209,17 +150,13 @@ const STATIC_BOARDS = [
 ] as const;
 
 /**
- * 2026 3열 포털 — feed만 page.tsx(SSR)에서 주입. 한국어·카피는 모듈 내부 고정.
+ * 2026 3열 포털 — `feed`는 서버에서 `fetchPortalHomeFeed()`로만 채움(DB 실데이터).
  */
 export default function Portal2026View({ feed }: Portal2026ViewProps) {
-  const d = safeDict(SSR_PORTAL_KO_DICT);
   const raw = safeFeed(feed);
 
-  const shopsMoreRaw = d?.home?.shopsMore ?? '';
   const moreLabel =
-    typeof shopsMoreRaw === 'string'
-      ? shopsMoreRaw.replace(/\s*→\s*$/, '').replace(/\s*›\s*$/, '').trim() || '더보기'
-      : '더보기';
+    LABELS.home.shopsMore.replace(/\s*→\s*$/, '').replace(/\s*›\s*$/, '').trim() || '더보기';
 
   const jobs = normalizeLines(raw?.jobs ?? []);
   const market = normalizeLines(raw?.market ?? []);
@@ -239,7 +176,6 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
     qna,
   };
 
-  const emptyMsg = d?.board?.empty ?? FALLBACK_EMPTY;
   const newsWing = [...(news ?? [])].slice(0, 6);
   const localWing = [...(localBiz ?? [])].slice(0, 5);
 
@@ -249,10 +185,10 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
   const liveFeedTitle = '실시간 통합 피드';
   const newsAsideTitle = '최신 뉴스';
   const localAsideTitle = '로컬 업체';
-  const contactTitle = d?.footerNav?.contact ?? '문의';
+  const contactTitle = LABELS.footerNav.contact;
   const contactBody = '게시판·업체 등록은 각 메뉴에서 진행됩니다.';
 
-  const statsUnavailable = '통계를 불러오지 못했습니다.';
+  const statsUnavailable = '집계 정보를 불러오지 못했습니다.';
   const profileLabel = '프로필';
   const postsLabel = '공개 글·거래';
 
@@ -262,29 +198,24 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
   const communityItemCount =
     totals && typeof totals.communityItemCount === 'number' ? totals.communityItemCount : null;
 
-  const mastTitle = d?.home?.portalMastTitle?.trim() ? d.home.portalMastTitle : FALLBACK_DICT.home.portalMastTitle;
-  const mastSub =
-    (d?.home?.portalMastSub?.trim() ? d.home.portalMastSub : '') ||
-    (d?.home?.tag?.trim() ? d.home.tag : '') ||
-    '';
-
-  const hubBoardLabel = d?.home?.hubBoard ?? '광장';
-  const tradeLabel = d?.board?.tradeHubTitle ?? '중고·알바';
+  const hubBoardLabel = LABELS.home.hubBoard;
+  const tradeLabel = LABELS.board.tradeHubTitle;
 
   return (
     <main className={styles.root} data-tj-root="portal-2026-ssr">
       <div className={styles.grid}>
-        <aside className="hidden min-[1181px]:block">
-          <div className="sticky space-y-2" style={{ top: 'var(--tj-home-sticky-top, 14rem)' }}>
-            <section className="rounded-xl border border-blue-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
+        <aside className="hidden min-h-0 min-w-0 min-[1181px]:block">
+          <div className={styles.stickyWing}>
+            <section className={`${styles.glassBlue} p-2.5`}>
               <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">{sponsorTitle}</p>
               {(wingBanners?.length ?? 0) === 0 ? (
-                <EmptyBoardState message={emptyMsg} />
+                <EmptyState message={EMPTY_WING} />
               ) : (
                 <ul className="mt-2 space-y-2">
                   {(wingBanners ?? []).map((b, i) => {
                     const bid = b?.id != null ? String(b.id) : `wing-${i}`;
-                    const title = b?.title != null ? String(b.title) : '안내';
+                    const title = b?.title != null ? String(b.title).trim() : '';
+                    if (!title) return null;
                     const href = b?.href?.trim() ? String(b.href) : '/ads';
                     return (
                       <li key={bid}>
@@ -303,7 +234,7 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                 </ul>
               )}
             </section>
-            <section className="rounded-xl border border-amber-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
+            <section className={`${styles.glassGold} p-2.5`}>
               <p className="text-[11px] font-black text-amber-300">{scaleTitle}</p>
               {profileCount != null && communityItemCount != null ? (
                 <p className="mt-1 text-xs leading-snug text-slate-100">
@@ -314,7 +245,7 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                 <p className="mt-1 text-[11px] leading-snug text-slate-500">{statsUnavailable}</p>
               )}
             </section>
-            <section className="rounded-xl border border-white/10 bg-slate-900/40 p-2 text-[10px] text-slate-400">
+            <section className={`${styles.glassCenter} p-2 text-[10px] text-slate-400`}>
               <p className="font-semibold text-slate-300">{shortcutTitle}</p>
               <ul className="mt-1.5 space-y-1">
                 <li>
@@ -337,20 +268,15 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
           </div>
         </aside>
 
-        <section className="min-w-0 space-y-2">
-          <div className="rounded-xl border border-slate-600/60 bg-slate-900/60 p-2.5 backdrop-blur-md">
-            <p className="text-xs font-black text-amber-300">{mastTitle}</p>
-            {mastSub ? (
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-300">{mastSub}</p>
-            ) : null}
+        <section className="min-h-0 min-w-0 space-y-2">
+          <div className={`${styles.glassGold} p-2.5`}>
+            <p className="text-xs font-black tracking-tight text-amber-300">{LABELS.home.portalMastTitle}</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-300">{LABELS.home.portalMastSub}</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-            {(STATIC_BOARDS ?? []).map((board) => (
-              <article
-                key={board.key}
-                className="rounded-xl border border-slate-600/60 bg-slate-900/55 backdrop-blur-md"
-              >
+          <div className={`${styles.boardGrid}`}>
+            {BOARD_COLUMNS.map((board) => (
+              <article key={board.key} className={`${styles.glassCenter} min-w-0 overflow-hidden`}>
                 <header className="flex items-center justify-between gap-2 border-b border-slate-700/70 px-2 py-1.5">
                   <h2 className="text-xs font-black text-slate-100">{board.title}</h2>
                   <Link
@@ -360,25 +286,25 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                     {moreLabel}
                   </Link>
                 </header>
-                <FeedLineList lines={linesByKey?.[board.key] ?? []} emptyMessage={emptyMsg} />
+                <FeedLineList lines={linesByKey?.[board.key] ?? []} emptyMessage={LABELS.board.empty} />
               </article>
             ))}
           </div>
 
-          <section className="rounded-xl border border-slate-600/60 bg-slate-900/55 backdrop-blur-md">
+          <section className={`${styles.glassBlue} overflow-hidden`}>
             <header className="border-b border-slate-700/70 px-2 py-1.5 text-xs font-black text-blue-300">
               {liveFeedTitle}
             </header>
-            <LiveFeedList lines={liveFeed ?? []} emptyMessage={emptyMsg} />
+            <LiveFeedList lines={liveFeed ?? []} emptyMessage={LABELS.board.empty} />
           </section>
         </section>
 
-        <aside className="hidden min-[1181px]:block">
-          <div className="sticky space-y-2" style={{ top: 'var(--tj-home-sticky-top, 14rem)' }}>
-            <section className="rounded-xl border border-blue-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
+        <aside className="hidden min-h-0 min-w-0 min-[1181px]:block">
+          <div className={styles.stickyWing}>
+            <section className={`${styles.glassBlue} p-2.5`}>
               <p className="text-[11px] font-black text-blue-300">{newsAsideTitle}</p>
               {(newsWing?.length ?? 0) === 0 ? (
-                <EmptyBoardState message={emptyMsg} />
+                <EmptyState message={EMPTY_NEWS} />
               ) : (
                 <ul className="mt-2 space-y-1.5">
                   {(newsWing ?? []).map((n, i) => (
@@ -394,10 +320,10 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                 </ul>
               )}
             </section>
-            <section className="rounded-xl border border-amber-300/30 bg-slate-900/55 p-2.5 backdrop-blur-md">
+            <section className={`${styles.glassGold} p-2.5`}>
               <p className="text-[11px] font-black text-amber-300">{localAsideTitle}</p>
               {(localWing?.length ?? 0) === 0 ? (
-                <EmptyBoardState message={emptyMsg} />
+                <EmptyState message={EMPTY_LOCAL} />
               ) : (
                 <ul className="mt-2 space-y-1.5">
                   {(localWing ?? []).map((l, i) => (
@@ -416,7 +342,7 @@ export default function Portal2026View({ feed }: Portal2026ViewProps) {
                 </ul>
               )}
             </section>
-            <section className="rounded-xl border border-white/10 bg-slate-900/40 p-2 text-[10px] text-slate-400">
+            <section className={`${styles.glassCenter} p-2 text-[10px] text-slate-400`}>
               <p className="font-semibold text-slate-300">{contactTitle}</p>
               <p className="mt-1.5 leading-relaxed text-slate-500">{contactBody}</p>
             </section>

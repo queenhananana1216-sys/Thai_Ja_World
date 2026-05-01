@@ -1,10 +1,6 @@
 import type { Metadata } from 'next';
 import Portal2026View from './portal/Portal2026View';
-import {
-  fetchPortalHomeFeed,
-  HONEST_EMPTY_PORTAL_HOME_FEED,
-  type PortalHomeFeed,
-} from './lib/home/fetchPortalHomeFeed';
+import { fetchPortalHomeFeed } from './lib/home/fetchPortalHomeFeed';
 import { absoluteUrl } from '@/lib/seo/site';
 
 const HOME_METADATA = {
@@ -30,14 +26,8 @@ export function generateMetadata(): Metadata {
   };
 }
 
+/** 데이터는 `fetchPortalHomeFeed()` → `home-queries`의 `createPublicAnonClient()` 경로만 사용 */
 export default async function HomePage() {
-  let feed: PortalHomeFeed = HONEST_EMPTY_PORTAL_HOME_FEED;
-  try {
-    const loaded = await fetchPortalHomeFeed();
-    if (loaded && typeof loaded === 'object') feed = loaded;
-  } catch {
-    feed = HONEST_EMPTY_PORTAL_HOME_FEED;
-  }
-
+  const feed = await fetchPortalHomeFeed();
   return <Portal2026View feed={feed} />;
 }

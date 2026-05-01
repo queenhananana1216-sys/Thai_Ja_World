@@ -12,7 +12,7 @@ export async function createServerSupabaseAuthClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url?.trim() || !key?.trim()) {
-    console.error('[serverAuthCookies] Supabase URL/anon key missing. dummy client 반환');
+    console.warn('[serverAuthCookies] Supabase URL/anon key missing — dummy client 반환');
     return createDummySupabaseClient('serverAuthCookies');
   }
 

@@ -6,7 +6,7 @@ export function createSupabaseWithUserJwt(accessToken: string): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url?.trim() || !key?.trim()) {
-    console.error('[userJwt] NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 필요. dummy client 반환');
+    console.warn('[userJwt] NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 없음 — dummy client 반환');
     return createDummySupabaseClient('userJwt');
   }
   const token = accessToken.trim();

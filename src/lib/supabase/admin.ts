@@ -7,7 +7,7 @@ export function createServiceRoleClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url?.trim() || !key?.trim()) {
-    console.error('[admin] NEXT_PUBLIC_SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY 가 없습니다. dummy client 반환');
+    console.warn('[admin] NEXT_PUBLIC_SUPABASE_URL 또는 SUPABASE_SERVICE_ROLE_KEY 가 없습니다 — dummy client 반환');
     return createDummySupabaseClient('admin');
   }
   return createClient(url, key, {

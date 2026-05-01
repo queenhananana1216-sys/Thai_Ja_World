@@ -5,7 +5,7 @@ export async function createServerClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (!url || !key) {
-    console.error('[auto/server] Supabase env missing. dummy client 반환');
+    console.warn('[auto/server] Supabase env missing — dummy client 반환');
     const chain: any = new Proxy(
       function dummy() {
         return chain;

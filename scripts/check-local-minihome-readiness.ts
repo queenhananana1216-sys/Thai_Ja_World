@@ -36,7 +36,8 @@ async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url?.trim() || !key?.trim()) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY is missing');
+    console.warn('[check-local-minihome-readiness] NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 없음 — 종료');
+    process.exit(1);
   }
   const admin = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },

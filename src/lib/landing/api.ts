@@ -13,7 +13,8 @@ export async function fetchLandingStats(signal?: AbortSignal): Promise<StatsResp
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to load stats (${response.status})`);
+    console.warn(`[fetchLandingStats] /api/stats ${response.status} — 기본값 반환`);
+    return LANDING_DEFAULT_STATS;
   }
 
   const payload = (await response.json()) as Partial<StatsResponse> | null;

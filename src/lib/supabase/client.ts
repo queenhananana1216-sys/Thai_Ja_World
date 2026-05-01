@@ -26,7 +26,7 @@ export function tryCreateBrowserClient() {
 export function createBrowserClient() {
   const client = tryCreateBrowserClient();
   if (!client) {
-    console.error('[BrowserClient] NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 필요. dummy client 반환');
+    console.warn('[BrowserClient] NEXT_PUBLIC_SUPABASE_URL / ANON_KEY 없음 — dummy client 반환');
     return createDummySupabaseClient('browser');
   }
   return client;

@@ -43,9 +43,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const supabase = createServerClient();
   const { data: row } = await supabase
     .from('processed_news')
-    .select(
-      'id, clean_body, created_at, language, seo_keywords, raw_news(title, external_url, published_at), summaries(summary_text, model)',
-    )
+    .select('id, clean_body, created_at, language, seo_keywords, summaries(summary_text, model)')
     .eq('id', id)
     .eq('published', true)
     .maybeSingle();
@@ -67,20 +65,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: d.home.newsTitle, robots: { index: false, follow: true } };
   }
 
-  const rn = row.raw_news as unknown as {
-    title: string;
-    external_url: string;
-    published_at: string | null;
-  } | null;
-
   const sums = row.summaries as unknown as
     | { summary_text: string; model: string | null }[]
     | null;
 
   const detail = newsDetailFromProcessed(
     row.clean_body as string | null,
-    rn?.title ?? null,
-    rn?.external_url ?? null,
+    null,
+    null,
     sums ?? null,
     locale,
     { allowRawTitleFallback: false },
@@ -93,7 +85,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       : [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
   );
   const url = absoluteUrl(`/news/${id}`);
-  const datePublished = rn?.published_at ?? (row.created_at as string);
+  const datePublished = row.created_at as string;
   const seoKw = Array.isArray(row.seo_keywords)
     ? (row.seo_keywords as string[]).map((s) => String(s).trim()).filter(Boolean)
     : [];
@@ -131,9 +123,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
 
   const { data: row, error } = await supabase
     .from('processed_news')
-    .select(
-      'id, clean_body, created_at, language, seo_keywords, raw_news(title, external_url, published_at), summaries(summary_text, model)',
-    )
+    .select('id, clean_body, created_at, language, seo_keywords, summaries(summary_text, model)')
     .eq('id', id)
     .eq('published', true)
     .maybeSingle();
@@ -155,20 +145,14 @@ export default async function NewsStoryPage({ params }: PageProps) {
     notFound();
   }
 
-  const rn = row.raw_news as unknown as {
-    title: string;
-    external_url: string;
-    published_at: string | null;
-  } | null;
-
   const sums = row.summaries as unknown as
     | { summary_text: string; model: string | null }[]
     | null;
 
   const detail = newsDetailFromProcessed(
     row.clean_body as string | null,
-    rn?.title ?? null,
-    rn?.external_url ?? null,
+    null,
+    null,
     sums ?? null,
     locale,
     { allowRawTitleFallback: false },
@@ -208,7 +192,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
   const path = `/news/${id}`;
   const pageUrl = absoluteUrl(path);
   const host = detail.sourceUrl ? extractHostname(detail.sourceUrl) : '';
-  const datePublished = rn?.published_at ?? (row.created_at as string);
+  const datePublished = row.created_at as string;
   const jsonDesc = trimForMetaDescription(
     useGracefulFallback
       ? d.home.newsTitle
@@ -224,7 +208,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
       .from('processed_news')
       .select('id, created_at, clean_body, language, summaries(summary_text, model)')
       .eq('published', true)
-      .or('language.eq.ko,language.is.null')
+      .eq('language', 'ko')
       .neq('id', id)
       .order('created_at', { ascending: false })
       .limit(24),
@@ -335,12 +319,12 @@ export default async function NewsStoryPage({ params }: PageProps) {
       <article className="mt-5 rounded-2xl border border-slate-700/80 bg-slate-900/70 p-5 shadow-[0_24px_80px_rgba(2,6,23,0.4)] sm:p-7">
         <p className="mb-3 text-xs tracking-wide text-slate-400">
           {host && <span>🔗 {host}</span>}
-          {rn?.published_at && (
+          {row.created_at ? (
             <>
               {host ? ' · ' : ''}
-              <span>🕐 {formatDate(rn.published_at)}</span>
+              <span>🕐 {formatDate(row.created_at as string)}</span>
             </>
-          )}
+          ) : null}
         </p>
         <h1 className="mb-5 text-2xl font-semibold leading-tight tracking-tight text-slate-100 sm:text-3xl">
           {detail.title}

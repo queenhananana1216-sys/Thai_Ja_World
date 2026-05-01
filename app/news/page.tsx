@@ -1,16 +1,21 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import KoreanNewsPipelineNotice from '../_components/news/KoreanNewsPipelineNotice';
+import portalStyles from '../portal/portal-2026.module.css';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import {
   listTitleSummaryFromProcessedNoRaw,
+  newsDetailFromProcessed,
   passesKoPublicGate,
 } from '@/lib/news/processedNewsDisplay';
 import { createServerClient } from '@/lib/supabase/server';
 import { extractHostname, formatDate } from '@/lib/utils/formatDate';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const NEWS_HUB_LIMIT = 100;
-/** 미가공·영문 헤드라인 행을 건너뛴 뒤에도 목록을 채우기 위해 여유 분량 조회 */
 const NEWS_HUB_FETCH_CAP = 320;
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,21 +32,20 @@ export default async function NewsHubPage() {
   const locale = await getLocale();
   const d = getDictionary(locale);
   const h = d.home;
+  const locUi = locale === 'th' ? 'th' : 'ko';
 
   const sb = createServerClient();
   const { data: processed, error: procErr } = await sb
     .from('processed_news')
-    .select(
-      'id, clean_body, language, raw_news(title, external_url, published_at), summaries(summary_text, model)',
-    )
+    .select('id, clean_body, language, created_at, summaries(summary_text, model)')
     .eq('published', true)
-    .or('language.eq.ko,language.is.null')
+    .eq('language', 'ko')
     .order('created_at', { ascending: false })
     .limit(NEWS_HUB_FETCH_CAP);
 
   const sourceRows = procErr || !processed ? [] : processed;
   const rows =
-    (sourceRows)
+    sourceRows
       .filter((pn) =>
         passesKoPublicGate(
           pn.language as string | null,
@@ -50,100 +54,102 @@ export default async function NewsHubPage() {
         ),
       )
       .map((pn) => {
-        const rn = pn.raw_news as unknown as {
-          title: string;
-          external_url: string;
-          published_at: string | null;
-        } | null;
         const sums = pn.summaries as unknown as
           | { summary_text: string; model: string | null }[]
           | null;
         const parsed = listTitleSummaryFromProcessedNoRaw(
           (pn.clean_body as string | null) ?? null,
           sums ?? null,
-          locale === 'th' ? 'th' : 'ko',
+          locUi,
         );
         if (!parsed?.title?.trim()) return null;
+
+        const detail = newsDetailFromProcessed(
+          (pn.clean_body as string | null) ?? null,
+          null,
+          null,
+          sums ?? null,
+          locUi,
+          { allowRawTitleFallback: false },
+        );
+        const externalUrl = detail.sourceUrl?.trim() || '#';
+        const publishedAt = (pn.created_at as string | null) ?? null;
+
         return {
           id: String(pn.id),
           title: parsed.title.trim(),
           summary_text: (parsed.summary_text ?? '').trim(),
-          external_url: rn?.external_url ?? '#',
-          published_at: rn?.published_at ?? null,
+          external_url: externalUrl,
+          published_at: publishedAt,
         };
       })
       .filter((x): x is NonNullable<typeof x> => x != null)
       .slice(0, NEWS_HUB_LIMIT) ?? [];
 
   return (
-    <div className="page-body board-page">
-      <div className="board-toolbar">
-        <h1 className="board-title">{h.newsTitle}</h1>
-      </div>
-      <p style={{ margin: '0 0 12px', lineHeight: 1.6, color: 'var(--tj-muted)', fontSize: '0.92rem' }}>
-        {h.newsSub}
-      </p>
-      <p
-        style={{
-          margin: '0 0 12px',
-          fontSize: '0.8rem',
-          color: 'var(--tj-muted)',
-          padding: '8px 10px',
-          border: '1px dashed rgba(148,163,184,0.45)',
-          borderRadius: 10,
-          background: 'rgba(248,250,252,0.8)',
-        }}
-      >
-        뉴스 게시글 작성은 관리자 전용입니다. 회원은 댓글과 반응으로 참여할 수 있습니다.
-      </p>
-      <p style={{ margin: '0 0 22px', fontSize: '0.88rem' }}>
-        <Link href="/tips" style={{ color: 'var(--tj-link)', fontWeight: 600 }}>
-          {h.newsHubCrossLinkTips}
-        </Link>
-      </p>
+    <div className={portalStyles.root}>
+      <div className="mx-auto w-full max-w-3xl px-3 py-5 sm:px-4 md:py-8">
+        <header className={`${portalStyles.glassGold} mb-4 px-4 py-3 sm:px-5`}>
+          <h1 className="m-0 text-xl font-black tracking-tight text-white sm:text-2xl">{h.newsTitle}</h1>
+          <p className="mt-2 mb-0 text-sm leading-relaxed text-slate-200">{h.newsSub}</p>
+        </header>
 
-      {procErr ? (
-        <p className="auth-inline-error" style={{ fontSize: '0.88rem' }}>
-          {procErr.message}
+        <section className={`${portalStyles.glassBlue} mb-4 px-4 py-3 text-sm leading-relaxed text-slate-200`}>
+          뉴스 게시글 작성은 관리자 전용입니다. 회원은 댓글과 반응으로 참여할 수 있습니다.
+        </section>
+
+        <p className="mb-6 text-sm font-semibold">
+          <Link href="/tips" className="text-amber-200 underline-offset-2 hover:text-amber-100 hover:underline">
+            {h.newsHubCrossLinkTips}
+          </Link>
         </p>
-      ) : null}
 
-      {!procErr && rows.length === 0 ? <p style={{ color: 'var(--tj-muted)' }}>{h.newsEmpty}</p> : null}
+        {procErr ? (
+          <p className="rounded-xl border border-red-400/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">{procErr.message}</p>
+        ) : null}
 
-      {!procErr && rows.length > 0 ? (
-        <p style={{ margin: '0 0 16px', fontSize: '0.85rem', color: 'var(--tj-muted)' }}>
-          {h.newsHubListingNote.replace('{n}', String(rows.length))}
-        </p>
-      ) : null}
+        {!procErr && rows.length === 0 ? (
+          <KoreanNewsPipelineNotice className="mb-8" />
+        ) : null}
 
-      <ul className="tips-hub-list">
-        {rows.map((r) => {
-          const host = extractHostname(r.external_url);
-          const date = formatDate(r.published_at);
-          return (
-            <li key={r.id} className="tips-hub-card card">
-              <h2 className="tips-hub-card__title">
-                <Link href={`/news/${r.id}`}>{r.title}</Link>
-              </h2>
-              {r.summary_text?.trim() ? (
-                <p className="tips-hub-card__excerpt">{r.summary_text.trim()}</p>
-              ) : null}
-              <div className="news-card__meta" style={{ marginBottom: 8 }}>
-                {host ? <span>🔗 {host}</span> : null}
-                {date ? (
-                  <span>
-                    {host ? ' · ' : ''}
-                    🕐 {date}
-                  </span>
+        {!procErr && rows.length > 0 ? (
+          <p className="mb-4 text-sm text-slate-300">{h.newsHubListingNote.replace('{n}', String(rows.length))}</p>
+        ) : null}
+
+        <ul className="m-0 flex list-none flex-col gap-3 p-0">
+          {rows.map((r) => {
+            const host = r.external_url !== '#' ? extractHostname(r.external_url) : '';
+            const date = formatDate(r.published_at);
+            return (
+              <li key={r.id} className={`${portalStyles.glassCenter} overflow-hidden px-4 py-4`}>
+                <h2 className="mb-2 text-lg font-bold leading-snug">
+                  <Link href={`/news/${r.id}`} className="text-white hover:text-amber-200">
+                    {r.title}
+                  </Link>
+                </h2>
+                {r.summary_text?.trim() ? (
+                  <p className="mb-3 text-[0.95rem] leading-relaxed text-slate-200">{r.summary_text.trim()}</p>
                 ) : null}
-              </div>
-              <Link href={`/news/${r.id}`} className="tips-hub-card__cta">
-                {h.newsHubOpenDetail}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+                <div className="mb-3 flex flex-wrap gap-x-2 text-xs text-slate-400">
+                  {host ? <span>🔗 {host}</span> : null}
+                  {date ? (
+                    <span>
+                      {host ? ' · ' : ''}
+                      🕐 {date}
+                    </span>
+                  ) : null}
+                </div>
+                <Link
+                  href={`/news/${r.id}`}
+                  className="inline-flex min-h-10 items-center text-sm font-semibold text-amber-200 hover:text-amber-100 hover:underline"
+                >
+                  {h.newsHubOpenDetail}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 }

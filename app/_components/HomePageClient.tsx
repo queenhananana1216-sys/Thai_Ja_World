@@ -11,6 +11,7 @@ import type { Dictionary } from '@/i18n/dictionaries';
 import type { NewsItem, LocalBusiness } from '@/types/taeworld';
 import {
   listTitleSummaryFromProcessedNoRaw,
+  newsDetailFromProcessed,
   passesKoPublicGate,
   titleAndSummaryFromProcessed,
 } from '@/lib/news/processedNewsDisplay';
@@ -58,10 +59,10 @@ async function fetchNewsBrowser(): Promise<NewsItem[]> {
     const { data: processed } = await sb
       .from('processed_news')
       .select(
-        'id, clean_body, language, title_kr, content_kr, title_th, content_th, raw_news(title, external_url, published_at), summaries(summary_text, model)',
+        'id, clean_body, created_at, language, title_kr, content_kr, title_th, content_th, summaries(summary_text, model)',
       )
       .eq('published', true)
-      .or('language.eq.ko,language.is.null')
+      .eq('language', 'ko')
       .order('created_at', { ascending: false })
       .limit(48);
 
@@ -74,11 +75,6 @@ async function fetchNewsBrowser(): Promise<NewsItem[]> {
         ),
       )
       .map((pn) => {
-        const rn = (pn.raw_news as unknown) as {
-          title: string;
-          external_url: string;
-          published_at: string | null;
-        } | null;
         const sums = (pn.summaries as unknown) as
           | { summary_text: string; model: string | null }[]
           | null;
@@ -88,9 +84,17 @@ async function fetchNewsBrowser(): Promise<NewsItem[]> {
           'ko',
         );
         if (!parsedKo?.title?.trim()) return null;
+        const detail = newsDetailFromProcessed(
+          (pn.clean_body as string | null) ?? null,
+          null,
+          null,
+          sums ?? null,
+          'ko',
+          { allowRawTitleFallback: false },
+        );
         const localeSource = {
           clean_body: (pn.clean_body as string | null) ?? null,
-          raw_title: rn?.title ?? null,
+          raw_title: null as string | null,
           summaries: sums ?? null,
           title_kr: (pn.title_kr as string | null) ?? null,
           content_kr: (pn.content_kr as string | null) ?? null,
@@ -100,8 +104,8 @@ async function fetchNewsBrowser(): Promise<NewsItem[]> {
         return {
           id: String(pn.id),
           title: parsedKo.title.trim(),
-          external_url: rn?.external_url ?? '#',
-          published_at: rn?.published_at ?? null,
+          external_url: detail.sourceUrl?.trim() || '#',
+          published_at: pn.created_at != null ? String(pn.created_at) : null,
           summary_text: (parsedKo.summary_text ?? '').trim(),
           internalNewsId: String(pn.id),
           localeSource,

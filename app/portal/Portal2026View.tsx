@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import KoreanNewsPipelineNotice from '../_components/news/KoreanNewsPipelineNotice';
 import type {
   PortalFeedLine,
   PortalHomeFeed,
@@ -222,7 +223,7 @@ function FeedLineList({
 }: {
   lines: PortalFeedLine[];
   emptyMessage: string;
-  emptyMode?: 'default' | 'news-skeleton';
+  emptyMode?: 'default' | 'news-skeleton' | 'news-translating';
   /** 퀘스트 CTA를 헤더 뱃지로 쓰는 경우 본문 빈 박스 제거 */
   omitEmptyPlaceholder?: boolean;
   /** processed_news 한 줄(제목·요약·시간) */
@@ -234,6 +235,9 @@ function FeedLineList({
   if (safe.length === 0) {
     if (omitEmptyPlaceholder) {
       return null;
+    }
+    if (emptyMode === 'news-translating') {
+      return <KoreanNewsPipelineNotice />;
     }
     if (emptyMode === 'news-skeleton') {
       return <NewsLinesSkeleton newsHubMore={newsHubMore} />;
@@ -516,7 +520,7 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
               const questCat = board.questCat;
               const showQuestBadge = Boolean(questCat && !hasPosts);
               const emptyMode =
-                board.key === 'news' ? ('news-skeleton' as const) : ('default' as const);
+                board.key === 'news' ? ('news-translating' as const) : ('default' as const);
 
               return (
                 <article key={board.key} className={styles.boardColumn}>
@@ -561,7 +565,7 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
             <section className={`${styles.glassBlue} overflow-hidden p-2.5`}>
               <p className="line-clamp-2 text-lg font-black text-blue-200 break-words">{copy.newsAsideTitle}</p>
               {(newsWing?.length ?? 0) === 0 ? (
-                <NewsLinesSkeleton rows={6} newsHubMore={copy.newsHubMore} />
+                <KoreanNewsPipelineNotice className="mt-2" />
               ) : (
                 <ul className="mt-1.5 max-h-[min(14rem,42vh)] min-w-0 space-y-0 overflow-y-auto overscroll-contain px-0.5">
                   {(newsWing ?? []).map((n, i) => (

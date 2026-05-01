@@ -12,16 +12,6 @@ function normalizeNewsRowForDigest(row: unknown): ProcessedNewsDigestRow | null 
   const id = typeof r.id === 'string' ? r.id : null;
   if (!id) return null;
 
-  let title: string | null = null;
-  const rn = r.raw_news;
-  if (rn && typeof rn === 'object' && !Array.isArray(rn)) {
-    const t = (rn as { title?: unknown }).title;
-    title = typeof t === 'string' ? t : null;
-  } else if (Array.isArray(rn) && rn[0] && typeof rn[0] === 'object') {
-    const t = (rn[0] as { title?: unknown }).title;
-    title = typeof t === 'string' ? t : null;
-  }
-
   const summaries = Array.isArray(r.summaries)
     ? (r.summaries as { summary_text: string; model: string | null }[])
     : null;
@@ -29,7 +19,7 @@ function normalizeNewsRowForDigest(row: unknown): ProcessedNewsDigestRow | null 
   return {
     id,
     clean_body: typeof r.clean_body === 'string' ? r.clean_body : null,
-    raw_news: { title },
+    raw_news: { title: null },
     summaries,
   };
 }
@@ -80,11 +70,9 @@ export async function sendDailyWebPushDigest(origin: string): Promise<DailyPushR
 
   const { data: newsRows, error: newsErr } = await admin
     .from('processed_news')
-    .select(
-      'id, clean_body, language, raw_news(title), summaries(summary_text, model)',
-    )
+    .select('id, clean_body, language, summaries(summary_text, model)')
     .eq('published', true)
-    .or('language.eq.ko,language.is.null')
+    .eq('language', 'ko')
     .order('created_at', { ascending: false })
     .limit(12);
 

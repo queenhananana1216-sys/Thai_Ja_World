@@ -6,6 +6,7 @@ import { absoluteUrl } from '@/lib/seo/site';
 
 /** 홈(/)만 SSR 데이터 페치 — 레이아웃은 정적 뼈대 유지 */
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const HOME_METADATA = {
   title: '태자월드',

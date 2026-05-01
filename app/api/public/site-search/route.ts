@@ -76,7 +76,7 @@ export async function GET(req: Request) {
       .from('processed_news')
       .select('id, clean_body, language, summaries(summary_text, model)')
       .eq('published', true)
-      .or('language.eq.ko,language.is.null')
+      .eq('language', 'ko')
       .order('created_at', { ascending: false })
       .limit(120);
 

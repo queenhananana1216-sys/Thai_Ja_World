@@ -219,7 +219,7 @@ export async function fetchHomeNewsMarqueeTitles(limit = 24): Promise<{ titles: 
     .from('processed_news')
     .select('id, clean_body, language, summaries(summary_text, model)')
     .eq('published', true)
-    .or('language.eq.ko,language.is.null')
+    .eq('language', 'ko')
     .order('created_at', { ascending: false })
     .limit(fetchCap);
 
@@ -358,7 +358,7 @@ export async function fetchHomeNewsDigest(
     .from('processed_news')
     .select('id, clean_body, created_at, language, summaries(summary_text, model)')
     .eq('published', true)
-    .or('language.eq.ko,language.is.null')
+    .eq('language', 'ko')
     .order('created_at', { ascending: false })
     .limit(fetchCap);
 

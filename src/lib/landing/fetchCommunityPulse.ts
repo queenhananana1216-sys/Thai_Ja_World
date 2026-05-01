@@ -85,11 +85,9 @@ async function fetchNewsColumn(locale: Locale): Promise<{
     const fetchCap = Math.min(Math.max(LIMIT_PER_COLUMN * 8, LIMIT_PER_COLUMN), 80);
     const { data, error } = await sb
       .from('processed_news')
-      .select(
-        'id, clean_body, language, created_at, raw_news(title, external_url, published_at), summaries(summary_text, model)',
-      )
+      .select('id, clean_body, language, created_at, summaries(summary_text, model)')
       .eq('published', true)
-      .or('language.eq.ko,language.is.null')
+      .eq('language', 'ko')
       .order('created_at', { ascending: false })
       .limit(fetchCap);
 
@@ -101,17 +99,12 @@ async function fetchNewsColumn(locale: Locale): Promise<{
       .from('processed_news')
       .select('id', { count: 'exact', head: true })
       .eq('published', true)
-      .or('language.eq.ko,language.is.null')
+      .eq('language', 'ko')
       .gte('created_at', startOfTodayKstIso());
 
     const loc = locale === 'th' ? 'th' : 'ko';
     const items: PulseItem[] = [];
     for (const pn of data ?? []) {
-      const rn = pn.raw_news as unknown as {
-        title: string;
-        external_url: string;
-        published_at: string | null;
-      } | null;
       const sums = pn.summaries as unknown as
         | { summary_text: string; model: string | null }[]
         | null;
@@ -135,7 +128,7 @@ async function fetchNewsColumn(locale: Locale): Promise<{
         title: parsed.title.trim(),
         subtitle: toSnippet(parsed.summary_text),
         href: `/news/${pn.id}`,
-        createdAt: rn?.published_at ?? (pn.created_at as string | null),
+        createdAt: pn.created_at as string | null,
         commentCount: null,
         viewCount: null,
       });

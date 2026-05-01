@@ -46,7 +46,7 @@ const ko: Portal2026Copy = {
   boardColumns: [
     { title: '구인구직', moreHref: '/community/boards?cat=job', key: 'job', questCat: 'job' },
     { title: '번개장터', moreHref: '/community/boards?cat=flea', key: 'flea', questCat: 'flea' },
-    { title: '자유게시판', moreHref: '/community/boards?cat=free', key: 'free', questCat: 'free' },
+    { title: '자유게시판', moreHref: '/boards', key: 'free', questCat: 'free' },
     { title: '로컬 업체', moreHref: '/local', key: 'local' },
     { title: '태국 뉴스', moreHref: '/news', key: 'news' },
     { title: '생활 Q&A', moreHref: '/community/boards?cat=qna', key: 'qna' },
@@ -85,7 +85,7 @@ const th: Portal2026Copy = {
   boardColumns: [
     { title: 'รับสมัครงาน', moreHref: '/community/boards?cat=job', key: 'job', questCat: 'job' },
     { title: 'ตลาดมือสอง', moreHref: '/community/boards?cat=flea', key: 'flea', questCat: 'flea' },
-    { title: 'บอร์ดทั่วไป', moreHref: '/community/boards?cat=free', key: 'free', questCat: 'free' },
+    { title: 'บอร์ดทั่วไป', moreHref: '/boards', key: 'free', questCat: 'free' },
     { title: 'ร้านท้องถิ่น', moreHref: '/local', key: 'local' },
     { title: 'ข่าวไทย', moreHref: '/news', key: 'news' },
     { title: 'ถาม–ตอบ', moreHref: '/community/boards?cat=qna', key: 'qna' },

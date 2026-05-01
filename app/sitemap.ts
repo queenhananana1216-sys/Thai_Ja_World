@@ -11,11 +11,12 @@ import { getSiteBaseUrl } from '@/lib/seo/site';
  */
 const MAX_NEWS = 800;
 const MAX_POSTS = 800;
+const MAX_BOARD_POSTS = 2000;
 const MAX_MINIHOMES = 400;
 const MAX_LOCAL_SPOTS = 500;
 
-/** 뉴스·게시 반영 — 커뮤니티 우선 전략에 맞춰 30분 */
-export const revalidate = 1800;
+/** 동적 URL 반영 주기 (프로덕션 ISR) */
+export const revalidate = 300;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteBaseUrl();
@@ -37,6 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.93,
     },
     { url: `${base}/news`, lastModified: fallback, changeFrequency: 'daily', priority: 0.82 },
+    { url: `${base}/boards`, lastModified: fallback, changeFrequency: 'hourly', priority: 0.9 },
     { url: `${base}/tips`, lastModified: fallback, changeFrequency: 'daily', priority: 0.81 },
     { url: `${base}/local`, lastModified: fallback, changeFrequency: 'weekly', priority: 0.78 },
     { url: `${base}/minihome`, lastModified: fallback, changeFrequency: 'weekly', priority: 0.62 },
@@ -47,6 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const postsEntries: MetadataRoute.Sitemap = [];
+  const boardPostsEntries: MetadataRoute.Sitemap = [];
   const newsEntries: MetadataRoute.Sitemap = [];
   const minihomeEntries: MetadataRoute.Sitemap = [];
   const localSpotEntries: MetadataRoute.Sitemap = [];
@@ -54,11 +57,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const supabase = createServerClient();
 
-    const [newsRes, postsRes, homesRes, localSpotsRes] = await Promise.all([
+    const [newsRes, postsRes, boardPostsRes, homesRes, localSpotsRes] = await Promise.all([
       supabase
         .from('processed_news')
         .select('id, created_at')
         .eq('published', true)
+        .eq('language', 'ko')
         .order('created_at', { ascending: false })
         .limit(MAX_NEWS),
       supabase
@@ -67,6 +71,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .eq('moderation_status', 'safe')
         .order('updated_at', { ascending: false })
         .limit(MAX_POSTS),
+      supabase
+        .from('board_posts')
+        .select('id, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(MAX_BOARD_POSTS),
       supabase
         .from('user_minihomes')
         .select('public_slug, updated_at')
@@ -89,6 +98,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: ts,
         changeFrequency: 'weekly',
         priority: 0.86,
+      });
+    }
+
+    for (const row of boardPostsRes.data ?? []) {
+      const id = row.id as string;
+      if (!id) continue;
+      const ts = row.updated_at ? new Date(row.updated_at as string) : fallback;
+      boardPostsEntries.push({
+        url: `${base}/boards/${encodeURIComponent(id)}`,
+        lastModified: ts,
+        changeFrequency: 'weekly',
+        priority: 0.84,
       });
     }
 
@@ -132,6 +153,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Supabase 미설정·일시 오류 시 정적 URL만
   }
 
-  /** 동적 구간: 커뮤니티 게시 → 로컬 스팟 → 뉴스 → 미니홈 순 */
-  return [...staticEntries, ...postsEntries, ...localSpotEntries, ...newsEntries, ...minihomeEntries];
+  /** 동적 구간: 커뮤니티(posts) → 통합 게시판(board_posts) → 로컬 스팟 → 뉴스 → 미니홈 */
+  return [
+    ...staticEntries,
+    ...postsEntries,
+    ...boardPostsEntries,
+    ...localSpotEntries,
+    ...newsEntries,
+    ...minihomeEntries,
+  ];
 }

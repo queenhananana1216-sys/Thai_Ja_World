@@ -6,6 +6,7 @@ import {
   fetchHomeJobs,
   fetchHomeMarket,
   fetchHomePostsByCategory,
+  fetchHomeBoardPostsByType,
   fetchHomeLocalPublicView,
   fetchHomeLocalBusinesses,
   fetchHomeLocalDemoBusinesses,
@@ -87,7 +88,13 @@ function unifiedItemToLine(item: HomeUnifiedFeedItem): PortalFeedLine | null {
   const id = String(item.id ?? '').trim();
   const title = String(item.title ?? '').trim();
   if (!id || !title) return null;
-  const href = `/community/boards/${encodeURIComponent(id)}`;
+  /** jobs·market 테이블 id 는 posts 상세와 불일치 — 허브로만 연결 */
+  const href =
+    item.kind === 'job'
+      ? '/community/boards?cat=job'
+      : item.kind === 'market'
+        ? '/community/boards?cat=flea'
+        : `/community/boards/${encodeURIComponent(id)}`;
   const pill =
     item.kind === 'job'
       ? '구인'
@@ -221,20 +228,38 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
   }
 
   try {
-    const f = await withTimeout(fetchHomePostsByCategory('free', 8), { rows: [], error: null });
-    out.freeBoard = compactLines(
-      (f.rows ?? []).map((r) => {
-        const id = String(r.id ?? '').trim();
-        const title = String(r.title ?? '').trim();
-        if (!id || !title) return null;
-        return {
-          id,
-          title,
-          href: `/community/boards/${encodeURIComponent(id)}`,
-          subtitle: r.comment_count != null ? `댓글 ${r.comment_count}` : null,
-        };
-      }),
-    );
+    const bp = await withTimeout(fetchHomeBoardPostsByType('free', 8), { rows: [], error: null });
+    const bpRows = bp.rows ?? [];
+    if (bpRows.length > 0 && !bp.error) {
+      out.freeBoard = compactLines(
+        bpRows.map((r) => {
+          const id = String(r.id ?? '').trim();
+          const title = String(r.title ?? '').trim();
+          if (!id || !title) return null;
+          return {
+            id,
+            title,
+            href: `/boards/${encodeURIComponent(id)}`,
+            subtitle: null,
+          };
+        }),
+      );
+    } else {
+      const f = await withTimeout(fetchHomePostsByCategory('free', 8), { rows: [], error: null });
+      out.freeBoard = compactLines(
+        (f.rows ?? []).map((r) => {
+          const id = String(r.id ?? '').trim();
+          const title = String(r.title ?? '').trim();
+          if (!id || !title) return null;
+          return {
+            id,
+            title,
+            href: `/community/boards/${encodeURIComponent(id)}`,
+            subtitle: r.comment_count != null ? `댓글 ${r.comment_count}` : null,
+          };
+        }),
+      );
+    }
   } catch {
     out.freeBoard = [];
   }

@@ -32,6 +32,7 @@ export function buildDailyWebPushPayload(
     null,
     row.summaries ?? null,
     'ko',
+    { allowRawTitleFallback: false },
   );
   const th = newsDetailFromProcessed(
     row.clean_body,
@@ -39,6 +40,7 @@ export function buildDailyWebPushPayload(
     null,
     row.summaries ?? null,
     'th',
+    { allowRawTitleFallback: false },
   );
 
   const koLine = oneLine(ko.blurb, ko.summary, ko.title, 140);

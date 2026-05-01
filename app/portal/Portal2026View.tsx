@@ -144,7 +144,7 @@ function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedL
     out.push({
       id: id.trim(),
       title: title.trim(),
-      href: typeof hrefRaw === 'string' && hrefRaw.trim() ? hrefRaw : '/community/boards',
+      href: typeof hrefRaw === 'string' && hrefRaw.trim() ? hrefRaw : '/boards',
       subtitle: (() => {
         if (subRaw == null) return null;
         const raw = typeof subRaw === 'string' ? subRaw : String(subRaw);
@@ -257,7 +257,7 @@ function FeedLineList({
           className="border-b border-slate-800/80 py-1 text-base leading-snug text-gray-100 last:border-b-0"
         >
           <Link
-            href={item?.href?.trim() ? item.href : '/community/boards'}
+            href={item?.href?.trim() ? item.href : '/boards'}
             className="flex min-h-11 min-w-0 flex-col justify-center overflow-hidden py-0.5 hover:text-amber-200"
           >
             <span className="line-clamp-2 break-words font-medium text-white">{item?.title ?? ''}</span>
@@ -304,9 +304,9 @@ function LiveFeedList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyM
               hot ? styles.liveFeedRowHot : 'text-gray-100'
             }`}
           >
-            <Link
-              href={item?.href?.trim() ? item.href : '/community/boards'}
-              className={`flex min-h-11 min-w-0 flex-col justify-center overflow-hidden hover:text-amber-200 ${hot ? 'px-0.5' : ''}`}
+          <Link
+            href={item?.href?.trim() ? item.href : '/boards'}
+            className={`flex min-h-11 min-w-0 flex-col justify-center overflow-hidden hover:text-amber-200 ${hot ? 'px-0.5' : ''}`}
             >
               <span
                 className={`line-clamp-2 break-words ${hot ? 'font-semibold text-white' : 'font-normal text-gray-100'}`}
@@ -442,7 +442,7 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
               <ul className="mt-1.5 space-y-0">
                 <li>
                   <Link
-                    href="/community/boards"
+                    href="/boards"
                     className="inline-flex min-h-11 max-w-full min-w-0 break-words text-gray-100 hover:text-amber-200 hover:underline"
                   >
                     {copy.hubBoard}
@@ -527,7 +527,7 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
                         <PortalQuestWriteCta category={questCat} variant="badge" />
                       ) : null}
                       <Link
-                        href={board.moreHref ?? '/community/boards'}
+                        href={board.moreHref ?? '/boards'}
                         className="inline-flex min-h-11 max-w-full shrink-0 items-center truncate text-sm font-semibold text-amber-200 hover:underline"
                       >
                         {moreLabel}

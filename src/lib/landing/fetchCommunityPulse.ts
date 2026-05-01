@@ -1,7 +1,10 @@
 import 'server-only';
 
 import { createServerClient } from '@/lib/supabase/server';
-import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
+import {
+  listTitleSummaryFromProcessedNoRaw,
+  passesKoPublicGate,
+} from '@/lib/news/processedNewsDisplay';
 import type { Locale } from '@/i18n/types';
 
 /**
@@ -79,14 +82,16 @@ async function fetchNewsColumn(locale: Locale): Promise<{
 
   try {
     const sb = createServerClient();
+    const fetchCap = Math.min(Math.max(LIMIT_PER_COLUMN * 8, LIMIT_PER_COLUMN), 80);
     const { data, error } = await sb
       .from('processed_news')
       .select(
-        'id, clean_body, created_at, raw_news(title, external_url, published_at), summaries(summary_text, model)',
+        'id, clean_body, language, created_at, raw_news(title, external_url, published_at), summaries(summary_text, model)',
       )
       .eq('published', true)
+      .or('language.eq.ko,language.is.null')
       .order('created_at', { ascending: false })
-      .limit(LIMIT_PER_COLUMN);
+      .limit(fetchCap);
 
     if (error) {
       return { column, degraded: true };
@@ -96,8 +101,10 @@ async function fetchNewsColumn(locale: Locale): Promise<{
       .from('processed_news')
       .select('id', { count: 'exact', head: true })
       .eq('published', true)
+      .or('language.eq.ko,language.is.null')
       .gte('created_at', startOfTodayKstIso());
 
+    const loc = locale === 'th' ? 'th' : 'ko';
     const items: PulseItem[] = [];
     for (const pn of data ?? []) {
       const rn = pn.raw_news as unknown as {
@@ -108,22 +115,31 @@ async function fetchNewsColumn(locale: Locale): Promise<{
       const sums = pn.summaries as unknown as
         | { summary_text: string; model: string | null }[]
         | null;
-      const { title, summary_text } = titleAndSummaryFromProcessed(
+      if (
+        !passesKoPublicGate(
+          pn.language as string | null,
+          (pn.clean_body as string | null) ?? null,
+          sums ?? null,
+        )
+      ) {
+        continue;
+      }
+      const parsed = listTitleSummaryFromProcessedNoRaw(
         (pn.clean_body as string | null) ?? null,
-        rn?.title ?? null,
         sums ?? null,
-        locale,
+        loc,
       );
-      if (!title?.trim()) continue;
+      if (!parsed?.title?.trim()) continue;
       items.push({
         id: String(pn.id),
-        title: title.trim(),
-        subtitle: toSnippet(summary_text),
+        title: parsed.title.trim(),
+        subtitle: toSnippet(parsed.summary_text),
         href: `/news/${pn.id}`,
         createdAt: rn?.published_at ?? (pn.created_at as string | null),
         commentCount: null,
         viewCount: null,
       });
+      if (items.length >= LIMIT_PER_COLUMN) break;
     }
     column.items = items;
     column.todayCount = todayCount ?? 0;

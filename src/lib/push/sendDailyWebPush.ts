@@ -78,24 +78,31 @@ export async function sendDailyWebPushDigest(origin: string): Promise<DailyPushR
 
   const admin = createServiceRoleClient();
 
-  const { data: newsRow, error: newsErr } = await admin
+  const { data: newsRows, error: newsErr } = await admin
     .from('processed_news')
     .select(
-      'id, clean_body, raw_news(title), summaries(summary_text, model)',
+      'id, clean_body, language, raw_news(title), summaries(summary_text, model)',
     )
     .eq('published', true)
+    .or('language.eq.ko,language.is.null')
     .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(12);
 
-  if (newsErr || !newsRow) {
+  if (newsErr || !newsRows?.length) {
     result.skippedReason = newsErr?.message ?? 'no_news';
     return result;
   }
 
-  const digestRow = normalizeNewsRowForDigest(newsRow);
   const weather = await fetchBangkokWeatherPairForPush();
-  const payload = digestRow ? buildDailyWebPushPayload(digestRow, origin, weather) : null;
+  let payload: ReturnType<typeof buildDailyWebPushPayload> = null;
+  for (const row of newsRows) {
+    const digestRow = normalizeNewsRowForDigest(row);
+    const p = digestRow ? buildDailyWebPushPayload(digestRow, origin, weather) : null;
+    if (p) {
+      payload = p;
+      break;
+    }
+  }
   if (!payload) {
     result.skippedReason = 'empty_digest';
     return result;

@@ -10,7 +10,7 @@ const LABEL_BADGE = '🔥 첫 글 작성하고 500 도토리 받기' as const;
 function hrefForCategory(cat: 'job' | 'flea' | 'free'): string {
   if (cat === 'job') return '/community/boards/new?cat=job';
   if (cat === 'flea') return '/community/boards/new?cat=flea';
-  return '/community/boards/new?cat=free';
+  return '/boards/new';
 }
 
 export default function PortalQuestWriteCta({

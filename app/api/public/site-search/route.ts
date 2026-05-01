@@ -4,7 +4,10 @@
  */
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
+import {
+  listTitleSummaryFromProcessedNoRaw,
+  passesKoPublicGate,
+} from '@/lib/news/processedNewsDisplay';
 import { describeSearchMatch } from '@/lib/search/describeSearchMatch';
 import { matchSiteSearch } from '@/lib/search/matchSiteSearch';
 import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
@@ -71,22 +74,32 @@ export async function GET(req: Request) {
     const sb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data } = await sb
       .from('processed_news')
-      .select('id, clean_body, raw_news(title)')
+      .select('id, clean_body, language, summaries(summary_text, model)')
       .eq('published', true)
+      .or('language.eq.ko,language.is.null')
       .order('created_at', { ascending: false })
-      .limit(72);
+      .limit(120);
 
     const qLow = q.toLowerCase();
     for (const row of data ?? []) {
-      const rn = row.raw_news as { title?: string } | null;
-      const rawTitle = rn?.title ?? '';
-      const { title } = titleAndSummaryFromProcessed(
+      const sums = row.summaries as { summary_text: string; model: string | null }[] | null;
+      if (
+        !passesKoPublicGate(
+          row.language as string | null,
+          (row.clean_body as string | null) ?? null,
+          sums,
+        )
+      ) {
+        continue;
+      }
+      const parsed = listTitleSummaryFromProcessedNoRaw(
         row.clean_body as string | null,
-        rawTitle || null,
-        null,
+        sums,
         locale,
       );
-      const hay = `${rawTitle} ${title}`.toLowerCase();
+      if (!parsed?.title?.trim()) continue;
+      const title = parsed.title.trim();
+      const hay = `${title} ${parsed.summary_text ?? ''}`.toLowerCase();
       if (!hay.includes(qLow)) continue;
       news.push({
         kind: 'news',

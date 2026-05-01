@@ -2,11 +2,16 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
-import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
+import {
+  listTitleSummaryFromProcessedNoRaw,
+  passesKoPublicGate,
+} from '@/lib/news/processedNewsDisplay';
 import { createServerClient } from '@/lib/supabase/server';
 import { extractHostname, formatDate } from '@/lib/utils/formatDate';
 
 const NEWS_HUB_LIMIT = 100;
+/** 미가공·영문 헤드라인 행을 건너뛴 뒤에도 목록을 채우기 위해 여유 분량 조회 */
+const NEWS_HUB_FETCH_CAP = 320;
 
 export async function generateMetadata(): Promise<Metadata> {
   const loc = await getLocale();
@@ -24,39 +29,51 @@ export default async function NewsHubPage() {
   const h = d.home;
 
   const sb = createServerClient();
-  const { data: processed, error } = await sb
+  const { data: processed, error: procErr } = await sb
     .from('processed_news')
     .select(
-      'id, clean_body, raw_news(title, external_url, published_at), summaries(summary_text, model)',
+      'id, clean_body, language, raw_news(title, external_url, published_at), summaries(summary_text, model)',
     )
     .eq('published', true)
+    .or('language.eq.ko,language.is.null')
     .order('created_at', { ascending: false })
-    .limit(NEWS_HUB_LIMIT);
+    .limit(NEWS_HUB_FETCH_CAP);
 
+  const sourceRows = procErr || !processed ? [] : processed;
   const rows =
-    (processed ?? []).map((pn) => {
-      const rn = pn.raw_news as unknown as {
-        title: string;
-        external_url: string;
-        published_at: string | null;
-      } | null;
-      const sums = pn.summaries as unknown as
-        | { summary_text: string; model: string | null }[]
-        | null;
-      const { title, summary_text } = titleAndSummaryFromProcessed(
-        (pn.clean_body as string | null) ?? null,
-        rn?.title ?? null,
-        sums ?? null,
-        locale,
-      );
-      return {
-        id: String(pn.id),
-        title,
-        summary_text,
-        external_url: rn?.external_url ?? '#',
-        published_at: rn?.published_at ?? null,
-      };
-    }) ?? [];
+    (sourceRows)
+      .filter((pn) =>
+        passesKoPublicGate(
+          pn.language as string | null,
+          (pn.clean_body as string | null) ?? null,
+          pn.summaries as { summary_text: string; model: string | null }[] | null,
+        ),
+      )
+      .map((pn) => {
+        const rn = pn.raw_news as unknown as {
+          title: string;
+          external_url: string;
+          published_at: string | null;
+        } | null;
+        const sums = pn.summaries as unknown as
+          | { summary_text: string; model: string | null }[]
+          | null;
+        const parsed = listTitleSummaryFromProcessedNoRaw(
+          (pn.clean_body as string | null) ?? null,
+          sums ?? null,
+          locale === 'th' ? 'th' : 'ko',
+        );
+        if (!parsed?.title?.trim()) return null;
+        return {
+          id: String(pn.id),
+          title: parsed.title.trim(),
+          summary_text: (parsed.summary_text ?? '').trim(),
+          external_url: rn?.external_url ?? '#',
+          published_at: rn?.published_at ?? null,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x != null)
+      .slice(0, NEWS_HUB_LIMIT) ?? [];
 
   return (
     <div className="page-body board-page">
@@ -85,15 +102,15 @@ export default async function NewsHubPage() {
         </Link>
       </p>
 
-      {error ? (
+      {procErr ? (
         <p className="auth-inline-error" style={{ fontSize: '0.88rem' }}>
-          {error.message}
+          {procErr.message}
         </p>
       ) : null}
 
-      {!error && rows.length === 0 ? <p style={{ color: 'var(--tj-muted)' }}>{h.newsEmpty}</p> : null}
+      {!procErr && rows.length === 0 ? <p style={{ color: 'var(--tj-muted)' }}>{h.newsEmpty}</p> : null}
 
-      {!error && rows.length > 0 ? (
+      {!procErr && rows.length > 0 ? (
         <p style={{ margin: '0 0 16px', fontSize: '0.85rem', color: 'var(--tj-muted)' }}>
           {h.newsHubListingNote.replace('{n}', String(rows.length))}
         </p>

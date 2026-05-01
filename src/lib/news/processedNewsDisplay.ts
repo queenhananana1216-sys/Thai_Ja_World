@@ -100,6 +100,11 @@ function humanizeNewsTitle(
   return locale === 'th' ? 'สรุปข่าวล่าสุด' : '태국·동남아 소식 한 줄';
 }
 
+export type TitleSummaryFromProcessedOptions = {
+  /** false 이면 raw_news.title(영문 원문) 폴백을 쓰지 않음 — 공개 화면 전용 */
+  allowRawTitleFallback?: boolean;
+};
+
 export function titleAndSummaryFromProcessed(
   cleanBody: string | null | undefined,
   rawTitle: string | null | undefined,
@@ -108,7 +113,9 @@ export function titleAndSummaryFromProcessed(
     | null
     | undefined,
   locale: Locale = 'ko',
+  options?: TitleSummaryFromProcessedOptions,
 ): { title: string; summary_text: string | null } {
+  const allowRaw = options?.allowRawTitleFallback !== false;
   const { ko, th } = parseCleanBodyFull(cleanBody);
 
   const primary = locale === 'th' ? th : ko;
@@ -117,7 +124,7 @@ export function titleAndSummaryFromProcessed(
   const title =
     nonEmpty(primary?.title) ||
     nonEmpty(fallback?.title) ||
-    rawTitle?.trim() ||
+    (allowRaw ? rawTitle?.trim() : null) ||
     '(제목 없음)';
 
   const fromClean =
@@ -132,7 +139,12 @@ export function titleAndSummaryFromProcessed(
   const summary_text =
     fromClean || summaryFromTable || anyFirst || null;
 
-  const titleDisplay = humanizeNewsTitle(title, summary_text, rawTitle, locale);
+  const titleDisplay = humanizeNewsTitle(
+    title,
+    summary_text,
+    allowRaw ? rawTitle : null,
+    locale,
+  );
 
   return { title: titleDisplay, summary_text };
 }
@@ -179,6 +191,23 @@ export function listTitleSummaryFromProcessedNoRaw(
   return { title: clampTitle(finalTitle, 200), summary_text };
 }
 
+/**
+ * 공개 노출: DB `language`(요구사항의 language_code 와 동일 역할)가 `ko`가 아니면 제외.
+ * `language` 가 null 인 레거시 행은 한글 제목·요약이 검증될 때만 통과.
+ */
+export function passesKoPublicGate(
+  language: string | null | undefined,
+  cleanBody: string | null | undefined,
+  summaries:
+    | { summary_text: string; model?: string | null }[]
+    | null
+    | undefined,
+): boolean {
+  const lang = (language ?? '').trim().toLowerCase();
+  if (lang && lang !== 'ko') return false;
+  return listTitleSummaryFromProcessedNoRaw(cleanBody, summaries, 'ko') !== null;
+}
+
 export type NewsDetailParts = {
   title: string;
   summary: string | null;
@@ -198,6 +227,7 @@ export function newsDetailFromProcessed(
     | null
     | undefined,
   locale: Locale,
+  options?: TitleSummaryFromProcessedOptions,
 ): NewsDetailParts {
   const parsed = parseCleanBodyFull(cleanBody);
   const ko = parsed.ko;
@@ -210,6 +240,7 @@ export function newsDetailFromProcessed(
     rawTitle,
     summaries,
     locale,
+    options,
   );
 
   const blurbRaw =

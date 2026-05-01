@@ -15,6 +15,7 @@
  */
 
 import { getServerSupabaseClient } from '../adapters/supabaseClient';
+import { passesKoPublicGate } from '@/lib/news/processedNewsDisplay';
 import { newsInsertAsPublished } from '@/lib/news/newsPublishMode';
 import {
   sanitizeAiKoreanPhrases,
@@ -1093,6 +1094,187 @@ async function persistBilingualProcessedNews(
   }
 
   return { raw_news_id: row.id, ok: true };
+}
+
+/**
+ * 기존 `processed_news` 행에 이중 요약을 다시 써 넣습니다(id·발행 상태 유지).
+ */
+async function updateBilingualProcessedNews(
+  client: ReturnType<typeof getServerSupabaseClient>,
+  processedNewsId: string,
+  row: RawNewsTodoRow,
+  llm: LlmBilingualPayload,
+): Promise<SummarizeRowResult> {
+  const url = row.external_url ?? '';
+  const sanitized = sanitizeNewsPayloadTone(llm);
+  const cleanBody = JSON.stringify({
+    ko: {
+      title: sanitized.title_kr,
+      summary: sanitized.content_kr,
+      blurb: sanitized.ko_blurb,
+      ...(sanitized.ko_editor_note ? { editor_note: sanitized.ko_editor_note } : {}),
+    },
+    th: {
+      title: sanitized.title_th,
+      summary: sanitized.content_th,
+      blurb: sanitized.th_blurb,
+      ...(sanitized.th_editor_note ? { editor_note: sanitized.th_editor_note } : {}),
+    },
+    source_url: url,
+  });
+
+  const { error: upErr } = await client
+    .from('processed_news')
+    .update({
+      clean_body: cleanBody,
+      language: 'ko',
+      title_kr: sanitized.title_kr,
+      content_kr: sanitized.content_kr,
+      title_th: sanitized.title_th,
+      content_th: sanitized.content_th,
+      seo_keywords:
+        sanitized.seo_keywords.length > 0
+          ? sanitized.seo_keywords
+          : stubSeoKeywordsFromTitle(sanitized.title_kr),
+    })
+    .eq('id', processedNewsId);
+
+  if (upErr) {
+    return { raw_news_id: row.id, ok: false, error: upErr.message };
+  }
+
+  const { error: delS } = await client.from('summaries').delete().eq('processed_news_id', processedNewsId);
+  if (delS) {
+    return { raw_news_id: row.id, ok: false, error: delS.message };
+  }
+
+  const { error: sKo } = await client.from('summaries').insert({
+    processed_news_id: processedNewsId,
+    summary_text: sanitized.content_kr,
+    model: 'ko',
+  });
+  if (sKo) {
+    return { raw_news_id: row.id, ok: false, error: sKo.message };
+  }
+
+  const { error: sTh } = await client.from('summaries').insert({
+    processed_news_id: processedNewsId,
+    summary_text: sanitized.content_th,
+    model: 'th',
+  });
+  if (sTh) {
+    return { raw_news_id: row.id, ok: false, error: sTh.message };
+  }
+
+  const { error: tipUpsertError } = await client.from('tips_articles').upsert(
+    {
+      source_url: url || null,
+      title: sanitized.title_kr,
+      excerpt: sanitized.ko_blurb,
+      body_preview: sanitized.content_kr.slice(0, 900),
+      title_kr: sanitized.title_kr,
+      content_kr: sanitized.content_kr,
+      title_th: sanitized.title_th,
+      content_th: sanitized.content_th,
+      status: 'draft',
+    },
+    { onConflict: 'source_url' },
+  );
+  if (tipUpsertError) {
+    return { raw_news_id: row.id, ok: false, error: tipUpsertError.message };
+  }
+
+  return { raw_news_id: row.id, ok: true };
+}
+
+/**
+ * `passesKoPublicGate` 를 통과하지 못한 `processed_news` 를 `raw_news` 원문으로 LLM 재가공합니다.
+ */
+export async function forceTranslateIncompleteProcessedNews(maxRows: number): Promise<{
+  scanned: number;
+  eligible: number;
+  ok: number;
+  failed: { id: string; error: string }[];
+  llmConfigured: boolean;
+}> {
+  if (!isNewsSummaryLlmConfigured()) {
+    return { scanned: 0, eligible: 0, ok: 0, failed: [], llmConfigured: false };
+  }
+
+  const client = getServerSupabaseClient();
+  const cap = Math.min(Math.max(maxRows, 1), 80);
+
+  const { data: rows, error } = await client
+    .from('processed_news')
+    .select('id, language, clean_body, raw_news_id, summaries(summary_text, model)')
+    .order('created_at', { ascending: false })
+    .limit(500);
+
+  if (error) {
+    return {
+      scanned: 0,
+      eligible: 0,
+      ok: 0,
+      failed: [{ id: '-', error: error.message }],
+      llmConfigured: true,
+    };
+  }
+
+  const todo = (rows ?? []).filter(
+    (r) =>
+      !passesKoPublicGate(
+        r.language as string | null,
+        (r.clean_body as string | null) ?? null,
+        r.summaries as { summary_text: string; model: string | null }[] | null,
+      ),
+  );
+
+  const slice = todo.slice(0, cap);
+  const failed: { id: string; error: string }[] = [];
+  let ok = 0;
+
+  for (const pn of slice) {
+    const pid = String(pn.id);
+    const rawNewsId = String(pn.raw_news_id);
+    const { data: raw, error: rawErr } = await client
+      .from('raw_news')
+      .select('id, title, raw_body, external_url')
+      .eq('id', rawNewsId)
+      .maybeSingle();
+
+    if (rawErr || !raw) {
+      failed.push({ id: pid, error: rawErr?.message ?? 'raw_news 없음' });
+      continue;
+    }
+
+    const rowTodo = raw as RawNewsTodoRow;
+    let llm: LlmBilingualPayload;
+    try {
+      llm = await callBilingualSummary(
+        rowTodo.title?.trim() || '(제목 없음)',
+        rowTodo.raw_body,
+        rowTodo.external_url ?? '',
+      );
+    } catch (e) {
+      failed.push({
+        id: pid,
+        error: e instanceof Error ? e.message.slice(0, 500) : String(e),
+      });
+      continue;
+    }
+
+    const ur = await updateBilingualProcessedNews(client, pid, rowTodo, llm);
+    if (ur.ok) ok += 1;
+    else failed.push({ id: pid, error: ur.error ?? '갱신 실패' });
+  }
+
+  return {
+    scanned: rows?.length ?? 0,
+    eligible: todo.length,
+    ok,
+    failed,
+    llmConfigured: true,
+  };
 }
 
 export type EnsureNewsDraftResult = {

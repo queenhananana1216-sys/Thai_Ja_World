@@ -15,8 +15,8 @@ const MAX_BATCHES = 8;
 type HomeRecommendedRow = { id: string; title: string; href: string; score: number };
 
 function itemHref(item: HomeUnifiedFeedItem): string {
-  if (item.kind === 'job') return `/community/boards/${item.id}`;
-  if (item.kind === 'market') return `/community/boards/${item.id}`;
+  if (item.kind === 'job') return '/community/boards?cat=job';
+  if (item.kind === 'market') return '/community/boards?cat=flea';
   return `/community/boards/${item.id}`;
 }
 

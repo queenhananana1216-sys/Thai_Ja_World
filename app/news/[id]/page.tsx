@@ -6,7 +6,11 @@ import { createServerClient } from '@/lib/supabase/server';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
-import { newsDetailFromProcessed } from '@/lib/news/processedNewsDisplay';
+import {
+  listTitleSummaryFromProcessedNoRaw,
+  newsDetailFromProcessed,
+  passesKoPublicGate,
+} from '@/lib/news/processedNewsDisplay';
 import JsonLd from '@/lib/seo/JsonLd';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { extractHostname, formatDate } from '@/lib/utils/formatDate';
@@ -40,13 +44,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { data: row } = await supabase
     .from('processed_news')
     .select(
-      'id, clean_body, created_at, seo_keywords, raw_news(title, external_url, published_at), summaries(summary_text, model)',
+      'id, clean_body, created_at, language, seo_keywords, raw_news(title, external_url, published_at), summaries(summary_text, model)',
     )
     .eq('id', id)
     .eq('published', true)
     .maybeSingle();
 
   if (!row) {
+    return { title: d.home.newsTitle, robots: { index: false, follow: true } };
+  }
+
+  const sumsMeta = row.summaries as unknown as
+    | { summary_text: string; model: string | null }[]
+    | null;
+  if (
+    !passesKoPublicGate(
+      row.language as string | null,
+      (row.clean_body as string | null) ?? null,
+      sumsMeta,
+    )
+  ) {
     return { title: d.home.newsTitle, robots: { index: false, follow: true } };
   }
 
@@ -66,6 +83,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     rn?.external_url ?? null,
     sums ?? null,
     locale,
+    { allowRawTitleFallback: false },
   );
   const useGracefulFallback = shouldUseGracefulFallback(detail);
 
@@ -114,13 +132,26 @@ export default async function NewsStoryPage({ params }: PageProps) {
   const { data: row, error } = await supabase
     .from('processed_news')
     .select(
-      'id, clean_body, created_at, seo_keywords, raw_news(title, external_url, published_at), summaries(summary_text, model)',
+      'id, clean_body, created_at, language, seo_keywords, raw_news(title, external_url, published_at), summaries(summary_text, model)',
     )
     .eq('id', id)
     .eq('published', true)
     .maybeSingle();
 
   if (error || !row) {
+    notFound();
+  }
+
+  const sumsGate = row.summaries as unknown as
+    | { summary_text: string; model: string | null }[]
+    | null;
+  if (
+    !passesKoPublicGate(
+      row.language as string | null,
+      (row.clean_body as string | null) ?? null,
+      sumsGate,
+    )
+  ) {
     notFound();
   }
 
@@ -140,6 +171,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
     rn?.external_url ?? null,
     sums ?? null,
     locale,
+    { allowRawTitleFallback: false },
   );
   const useGracefulFallback = shouldUseGracefulFallback(detail);
 
@@ -190,11 +222,12 @@ export default async function NewsStoryPage({ params }: PageProps) {
   const [{ data: relatedNewsRaw }, { data: relatedPostsRaw }] = await Promise.all([
     supabase
       .from('processed_news')
-      .select('id, created_at, raw_news(title)')
+      .select('id, created_at, clean_body, language, summaries(summary_text, model)')
       .eq('published', true)
+      .or('language.eq.ko,language.is.null')
       .neq('id', id)
       .order('created_at', { ascending: false })
-      .limit(6),
+      .limit(24),
     supabase
       .from('posts')
       .select('id, title, updated_at, category')
@@ -202,14 +235,31 @@ export default async function NewsStoryPage({ params }: PageProps) {
       .order('updated_at', { ascending: false })
       .limit(6),
   ]);
-  const relatedNews = (relatedNewsRaw ?? []).map((item) => {
-    const raw = item.raw_news as { title?: string } | null;
-    return {
-      id: String(item.id),
-      title: String(raw?.title ?? `News ${item.id}`),
-      createdAt: String(item.created_at ?? ''),
-    };
-  });
+  const locRelated = locale === 'th' ? 'th' : 'ko';
+  const relatedNews = (relatedNewsRaw ?? [])
+    .filter((item) =>
+      passesKoPublicGate(
+        item.language as string | null,
+        (item.clean_body as string | null) ?? null,
+        item.summaries as { summary_text: string; model: string | null }[] | null,
+      ),
+    )
+    .map((item) => {
+      const parsed = listTitleSummaryFromProcessedNoRaw(
+        (item.clean_body as string | null) ?? null,
+        item.summaries as { summary_text: string; model: string | null }[] | null,
+        locRelated,
+      );
+      const title = parsed?.title?.trim();
+      if (!title) return null;
+      return {
+        id: String(item.id),
+        title,
+        createdAt: String(item.created_at ?? ''),
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x != null)
+    .slice(0, 6);
   const relatedPosts = (relatedPostsRaw ?? []).map((item) => ({
     id: String(item.id),
     title: String(item.title ?? `Post ${item.id}`),

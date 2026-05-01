@@ -7,7 +7,10 @@
 import 'server-only';
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { listTitleSummaryFromProcessedNoRaw } from '@/lib/news/processedNewsDisplay';
+import {
+  listTitleSummaryFromProcessedNoRaw,
+  passesKoPublicGate,
+} from '@/lib/news/processedNewsDisplay';
 import { getLocale } from '@/i18n/get-locale';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import type { JobPost, MarketPost, PortalPostRow, PremiumBannerRow } from '../../portal/types';
@@ -211,25 +214,32 @@ export async function fetchHomeNewsMarqueeTitles(limit = 24): Promise<{ titles: 
   const sb = tryCreate();
   if (!sb) return { titles: [], error: 'Supabase 환경 변수가 없습니다.' };
 
+  const fetchCap = Math.min(Math.max(limit * 6, limit), 96);
   const { data, error } = await sb
     .from('processed_news')
-    .select('id, clean_body, summaries(summary_text, model)')
+    .select('id, clean_body, language, summaries(summary_text, model)')
     .eq('published', true)
+    .or('language.eq.ko,language.is.null')
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .limit(fetchCap);
 
   if (error) return { titles: [], error: error.message };
 
   const locale = await getLocale().catch(() => 'ko' as const);
+  const loc = locale === 'th' ? 'th' : 'ko';
   const titles: string[] = [];
   for (const pn of data ?? []) {
     const sums = pn.summaries as { summary_text: string; model: string | null }[] | null;
+    if (!passesKoPublicGate(pn.language as string | null, (pn.clean_body as string | null) ?? null, sums ?? null)) {
+      continue;
+    }
     const parsed = listTitleSummaryFromProcessedNoRaw(
       (pn.clean_body as string | null) ?? null,
       sums ?? null,
-      locale === 'th' ? 'th' : 'ko',
+      loc,
     );
     if (parsed?.title?.trim()) titles.push(parsed.title.trim());
+    if (titles.length >= limit) break;
   }
 
   return { titles, error: null };
@@ -343,26 +353,32 @@ export async function fetchHomeNewsDigest(
   const sb = tryCreate();
   if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
 
+  const fetchCap = Math.min(Math.max(limit * 8, limit), 120);
   const { data, error } = await sb
     .from('processed_news')
-    .select('id, clean_body, created_at, summaries(summary_text, model)')
+    .select('id, clean_body, created_at, language, summaries(summary_text, model)')
     .eq('published', true)
+    .or('language.eq.ko,language.is.null')
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .limit(fetchCap);
 
   if (error) return { rows: [], error: error.message };
 
   const locale =
     opts?.summaryLocale ??
     (await getLocale().catch(() => 'ko' as const));
+  const loc = locale === 'th' ? 'th' : 'ko';
   const rows: HomeNewsRow[] = [];
   for (const pn of data ?? []) {
     const id = String(pn.id);
     const sums = pn.summaries as { summary_text: string; model: string | null }[] | null;
+    if (!passesKoPublicGate(pn.language as string | null, (pn.clean_body as string | null) ?? null, sums ?? null)) {
+      continue;
+    }
     const parsed = listTitleSummaryFromProcessedNoRaw(
       (pn.clean_body as string | null) ?? null,
       sums ?? null,
-      locale === 'th' ? 'th' : 'ko',
+      loc,
     );
     if (!parsed) continue;
     const t = parsed.title.trim();
@@ -374,6 +390,7 @@ export async function fetchHomeNewsDigest(
       href: `/news/${encodeURIComponent(id)}`,
       created_at: pn.created_at != null ? String(pn.created_at) : '',
     });
+    if (rows.length >= limit) break;
   }
 
   return { rows, error: null };
@@ -587,6 +604,38 @@ export async function fetchHomeTipsArticles(
       excerpt: r.excerpt != null ? String(r.excerpt) : '',
       published_at: r.published_at != null ? String(r.published_at) : null,
       created_at: String(r.created_at ?? ''),
+    })),
+    error: null,
+  };
+}
+
+/**
+ * 통합 게시판 `board_posts` (자유 free / 정보 info) — `/boards/[id]` 상세와 id 정합
+ */
+export async function fetchHomeBoardPostsByType(
+  boardType: 'free' | 'info',
+  limit = 10,
+): Promise<{ rows: HomeCommunityPostRow[]; error: string | null }> {
+  const sb = tryCreate();
+  if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
+
+  const { data, error } = await sb
+    .from('board_posts')
+    .select('id, title, created_at, board_type')
+    .eq('board_type', boardType)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) return { rows: [], error: error.message };
+
+  return {
+    rows: (data ?? []).map((row) => ({
+      id: String(row.id),
+      title: String(row.title ?? ''),
+      created_at: String(row.created_at ?? ''),
+      comment_count: 0,
+      view_count: 0,
+      category: String(row.board_type ?? boardType),
     })),
     error: null,
   };

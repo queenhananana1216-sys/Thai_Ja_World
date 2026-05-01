@@ -18,6 +18,7 @@ import {
   pausedResponse,
   registerFailureAndSelfHeal,
 } from '@/lib/cron/omniLogger';
+import { pingGoogleSitemap } from '@/lib/seo/googleSitemapPing';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -72,6 +73,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       stubRepairRun = await runKnowledgeStubRepairLoop({ limit: stubLim });
     }
 
+    const newsOut = news.process.output as { succeeded?: number } | undefined;
+    const newsSucceeded = typeof newsOut?.succeeded === 'number' ? newsOut.succeeded : 0;
+    const knowOut = processRun.output as { processed?: number } | undefined;
+    const knowledgeProcessed = typeof knowOut?.processed === 'number' ? knowOut.processed : 0;
+    const shouldPingSitemap = newsSucceeded > 0 || knowledgeProcessed > 0;
+
+    let sitemapPing: { ok: boolean; status?: number; error?: string; skipped?: boolean } = {
+      ok: false,
+      skipped: true,
+    };
+    if (shouldPingSitemap) {
+      sitemapPing = await pingGoogleSitemap();
+    }
+
     await logCronEvent({
       pipelineId,
       event: 'pipeline_unified',
@@ -82,6 +97,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         news_process: news.process.run_id,
         knowledge_collect: collectRun.run_id,
         knowledge_process: processRun.run_id,
+        sitemap_ping: shouldPingSitemap ? sitemapPing : { skipped: true },
       },
     });
 
@@ -95,6 +111,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         collect: collectRun,
         process: processRun,
         stub_repair: stubRepairRun,
+      },
+      seo: {
+        sitemap_ping: shouldPingSitemap ? sitemapPing : { skipped: true, reason: 'no_new_processed_content' },
       },
     });
   } catch (err) {

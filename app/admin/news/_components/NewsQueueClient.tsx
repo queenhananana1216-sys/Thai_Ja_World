@@ -452,7 +452,9 @@ function DraftCard({
     th_title: thTitle,
     th_summary: thSummary,
   });
-  const userView = newsDetailFromProcessed(mergedJson, item.raw_title, item.raw_url, item.summaries, 'ko');
+  const userView = newsDetailFromProcessed(mergedJson, item.raw_title, item.raw_url, item.summaries, 'ko', {
+    allowRawTitleFallback: true,
+  });
   const publishErr = validateNewsPublishFields(koTitle, koSummary);
 
   return (

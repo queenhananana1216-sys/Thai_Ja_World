@@ -9,7 +9,11 @@ import { HubTipSocialIcons } from './HubTipSocialIcons';
 import SiteSearch from './SiteSearch';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { NewsItem, LocalBusiness } from '@/types/taeworld';
-import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
+import {
+  listTitleSummaryFromProcessedNoRaw,
+  passesKoPublicGate,
+  titleAndSummaryFromProcessed,
+} from '@/lib/news/processedNewsDisplay';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate, extractHostname } from '@/lib/utils/formatDate';
 import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
@@ -54,46 +58,57 @@ async function fetchNewsBrowser(): Promise<NewsItem[]> {
     const { data: processed } = await sb
       .from('processed_news')
       .select(
-        'id, clean_body, title_kr, content_kr, title_th, content_th, raw_news(title, external_url, published_at), summaries(summary_text, model)',
+        'id, clean_body, language, title_kr, content_kr, title_th, content_th, raw_news(title, external_url, published_at), summaries(summary_text, model)',
       )
       .eq('published', true)
+      .or('language.eq.ko,language.is.null')
       .order('created_at', { ascending: false })
-      .limit(15);
+      .limit(48);
 
-    return (processed ?? []).map((pn) => {
-      const rn = (pn.raw_news as unknown) as {
-        title: string;
-        external_url: string;
-        published_at: string | null;
-      } | null;
-      const sums = (pn.summaries as unknown) as
-        | { summary_text: string; model: string | null }[]
-        | null;
-      const localeSource = {
-        clean_body: (pn.clean_body as string | null) ?? null,
-        raw_title: rn?.title ?? null,
-        summaries: sums ?? null,
-        title_kr: (pn.title_kr as string | null) ?? null,
-        content_kr: (pn.content_kr as string | null) ?? null,
-        title_th: (pn.title_th as string | null) ?? null,
-        content_th: (pn.content_th as string | null) ?? null,
-      };
-      const { title, summary_text } = titleAndSummaryFromProcessed(
-        localeSource.clean_body,
-        localeSource.raw_title,
-        localeSource.summaries,
-        'ko',
-      );
-      return {
-        id: String(pn.id),
-        title,
-        external_url: rn?.external_url ?? '#',
-        published_at: rn?.published_at ?? null,
-        summary_text,
-        internalNewsId: String(pn.id),
-        localeSource,
-      };
-    });
+    return (processed ?? [])
+      .filter((pn) =>
+        passesKoPublicGate(
+          pn.language as string | null,
+          (pn.clean_body as string | null) ?? null,
+          pn.summaries as { summary_text: string; model: string | null }[] | null,
+        ),
+      )
+      .map((pn) => {
+        const rn = (pn.raw_news as unknown) as {
+          title: string;
+          external_url: string;
+          published_at: string | null;
+        } | null;
+        const sums = (pn.summaries as unknown) as
+          | { summary_text: string; model: string | null }[]
+          | null;
+        const parsedKo = listTitleSummaryFromProcessedNoRaw(
+          (pn.clean_body as string | null) ?? null,
+          sums ?? null,
+          'ko',
+        );
+        if (!parsedKo?.title?.trim()) return null;
+        const localeSource = {
+          clean_body: (pn.clean_body as string | null) ?? null,
+          raw_title: rn?.title ?? null,
+          summaries: sums ?? null,
+          title_kr: (pn.title_kr as string | null) ?? null,
+          content_kr: (pn.content_kr as string | null) ?? null,
+          title_th: (pn.title_th as string | null) ?? null,
+          content_th: (pn.content_th as string | null) ?? null,
+        };
+        return {
+          id: String(pn.id),
+          title: parsedKo.title.trim(),
+          external_url: rn?.external_url ?? '#',
+          published_at: rn?.published_at ?? null,
+          summary_text: (parsedKo.summary_text ?? '').trim(),
+          internalNewsId: String(pn.id),
+          localeSource,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x != null)
+      .slice(0, 15);
   } catch {
     return [];
   }
@@ -259,6 +274,7 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
           item.localeSource.raw_title,
           item.localeSource.summaries,
           locale,
+          { allowRawTitleFallback: false },
         );
         return {
           ...item,

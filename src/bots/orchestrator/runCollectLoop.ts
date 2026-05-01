@@ -1,5 +1,8 @@
 /**
  * runCollectLoop.ts — 뉴스/기사 피드 수집 오케스트레이터 (bot_actions: collect_data)
+ *
+ * `maxDuration` 은 `app/api/cron/news`·`pipeline`·`content-automation` Route 에서 설정.
+ * collectArticles 는 피드 간 딜레이·persistRawNews 는 raw_news upsert 를 작은 청크로 나눔.
  */
 
 import { randomUUID } from 'node:crypto';

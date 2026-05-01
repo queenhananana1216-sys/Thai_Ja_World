@@ -4,7 +4,7 @@
  * !! 주의 !!
  *   - 이 모듈은 서버(Node.js) 런타임에서만 실행되어야 합니다.
  *   - SUPABASE_SERVICE_ROLE_KEY 는 절대 브라우저에 노출되어서는 안 됩니다.
- *   - "server-only" 패키지가 클라이언트 번들 포함 시 빌드 오류를 발생시킵니다.
+ *   - 파이프라인 쓰기는 anon 이 아니라 `@/lib/supabase/admin` 과 동일하게 서비스 롤만 사용합니다.
  *
  * 환경 변수 (`.env.local`):
  *   NEXT_PUBLIC_SUPABASE_URL      — Supabase 프로젝트 URL
@@ -12,52 +12,16 @@
  */
 
 /** Next 앱 외부(tsx CLI 등)에서도 봇을 돌릴 수 있게 server-only 미사용 — 이 모듈은 API·봇에서만 import 할 것 */
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { createDummySupabaseClient } from '@/lib/supabase/dummy';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { createServiceRoleClient } from '@/lib/supabase/admin';
 
-// ── 환경 변수 검증 ─────────────────────────────────────────────────────────
-
-function resolveEnv(): { url: string; serviceRoleKey: string } {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url) {
-    console.error('[BotSystem] NEXT_PUBLIC_SUPABASE_URL 이 없습니다. dummy client 사용');
-    return { url: '', serviceRoleKey: '' };
-  }
-  if (!serviceRoleKey) {
-    console.error('[BotSystem] SUPABASE_SERVICE_ROLE_KEY 가 없습니다. dummy client 사용');
-    return { url: '', serviceRoleKey: '' };
-  }
-
-  return { url, serviceRoleKey };
-}
-
-// ── 싱글톤 클라이언트 (Node 모듈 캐시 활용) ────────────────────────────────
-
-// 제네릭 Database 타입은 Phase 2에서 `supabase gen types` 로 생성된 파일로 교체 예정
 let _client: SupabaseClient | null = null;
 
 /**
- * 서버 전용 Supabase 클라이언트 반환.
- * 세션 & 자동 갱신을 비활성화하여 봇 워커에 최적화됨.
+ * 서버 전용 Supabase 클라이언트 — `createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY)` 단일 경로.
  */
 export function getServerSupabaseClient(): SupabaseClient {
   if (_client) return _client;
-
-  const { url, serviceRoleKey } = resolveEnv();
-  if (!url || !serviceRoleKey) {
-    _client = createDummySupabaseClient('botSystem');
-    return _client;
-  }
-
-  _client = createClient(url, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false,
-    },
-  });
-
+  _client = createServiceRoleClient();
   return _client;
 }

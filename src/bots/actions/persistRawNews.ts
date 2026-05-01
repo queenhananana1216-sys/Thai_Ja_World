@@ -121,7 +121,10 @@ export async function persistCollectedArticlesToDb(
   }
 
   const rows = Array.from(rowMap.values());
-  const chunkSize = 200;
+  const chunkSize = 25;
+  const interChunkMs = 350;
+
+  const chunkDelay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize);
@@ -136,6 +139,9 @@ export async function persistCollectedArticlesToDb(
         sources_created: sourcesCreated,
         error: `[raw_news upsert] ${upErr.message}`,
       };
+    }
+    if (i + chunkSize < rows.length) {
+      await chunkDelay(interChunkMs);
     }
   }
 

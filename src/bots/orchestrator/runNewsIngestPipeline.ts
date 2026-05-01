@@ -1,5 +1,9 @@
 /**
  * RSS 수집(raw_news) → LLM 한국어·태국어 제목·요약(processed_news) 한 번에 실행.
+ *
+ * HTTP 함수 타임아웃 상한(`maxDuration`)은 이 모듈이 아니라 Route Handler 에서만 적용됩니다.
+ * 뉴스 크론: `app/api/cron/news`, 통합: `app/api/cron/pipeline`, 일일: `app/api/cron/content-automation`
+ * — Fluid/Pro 기준 상한(예: 300초)으로 Vercel 기본 10~15초 한도를 피합니다.
  */
 
 import { randomUUID } from 'node:crypto';

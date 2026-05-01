@@ -4,6 +4,7 @@ import { runBizRadarCron } from '@/lib/korean-biz/runBizRadarCron';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+/** 최소 60초 이상 권장 — Vercel 플랜별 상한(예: Pro Fluid 300s) 내에서 크론 강제 종료 방지 */
 export const maxDuration = 300;
 
 /**

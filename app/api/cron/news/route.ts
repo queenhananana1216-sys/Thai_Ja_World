@@ -21,6 +21,7 @@ import {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+/** Vercel 플랜 한도 내 최대 — 기본 10~15초 초과 방지 (collect/process 장시간 허용) */
 export const maxDuration = 300;
 
 const MAX_ITEMS = 50;

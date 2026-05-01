@@ -22,6 +22,7 @@ import { pingGoogleSitemap } from '@/lib/seo/googleSitemapPing';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+/** 통합 배치(뉴스+knowledge) — 단일 요청 내 순차 실행 시간 확보 */
 export const maxDuration = 300;
 
 const pipelineId = 'cron/pipeline';

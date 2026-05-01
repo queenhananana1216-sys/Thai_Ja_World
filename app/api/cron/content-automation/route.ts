@@ -7,7 +7,8 @@ import { sanitizeAiKoreanPhrases, sanitizeAiThaiPhrases } from '@/lib/text/norma
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 180;
+/** 뉴스·스냅샷 등 연속 작업 — cron/news·pipeline 과 동일 상한으로 타임아웃 여유 */
+export const maxDuration = 300;
 
 type SnapshotRow = {
   source: 'weather' | 'exchange' | 'visa' | 'local';

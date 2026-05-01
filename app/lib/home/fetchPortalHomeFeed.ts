@@ -2,6 +2,7 @@ import 'server-only';
 
 /** 홈 공개 피드 — DB 접근은 `home-queries.ts` 의 anon 전용 클라이언트만 사용(쿠키·SSR 없음). */
 
+import { unstable_noStore as noStore } from 'next/cache';
 import {
   fetchHomeJobs,
   fetchHomeMarket,
@@ -10,6 +11,7 @@ import {
   fetchHomeLocalPublicView,
   fetchHomeLocalBusinesses,
   fetchHomeLocalDemoBusinesses,
+  fetchHomeKoreanBizPortalLines,
   fetchHomeNewsDigest,
   fetchHomeLeftRailBanners,
   fetchHomeUnifiedFeed,
@@ -182,9 +184,11 @@ function portalLocalMinihomeHref(slug: string, miniHome: unknown): string {
 
 /**
  * 루트 포털 3열 — Supabase 실데이터만 (`home-queries` → `createPublicAnonClient()`: jobs, market, posts, processed_news, premium_banners, RPC).
+ * 로컬 업체 열이 비면 마지막에 `korean_businesses` → 한인 생활망 링크로 폴백.
  * 타임아웃·에러·빈 결과는 빈 배열; 샘플 글이나 임의 기사 제목을 넣지 않음.
  */
 async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
+  noStore();
   const portalLocale = await getLocale().catch(() => 'ko' as Locale);
 
   const out: PortalHomeFeed = {
@@ -373,6 +377,25 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
   } catch {
     out.localBiz = [];
     out.localBizFromDemoFallback = false;
+  }
+
+  try {
+    if ((out.localBiz?.length ?? 0) === 0) {
+      const kb = await withTimeout(fetchHomeKoreanBizPortalLines(8, portalLocale), { rows: [], error: null });
+      if (!kb.error && (kb.rows?.length ?? 0) > 0) {
+        out.localBiz = compactLines(
+          (kb.rows ?? []).map((r) => ({
+            id: String(r.id ?? '').trim(),
+            title: String(r.title ?? '').trim(),
+            href: r.href?.trim() ? String(r.href) : '/korean-biz',
+            subtitle: r.subtitle != null ? String(r.subtitle) : null,
+          })),
+        );
+        out.localBizFromDemoFallback = false;
+      }
+    }
+  } catch {
+    /* 한인 생활망 폴백 실패 시 로컬 열은 이미 빈 상태 유지 */
   }
 
   try {

@@ -101,11 +101,14 @@ export default function KoreanBizHubClient({
   rows,
   locale = 'ko',
   globalEmpty = false,
+  fetchError = false,
 }: {
   rows: KoreanBizRow[];
   locale?: Locale;
-  /** 조회 실패·0건: 글라스 안내 카드만 강조 */
+  /** 0건일 때만 AI 레이더 플레이스홀더 — 행이 있으면 즉시 리스트 */
   globalEmpty?: boolean;
+  /** Supabase 조회 에러(데이터는 없음): 플레이스홀더와 동일 처리 가능 */
+  fetchError?: boolean;
 }) {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<KoreanBizRow['region']>('bangkok');
@@ -157,6 +160,13 @@ export default function KoreanBizHubClient({
           <p className="mt-2 text-base text-gray-300">
             마트 · 약국 · 병원 — 검증된 연락처를 한곳에서
           </p>
+          {fetchError ? (
+            <p className="mt-3 text-sm text-rose-300/95">
+              {locale === 'th'
+                ? 'ชั่วคราวโหลดรายการไม่สำเร็จ — โปรดรีเฟรชหรือลองใหม่ภายหลัง'
+                : '목록을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.'}
+            </p>
+          ) : null}
         </header>
         <GlobalRadarPlaceholder />
       </div>

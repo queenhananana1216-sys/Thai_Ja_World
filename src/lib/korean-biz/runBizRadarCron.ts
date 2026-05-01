@@ -7,10 +7,18 @@ import {
   collectAllTextResults,
   mergeDetailIntoChange,
   placesDetails,
+  sleep,
   type BizRadarSearchTask,
   type KoreanBizCategory,
   type KoreanBizRegion,
 } from '@/lib/korean-biz/bizRadarPlaces';
+
+/** 방콕 → 파타야 → 치앙마이 순으로 한 번에 한 지역만 과부하 나지 않게 처리 */
+const REGION_ORDER: KoreanBizRegion[] = ['bangkok', 'pattaya', 'chiangmai'];
+const INTER_REGION_DELAY_MS = 1_500;
+const INTER_TASK_DELAY_MS = 450;
+/** Places Details / DB 왕복 사이 가벼운 스로틀 */
+const INTER_PLACE_MS = 280;
 
 export type BizRadarCronResult = {
   /** 텍스트 검색으로 유니크 place_id 처리 시도 횟수 */
@@ -228,48 +236,63 @@ export async function runBizRadarCronForTasks(
   const seenPlaceIds = new Set<string>();
   const insertedPlaceIds = new Set<string>();
 
-  for (const task of tasks) {
-    let results: Awaited<ReturnType<typeof collectAllTextResults>>;
-    try {
-      results = await collectAllTextResults({
-        apiKey,
-        query: task.query,
-        region: task.region,
-        maxPages,
-      });
-    } catch (e) {
-      result.errors.push(
-        `search "${task.query}": ${e instanceof Error ? e.message : String(e)}`,
-      );
-      continue;
-    }
+  for (let ri = 0; ri < REGION_ORDER.length; ri += 1) {
+    const region = REGION_ORDER[ri]!;
+    const regionTasks = tasks.filter((t) => t.region === region);
+    if (regionTasks.length === 0) continue;
 
-    for (const r of results) {
-      const pid = r.place_id;
-      if (!pid || seenPlaceIds.has(pid)) continue;
-      seenPlaceIds.add(pid);
-      result.discoveryScanned += 1;
-
-      const { data: existing, error: exErr } = await sb
-        .from('korean_businesses')
-        .select(
-          'id, google_place_id, name, category, region, address, phone, latitude, longitude, is_verified, last_verified_at',
-        )
-        .eq('google_place_id', pid)
-        .maybeSingle();
-
-      if (exErr) {
-        result.errors.push(`lookup ${pid}: ${exErr.message}`);
+    for (const task of regionTasks) {
+      let results: Awaited<ReturnType<typeof collectAllTextResults>>;
+      try {
+        results = await collectAllTextResults({
+          apiKey,
+          query: task.query,
+          region: task.region,
+          maxPages,
+        });
+      } catch (e) {
+        result.errors.push(
+          `search "${task.query}": ${e instanceof Error ? e.message : String(e)}`,
+        );
+        await sleep(INTER_TASK_DELAY_MS);
         continue;
       }
 
-      if (!existing) {
-        const ok = await insertNewPlace(sb, apiKey, task, pid, result.errors);
-        if (ok) {
-          result.discoveryInserted += 1;
-          insertedPlaceIds.add(pid);
+      for (const r of results) {
+        const pid = r.place_id;
+        if (!pid || seenPlaceIds.has(pid)) continue;
+        seenPlaceIds.add(pid);
+        result.discoveryScanned += 1;
+
+        const { data: existing, error: exErr } = await sb
+          .from('korean_businesses')
+          .select(
+            'id, google_place_id, name, category, region, address, phone, latitude, longitude, is_verified, last_verified_at',
+          )
+          .eq('google_place_id', pid)
+          .maybeSingle();
+
+        if (exErr) {
+          result.errors.push(`lookup ${pid}: ${exErr.message}`);
+          await sleep(INTER_PLACE_MS);
+          continue;
+        }
+
+        if (!existing) {
+          const ok = await insertNewPlace(sb, apiKey, task, pid, result.errors);
+          if (ok) {
+            result.discoveryInserted += 1;
+            insertedPlaceIds.add(pid);
+          }
+          await sleep(INTER_PLACE_MS);
         }
       }
+
+      await sleep(INTER_TASK_DELAY_MS);
+    }
+
+    if (ri < REGION_ORDER.length - 1) {
+      await sleep(INTER_REGION_DELAY_MS);
     }
   }
 
@@ -277,30 +300,40 @@ export async function runBizRadarCronForTasks(
     return result;
   }
 
-  const { data: allRows, error: listErr } = await sb
-    .from('korean_businesses')
-    .select(
-      'id, google_place_id, name, category, region, address, phone, latitude, longitude, is_verified, last_verified_at',
-    );
+  for (let vi = 0; vi < REGION_ORDER.length; vi += 1) {
+    const region = REGION_ORDER[vi]!;
+    const { data: regionRows, error: listErr } = await sb
+      .from('korean_businesses')
+      .select(
+        'id, google_place_id, name, category, region, address, phone, latitude, longitude, is_verified, last_verified_at',
+      )
+      .eq('region', region);
 
-  if (listErr) {
-    result.errors.push(`list_all: ${listErr.message}`);
-    return result;
-  }
+    if (listErr) {
+      result.errors.push(`list_${region}: ${listErr.message}`);
+      await sleep(INTER_REGION_DELAY_MS);
+      continue;
+    }
 
-  for (const row of allRows ?? []) {
-    const r = row as Row;
-    if (insertedPlaceIds.has(r.google_place_id)) continue;
-    result.verificationChecked += 1;
-    try {
-      const outcome = await verifyExistingRow(sb, apiKey, r, result.errors);
-      if (outcome === 'fields_updated') result.verificationFieldsUpdated += 1;
-      else if (outcome === 'stamp_only') result.verificationStampOnly += 1;
-      else if (outcome === 'marked_inactive') result.verificationMarkedInactive += 1;
-    } catch (e) {
-      result.errors.push(
-        `verify ${r.google_place_id}: ${e instanceof Error ? e.message : String(e)}`,
-      );
+    for (const row of regionRows ?? []) {
+      const r = row as Row;
+      if (insertedPlaceIds.has(r.google_place_id)) continue;
+      result.verificationChecked += 1;
+      try {
+        const outcome = await verifyExistingRow(sb, apiKey, r, result.errors);
+        if (outcome === 'fields_updated') result.verificationFieldsUpdated += 1;
+        else if (outcome === 'stamp_only') result.verificationStampOnly += 1;
+        else if (outcome === 'marked_inactive') result.verificationMarkedInactive += 1;
+      } catch (e) {
+        result.errors.push(
+          `verify ${r.google_place_id}: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+      await sleep(INTER_PLACE_MS);
+    }
+
+    if (vi < REGION_ORDER.length - 1) {
+      await sleep(INTER_REGION_DELAY_MS);
     }
   }
 

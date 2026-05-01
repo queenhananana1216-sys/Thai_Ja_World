@@ -32,6 +32,12 @@ export interface CollectArticlesOutput {
 const DEFAULT_ITEMS = 8;
 const MAX_ITEMS = 50;
 const FETCH_TIMEOUT_MS = 20_000;
+/** 피드 간 순차 수집 시 버스트 완화(ms). Vercel·외부 RSS 과부하 방지 */
+const INTER_FEED_DELAY_MS = 450;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 function parseItemsPerFeed(raw: string | undefined): number {
   const n = raw ? Number.parseInt(raw, 10) : DEFAULT_ITEMS;
@@ -145,7 +151,8 @@ export async function collectArticles(
   const feedsSucceeded: string[] = [];
   const feedsFailed: { url: string; error: string }[] = [];
 
-  for (const feedUrl of validUrls) {
+  for (let fi = 0; fi < validUrls.length; fi += 1) {
+    const feedUrl = validUrls[fi]!;
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -160,6 +167,7 @@ export async function collectArticles(
 
       if (!res.ok) {
         feedsFailed.push({ url: feedUrl, error: `HTTP ${res.status}` });
+        await delay(INTER_FEED_DELAY_MS);
         continue;
       }
 
@@ -177,6 +185,9 @@ export async function collectArticles(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       feedsFailed.push({ url: feedUrl, error: msg });
+    }
+    if (fi < validUrls.length - 1) {
+      await delay(INTER_FEED_DELAY_MS);
     }
   }
 

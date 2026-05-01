@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Suspense } from 'react';
+import { unstable_noStore as noStore } from 'next/cache';
 import KoreanBizHubClient, { type KoreanBizRow } from './KoreanBizHubClient';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerClient } from '@/lib/supabase/server';
@@ -30,6 +30,7 @@ export function generateMetadata(): Metadata {
 }
 
 export default async function KoreanBizPage() {
+  noStore();
   const locale = await getLocale();
   const sb = createServerClient();
   const { data, error } = await sb
@@ -39,20 +40,12 @@ export default async function KoreanBizPage() {
     )
     .order('name');
 
-  const rows: KoreanBizRow[] = !error && Array.isArray(data) ? (data as KoreanBizRow[]) : [];
+  const rows: KoreanBizRow[] = Array.isArray(data) ? (data as KoreanBizRow[]) : [];
+  const globalEmpty = rows.length === 0;
 
   return (
     <div className="min-h-[70vh] bg-[#060a12] bg-[radial-gradient(ellipse_at_top,_rgba(251,191,36,0.08),_transparent_55%)]">
-      <Suspense
-        fallback={
-          <div className="mx-auto max-w-3xl animate-pulse px-4 py-16">
-            <div className="h-10 rounded-xl bg-white/5" />
-            <div className="mt-6 h-32 rounded-2xl bg-white/5" />
-          </div>
-        }
-      >
-        <KoreanBizHubClient rows={rows} locale={locale} globalEmpty={Boolean(error) || rows.length === 0} />
-      </Suspense>
+      <KoreanBizHubClient rows={rows} locale={locale} globalEmpty={globalEmpty} fetchError={Boolean(error)} />
     </div>
   );
 }

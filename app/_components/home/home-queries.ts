@@ -12,6 +12,7 @@ import {
   passesKoPublicGate,
 } from '@/lib/news/processedNewsDisplay';
 import { getLocale } from '@/i18n/get-locale';
+import type { Locale } from '@/i18n/types';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import type { JobPost, MarketPost, PortalPostRow, PremiumBannerRow } from '../../portal/types';
 import type { LocalBusiness } from '@/types/taeworld';
@@ -444,6 +445,84 @@ export async function fetchHomeLocalDemoBusinesses(
     image_urls: Array.isArray(r.image_urls) ? (r.image_urls as string[]).filter((x) => typeof x === 'string') : [],
     emoji: typeof r.emoji === 'string' && r.emoji.trim() ? r.emoji.trim() : '🏪',
   }));
+
+  return { rows, error: null };
+}
+
+function koreanBizRegionLabel(region: string, locale: Locale): string {
+  const ko: Record<string, string> = {
+    bangkok: '방콕',
+    pattaya: '파타야',
+    chiangmai: '치앙마이',
+  };
+  const th: Record<string, string> = {
+    bangkok: 'กรุงเทพฯ',
+    pattaya: 'พัทยา',
+    chiangmai: 'เชียงใหม่',
+  };
+  const m = locale === 'th' ? th : ko;
+  return m[region] ?? region;
+}
+
+function koreanBizCategoryLabel(category: string, locale: Locale): string {
+  const ko: Record<string, string> = {
+    mart: '마트',
+    pharmacy: '약국',
+    hospital: '병원',
+  };
+  const th: Record<string, string> = {
+    mart: 'มาร์ท',
+    pharmacy: 'ร้านยา',
+    hospital: 'โรงพยาบาล',
+  };
+  const m = locale === 'th' ? th : ko;
+  return m[category] ?? category;
+}
+
+export type HomeKoreanBizPortalLine = {
+  id: string;
+  title: string;
+  href: string;
+  subtitle: string | null;
+};
+
+/**
+ * `korean_businesses` — `local_businesses_public`·RPC·데모가 모두 비었을 때
+ * 포털 로컬 열·우측 윙에 한인 생활망 링크를 채우기 위한 공개 읽기 전용 목록.
+ */
+export async function fetchHomeKoreanBizPortalLines(
+  limit = 8,
+  locale: Locale = 'ko',
+): Promise<{ rows: HomeKoreanBizPortalLine[]; error: string | null }> {
+  const sb = tryCreate();
+  if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
+
+  const { data, error } = await sb
+    .from('korean_businesses')
+    .select('id, name, category, region')
+    .order('name', { ascending: true })
+    .limit(limit);
+
+  if (error) return { rows: [], error: error.message };
+
+  const rows: HomeKoreanBizPortalLine[] = (data ?? [])
+    .map((r) => {
+      const id = String(r.id ?? '').trim();
+      const title = String(r.name ?? '').trim();
+      if (!id || !title) return null;
+      const reg = String(r.region ?? '');
+      const cat = String(r.category ?? '');
+      const subtitle = [koreanBizRegionLabel(reg, locale), koreanBizCategoryLabel(cat, locale)]
+        .filter(Boolean)
+        .join(' · ');
+      return {
+        id,
+        title,
+        href: `/korean-biz?focus=${encodeURIComponent(id)}`,
+        subtitle: subtitle || null,
+      };
+    })
+    .filter((x): x is HomeKoreanBizPortalLine => x != null);
 
   return { rows, error: null };
 }

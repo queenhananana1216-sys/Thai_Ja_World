@@ -122,7 +122,7 @@ function compactLines(lines: (PortalFeedLine | null)[]): PortalFeedLine[] {
  * 루트 포털 3열 — Supabase 실데이터만 (`home-queries` → `createPublicAnonClient()`: jobs, market, posts, processed_news, premium_banners, RPC).
  * 타임아웃·에러·빈 결과는 빈 배열; 샘플 글이나 임의 기사 제목을 넣지 않음.
  */
-export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
+async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
   const out: PortalHomeFeed = {
     jobs: [],
     market: [],
@@ -294,4 +294,14 @@ export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
   }
 
   return out;
+}
+
+/** 어떤 예외도 홈 SSR을 죽이지 않음 — 전체 실패 시 빈 피드로 2026 포털만 렌더 */
+export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
+  try {
+    return await fetchPortalHomeFeedCore();
+  } catch (err) {
+    console.warn('[fetchPortalHomeFeed] 치명적 오류 — HONEST_EMPTY_PORTAL_HOME_FEED 반환', err);
+    return { ...HONEST_EMPTY_PORTAL_HOME_FEED };
+  }
 }

@@ -2,13 +2,69 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
+import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { tryCreateServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
 type AdminAccessResult = false | { email: string };
 
+function flagsFromProfileRow(profile: unknown): { role: string; isAdmin: boolean } {
+  const role =
+    typeof (profile as { role?: unknown } | null)?.role === 'string'
+      ? (profile as { role?: string }).role!.trim().toLowerCase()
+      : '';
+  const isAdmin =
+    typeof (profile as { is_admin?: unknown } | null)?.is_admin === 'boolean'
+      ? Boolean((profile as { is_admin?: boolean }).is_admin)
+      : false;
+  return { role, isAdmin };
+}
+
+type ProfileAdminSignals = { isStaff: boolean; role: string; isAdmin: boolean };
+
+/**
+ * DB에 실제 있는 컬럼부터 읽는다. 이 레포 스키마에는 `is_staff`가 있고 `role`/`is_admin`은
+ * 환경에 따라 없을 수 있어 — 한 번에 select 하면 전체가 실패하므로 분리 조회한다.
+ */
+async function readProfileAdminSignals(
+  userId: string,
+  sessionClient: SupabaseClient,
+): Promise<ProfileAdminSignals | null> {
+  async function readFrom(client: SupabaseClient): Promise<ProfileAdminSignals | null> {
+    const { data: rowStaff, error: eStaff } = await client
+      .from('profiles')
+      .select('is_staff')
+      .eq('id', userId)
+      .maybeSingle();
+    if (eStaff || !rowStaff) return null;
+
+    const isStaff = Boolean((rowStaff as { is_staff?: boolean }).is_staff);
+
+    const { data: rowExtra, error: eExtra } = await client
+      .from('profiles')
+      .select('role, is_admin')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!eExtra && rowExtra) {
+      const f = flagsFromProfileRow(rowExtra);
+      return { isStaff, role: f.role, isAdmin: f.isAdmin };
+    }
+    return { isStaff, role: '', isAdmin: false };
+  }
+
+  try {
+    const svc = createServiceRoleClient();
+    const fromSvc = await readFrom(svc);
+    if (fromSvc) return fromSvc;
+  } catch {
+    /* dummy service client */
+  }
+  return readFrom(sessionClient);
+}
+
 /**
  * 이미 열린 Supabase(쿠키) 클라이언트 + userId + 정규화된 이메일로 관리자 여부만 판정.
- * `GlobalNav` 등에서 **동일 세션 클라이언트**로 호출해 `/admin` 레이아웃과 결과를 맞춘다.
+ * `GlobalNav` 등에서 **동일 세션**으로 폴백 조회하며, DB 플래그는 service_role 우선.
  */
 export async function resolveAdminForUser(
   supabase: SupabaseClient,
@@ -18,24 +74,12 @@ export async function resolveAdminForUser(
   const email = emailLower.trim().toLowerCase();
   if (!userId || !email || !email.includes('@')) return false;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, is_admin')
-    .eq('id', userId)
-    .maybeSingle();
-
-  const role =
-    typeof (profile as { role?: unknown } | null)?.role === 'string'
-      ? (profile as { role?: string }).role!.trim().toLowerCase()
-      : '';
-  const isAdminFlag =
-    typeof (profile as { is_admin?: unknown } | null)?.is_admin === 'boolean'
-      ? Boolean((profile as { is_admin?: boolean }).is_admin)
-      : false;
-  const adminRole = role === 'owner' || role === 'super_admin' || role === 'admin';
-
-  if (isAdminFlag || adminRole) {
-    return { email };
+  const sig = await readProfileAdminSignals(userId, supabase);
+  if (sig) {
+    const adminRole = sig.role === 'owner' || sig.role === 'super_admin' || sig.role === 'admin';
+    if (sig.isStaff || sig.isAdmin || adminRole) {
+      return { email };
+    }
   }
 
   const ownerIds =

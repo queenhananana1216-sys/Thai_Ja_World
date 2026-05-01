@@ -21,8 +21,26 @@ export type Portal2026KoDict = {
 };
 
 export type Portal2026ViewProps = {
+  /** SSR 컨트롤러에서만 주입 — 클라이언트 페치 금지 */
   feed: PortalHomeFeed;
-  dict: Portal2026KoDict;
+};
+
+/** 페이지 외부로 노출하지 않는 고정 한국어 사본 (PROP 드릴링: feed 단일 채널) */
+const SSR_PORTAL_KO_DICT: Portal2026KoDict = {
+  board: {
+    empty: '아직 등록된 글이 없습니다. 첫 글의 주인공이 되어보세요!',
+    tradeHubTitle: '중고·알바',
+  },
+  home: {
+    hubBoard: '광장',
+    shopsMore: '더 보기 →',
+    portalMastTitle: '2026 Taeja World · 커뮤니티 포털',
+    portalMastSub: 'Supabase 공개 데이터를 서버에서만 불러옵니다. (SSR)',
+    tag: '태국 교민 커뮤니티 태자월드',
+  },
+  footerNav: {
+    contact: '문의',
+  },
 };
 
 const FALLBACK_EMPTY = '아직 등록된 글이 없습니다.';
@@ -191,10 +209,10 @@ const STATIC_BOARDS = [
 ] as const;
 
 /**
- * 2026 3열 포털 — feed·dict는 page.tsx(SSR 컨트롤러)에서만 주입. 한국어 고정.
+ * 2026 3열 포털 — feed만 page.tsx(SSR)에서 주입. 한국어·카피는 모듈 내부 고정.
  */
-export default function Portal2026View({ feed, dict }: Portal2026ViewProps) {
-  const d = safeDict(dict);
+export default function Portal2026View({ feed }: Portal2026ViewProps) {
+  const d = safeDict(SSR_PORTAL_KO_DICT);
   const raw = safeFeed(feed);
 
   const shopsMoreRaw = d?.home?.shopsMore ?? '';

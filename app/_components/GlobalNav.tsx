@@ -13,31 +13,10 @@ const NAV_MENUS: { href: string; label: string }[] = [
   { href: '/news', label: '뉴스' },
 ];
 
-/** 헤더 전용 정적 카피 — getLocale/getDictionary 미사용 */
+/** RSC 순수 헤더 — 클라이언트 훅·i18n 없음 (한국어 고정 마크업) */
 export default function GlobalNav() {
   return (
     <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
-      <div className="border-b border-white/5 bg-slate-950/80">
-        <div className="site-container flex flex-wrap items-center justify-between gap-2 py-1.5">
-          <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-500">
-            <a
-              href="?lang=ko"
-              className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400 no-underline transition-colors hover:border-white/25 hover:text-slate-200"
-            >
-              한국어
-            </a>
-            <span className="text-slate-600">/</span>
-            <a
-              href="?lang=th"
-              className="rounded border border-white/10 px-1.5 py-0.5 text-slate-400 no-underline transition-colors hover:border-white/25 hover:text-slate-200"
-            >
-              ไทย
-            </a>
-          </div>
-          <AuthBar />
-        </div>
-      </div>
-
       <div className="site-container flex flex-wrap items-center justify-between gap-3 py-2.5">
         <Link
           href="/"
@@ -56,25 +35,28 @@ export default function GlobalNav() {
           <span className="sr-only">태자월드</span>
         </Link>
 
-        <div className="order-3 w-full min-w-0 max-w-xl flex-1 md:order-none md:w-auto md:max-w-md">
-          <div className="w-full min-w-0">
-            <label className="sr-only" htmlFor="tj-header-search-rsc">
-              통합 검색
-            </label>
-            <form action="/search" method="GET" className="m-0">
-              <input
-                id="tj-header-search-rsc"
-                name="q"
-                type="search"
-                placeholder="검색어를 입력하세요"
-                autoComplete="off"
-                className="w-full rounded-full border border-white/15 bg-slate-900/70 px-4 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-500"
-              />
-            </form>
-            <p className="mt-1 text-center text-[10px] text-slate-600 md:text-left">
-              메뉴·뉴스·게시판을 통합 검색합니다
-            </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="order-3 w-full min-w-0 max-w-xl flex-1 md:order-none md:w-auto md:max-w-md">
+            <div className="w-full min-w-0">
+              <label className="sr-only" htmlFor="tj-header-search-rsc">
+                통합 검색
+              </label>
+              <form action="/search" method="GET" className="m-0">
+                <input
+                  id="tj-header-search-rsc"
+                  name="q"
+                  type="search"
+                  placeholder="검색어를 입력하세요"
+                  autoComplete="off"
+                  className="w-full rounded-full border border-white/15 bg-slate-900/70 px-4 py-2 text-sm text-slate-200 outline-none placeholder:text-slate-500"
+                />
+              </form>
+              <p className="mt-1 text-center text-[10px] text-slate-600 md:text-left">
+                메뉴·뉴스·게시판을 통합 검색합니다
+              </p>
+            </div>
           </div>
+          <AuthBar />
         </div>
       </div>
 

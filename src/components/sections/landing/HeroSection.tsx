@@ -3,13 +3,9 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import { SplineCanvas } from '@/components/3d/SplineCanvas';
-import { SplineHeroCanvas } from '@/components/3d/SplineHeroCanvas';
 import { getDictionary } from '@/i18n/dictionaries';
 import { readLocaleCookie } from '@/i18n/readLocaleCookie';
 import { TJ_LOCALE_CHANGE_EVENT, type Locale } from '@/i18n/types';
-import type { SplineSceneRecord } from '@/lib/spline/types';
-
 interface HeroSectionProps {
   memberCount?: number;
   /** 포털 히어로 우측: 집계 숫자(fetchLandingStatsSSR) */
@@ -21,11 +17,7 @@ interface HeroSectionProps {
     lastUpdatedAt: string | null;
     degraded?: boolean;
   };
-  /** 레거시: 랜덤 로테이션용 scene URL 배열 */
-  sceneUrls?: string[];
-  /** 신규: spline_scenes 파이프라인의 `hero` 슬롯 레코드 (우선 적용) */
-  heroScene?: SplineSceneRecord;
-  /** 랜딩 포털: 다크 히어로 높이·3D 부하를 줄이고 아래 라이트 3열로 이어짐 */
+  /** 랜딩 포털: 다크 히어로 높이를 줄이고 아래 라이트 3열로 이어짐 */
   variant?: 'default' | 'portalCompact';
 }
 
@@ -38,8 +30,6 @@ const HARDCODED_BODY_FALLBACK =
 export function HeroSection({
   memberCount: _memberCount = 0,
   portalStats,
-  sceneUrls = [],
-  heroScene,
   variant = 'default',
 }: HeroSectionProps) {
   const [locale, setLocale] = useState<Locale>('ko');
@@ -72,94 +62,7 @@ export function HeroSection({
   const copyPanelTrade = hAny.heroPanelTrade?.trim() || '번개장터 가기';
   const copyPanelJob = hAny.heroPanelJob?.trim() || '구인구직 보기';
   const copyPanelLocal = hAny.heroPanelLocal?.trim() || '날씨·로컬 정보 보기';
-  const [qualityTier, setQualityTier] = useState<'low' | 'medium' | 'high'>('high');
   const [isMobileLayout, setIsMobileLayout] = useState(false);
-  const availableScenes = useMemo(
-    () => sceneUrls.filter((value) => typeof value === 'string' && value.trim().length > 0),
-    [sceneUrls]
-  );
-  const [activeSceneIndex, setActiveSceneIndex] = useState<number>(0);
-  const hasScenes = availableScenes.length > 0;
-  const activeSceneUrl = hasScenes ? availableScenes[activeSceneIndex % availableScenes.length] : undefined;
-
-  useEffect(() => {
-    const nav = navigator as Navigator & {
-      deviceMemory?: number;
-      connection?: { saveData?: boolean };
-    };
-
-    const memory = nav.deviceMemory ?? 4;
-    const cores = nav.hardwareConcurrency ?? 4;
-    const saveData = Boolean(nav.connection?.saveData);
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const isMobile = window.innerWidth < 768;
-    const params = new URLSearchParams(window.location.search);
-    const forceHighFromQuery = params.get('quality') === 'high' || params.get('spline') === 'on';
-    const savedOverride = window.localStorage.getItem('tj_quality_override') === 'high';
-
-    if (variant === 'portalCompact') {
-      if (reducedMotion) {
-        setQualityTier('low');
-        return;
-      }
-      if (forceHighFromQuery) {
-        window.localStorage.setItem('tj_quality_override', 'high');
-        setQualityTier('high');
-        return;
-      }
-      if (savedOverride) {
-        setQualityTier('high');
-        return;
-      }
-      setQualityTier('low');
-      return;
-    }
-
-    if (forceHighFromQuery) {
-      window.localStorage.setItem('tj_quality_override', 'high');
-      setQualityTier('high');
-      return;
-    }
-    if (savedOverride) {
-      setQualityTier('high');
-      return;
-    }
-
-    // Desktop keeps rich visuals by default.
-    if (!isMobile) {
-      setQualityTier('high');
-      return;
-    }
-
-    if (saveData || reducedMotion) {
-      setQualityTier('low');
-      return;
-    }
-    if (memory <= 1 || cores <= 2) {
-      setQualityTier('low');
-      return;
-    }
-    if (memory <= 2 || cores <= 4) {
-      setQualityTier('medium');
-      return;
-    }
-    setQualityTier('high');
-  }, [variant]);
-
-  useEffect(() => {
-    if (availableScenes.length <= 1) {
-      return;
-    }
-    if (qualityTier === 'low') {
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      setActiveSceneIndex((prev) => (prev + 1) % availableScenes.length);
-    }, qualityTier === 'medium' ? 10000 : 8000);
-
-    return () => window.clearInterval(interval);
-  }, [availableScenes.length, qualityTier]);
 
   useEffect(() => {
     const updateLayout = () => setIsMobileLayout(window.innerWidth < 1024);
@@ -473,18 +376,12 @@ export function HeroSection({
 
   return (
     <section style={sectionStyle}>
-      <div style={{ pointerEvents: 'none', position: 'absolute', inset: 0, zIndex: -20 }}>
-        {heroScene && (heroScene.sceneCodeUrl || heroScene.publishedUrl) ? (
-          <SplineCanvas
-            slot="hero"
-            publishedUrl={heroScene.publishedUrl}
-            sceneCodeUrl={heroScene.sceneCodeUrl}
-            quality={qualityTier === 'low' ? 'low' : heroScene.qualityTier}
-            title="Thai Ja World Hero 3D"
-          />
-        ) : (
-          <SplineHeroCanvas sceneUrl={activeSceneUrl} />
-        )}
+      <div
+        style={{ pointerEvents: 'none', position: 'absolute', inset: 0, zIndex: -20 }}
+        aria-hidden
+        className="bg-[radial-gradient(circle_at_20%_20%,#3b1f5a_0%,#151235_42%,#070812_100%)]"
+      >
+        <div className="h-full w-full bg-[linear-gradient(120deg,rgba(196,181,253,0.1),transparent_45%,rgba(249,168,212,0.1))]" />
       </div>
       <div
         style={{

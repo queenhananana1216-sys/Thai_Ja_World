@@ -6,7 +6,6 @@ import { PortalHomeLayout } from '@/components/landing/PortalHomeLayout';
 import { ProblemSection } from '@/components/sections/landing/ProblemSection';
 import { ServiceSection } from '@/components/sections/landing/ServiceSection';
 import { TestimonialSection } from '@/components/sections/landing/TestimonialSection';
-import { LandingSplineAccent } from '@/components/sections/landing/LandingSplineAccent';
 import { LANDING_DEFAULT_STATS } from '@/lib/landing/constants';
 import { getLandingEntryFlow } from '@/lib/landing/entryFlow';
 import type { EntryFlowResponse } from '@/lib/landing/types';
@@ -15,8 +14,6 @@ import { fetchLandingStatsSSR } from '@/lib/stats/fetchStatsSSR';
 import { fetchThailandCitiesWeather } from '@/lib/weather/fetchThailandCitiesWeather';
 import { fetchUsdFx, FX_SNAPSHOT_FALLBACK } from '@/lib/fx/fetchUsdFx';
 import { getLocale } from '@/i18n/get-locale';
-import { resolveSplineScenes } from '@/lib/spline/resolver';
-import type { SplineScenesBySlot } from '@/lib/spline/types';
 
 /** 캐시·ISR에 묶이지 않고 배포 직후에도 갱신된 랜딩이 보이게 */
 export const dynamic = 'force-dynamic';
@@ -29,13 +26,8 @@ export const metadata: Metadata = {
 
 /**
  * 랜딩 페이지는 절대 throw 하지 않는다.
- * 서버 호출(stats·entry flow·spline 장면)은 각각 자체 try/catch 폴백을 가지며,
- * 이 SSR 함수에서 한 번 더 `Promise.allSettled` 로 감싸 한 소스만 죽어도 다른 섹션은 렌더.
- *
- * 하드코딩된 3D 배열 / self-fetch / 하드코딩 카피 모두 제거됨:
- *  - 카피: i18n 기본값 + `site_copy` (Provider 통해) 파이프라인
- *  - 통계: Supabase 직접 집계 (`fetchLandingStatsSSR`)
- *  - Spline: `resolveSplineScenes()` 로 DB/ENV/시드 우선순위 병합
+ * 서버 호출은 각각 try/catch·`Promise.allSettled` 폴백으로 한 소스만 죽어도 다른 섹션은 렌더.
+ * 무거운 3D(Spline) 파이프라인은 제거됨 — 히어로 배경은 정적 그라디언트만 사용.
  */
 export default async function LandingPage() {
   const fallbackEntryFlow: EntryFlowResponse = {
@@ -60,63 +52,6 @@ export default async function LandingPage() {
     },
   };
 
-  const fallbackScenes: SplineScenesBySlot = {
-    logo: {
-      slot: 'logo',
-      sourceFileId: null,
-      publishedUrl: null,
-      sceneCodeUrl: null,
-      isEnabled: true,
-      qualityTier: 'high',
-      placementHint: null,
-    },
-    hero: {
-      slot: 'hero',
-      sourceFileId: null,
-      publishedUrl: null,
-      sceneCodeUrl: null,
-      isEnabled: true,
-      qualityTier: 'high',
-      placementHint: null,
-    },
-    accent1: {
-      slot: 'accent1',
-      sourceFileId: null,
-      publishedUrl: null,
-      sceneCodeUrl: null,
-      isEnabled: true,
-      qualityTier: 'medium',
-      placementHint: null,
-    },
-    accent2: {
-      slot: 'accent2',
-      sourceFileId: null,
-      publishedUrl: null,
-      sceneCodeUrl: null,
-      isEnabled: true,
-      qualityTier: 'medium',
-      placementHint: null,
-    },
-    accent3: {
-      slot: 'accent3',
-      sourceFileId: null,
-      publishedUrl: null,
-      sceneCodeUrl: null,
-      isEnabled: true,
-      qualityTier: 'medium',
-      placementHint: null,
-    },
-    accent4: {
-      slot: 'accent4',
-      sourceFileId: null,
-      publishedUrl: null,
-      sceneCodeUrl: null,
-      isEnabled: true,
-      qualityTier: 'medium',
-      placementHint: null,
-    },
-  };
-
   const locale = await getLocale().catch(() => 'ko' as const);
 
   const fallbackPulse: CommunityPulse = {
@@ -125,11 +60,9 @@ export default async function LandingPage() {
     generatedAt: new Date().toISOString(),
   };
 
-  const [statsSettled, entryFlowSettled, scenesSettled, pulseSettled, weatherSettled, fxSettled] =
-    await Promise.allSettled([
+  const [statsSettled, entryFlowSettled, pulseSettled, weatherSettled, fxSettled] = await Promise.allSettled([
     fetchLandingStatsSSR(),
     getLandingEntryFlow(),
-    resolveSplineScenes(),
     fetchCommunityPulse(locale),
     fetchThailandCitiesWeather(locale),
     fetchUsdFx({ next: { revalidate: 1800 } }),
@@ -141,20 +74,18 @@ export default async function LandingPage() {
       : { ...LANDING_DEFAULT_STATS, degraded: true };
   const entryFlow =
     entryFlowSettled.status === 'fulfilled' ? entryFlowSettled.value : fallbackEntryFlow;
-  const scenes = scenesSettled.status === 'fulfilled' ? scenesSettled.value : fallbackScenes;
   const pulse = pulseSettled.status === 'fulfilled' ? pulseSettled.value : fallbackPulse;
-  const weather = weatherSettled.status === 'fulfilled' ? weatherSettled.value : { cities: [], updatedAt: null as string | null };
+  const weather =
+    weatherSettled.status === 'fulfilled'
+      ? weatherSettled.value
+      : { cities: [], updatedAt: null as string | null };
   const fxSnapshot =
-    fxSettled.status === 'fulfilled' ? fxSettled.value : { ...FX_SNAPSHOT_FALLBACK, dateISO: new Date().toISOString() };
-
-  const heroScene = scenes.hero;
-  const heroSceneUrls = [heroScene.sceneCodeUrl, heroScene.publishedUrl].filter(
-    (v): v is string => typeof v === 'string' && v.length > 0,
-  );
+    fxSettled.status === 'fulfilled'
+      ? fxSettled.value
+      : { ...FX_SNAPSHOT_FALLBACK, dateISO: new Date().toISOString() };
 
   return (
     <main className="tj-landing-root">
-      {/* 랜딩에서만: 좌우 크림 바디·패턴이 비치지 않도록 (전역 body) */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -180,12 +111,9 @@ export default async function LandingPage() {
             lastUpdatedAt: stats.lastUpdatedAt,
             degraded: (stats as { degraded?: boolean }).degraded,
           }}
-          sceneUrls={heroSceneUrls}
-          heroScene={heroScene}
           variant="portalCompact"
         />
       </div>
-      <LandingSplineAccent scene={scenes.accent1} position="top-right" />
       <PortalHomeLayout
         locale={locale}
         pulse={pulse}
@@ -195,12 +123,9 @@ export default async function LandingPage() {
         weatherUpdatedAt={weather.updatedAt}
         fx={fxSnapshot}
       />
-      <LandingSplineAccent scene={scenes.accent2} position="bottom-left" />
       <ProblemSection />
       <ServiceSection />
-      <LandingSplineAccent scene={scenes.accent3} position="top-left" />
       <TestimonialSection />
-      <LandingSplineAccent scene={scenes.accent4} position="bottom-right" />
       <CTASection />
       <FooterSection />
     </main>

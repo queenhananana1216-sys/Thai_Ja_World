@@ -1,5 +1,6 @@
 /**
  * 2026 홈 포털 — 루트 전용. 클라이언트 · Auth 래퍼 없음.
+ * 블루/골드 글라스 톤 (라이트 누출 + 다크 베이스)
  */
 .root {
   min-height: 100vh;
@@ -8,6 +9,10 @@
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
   background-color: #0b0f19;
+  background-image:
+    radial-gradient(ellipse 130% 90% at 50% -15%, rgba(59, 130, 246, 0.14), transparent 55%),
+    radial-gradient(ellipse 80% 70% at 100% 20%, rgba(245, 158, 11, 0.1), transparent 50%),
+    radial-gradient(ellipse 70% 50% at 0% 80%, rgba(59, 130, 246, 0.06), transparent 45%);
   color: rgb(226 232 240);
 }
 

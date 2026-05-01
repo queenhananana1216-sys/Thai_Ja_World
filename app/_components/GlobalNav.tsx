@@ -6,7 +6,7 @@ import AuthBarClient from './AuthBarClient';
 import { getLocale } from '@/i18n/get-locale';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/types';
-import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
+import { resolveAdminForUser } from '@/lib/admin/resolveAdminAccess';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
 const WRITE_HREF = '/community/write';
@@ -48,6 +48,7 @@ export default async function GlobalNav() {
   let myMinihomeHref: string | null = null;
   let authUser: { id: string; email: string | null } | null = null;
   let profileDisplayName: string | null = null;
+  let showMasterAdmin = false;
 
   try {
     const authSb = await createServerSupabaseAuthClient();
@@ -61,6 +62,11 @@ export default async function GlobalNav() {
       profileDisplayName = null;
     } else {
       authUser = { id: user.id, email: user.email ?? null };
+      const emailLower = user.email?.trim().toLowerCase() ?? '';
+      if (emailLower) {
+        const adminRes = await resolveAdminForUser(authSb, user.id, emailLower);
+        showMasterAdmin = adminRes !== false;
+      }
       const { data: prof } = await authSb
         .from('profiles')
         .select('display_name')
@@ -87,11 +93,8 @@ export default async function GlobalNav() {
     myMinihomeHref = null;
     authUser = null;
     profileDisplayName = null;
+    showMasterAdmin = false;
   }
-
-  /** `/admin`·관리자 API와 동일한 게이트 — 일반 유저·비회원에는 절대 노출 안 함 */
-  const adminAccess = await resolveAdminAccess();
-  const showMasterAdmin = adminAccess !== false;
 
   const authLabels = {
     login: d.board.login,

@@ -2,7 +2,7 @@
  * 로고/헤더는 이 컴포넌트가 아니라 `app/layout.tsx`의 세그먼트 설정(`dynamic`/`revalidate`)으로 캐시가 결정됩니다.
  */
 import Link from 'next/link';
-import AuthBar from './AuthBar';
+import AuthBarClient from './AuthBarClient';
 import { getLocale } from '@/i18n/get-locale';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/types';
@@ -43,6 +43,9 @@ export default async function GlobalNav() {
 
   /** 비로그인이면 null — 버튼 미렌더. 로그인만 동일 Supabase(쿠키 JWT)로 슬러그 조회 (anon 분리 조회 금지). */
   let myMinihomeHref: string | null = null;
+  let authUser: { id: string; email: string | null } | null = null;
+  let profileDisplayName: string | null = null;
+
   try {
     const authSb = await createServerSupabaseAuthClient();
     const {
@@ -51,7 +54,20 @@ export default async function GlobalNav() {
     } = await authSb.auth.getUser();
     if (userErr || !user?.id) {
       myMinihomeHref = null;
+      authUser = null;
+      profileDisplayName = null;
     } else {
+      authUser = { id: user.id, email: user.email ?? null };
+      const { data: prof } = await authSb
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      profileDisplayName =
+        typeof prof?.display_name === 'string' && prof.display_name.trim()
+          ? prof.display_name.trim()
+          : null;
+
       const { data: hm, error: hmErr } = await authSb
         .from('user_minihomes')
         .select('public_slug')
@@ -66,7 +82,15 @@ export default async function GlobalNav() {
     }
   } catch {
     myMinihomeHref = null;
+    authUser = null;
+    profileDisplayName = null;
   }
+
+  const authLabels = {
+    login: d.board.login,
+    signup: d.board.signup,
+    logout: d.board.logout,
+  };
 
   const NAV_MENUS: { href: string; label: string }[] = [
     { href: '/', label: d.nav.home },
@@ -153,7 +177,12 @@ export default async function GlobalNav() {
               🏠 {x.myMinihome}
             </Link>
           ) : null}
-          <AuthBar />
+          <AuthBarClient
+            initialUser={authUser}
+            initialDisplayName={profileDisplayName}
+            labels={authLabels}
+            profileHref={myMinihomeHref}
+          />
         </div>
       </div>
 
@@ -175,18 +204,13 @@ export default async function GlobalNav() {
                   🏠 {x.myMinihome}
                 </Link>
               ) : null}
-              <a
-                href="/auth/login"
-                className="flex min-h-11 items-center justify-center rounded-md border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-center text-base font-semibold text-violet-50 no-underline"
-              >
-                {d.board.login}
-              </a>
-              <a
-                href="/auth/signup"
-                className="flex min-h-11 items-center justify-center rounded-md border border-pink-400/30 bg-pink-500/10 px-3 py-2 text-center text-base font-semibold text-pink-50 no-underline"
-              >
-                {d.board.signup}
-              </a>
+              <AuthBarClient
+                variant="mobile"
+                initialUser={authUser}
+                initialDisplayName={profileDisplayName}
+                labels={authLabels}
+                profileHref={myMinihomeHref}
+              />
               <Link
                 href={WRITE_HREF}
                 className="flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-center text-base font-semibold text-white no-underline"

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import AdminQuickOpsPanel from './_components/AdminQuickOpsPanel';
 import { fetchLatestPipelineTouch, probeSiteReachability } from '@/lib/admin/adminDashboardSignals';
+import { fetchSiteTrafficSummary24h } from '@/lib/admin/siteTrafficSummary';
 import { getKstDayRangeISO } from '@/lib/admin/kstDayRange';
 import {
   knowledgePublishModeEnvRaw,
@@ -15,9 +16,10 @@ import {
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 export default async function AdminDashboardPage() {
-  const [reach, pipelineTouch] = await Promise.all([
+  const [reach, pipelineTouch, traffic24h] = await Promise.all([
     probeSiteReachability(),
     fetchLatestPipelineTouch(),
+    fetchSiteTrafficSummary24h(),
   ]);
   const fiveAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   const kstToday = getKstDayRangeISO();
@@ -147,11 +149,26 @@ export default async function AdminDashboardPage() {
           </p>
         </article>
         <article className="admin-dash__master-card">
-          <p className="admin-dash__master-kicker">PHASE 2 예약</p>
-          <p className="admin-dash__master-title">오늘 평균 체류 · 클릭</p>
-          <p className="admin-dash__master-metric">—</p>
+          <p className="admin-dash__master-kicker">PHASE 2 · 트래픽</p>
+          <p className="admin-dash__master-title">최근 24시간 조회 · 클릭 · 평균 체류</p>
+          <p className="admin-dash__master-metric">
+            {traffic24h.error
+              ? `집계 불가`
+              : `${traffic24h.views.toLocaleString()} · ${traffic24h.clicks.toLocaleString()} · ${traffic24h.avgDwellSeconds}s`}
+          </p>
           <p className="admin-dash__master-foot">
-            <code>ux_metrics</code>·이벤트 스트림과 연동하면 여기에 즉시 표시되도록 설계됩니다.
+            {traffic24h.error ? (
+              <>
+                <span style={{ color: '#b45309' }}>{traffic24h.error}</span>
+                <br />
+              </>
+            ) : (
+              <>
+                체류 표본 {traffic24h.sampleDwells.toLocaleString()}건 · 상한 1만 행 집계 ·{' '}
+              </>
+            )}
+            소스: <code>site_analytics</code> (클라 <code>AnalyticsTracker</code> →{' '}
+            <code>/api/analytics/track</code>)
           </p>
         </article>
       </section>

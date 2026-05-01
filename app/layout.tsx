@@ -1,5 +1,6 @@
 import './globals.css';
 import { cookies } from 'next/headers';
+import AnalyticsTracker from './_components/AnalyticsTracker';
 import GlobalNav from './_components/GlobalNav';
 import { SiteFooterFallback } from './_components/SiteFooterFallback';
 import { isLocale, LOCALE_COOKIE } from '@/i18n/types';
@@ -50,6 +51,15 @@ export default async function RootLayout({ children }: { children: unknown }) {
           }}
         />
         <GlobalNav />
+        {ui.healthSafeMode ? (
+          <div
+            role="status"
+            className="border-b border-amber-500/40 bg-amber-950/90 px-4 py-2 text-center text-sm font-semibold text-amber-100"
+          >
+            안전 모드: 데이터베이스 연결 이슈가 감지되어 보수적으로 동작합니다. 운영에서 상태를 확인해 주세요.
+          </div>
+        ) : null}
+        <AnalyticsTracker />
         <main className="relative z-0 min-h-[45vh] w-full flex-1 overflow-x-hidden">
           {children as import('react').ReactNode}
         </main>

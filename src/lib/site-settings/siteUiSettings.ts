@@ -8,12 +8,15 @@ export type SiteUiSettings = {
   textScale: TextScale;
   hideAiChrome: boolean;
   weatherWidgetEnabled: boolean;
+  /** DB 다운 등으로 자동/수동 설정된 읽기 위주 모드 */
+  healthSafeMode: boolean;
 };
 
 const DEFAULTS: SiteUiSettings = {
   textScale: 'normal',
   hideAiChrome: false,
   weatherWidgetEnabled: true,
+  healthSafeMode: false,
 };
 
 function createReadonlyAnon(): SupabaseClient | null {
@@ -50,6 +53,7 @@ export async function loadSiteUiSettings(): Promise<SiteUiSettings> {
         map.get('ui.weather_widget_enabled'),
         DEFAULTS.weatherWidgetEnabled,
       ),
+      healthSafeMode: parseBool(map.get('health.safe_mode'), DEFAULTS.healthSafeMode),
     };
   } catch {
     return { ...DEFAULTS };

@@ -14,6 +14,7 @@ const ALLOWED_KEYS = new Set([
   'ui.text_scale',
   'ui.hide_ai_chrome',
   'ui.weather_widget_enabled',
+  'health.safe_mode',
 ]);
 
 export async function GET(): Promise<NextResponse> {

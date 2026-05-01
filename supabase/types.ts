@@ -3550,6 +3550,36 @@ export type Database = {
         }
         Relationships: []
       }
+      site_analytics: {
+        Row: {
+          dwell_ms: number | null
+          id: string
+          kind: string
+          meta: Json
+          recorded_at: string
+          route: string
+          session_id: string | null
+        }
+        Insert: {
+          dwell_ms?: number | null
+          id?: string
+          kind: string
+          meta?: Json
+          recorded_at?: string
+          route?: string
+          session_id?: string | null
+        }
+        Update: {
+          dwell_ms?: number | null
+          id?: string
+          kind?: string
+          meta?: Json
+          recorded_at?: string
+          route?: string
+          session_id?: string | null
+        }
+        Relationships: []
+      }
       site_copy: {
         Row: {
           key: string

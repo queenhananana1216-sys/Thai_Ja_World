@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
-import Portal2026View from './portal/Portal2026View';
-import {
-  fetchPortalHomeFeed,
-  HONEST_EMPTY_PORTAL_HOME_FEED,
-} from './lib/home/fetchPortalHomeFeed';
+import { Suspense } from 'react';
+import PortalFeedSection from './_components/PortalFeedSection';
+import PortalHomeSuspenseFallback from './_components/PortalHomeSuspenseFallback';
 import { absoluteUrl } from '@/lib/seo/site';
 
 /** 홈(/)만 SSR 데이터 페치 — 레이아웃은 정적 뼈대 유지 */
@@ -33,13 +31,13 @@ export function generateMetadata(): Metadata {
 }
 
 /**
- * 메인 컨트롤러 — `fetchPortalHomeFeed()`(anon)만 사용. 예외 시에도 빈 피드로 포털 렌더(블랙아웃 방지).
+ * Suspense 로 페치 구간에 인라인 폴백을 즉시 노출 — 데이터 지연 시 순수 검은 화면처럼 보이는 현상 완화.
+ * 실제 페치·예외 처리는 `PortalFeedSection`.
  */
-export default async function HomePage() {
-  try {
-    const feed = await fetchPortalHomeFeed();
-    return <Portal2026View feed={feed} />;
-  } catch {
-    return <Portal2026View feed={HONEST_EMPTY_PORTAL_HOME_FEED} />;
-  }
+export default function HomePage() {
+  return (
+    <Suspense fallback={<PortalHomeSuspenseFallback />}>
+      <PortalFeedSection />
+    </Suspense>
+  );
 }

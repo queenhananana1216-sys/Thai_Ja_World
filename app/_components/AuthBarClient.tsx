@@ -56,6 +56,9 @@ export default function AuthBarClient({
   const router = useRouter();
   const sb = useMemo(() => createBrowserClient(), []);
 
+  /** SSR의 showMasterAdmin 과 불일치할 수 있어, 클라이언트 세션으로 재확인 */
+  const [masterAdminUi, setMasterAdminUi] = useState(showMasterAdmin);
+
   const [user, setUser] = useState<User | null>(() =>
     initialUser
       ? ({
@@ -83,6 +86,24 @@ export default function AuthBarClient({
   );
 
   useEffect(() => {
+    setMasterAdminUi(showMasterAdmin);
+  }, [showMasterAdmin]);
+
+  const refreshMasterAdminFlag = useCallback(async () => {
+    try {
+      const r = await fetch('/api/auth/master-admin', {
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      if (!r.ok) return;
+      const d = (await r.json()) as { masterAdmin?: boolean };
+      if (typeof d.masterAdmin === 'boolean') setMasterAdminUi(d.masterAdmin);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     const initialId = initialUser?.id ?? null;
     void sb.auth.getSession().then(({ data }) => {
@@ -108,10 +129,19 @@ export default function AuthBarClient({
     };
   }, [initialUser?.id, router, sb.auth, syncFromSupabaseUser]);
 
+  useEffect(() => {
+    if (!user?.id) {
+      setMasterAdminUi(false);
+      return;
+    }
+    void refreshMasterAdminFlag();
+  }, [user?.id, refreshMasterAdminFlag]);
+
   const handleLogout = useCallback(async () => {
     await sb.auth.signOut();
     setUser(null);
     setDisplayName(null);
+    setMasterAdminUi(false);
     router.refresh();
   }, [router, sb.auth]);
 
@@ -162,7 +192,7 @@ export default function AuthBarClient({
   if (variant === 'mobile') {
     return (
       <>
-        {showMasterAdmin ? (
+        {masterAdminUi ? (
           <Link href="/admin" className={masterAdminMobileClass}>
             ⚙️ {masterAdminLabel}
           </Link>
@@ -191,7 +221,7 @@ export default function AuthBarClient({
       role="navigation"
       aria-label="계정"
     >
-      {showMasterAdmin ? (
+      {masterAdminUi ? (
         <Link href="/admin" className={masterAdminHeaderClass}>
           ⚙️ {masterAdminLabel}
         </Link>

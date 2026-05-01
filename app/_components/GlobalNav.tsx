@@ -111,18 +111,18 @@ export default async function GlobalNav() {
               <span className="after:ml-2 after:text-slate-500 after:content-['▾']">메뉴</span>
             </summary>
             <div className="mt-2 flex flex-col gap-1 rounded-lg border border-white/10 bg-slate-950/95 p-2">
-              <Link
-                href="/auth/login?next=%2F"
+              <a
+                href="/auth/login"
                 className="rounded-md border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-center text-sm font-semibold text-violet-100 no-underline"
               >
                 {dict.board.login}
-              </Link>
-              <Link
-                href="/auth/signup?next=%2F"
+              </a>
+              <a
+                href="/auth/signup"
                 className="rounded-md border border-pink-400/30 bg-pink-500/10 px-3 py-2 text-center text-sm font-semibold text-pink-100 no-underline"
               >
                 {dict.board.signup}
-              </Link>
+              </a>
               <Link
                 href={WRITE_HREF}
                 className="rounded-md bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white no-underline"

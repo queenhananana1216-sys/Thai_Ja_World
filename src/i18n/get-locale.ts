@@ -2,8 +2,8 @@ import { headers } from 'next/headers';
 import { type Locale, isLocale } from './types';
 
 /**
- * 미들웨어가 요청 헤더에 넣은 `x-tj-locale`만 사용 (cookies() 미사용).
- * `/api/locale` 로 쿠키가 바뀌면 다음 네비게이션에서 미들웨어가 다시 주입.
+ * 미들웨어가 요청 헤더에 넣은 `x-tj-locale`만 사용.
+ * 미들웨어는 `?lang=`·`tj_locale` 쿠키를 읽어 헤더를 주입한다. `/api/locale` POST도 쿠키만 갱신.
  */
 export async function getLocale(): Promise<Locale> {
   const h = await headers();

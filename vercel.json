@@ -59,6 +59,10 @@
     {
       "path": "/api/cron/post-deploy-smoke",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/biz-radar",
+      "schedule": "15 4 * * 1"
     }
   ]
 }

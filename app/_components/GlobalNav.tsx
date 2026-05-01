@@ -92,6 +92,11 @@ export default async function GlobalNav() {
     logout: d.board.logout,
   };
 
+  const koreanBizNavLabel =
+    locale === 'th'
+      ? '🇰🇷 ชีวิตเกาหลี (มาร์ท/ร้านยา/โรงพยาบาล)'
+      : '🇰🇷 한인 생활망 (마트/약국/병원)';
+
   const NAV_MENUS: { href: string; label: string }[] = [
     { href: '/', label: d.nav.home },
     { href: '/boards', label: d.nav.boards },
@@ -100,8 +105,18 @@ export default async function GlobalNav() {
     { href: '/community/boards?cat=job', label: x.jobs },
     { href: '/local/info', label: x.realestate },
     { href: '/local', label: d.nav.local },
+    { href: '/korean-biz', label: koreanBizNavLabel },
     { href: '/news', label: x.news },
   ];
+
+  const koreanBizDesktopClass =
+    'inline-flex min-h-11 max-w-[min(100%,18rem)] items-center rounded-full border border-amber-400/45 bg-amber-500/[0.12] px-3 py-2 text-sm font-bold text-amber-50 no-underline shadow-[0_0_28px_rgba(251,191,36,0.18)] backdrop-blur-md transition hover:border-amber-300/70 hover:bg-amber-500/20 md:text-base';
+  const koreanBizMobileClass =
+    'flex min-h-11 items-center rounded-xl border border-amber-400/45 bg-amber-500/[0.14] px-3 py-2 text-base font-bold text-amber-50 no-underline shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_8px_28px_rgba(0,0,0,0.35)] backdrop-blur-md hover:border-amber-300/60 hover:bg-amber-500/20';
+  const navLinkDefaultDesktop =
+    'inline-flex min-h-11 items-center rounded-full border border-transparent px-3 py-2 text-base font-semibold text-gray-100 no-underline hover:border-amber-400/40 hover:text-amber-200';
+  const navLinkDefaultMobile =
+    'flex min-h-11 items-center rounded-md px-3 py-2 text-base text-gray-100 no-underline hover:bg-slate-800';
 
   return (
     <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
@@ -221,7 +236,7 @@ export default async function GlobalNav() {
                 <Link
                   key={m.href}
                   href={m.href}
-                  className="flex min-h-11 items-center rounded-md px-3 py-2 text-base text-gray-100 no-underline hover:bg-slate-800"
+                  className={m.href === '/korean-biz' ? koreanBizMobileClass : navLinkDefaultMobile}
                 >
                   {m.label}
                 </Link>
@@ -234,7 +249,7 @@ export default async function GlobalNav() {
               <Link
                 key={m.href}
                 href={m.href}
-                className="inline-flex min-h-11 items-center rounded-full border border-transparent px-3 py-2 text-base font-semibold text-gray-100 no-underline hover:border-amber-400/40 hover:text-amber-200"
+                className={m.href === '/korean-biz' ? koreanBizDesktopClass : navLinkDefaultDesktop}
               >
                 {m.label}
               </Link>

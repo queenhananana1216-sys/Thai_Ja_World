@@ -27,6 +27,8 @@ export type Portal2026Copy = {
   postsLabel: string;
   hubBoard: string;
   tradeHub: string;
+  /** 🇰🇷 한인 생활망 바로가기 */
+  koreanBizShortcut: string;
   newsLink: string;
   more: string;
   newsHubMore: string;
@@ -66,6 +68,7 @@ const ko: Portal2026Copy = {
   postsLabel: '공개 글·거래',
   hubBoard: '광장',
   tradeHub: '중고·알바',
+  koreanBizShortcut: '🇰🇷 한인 생활망 (마트/약국/병원)',
   newsLink: '뉴스',
   more: '더보기',
   newsHubMore: '뉴스 허브에서 전체 보기 →',
@@ -105,6 +108,7 @@ const th: Portal2026Copy = {
   postsLabel: 'โพสต์·ธุรกรรม',
   hubBoard: 'ลานชุมชน',
   tradeHub: 'มือสอง · งาน',
+  koreanBizShortcut: '🇰🇷 ชีวิตเกาหลี (มาร์ท/ร้านยา/โรงพยาบาล)',
   newsLink: 'ข่าว',
   more: 'เพิ่มเติม',
   newsHubMore: 'ดูทั้งหมดในฮับข่าว →',

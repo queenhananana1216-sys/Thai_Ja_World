@@ -458,6 +458,14 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
             <section className={`${styles.glassCenter} overflow-hidden p-2 text-base text-gray-100`}>
               <p className="text-lg font-semibold text-white">{copy.shortcutTitle}</p>
               <ul className="mt-1.5 space-y-0">
+                <li className="pb-2">
+                  <Link
+                    href="/korean-biz"
+                    className="inline-flex w-full min-h-12 max-w-full min-w-0 items-center justify-center rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-950/55 via-slate-900/60 to-rose-950/40 px-3 py-2.5 text-center text-base font-extrabold leading-snug text-amber-50 no-underline shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_10px_36px_rgba(251,191,36,0.12)] backdrop-blur-md transition hover:border-amber-300/55 hover:from-amber-900/50 hover:to-rose-950/50"
+                  >
+                    {copy.koreanBizShortcut}
+                  </Link>
+                </li>
                 <li>
                   <Link
                     href="/boards"

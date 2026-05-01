@@ -51,12 +51,59 @@ function formatVerifiedAt(iso: string | null | undefined, locale: Locale): strin
   }).format(d);
 }
 
+function GlobalRadarPlaceholder() {
+  return (
+    <div className="relative mx-auto max-w-lg px-4 py-6">
+      <style>{`
+        @keyframes korean-biz-radar-sweep {
+          0%, 100% { transform: translateX(-120%); opacity: 0.55; }
+          50% { transform: translateX(320%); opacity: 1; }
+        }
+        .korean-biz-radar-sweep {
+          animation: korean-biz-radar-sweep 2.2s ease-in-out infinite;
+        }
+      `}</style>
+      <div
+        className="relative overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-br from-slate-900/75 via-slate-950/70 to-black/60 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl md:p-10"
+        role="status"
+        aria-live="polite"
+      >
+        <div
+          className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-amber-500/15 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -bottom-16 -left-16 size-56 rounded-full bg-cyan-500/10 blur-3xl"
+          aria-hidden
+        />
+        <div className="relative flex flex-col items-center text-center">
+          <span className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-3xl shadow-inner backdrop-blur-md">
+            🤖
+          </span>
+          <p className="text-lg font-semibold leading-relaxed tracking-tight text-white/95 md:text-xl">
+            AI 레이더가 태국 전역의 한인 마트/약국/병원 정보를 실시간으로 수집하고 검증 중입니다...
+          </p>
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-gray-400">
+            곧 이 화면이 최신 연락처로 채워집니다. 잠시만 기다려 주세요.
+          </p>
+          <div className="relative mt-8 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
+            <div className="korean-biz-radar-sweep h-full w-2/5 rounded-full bg-gradient-to-r from-amber-400/95 via-rose-400/85 to-cyan-400/95 shadow-[0_0_20px_rgba(251,191,36,0.35)]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function KoreanBizHubClient({
   rows,
   locale = 'ko',
+  globalEmpty = false,
 }: {
   rows: KoreanBizRow[];
   locale?: Locale;
+  /** 조회 실패·0건: 글라스 안내 카드만 강조 */
+  globalEmpty?: boolean;
 }) {
   const [tab, setTab] = useState<KoreanBizRow['region']>('bangkok');
 
@@ -72,6 +119,25 @@ export default function KoreanBizHubClient({
     locale === 'th'
       ? `✅ ตรวจสอบล่าสุดโดย AI: ${formatVerifiedAt(iso, locale)}`
       : `✅ AI가 최근 검증함: ${formatVerifiedAt(iso, locale)}`;
+
+  if (globalEmpty) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-12 md:py-16">
+        <header className="mb-10 text-center">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-amber-200/90">
+            🇰🇷 Biz Radar
+          </p>
+          <h1 className="text-2xl font-black tracking-tight text-white md:text-3xl">
+            한인 생활망
+          </h1>
+          <p className="mt-2 text-base text-gray-300">
+            마트 · 약국 · 병원 — 검증된 연락처를 한곳에서
+          </p>
+        </header>
+        <GlobalRadarPlaceholder />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -113,9 +179,9 @@ export default function KoreanBizHubClient({
       <ul className="space-y-4">
         {filtered.length === 0 ? (
           <li
-            className="rounded-2xl border border-white/10 bg-slate-900/40 px-5 py-10 text-center text-gray-300 backdrop-blur-xl"
+            className="rounded-2xl border border-white/12 bg-gradient-to-br from-slate-900/55 to-slate-950/50 px-5 py-10 text-center text-gray-300 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl"
           >
-            이 지역에 등록된 한인 업소가 아직 없습니다. 곧 자동 수집으로 채워집니다.
+            이 지역에 표시할 업소가 아직 없습니다. 다른 지역 탭을 눌러 보시거나 잠시 후 다시 확인해 주세요.
           </li>
         ) : (
           filtered.map((row) => (

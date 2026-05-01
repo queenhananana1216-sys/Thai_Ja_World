@@ -3,6 +3,7 @@ import 'server-only';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import {
   BIZ_RADAR_SEARCH_TASKS,
+  FORCE_BIZ_SYNC_SEARCH_TASKS,
   collectAllTextResults,
   mergeDetailIntoChange,
   placesDetails,
@@ -16,8 +17,14 @@ export type BizRadarCronResult = {
   discoveryScanned: number;
   /** 신규 삽입된 행 수 */
   discoveryInserted: number;
+  /** Place Details로 재검증 시도한 기존 행 수 */
   verificationChecked: number;
-  verificationUpdated: number;
+  /** 전화·주소·이름·좌표·영업상태 등 구글과 달라 DB 필드를 고친 행 수 */
+  verificationFieldsUpdated: number;
+  /** 구글 상세와 동일 — last_verified_at 만 최신 시각으로 갱신한 행 수 */
+  verificationStampOnly: number;
+  /** Place ID가 구글에서 더 이상 조회되지 않음 — 폐업·삭제 추정, is_verified=false 처리 */
+  verificationMarkedInactive: number;
   errors: string[];
 };
 
@@ -41,6 +48,108 @@ async function fetchPlaceDetail(apiKey: string, placeId: string) {
     throw new Error(data.error_message ?? `details_${data.status}`);
   }
   return data.result;
+}
+
+type VerifyOutcome =
+  | 'fields_updated'
+  | 'stamp_only'
+  | 'marked_inactive'
+  | false;
+
+/**
+ * 기존 행을 Place Details와 대조.
+ * - 변경 있음 → 필드 UPDATE + last_verified_at
+ * - 동일 → last_verified_at 만 갱신
+ * - NOT_FOUND → is_verified=false + last_verified_at (목록에서 사라진 장소)
+ */
+async function verifyExistingRow(
+  sb: ReturnType<typeof createServiceRoleClient>,
+  apiKey: string,
+  row: Row,
+  errors: string[],
+): Promise<VerifyOutcome> {
+  const now = new Date().toISOString();
+  const data = await placesDetails({ apiKey, placeId: row.google_place_id });
+
+  if (data.status === 'NOT_FOUND') {
+    const { error } = await sb
+      .from('korean_businesses')
+      .update({
+        is_verified: false,
+        last_verified_at: now,
+      })
+      .eq('id', row.id);
+    if (error) {
+      errors.push(`inactive ${row.google_place_id}: ${error.message}`);
+      return false;
+    }
+    return 'marked_inactive';
+  }
+
+  if (data.status !== 'OK' || !data.result) {
+    errors.push(
+      `verify ${row.google_place_id}: ${data.error_message ?? data.status}`,
+    );
+    return false;
+  }
+
+  const detail = data.result;
+  const merged = mergeDetailIntoChange({
+    existingAddress: row.address,
+    existingPhone: row.phone,
+    existingName: row.name,
+    existingLat: row.latitude,
+    existingLng: row.longitude,
+    existingIsVerified: row.is_verified,
+    detail,
+  });
+
+  const canonicalId = (detail.google_resource_id ?? detail.place_id ?? row.google_place_id).trim();
+  let newPlaceId: string | undefined;
+  if (canonicalId !== row.google_place_id) {
+    const { data: other } = await sb
+      .from('korean_businesses')
+      .select('id')
+      .eq('google_place_id', canonicalId)
+      .maybeSingle();
+    const oid = other as { id: string } | null;
+    if (!oid) newPlaceId = canonicalId;
+    else if (oid.id !== row.id) {
+      errors.push(`place_id remap skipped ${row.google_place_id} → ${canonicalId}: row exists`);
+    }
+  }
+
+  const needsFieldWrite = merged.changed || Boolean(newPlaceId);
+
+  if (needsFieldWrite) {
+    const patch: Record<string, unknown> = {
+      name: merged.name,
+      address: merged.address,
+      phone: merged.phone,
+      latitude: merged.latitude,
+      longitude: merged.longitude,
+      is_verified: merged.isVerified,
+      last_verified_at: now,
+    };
+    if (newPlaceId) patch.google_place_id = newPlaceId;
+
+    const { error } = await sb.from('korean_businesses').update(patch).eq('id', row.id);
+    if (error) {
+      errors.push(`update ${row.google_place_id}: ${error.message}`);
+      return false;
+    }
+    return 'fields_updated';
+  }
+
+  const { error: stampErr } = await sb
+    .from('korean_businesses')
+    .update({ last_verified_at: now })
+    .eq('id', row.id);
+  if (stampErr) {
+    errors.push(`stamp ${row.google_place_id}: ${stampErr.message}`);
+    return false;
+  }
+  return 'stamp_only';
 }
 
 /** 신규 발견: 상세 조회 후 삽입 — 카테고리·지역은 태스크 기준 */
@@ -86,57 +195,27 @@ async function insertNewPlace(
   }
 }
 
-/** 기존 행 갱신: 주소·전화 등만 상세 기준으로 — 카테고리/지역 유지 */
-async function refreshExistingFromDetail(
-  sb: ReturnType<typeof createServiceRoleClient>,
-  apiKey: string,
-  row: Row,
-  errors: string[],
-): Promise<boolean> {
-  try {
-    const detail = await fetchPlaceDetail(apiKey, row.google_place_id);
-    const merged = mergeDetailIntoChange({
-      existingAddress: row.address,
-      existingPhone: row.phone,
-      existingName: row.name,
-      existingLat: row.latitude,
-      existingLng: row.longitude,
-      existingIsVerified: row.is_verified,
-      detail,
-    });
-    if (!merged.changed) return false;
+type RunBizRadarOptions = {
+  maxPages?: number;
+  /** true면 신규 발견만 수행(Place Details 갱신 루프 생략) */
+  skipVerification?: boolean;
+};
 
-    const now = new Date().toISOString();
-    const { error } = await sb
-      .from('korean_businesses')
-      .update({
-        name: merged.name,
-        address: merged.address,
-        phone: merged.phone,
-        latitude: merged.latitude,
-        longitude: merged.longitude,
-        is_verified: merged.isVerified,
-        last_verified_at: now,
-      })
-      .eq('id', row.id);
-    if (error) {
-      errors.push(`update ${row.google_place_id}: ${error.message}`);
-      return false;
-    }
-    return true;
-  } catch (e) {
-    errors.push(`refresh ${row.google_place_id}: ${e instanceof Error ? e.message : String(e)}`);
-    return false;
-  }
-}
+export async function runBizRadarCronForTasks(
+  tasks: BizRadarSearchTask[],
+  options?: RunBizRadarOptions,
+): Promise<BizRadarCronResult> {
+  const maxPages = options?.maxPages ?? 2;
+  const skipVerification = options?.skipVerification ?? false;
 
-export async function runBizRadarCron(): Promise<BizRadarCronResult> {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? '';
   const result: BizRadarCronResult = {
     discoveryScanned: 0,
     discoveryInserted: 0,
     verificationChecked: 0,
-    verificationUpdated: 0,
+    verificationFieldsUpdated: 0,
+    verificationStampOnly: 0,
+    verificationMarkedInactive: 0,
     errors: [],
   };
 
@@ -149,14 +228,14 @@ export async function runBizRadarCron(): Promise<BizRadarCronResult> {
   const seenPlaceIds = new Set<string>();
   const insertedPlaceIds = new Set<string>();
 
-  for (const task of BIZ_RADAR_SEARCH_TASKS) {
+  for (const task of tasks) {
     let results: Awaited<ReturnType<typeof collectAllTextResults>>;
     try {
       results = await collectAllTextResults({
         apiKey,
         query: task.query,
         region: task.region,
-        maxPages: 2,
+        maxPages,
       });
     } catch (e) {
       result.errors.push(
@@ -194,6 +273,10 @@ export async function runBizRadarCron(): Promise<BizRadarCronResult> {
     }
   }
 
+  if (skipVerification) {
+    return result;
+  }
+
   const { data: allRows, error: listErr } = await sb
     .from('korean_businesses')
     .select(
@@ -209,9 +292,29 @@ export async function runBizRadarCron(): Promise<BizRadarCronResult> {
     const r = row as Row;
     if (insertedPlaceIds.has(r.google_place_id)) continue;
     result.verificationChecked += 1;
-    const ok = await refreshExistingFromDetail(sb, apiKey, r, result.errors);
-    if (ok) result.verificationUpdated += 1;
+    try {
+      const outcome = await verifyExistingRow(sb, apiKey, r, result.errors);
+      if (outcome === 'fields_updated') result.verificationFieldsUpdated += 1;
+      else if (outcome === 'stamp_only') result.verificationStampOnly += 1;
+      else if (outcome === 'marked_inactive') result.verificationMarkedInactive += 1;
+    } catch (e) {
+      result.errors.push(
+        `verify ${r.google_place_id}: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
   }
 
   return result;
+}
+
+export async function runBizRadarCron(): Promise<BizRadarCronResult> {
+  return runBizRadarCronForTasks(BIZ_RADAR_SEARCH_TASKS, { maxPages: 2 });
+}
+
+/** 관리자 강제 시드: 키워드·지역 넓게 검색, 기존 행 Details 갱신은 생략 */
+export async function runForceBizSyncSeed(): Promise<BizRadarCronResult> {
+  return runBizRadarCronForTasks(FORCE_BIZ_SYNC_SEARCH_TASKS, {
+    maxPages: 4,
+    skipVerification: true,
+  });
 }

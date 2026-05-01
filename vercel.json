@@ -62,7 +62,7 @@
     },
     {
       "path": "/api/cron/biz-radar",
-      "schedule": "15 4 * * 1"
+      "schedule": "0 18 * * *"
     }
   ]
 }

@@ -1,8 +1,8 @@
 import 'server-only';
 
 /**
- * Google Places (Legacy) Text Search + Place Details — 키는 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.
- * @see https://developers.google.com/maps/documentation/places/web-service/search-text
+ * Google Places API (New): Text Search + Place Details — 키는 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.
+ * @see https://developers.google.com/maps/documentation/places/web-service/text-search
  */
 
 export type KoreanBizCategory = 'mart' | 'pharmacy' | 'hospital';
@@ -28,6 +28,25 @@ export const BIZ_RADAR_SEARCH_TASKS: BizRadarSearchTask[] = [
   { query: 'Chiang Mai Korean Hospital', region: 'chiangmai', category: 'hospital' },
 ];
 
+/** `/api/admin/force-biz-sync` — 지역 편향 + 키워드 조합으로 초기 시드용 */
+export const FORCE_BIZ_SYNC_SEARCH_TASKS: BizRadarSearchTask[] = [
+  { query: 'Korean Mart', region: 'bangkok', category: 'mart' },
+  { query: 'Korean Grocery', region: 'bangkok', category: 'mart' },
+  { query: 'Korean Hospital', region: 'bangkok', category: 'hospital' },
+  { query: 'Korean Clinic', region: 'bangkok', category: 'hospital' },
+  { query: 'Korean Pharmacy', region: 'bangkok', category: 'pharmacy' },
+  { query: 'Korean Mart', region: 'pattaya', category: 'mart' },
+  { query: 'Korean Grocery', region: 'pattaya', category: 'mart' },
+  { query: 'Korean Hospital', region: 'pattaya', category: 'hospital' },
+  { query: 'Korean Clinic', region: 'pattaya', category: 'hospital' },
+  { query: 'Korean Pharmacy', region: 'pattaya', category: 'pharmacy' },
+  { query: 'Korean Mart', region: 'chiangmai', category: 'mart' },
+  { query: 'Korean Grocery', region: 'chiangmai', category: 'mart' },
+  { query: 'Korean Hospital', region: 'chiangmai', category: 'hospital' },
+  { query: 'Korean Clinic', region: 'chiangmai', category: 'hospital' },
+  { query: 'Korean Pharmacy', region: 'chiangmai', category: 'pharmacy' },
+];
+
 const REGION_BIAS: Record<
   KoreanBizRegion,
   { lat: number; lng: number; radiusM: number }
@@ -45,18 +64,13 @@ type TextSearchResult = {
   business_status?: string;
 };
 
-type TextSearchResponse = {
-  status: string;
-  error_message?: string;
-  results?: TextSearchResult[];
-  next_page_token?: string;
-};
-
 type PlaceDetailsResponse = {
   status: string;
   error_message?: string;
   result?: {
     place_id?: string;
+    /** Place API 응답 id(보통 place_id와 동일, 정규화 대조용) */
+    google_resource_id?: string;
     name?: string;
     formatted_address?: string;
     formatted_phone_number?: string;
@@ -79,8 +93,17 @@ function normalizeAddr(s: string | null | undefined): string {
   return (s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
+/** Legacy·Places(New) 혼용 enum 문자열 정규화 */
+function normalizeBusinessStatus(status: string | undefined): string {
+  if (status === undefined || status === '') return '';
+  const u = status.toUpperCase();
+  if (u.includes('OPERATIONAL')) return 'OPERATIONAL';
+  return status;
+}
+
 export function isOperationalStatus(status: string | undefined): boolean {
-  return status === 'OPERATIONAL' || status === undefined || status === '';
+  if (status === undefined || status === '') return true;
+  return normalizeBusinessStatus(status) === 'OPERATIONAL';
 }
 
 export function mergeDetailIntoChange(params: {
@@ -141,54 +164,70 @@ export function mergeDetailIntoChange(params: {
   };
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) {
-    throw new Error(`places_http_${res.status}`);
-  }
-  return res.json() as Promise<T>;
-}
-
-export async function placesTextSearchPage(params: {
-  apiKey: string;
-  query: string;
-  region: KoreanBizRegion;
-  pageToken?: string;
-}): Promise<TextSearchResponse> {
-  const bias = REGION_BIAS[params.region];
-  const u = new URL('https://maps.googleapis.com/maps/api/place/textsearch/json');
-  u.searchParams.set('query', params.query);
-  u.searchParams.set('key', params.apiKey);
-  u.searchParams.set('location', `${bias.lat},${bias.lng}`);
-  u.searchParams.set('radius', String(bias.radiusM));
-  if (params.pageToken) {
-    u.searchParams.set('pagetoken', params.pageToken);
-  }
-  return fetchJson<TextSearchResponse>(u.toString());
-}
-
 export async function placesDetails(params: {
   apiKey: string;
   placeId: string;
 }): Promise<PlaceDetailsResponse> {
-  const fields = [
-    'place_id',
-    'name',
-    'formatted_address',
-    'formatted_phone_number',
-    'international_phone_number',
-    'geometry',
-    'business_status',
-    'opening_hours',
-  ].join(',');
-  const u = new URL('https://maps.googleapis.com/maps/api/place/details/json');
-  u.searchParams.set('place_id', params.placeId);
-  u.searchParams.set('fields', fields);
-  u.searchParams.set('key', params.apiKey);
-  return fetchJson<PlaceDetailsResponse>(u.toString());
+  const url = `https://places.googleapis.com/v1/places/${encodeURIComponent(params.placeId)}`;
+  const res = await fetch(url, {
+    headers: {
+      'X-Goog-Api-Key': params.apiKey,
+      'X-Goog-FieldMask':
+        'id,displayName,formattedAddress,nationalPhoneNumber,internationalPhoneNumber,location,businessStatus,openingHours',
+    },
+    cache: 'no-store',
+  });
+  const json = (await res.json()) as {
+    id?: string;
+    displayName?: { text?: string };
+    formattedAddress?: string;
+    nationalPhoneNumber?: string;
+    internationalPhoneNumber?: string;
+    location?: { latitude?: number; longitude?: number };
+    businessStatus?: string;
+    error?: { message?: string; status?: string; details?: unknown };
+  };
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      return {
+        status: 'NOT_FOUND',
+        error_message: json.error?.message ?? 'place_not_found',
+      };
+    }
+    return {
+      status: 'REQUEST_DENIED',
+      error_message: json.error?.message ?? `places_details_${res.status}`,
+    };
+  }
+
+  const phoneFirst =
+    normalizePhone(json.nationalPhoneNumber) || normalizePhone(json.internationalPhoneNumber);
+  const loc = json.location;
+  const biz = normalizeBusinessStatus(
+    typeof json.businessStatus === 'string' ? json.businessStatus : '',
+  );
+
+  const resourceId = typeof json.id === 'string' && json.id.trim() ? json.id.trim() : params.placeId;
+  return {
+    status: 'OK',
+    result: {
+      place_id: params.placeId,
+      google_resource_id: resourceId,
+      name: json.displayName?.text ?? '',
+      formatted_address: json.formattedAddress,
+      formatted_phone_number: phoneFirst || undefined,
+      international_phone_number: json.internationalPhoneNumber,
+      geometry:
+        loc != null
+          ? { location: { lat: loc.latitude ?? undefined, lng: loc.longitude ?? undefined } }
+          : undefined,
+      business_status: biz || undefined,
+    },
+  };
 }
 
-/** next_page_token 은 짧은 지연 후에만 유효 */
+/** Places API (New) Text Search — 페이지네이션은 nextPageToken */
 export async function collectAllTextResults(input: {
   apiKey: string;
   query: string;
@@ -196,34 +235,79 @@ export async function collectAllTextResults(input: {
   maxPages?: number;
 }): Promise<TextSearchResult[]> {
   const maxPages = input.maxPages ?? 3;
+  const bias = REGION_BIAS[input.region];
   const out: TextSearchResult[] = [];
-  let token: string | undefined;
+  let pageToken: string | undefined;
+
   for (let page = 0; page < maxPages; page += 1) {
-    const data = await placesTextSearchPage({
-      apiKey: input.apiKey,
-      query: input.query,
-      region: input.region,
-      pageToken: token,
+    const body: Record<string, unknown> = {
+      textQuery: input.query,
+      maxResultCount: 20,
+      locationBias: {
+        circle: {
+          center: { latitude: bias.lat, longitude: bias.lng },
+          radius: bias.radiusM,
+        },
+      },
+    };
+    if (pageToken) body.pageToken = pageToken;
+
+    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': input.apiKey,
+        'X-Goog-FieldMask':
+          'places.id,places.displayName,places.formattedAddress,places.location,places.businessStatus',
+      },
+      body: JSON.stringify(body),
+      cache: 'no-store',
     });
-    if (data.status === 'ZERO_RESULTS') break;
-    if (data.status === 'INVALID_REQUEST' && !token) {
-      throw new Error(data.error_message ?? 'textsearch_INVALID_REQUEST');
+
+    const data = (await res.json()) as {
+      places?: Array<{
+        id?: string;
+        displayName?: { text?: string };
+        formattedAddress?: string;
+        location?: { latitude?: number; longitude?: number };
+        businessStatus?: string;
+      }>;
+      nextPageToken?: string;
+      error?: { message?: string; code?: number; status?: string };
+    };
+
+    if (!res.ok) {
+      throw new Error(data.error?.message ?? `places_searchText_${res.status}`);
     }
-    if (data.status !== 'OK' && data.status !== 'INVALID_REQUEST') {
-      throw new Error(data.error_message ?? `textsearch_${data.status}`);
+
+    const places = data.places ?? [];
+    if (places.length === 0) break;
+
+    for (const p of places) {
+      if (!p.id) continue;
+      out.push({
+        place_id: p.id,
+        name: p.displayName?.text,
+        formatted_address: p.formattedAddress,
+        geometry: p.location
+          ? {
+              location: {
+                lat: p.location.latitude,
+                lng: p.location.longitude,
+              },
+            }
+          : undefined,
+        business_status: p.businessStatus
+          ? normalizeBusinessStatus(p.businessStatus)
+          : undefined,
+      });
     }
-    if (data.status === 'INVALID_REQUEST' && token) {
-      await sleep(2500);
-      page -= 1;
-      continue;
-    }
-    for (const r of data.results ?? []) {
-      out.push(r);
-    }
-    token = data.next_page_token;
-    if (!token) break;
-    await sleep(2100);
+
+    pageToken = data.nextPageToken;
+    if (!pageToken) break;
+    await sleep(1200);
   }
+
   return out;
 }
 

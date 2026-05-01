@@ -5,6 +5,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { absoluteUrl } from '@/lib/seo/site';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const META = {
   title: '한인 생활망 — 마트·약국·병원 | 태국에, 살자',
@@ -41,13 +42,7 @@ export default async function KoreanBizPage() {
 
   return (
     <div className="min-h-[70vh] bg-[#060a12] bg-[radial-gradient(ellipse_at_top,_rgba(251,191,36,0.08),_transparent_55%)]">
-      {error ? (
-        <p className="px-4 py-16 text-center text-rose-200">
-          목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
-        </p>
-      ) : (
-        <KoreanBizHubClient rows={rows} locale={locale} />
-      )}
+      <KoreanBizHubClient rows={rows} locale={locale} globalEmpty={Boolean(error) || rows.length === 0} />
     </div>
   );
 }

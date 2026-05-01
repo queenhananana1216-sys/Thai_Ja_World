@@ -1,0 +1,29 @@
+/**
+ * 2026 홈 포털 — 루트 전용. 클라이언트 · Auth 래퍼 없음.
+ */
+.root {
+  min-height: 100vh;
+  padding-left: 0.375rem;
+  padding-right: 0.375rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  background-color: #0b0f19;
+  color: rgb(226 232 240);
+}
+
+.grid {
+  margin-left: auto;
+  margin-right: auto;
+  display: grid;
+  width: 100%;
+  max-width: 1600px;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 0.5rem;
+}
+
+@media (min-width: 1181px) {
+  .grid {
+    grid-template-columns: minmax(10rem, 12rem) minmax(0, 1fr) minmax(11rem, 14rem);
+  }
+}

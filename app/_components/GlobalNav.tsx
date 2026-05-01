@@ -1,3 +1,6 @@
+/**
+ * 로고/헤더는 이 컴포넌트가 아니라 `app/layout.tsx`의 세그먼트 설정(`dynamic`/`revalidate`)으로 캐시가 결정됩니다.
+ */
 import Link from 'next/link';
 import AuthBar from './AuthBar';
 import { getLocale } from '@/i18n/get-locale';

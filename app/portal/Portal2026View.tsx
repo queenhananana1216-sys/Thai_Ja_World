@@ -10,19 +10,13 @@ import type {
 import type { Locale } from '@/i18n/types';
 import type { SiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { siteUiDefaults } from '@/lib/site-settings/siteUiSettings';
+import { getDictionary } from '@/i18n/dictionaries';
 import { getPortal2026Copy } from '@/i18n/portal2026Copy';
+import { localizeQuestFeedText, stripQuestFeedWeatherClutter } from '@/lib/quests/questFeedLocale';
 import PortalLocalDemoWingRolling from './PortalLocalDemoWingRolling';
 import PortalQuestWriteCta from './PortalQuestWriteCta';
 import PortalWeatherWidget from './PortalWeatherWidget';
 import styles from './portal-2026.module.css';
-
-/** 제목·부제에 실수로 붙은 `(방콕 …°C …)` 형태 제거 */
-function stripTrailingWeatherParen(text: string): string {
-  let t = text.trim();
-  t = t.replace(/\s*\([^)]*(?:방콕|กรุงเทพ|Bangkok)[^)]*\)\s*$/iu, '').trim();
-  t = t.replace(/\s*\([^)]*\d+\s*°?\s*C[^)]*\)\s*$/iu, '').trim();
-  return t;
-}
 
 /** processed_news.created_at → 상대 시간 (SSR·클라 동일 규칙) */
 function formatPortalNewsAge(iso: string | null | undefined, locale: Locale): string {
@@ -134,7 +128,7 @@ function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedL
     const titleRaw = (l as { title?: unknown }).title;
     const id = typeof idRaw === 'string' ? idRaw : idRaw != null ? String(idRaw) : '';
     const titleRawStr = typeof titleRaw === 'string' ? titleRaw : titleRaw != null ? String(titleRaw) : '';
-    const title = stripTrailingWeatherParen(titleRawStr);
+    const title = stripQuestFeedWeatherClutter(titleRawStr);
     if (!id?.trim() || !title?.trim()) continue;
     const hrefRaw = (l as { href?: unknown }).href;
     const subRaw = (l as { subtitle?: unknown }).subtitle;
@@ -149,7 +143,7 @@ function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedL
       subtitle: (() => {
         if (subRaw == null) return null;
         const raw = typeof subRaw === 'string' ? subRaw : String(subRaw);
-        const s = stripTrailingWeatherParen(raw);
+        const s = stripQuestFeedWeatherClutter(raw);
         return s.trim() ? s : null;
       })(),
       ...(publishedAt ? { publishedAt } : {}),
@@ -193,7 +187,10 @@ function NewsLinesSkeleton({ rows = 7, newsHubMore }: { rows?: number; newsHubMo
 
 function NewsDenseRowLink({ item, locale }: { item: PortalFeedLine; locale: Locale }) {
   const href = item.href?.trim() ? item.href : '/news';
-  const summary = item.subtitle?.trim() ?? '';
+  const d = getDictionary(locale);
+  const map = d.quests.feedPhraseMap;
+  const title = localizeQuestFeedText(item.title ?? '', locale, map);
+  const summary = localizeQuestFeedText(item.subtitle?.trim() ?? '', locale, map);
   const age = formatPortalNewsAge(item.publishedAt ?? null, locale);
   return (
     <li className="border-b border-slate-800/70 py-1 last:border-b-0">
@@ -201,7 +198,7 @@ function NewsDenseRowLink({ item, locale }: { item: PortalFeedLine; locale: Loca
         href={href}
         className="flex min-h-11 min-w-0 flex-nowrap items-center gap-x-1.5 text-base leading-snug text-gray-100 hover:text-amber-200"
       >
-        <span className="min-w-0 max-w-[46%] shrink truncate break-words font-semibold text-white">{item.title}</span>
+        <span className="min-w-0 max-w-[46%] shrink truncate break-words font-semibold text-white">{title}</span>
         <span className="shrink-0 text-gray-300">·</span>
         <span className="min-w-0 flex-1 truncate break-words text-gray-200">{summary || '—'}</span>
         {age ? (
@@ -231,6 +228,8 @@ function FeedLineList({
   locale: Locale;
   newsHubMore: string;
 }) {
+  const d = getDictionary(locale);
+  const phraseMap = d.quests.feedPhraseMap;
   const safe = normalizeLines(lines ?? []);
   if (safe.length === 0) {
     if (omitEmptyPlaceholder) {
@@ -264,9 +263,13 @@ function FeedLineList({
             href={item?.href?.trim() ? item.href : '/boards'}
             className="flex min-h-11 min-w-0 flex-col justify-center overflow-hidden py-0.5 hover:text-amber-200"
           >
-            <span className="line-clamp-2 break-words font-medium text-white">{item?.title ?? ''}</span>
+            <span className="line-clamp-2 break-words font-medium text-white">
+              {localizeQuestFeedText(item?.title ?? '', locale, phraseMap)}
+            </span>
             {item?.subtitle ? (
-              <span className="mt-0.5 block line-clamp-2 break-words text-sm text-gray-200">{item.subtitle}</span>
+              <span className="mt-0.5 block line-clamp-2 break-words text-sm text-gray-200">
+                {localizeQuestFeedText(item.subtitle, locale, phraseMap)}
+              </span>
             ) : null}
           </Link>
         </li>
@@ -292,15 +295,25 @@ function isLiveGamificationLine(item: PortalFeedLine): boolean {
   );
 }
 
-function LiveFeedList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyMessage: string }) {
+function LiveFeedList({
+  lines,
+  emptyMessage,
+  locale,
+}: {
+  lines: PortalFeedLine[];
+  emptyMessage: string;
+  locale: Locale;
+}) {
+  const d = getDictionary(locale);
+  const phraseMap = d.quests.feedPhraseMap;
   const safe = normalizeLines(lines ?? []);
   if (safe.length === 0) return <EmptyState message={emptyMessage} />;
   return (
     <ul className="max-h-[min(24rem,55vh)] min-h-0 overflow-y-auto overscroll-contain px-2 py-1 md:max-h-[280px]">
       {safe.map((item, idx) => {
         const hot = isLiveGamificationLine(item);
-        const title = item?.title ?? '';
-        const sub = item?.subtitle ?? '';
+        const titleLoc = localizeQuestFeedText(item?.title ?? '', locale, phraseMap);
+        const subLoc = localizeQuestFeedText(item?.subtitle ?? '', locale, phraseMap);
         return (
           <li
             key={item?.id ? String(item.id) : `live-${idx}`}
@@ -315,15 +328,15 @@ function LiveFeedList({ lines, emptyMessage }: { lines: PortalFeedLine[]; emptyM
               <span
                 className={`line-clamp-2 break-words ${hot ? 'font-semibold text-white' : 'font-normal text-gray-100'}`}
               >
-                {hot ? splitLiveHotKeywords(title) : title}
+                {hot ? splitLiveHotKeywords(titleLoc) : titleLoc}
               </span>
-              {sub ? (
+              {subLoc ? (
                 <span
                   className={`mt-0.5 block line-clamp-2 break-words text-sm ${
                     hot ? 'font-medium text-gray-200' : 'text-gray-200'
                   }`}
                 >
-                  {hot ? splitLiveHotKeywords(sub) : sub}
+                  {hot ? splitLiveHotKeywords(subLoc) : subLoc}
                 </span>
               ) : null}
             </Link>
@@ -556,7 +569,7 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
             <header className="border-b border-slate-700/70 px-2 py-2 text-lg font-black text-blue-200">
               {copy.liveFeedTitle}
             </header>
-            <LiveFeedList lines={liveFeed ?? []} emptyMessage={copy.emptyLiveFeed} />
+            <LiveFeedList lines={liveFeed ?? []} emptyMessage={copy.emptyLiveFeed} locale={locale} />
           </section>
         </section>
 

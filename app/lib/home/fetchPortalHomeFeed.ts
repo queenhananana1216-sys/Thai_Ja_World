@@ -18,6 +18,8 @@ import {
 } from '../../_components/home/home-queries';
 import type { HomeUnifiedFeedItem } from '../../_components/home/home-feed-types';
 import { categoryLabel } from '@/lib/community/postCategories';
+import type { Locale } from '@/i18n/types';
+import { getLocale } from '@/i18n/get-locale';
 
 export type PortalFeedLine = {
   id: string;
@@ -84,10 +86,11 @@ export const HONEST_EMPTY_PORTAL_HOME_FEED: PortalHomeFeed = {
 
 const HOME_FETCH_TIMEOUT_MS = 8000;
 
-function unifiedItemToLine(item: HomeUnifiedFeedItem): PortalFeedLine | null {
+function unifiedItemToLine(item: HomeUnifiedFeedItem, locale: Locale): PortalFeedLine | null {
   const id = String(item.id ?? '').trim();
   const title = String(item.title ?? '').trim();
   if (!id || !title) return null;
+  const th = locale === 'th';
   /** jobs·market 테이블 id 는 posts 상세와 불일치 — 허브로만 연결 */
   const href =
     item.kind === 'job'
@@ -97,14 +100,22 @@ function unifiedItemToLine(item: HomeUnifiedFeedItem): PortalFeedLine | null {
         : `/community/boards/${encodeURIComponent(id)}`;
   const pill =
     item.kind === 'job'
-      ? '구인'
+      ? th
+        ? 'งาน'
+        : '구인'
       : item.kind === 'market'
-        ? '거래'
-        : categoryLabel(item.category || 'free', 'ko');
+        ? th
+          ? 'ซื้อขาย'
+          : '거래'
+        : categoryLabel(item.category || 'free', locale);
   const excerpt = item.excerpt?.trim();
+  const c = item.comment_count ?? 0;
+  const v = item.view_count ?? 0;
   const subtitle = excerpt
     ? `${pill} · ${excerpt.slice(0, 96)}${excerpt.length > 96 ? '…' : ''}`
-    : `${pill} · 댓글 ${item.comment_count} · 조회 ${item.view_count}`;
+    : th
+      ? `${pill} · ความคิดเห็น ${c} · เข้าชม ${v}`
+      : `${pill} · 댓글 ${c} · 조회 ${v}`;
   return {
     id: `${item.kind}-${id}`,
     title,
@@ -174,6 +185,8 @@ function portalLocalMinihomeHref(slug: string, miniHome: unknown): string {
  * 타임아웃·에러·빈 결과는 빈 배열; 샘플 글이나 임의 기사 제목을 넣지 않음.
  */
 async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
+  const portalLocale = await getLocale().catch(() => 'ko' as Locale);
+
   const out: PortalHomeFeed = {
     jobs: [],
     market: [],
@@ -406,7 +419,7 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
 
   try {
     const u = await withTimeout(fetchHomeUnifiedFeed(14), { rows: [], error: null });
-    out.liveFeed = compactLines((u.rows ?? []).map((row) => unifiedItemToLine(row)));
+    out.liveFeed = compactLines((u.rows ?? []).map((row) => unifiedItemToLine(row, portalLocale)));
   } catch {
     out.liveFeed = [];
   }

@@ -626,6 +626,10 @@ export type Dictionary = {
     /** /community/trade — 메타·OG */
     tradeHubDescription: string;
   };
+  /** 퀘스트·통합 피드 등 DB 영문 원문 → ko/th 치환 */
+  quests: {
+    feedPhraseMap: { en: string; ko: string; th: string }[];
+  };
   /** 정적 안내 페이지 (/terms, /privacy, /contact, /ads) */
   policy: {
     termsTitle: string;
@@ -1253,6 +1257,37 @@ const ko: Dictionary = {
       '한국어로 나누는 태국 살이 — 후기·정보·거래할 때 조심할 점. 방콕·파타야 동네 이야기.',
     tradeHubDescription:
       '중고·일자리도 후기·주의를 같이 나누는 곳 — 말머리에서 바로 들어가 보세요.',
+  },
+  quests: {
+    feedPhraseMap: [
+      { en: 'Guestbook cheers', ko: '방명록 응원', th: 'เขียนสมุดเยี่ยมชม' },
+      { en: 'guestbook cheers', ko: '방명록 응원', th: 'เขียนสมุดเยี่ยมชม' },
+      { en: 'Weekly post', ko: '주간 게시물 작성', th: 'โพสต์ประจำสัปดาห์' },
+      { en: 'weekly post', ko: '주간 게시물 작성', th: 'โพสต์ประจำสัปดาห์' },
+      { en: 'Today comment', ko: '오늘의 댓글', th: 'คอมเมนต์วันนี้' },
+      { en: 'today comment', ko: '오늘의 댓글', th: 'คอมเมนต์วันนี้' },
+      { en: 'Daily login', ko: '오늘의 출석', th: 'ล็อกอินรายวัน' },
+      { en: 'daily login', ko: '오늘의 출석', th: 'ล็อกอินรายวัน' },
+      { en: 'First post', ko: '첫 게시글', th: 'โพสต์แรก' },
+      { en: 'first post', ko: '첫 게시글', th: 'โพสต์แรก' },
+      { en: 'Quest complete', ko: '퀘스트 완료', th: 'เควสต์สำเร็จ' },
+      { en: 'quest complete', ko: '퀘스트 완료', th: 'เควสต์สำเร็จ' },
+      { en: 'Dotori', ko: '도토리', th: 'ดอกท้อ' },
+      { en: 'dotori', ko: '도토리', th: 'ดอกท้อ' },
+      { en: 'Cheer a post', ko: '게시글 응원', th: 'เชียร์โพสต์' },
+      { en: 'cheer a post', ko: '게시글 응원', th: 'เชียร์โพสต์' },
+      { en: 'Share to feed', ko: '피드에 공유', th: 'แชร์ลงฟีด' },
+      { en: 'Comment streak', ko: '댓글 연속 달성', th: 'สตรีคคอมเมนต์' },
+      { en: 'comment streak', ko: '댓글 연속 달성', th: 'สตรีคคอมเมนต์' },
+      { en: 'Visit minihome', ko: '미니홈 방문', th: 'เยี่ยมมินิโฮม' },
+      { en: 'visit minihome', ko: '미니홈 방문', th: 'เยี่ยมมินิโฮม' },
+      { en: 'Guestbook', ko: '방명록', th: 'สมุดเยี่ยมชม' },
+      { en: 'guestbook', ko: '방명록', th: 'สมุดเยี่ยมชม' },
+      { en: 'Weekly quest', ko: '주간 퀘스트', th: 'เควสต์ประจำสัปดาห์' },
+      { en: 'weekly quest', ko: '주간 퀘스트', th: 'เควสต์ประจำสัปดาห์' },
+      { en: 'Daily quest', ko: '일일 퀘스트', th: 'เควสต์รายวัน' },
+      { en: 'daily quest', ko: '일일 퀘스트', th: 'เควสต์รายวัน' },
+    ],
   },
   policy: {
     termsTitle: '이용약관',
@@ -1885,6 +1920,37 @@ const th: Dictionary = {
       'แชร์ชีวิตที่ไทย — รีวิว·ข้อมูล·ข้อควรระวังเวลาซื้อขาย กรุงเทพ·พัทยา',
     tradeHubDescription:
       'มือสองและงาน — แนะนำแชร์ประสบการณ์และข้อควรระวัง เข้าจากหมวดในลานชุมชนได้ทันที',
+  },
+  quests: {
+    feedPhraseMap: [
+      { en: 'Guestbook cheers', ko: '방명록 응원', th: 'เขียนสมุดเยี่ยมชม' },
+      { en: 'guestbook cheers', ko: '방명록 응원', th: 'เขียนสมุดเยี่ยมชม' },
+      { en: 'Weekly post', ko: '주간 게시물 작성', th: 'โพสต์ประจำสัปดาห์' },
+      { en: 'weekly post', ko: '주간 게시물 작성', th: 'โพสต์ประจำสัปดาห์' },
+      { en: 'Today comment', ko: '오늘의 댓글', th: 'คอมเมนต์วันนี้' },
+      { en: 'today comment', ko: '오늘의 댓글', th: 'คอมเมนต์วันนี้' },
+      { en: 'Daily login', ko: '오늘의 출석', th: 'ล็อกอินรายวัน' },
+      { en: 'daily login', ko: '오늘의 출석', th: 'ล็อกอินรายวัน' },
+      { en: 'First post', ko: '첫 게시글', th: 'โพสต์แรก' },
+      { en: 'first post', ko: '첫 게시글', th: 'โพสต์แรก' },
+      { en: 'Quest complete', ko: '퀘스트 완료', th: 'เควสต์สำเร็จ' },
+      { en: 'quest complete', ko: '퀘스트 완료', th: 'เควสต์สำเร็จ' },
+      { en: 'Dotori', ko: '도토리', th: 'ดอกท้อ' },
+      { en: 'dotori', ko: '도토리', th: 'ดอกท้อ' },
+      { en: 'Cheer a post', ko: '게시글 응원', th: 'เชียร์โพสต์' },
+      { en: 'cheer a post', ko: '게시글 응원', th: 'เชียร์โพสต์' },
+      { en: 'Share to feed', ko: '피드에 공유', th: 'แชร์ลงฟีด' },
+      { en: 'Comment streak', ko: '댓글 연속 달성', th: 'สตรีคคอมเมนต์' },
+      { en: 'comment streak', ko: '댓글 연속 달성', th: 'สตรีคคอมเมนต์' },
+      { en: 'Visit minihome', ko: '미니홈 방문', th: 'เยี่ยมมินิโฮม' },
+      { en: 'visit minihome', ko: '미니홈 방문', th: 'เยี่ยมมินิโฮม' },
+      { en: 'Guestbook', ko: '방명록', th: 'สมุดเยี่ยมชม' },
+      { en: 'guestbook', ko: '방명록', th: 'สมุดเยี่ยมชม' },
+      { en: 'Weekly quest', ko: '주간 퀘스트', th: 'เควสต์ประจำสัปดาห์' },
+      { en: 'weekly quest', ko: '주간 퀘스트', th: 'เควสต์ประจำสัปดาห์' },
+      { en: 'Daily quest', ko: '일일 퀘스트', th: 'เควสต์รายวัน' },
+      { en: 'daily quest', ko: '일일 퀘스트', th: 'เควสต์รายวัน' },
+    ],
   },
   policy: {
     termsTitle: 'ข้อกำหนดการใช้บริการ',

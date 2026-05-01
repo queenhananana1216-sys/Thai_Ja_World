@@ -55,7 +55,7 @@ export function buildDailyWebPushPayload(
   lines.push(`🇰🇷 ${koLine || '—'}`, `🇹🇭 ${thLine || '—'}`);
 
   return {
-    title: '태자 월드 · 오늘 살이 참고 한 줄',
+    title: '태국에, 살자 · 오늘 살이 참고 한 줄',
     body: lines.join('\n'),
     url: `${base}/news/${row.id}`,
     tag: `daily-news-${row.id}`,

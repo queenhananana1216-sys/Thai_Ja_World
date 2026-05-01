@@ -73,7 +73,7 @@ const ko: Portal2026Copy = {
   weatherWidgetAria: '방콕 현재 날씨',
   weatherLoading: '날씨 불러오는 중…',
   weatherUnavailable: '날씨를 불러오지 못했습니다.',
-  rootAria: '태자월드 2026 포털',
+  rootAria: '태국에, 살자 포털',
   dotoriSuffix: '도토리',
 };
 
@@ -112,7 +112,7 @@ const th: Portal2026Copy = {
   weatherWidgetAria: 'สภาพอากาศกรุงเทพฯ',
   weatherLoading: 'กำลังโหลดสภาพอากาศ…',
   weatherUnavailable: 'โหลดสภาพอากาศไม่ได้',
-  rootAria: 'พอร์ทัล Thai Ja World 2026',
+  rootAria: 'พอร์ทัล อยู่ไทยกัน',
   dotoriSuffix: 'ดอกท้อ',
 };
 

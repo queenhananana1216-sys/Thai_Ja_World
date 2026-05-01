@@ -51,17 +51,24 @@ export default async function GlobalNav() {
       <div className="site-container flex flex-wrap items-center justify-between gap-3 py-2.5">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 no-underline"
+          className="inline-flex max-w-[min(100%,22rem)] items-center gap-2.5 no-underline md:gap-3"
           aria-label={d.logoAria}
         >
           <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-400/35 bg-gradient-to-br from-violet-600/40 to-slate-900 text-lg font-black text-white shadow-inner md:h-11 md:w-11"
+            className="select-none text-[2.35rem] leading-none drop-shadow-[0_2px_14px_rgba(251,191,36,0.45)] md:text-[2.85rem]"
             aria-hidden
           >
-            태
+            🐘
           </span>
-          <span className="text-base font-black tracking-tight text-white md:text-lg">
-            태자<span className="text-amber-300">{d.brandSuffix}</span>
+          <span
+            className="rounded-2xl border border-amber-400/40 bg-gradient-to-br from-slate-900/85 via-slate-900/55 to-amber-950/35 px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.09),0_8px_28px_rgba(0,0,0,0.35)] backdrop-blur-md md:px-3.5 md:py-2"
+          >
+            <span
+              className="block bg-gradient-to-r from-amber-50 via-amber-300 to-yellow-200 bg-clip-text text-[1.05rem] font-extrabold tracking-tight text-transparent md:text-[1.15rem]"
+              style={{ fontFamily: 'var(--tj-brand-nunito), var(--font-noto-kr), system-ui, sans-serif' }}
+            >
+              {d.brandLockup}
+            </span>
           </span>
           <span className="sr-only">{d.logoAria}</span>
         </Link>

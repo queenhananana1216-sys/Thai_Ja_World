@@ -33,11 +33,16 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-[1320px] gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-4">
         {/* Brand */}
         <div className="flex flex-col gap-3">
-          <span className="text-lg font-extrabold tracking-tight text-white">
-            <span className="text-[#c4b5fd]">태</span>
-            <span className="text-zinc-50">국에 살</span>
-            <span className="text-[#f9a8d4]">자</span>
-            <span className="ml-1 text-sm font-semibold text-amber-300">월드</span>
+          <span className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-white">
+            <span className="text-3xl leading-none" aria-hidden>
+              🐘
+            </span>
+            <span
+              className="bg-gradient-to-r from-amber-100 via-amber-300 to-yellow-200 bg-clip-text text-transparent"
+              style={{ fontFamily: 'var(--tj-brand-nunito), system-ui, sans-serif' }}
+            >
+              {locale === 'th' ? 'อยู่ไทยกัน' : '태국에, 살자'}
+            </span>
           </span>
           <p className="text-sm leading-relaxed text-zinc-300">
             {locale === 'th'
@@ -126,7 +131,8 @@ export function SiteFooter() {
           </nav>
           <div className="flex flex-wrap items-center gap-4">
             <p className="text-xs text-zinc-300">
-              &copy; {new Date().getFullYear()} 태자월드. All rights reserved.
+              &copy; {new Date().getFullYear()}{' '}
+              {locale === 'th' ? 'อยู่ไทยกัน' : '태국에, 살자'}. All rights reserved.
             </p>
             <a
               href="https://www.thaijaworld.com"

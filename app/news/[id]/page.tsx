@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import NewsComments, { type NewsCommentRow } from '../_components/NewsComments';
+import portalStyles from '../portal/portal-2026.module.css';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { createServerClient } from '@/lib/supabase/server';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { getDictionary } from '@/i18n/dictionaries';
@@ -251,7 +255,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
   }));
 
   return (
-    <div className="min-h-screen bg-[#151921] text-slate-200">
+    <div className={portalStyles.root}>
       <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
       <JsonLd
         data={{
@@ -308,16 +312,18 @@ export default async function NewsStoryPage({ params }: PageProps) {
       />
       <Link
         href="/news"
-        className="inline-flex text-sm font-medium text-sky-300 transition hover:text-sky-200"
+        className="inline-flex text-sm font-semibold text-amber-200 transition hover:text-amber-100 hover:underline"
       >
         {h.newsDetailBackToHub}
       </Link>
-      <p className="mt-3 rounded-xl border border-slate-700/80 bg-slate-900/70 px-3 py-2 text-xs text-slate-400">
+      <p
+        className={`${portalStyles.glassBlue} mt-3 px-4 py-3 text-xs leading-relaxed text-slate-200`}
+      >
         뉴스 발행은 관리자 전용입니다. 일반 회원은 본문 열람 및 댓글 참여만 가능합니다.
       </p>
 
-      <article className="mt-5 rounded-2xl border border-slate-700/80 bg-slate-900/70 p-5 shadow-[0_24px_80px_rgba(2,6,23,0.4)] sm:p-7">
-        <p className="mb-3 text-xs tracking-wide text-slate-400">
+      <article className={`${portalStyles.glassCenter} mt-5 overflow-hidden p-6 sm:p-8`}>
+        <p className="mb-4 text-xs tracking-wide text-slate-400">
           {host && <span>🔗 {host}</span>}
           {row.created_at ? (
             <>
@@ -326,70 +332,70 @@ export default async function NewsStoryPage({ params }: PageProps) {
             </>
           ) : null}
         </p>
-        <h1 className="mb-5 text-2xl font-semibold leading-tight tracking-tight text-slate-100 sm:text-3xl">
+        <h1 className="mb-6 text-2xl font-bold leading-snug tracking-tight text-white sm:text-3xl md:text-4xl">
           {detail.title}
         </h1>
 
         {!useGracefulFallback && detail.blurb ? (
-          <div className="rounded-2xl border border-slate-700/70 bg-slate-800/70 p-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+          <div className={`${portalStyles.glassGold} mb-6 p-4 sm:p-5`}>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-amber-100/90">
               {h.newsDetailWitLabel}
             </p>
-            <p className="leading-relaxed tracking-[0.01em] text-slate-200 whitespace-pre-wrap wrap-break-word">
+            <p className="text-base leading-[1.75] tracking-[0.01em] text-slate-100 whitespace-pre-wrap wrap-break-word">
               {detail.blurb}
             </p>
           </div>
         ) : null}
 
         {!user ? (
-          <div className="mt-5 rounded-2xl border border-indigo-400/30 bg-linear-to-br from-slate-900/90 via-indigo-950/45 to-slate-900/90 p-4">
-            <p className="m-0 text-sm leading-relaxed tracking-[0.01em] text-slate-200">
+          <div className={`${portalStyles.glassBlue} mt-2 p-4`}>
+            <p className="m-0 text-base leading-relaxed tracking-[0.01em] text-slate-100">
               {h.newsDetailLockedLead}
             </p>
           </div>
         ) : null}
 
         {user && !useGracefulFallback && detail.summary ? (
-          <div className="mt-6">
-            <p className="mb-2 text-xs font-bold tracking-[0.12em] text-slate-400">
+          <div className="mt-8">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
               {h.newsDetailSummaryLabel}
             </p>
-            <div className="text-[0.97rem] leading-relaxed tracking-[0.01em] text-slate-200 whitespace-pre-wrap wrap-break-word">
+            <div className="text-lg leading-[1.9] tracking-[0.01em] text-slate-100 whitespace-pre-wrap wrap-break-word md:text-xl md:leading-[2]">
               {detail.summary}
             </div>
           </div>
         ) : null}
 
         {user && !useGracefulFallback && detail.editorNote ? (
-          <div className="mt-6 rounded-2xl border border-slate-700/70 bg-slate-800/65 p-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+          <div className={`${portalStyles.glassGold} mt-8 p-4 sm:p-5`}>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-amber-100/90">
               {h.newsDetailEditorLabel}
             </p>
-            <p className="leading-relaxed tracking-[0.01em] text-slate-200 whitespace-pre-wrap wrap-break-word">
+            <p className="text-base leading-[1.85] text-slate-100 whitespace-pre-wrap wrap-break-word">
               {detail.editorNote}
             </p>
           </div>
         ) : null}
 
         {user && useGracefulFallback ? (
-          <div className="mt-6 rounded-2xl border border-sky-400/25 bg-linear-to-br from-slate-900/95 via-sky-950/30 to-slate-900/95 p-4 sm:p-5">
-            <p className="text-sm leading-relaxed tracking-[0.01em] text-slate-200">
+          <div className={`${portalStyles.glassBlue} mt-8 p-4 sm:p-6`}>
+            <p className="text-base leading-relaxed text-slate-100">
               💡 현재 AI가 최신 정보를 정밀하게 번역 및 요약하고 있습니다. 아래 버튼을 통해 원문 기사를 먼저 확인해 주세요.
             </p>
           </div>
         ) : null}
 
         {user && detail.sourceUrl ? (
-          <p className="mt-7">
+          <p className="mt-8">
             <a
               href={detail.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-xl border border-sky-300/35 bg-linear-to-br from-slate-800/85 via-sky-900/60 to-slate-900/85 px-4 py-2.5 text-sm font-semibold text-sky-100 backdrop-blur-md transition hover:border-sky-200/55 hover:text-white"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-amber-400/45 bg-gradient-to-br from-slate-900/90 via-amber-950/40 to-slate-900/90 px-5 py-3 text-sm font-semibold text-amber-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md transition hover:border-amber-300/70 hover:text-white"
             >
               {h.newsDetailExternalCta}
             </a>
-            <span className="mt-2 block text-xs text-slate-400">
+            <span className="mt-2 block text-sm text-slate-400">
               {h.newsDetailExternalHint}
             </span>
           </p>
@@ -397,20 +403,20 @@ export default async function NewsStoryPage({ params }: PageProps) {
       </article>
 
       {!user ? (
-        <div className="mt-6 rounded-2xl border border-slate-700/80 bg-slate-900/75 p-5">
-          <p className="mb-3 text-sm leading-relaxed text-slate-200">
+        <div className={`${portalStyles.glassCenter} mt-6 p-5 sm:p-6`}>
+          <p className="mb-3 text-base leading-relaxed text-slate-100">
             {h.newsDetailGuestNote}
           </p>
           <p className="m-0 text-sm">
             <Link
               href={`/auth/login?next=${encodeURIComponent(path)}`}
-              className="mr-3 font-semibold text-sky-300 hover:text-sky-200"
+              className="mr-3 font-semibold text-amber-200 hover:text-amber-100 hover:underline"
             >
               {d.board.login}
             </Link>
             <Link
               href={`/auth/signup?next=${encodeURIComponent(path)}`}
-              className="font-semibold text-sky-300 hover:text-sky-200"
+              className="font-semibold text-amber-200 hover:text-amber-100 hover:underline"
             >
               {d.board.signup}
             </Link>
@@ -419,15 +425,15 @@ export default async function NewsStoryPage({ params }: PageProps) {
       ) : null}
 
       {(relatedNews.length > 0 || relatedPosts.length > 0) && (
-        <section className="mt-6 rounded-2xl border border-slate-700/80 bg-slate-900/75 p-5">
-          <h2 className="mb-3 mt-0 text-base font-semibold text-slate-100">더 읽을거리</h2>
+        <section className={`${portalStyles.glassBlue} mt-6 p-5 sm:p-6`}>
+          <h2 className="mb-4 mt-0 text-lg font-bold text-white">더 읽을거리</h2>
           {relatedNews.length > 0 && (
             <div className={relatedPosts.length > 0 ? 'mb-4' : ''}>
-              <p className="mb-2 text-xs text-slate-400">관련 뉴스</p>
+              <p className="mb-2 text-xs font-medium text-slate-400">관련 뉴스</p>
               <ul className="m-0 list-disc pl-5">
                 {relatedNews.map((item) => (
                   <li key={item.id} className="mb-1.5">
-                    <Link href={`/news/${item.id}`} className="text-sky-300 hover:text-sky-200">
+                    <Link href={`/news/${item.id}`} className="text-amber-200 hover:text-amber-100 hover:underline">
                       {item.title}
                     </Link>
                     {item.createdAt ? (
@@ -448,7 +454,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
                   <li key={item.id} className="mb-1.5">
                     <Link
                       href={`/community/boards/${item.id}`}
-                      className="text-sky-300 hover:text-sky-200"
+                      className="text-amber-200 hover:text-amber-100 hover:underline"
                     >
                       {item.title}
                     </Link>

@@ -28,6 +28,8 @@ export type Dictionary = {
     mainNavAria: string;
   };
   brandSuffix: string;
+  /** 헤더·푸터 한 줄 로고 텍스트 */
+  brandLockup: string;
   logoAria: string;
   lang: { ko: string; th: string };
   footer: string;
@@ -670,10 +672,11 @@ const ko: Dictionary = {
     mainNavAria: '주요 메뉴',
   },
   brandSuffix: '월드',
-  logoAria: '태국에 살자 월드 홈',
+  brandLockup: '태국에, 살자',
+  logoAria: '태국에, 살자 홈',
   lang: { ko: '한국어', th: 'ไทย' },
   footer:
-    '© 2026 Thai Ja World · thaijaworld.com | 태국 살이 정보 나눔 — 경험·피하기·정리, 제보·중고·알바·맛집·미니홈',
+    '© 2026 태국에, 살자 · thaijaworld.com | 태국 살이 정보 나눔 — 경험·피하기·정리, 제보·중고·알바·맛집·미니홈',
   footerNav: {
     terms: '이용약관',
     privacy: '개인정보처리방침',
@@ -1239,11 +1242,11 @@ const ko: Dictionary = {
   },
   weather: { city: '방콕', condition: '맑음' },
   seo: {
-    defaultTitle: '태자 월드 (Thai Ja World)',
-    titleTemplate: '%s | 태자 월드',
+    defaultTitle: '태국에, 살자',
+    titleTemplate: '%s | 태국에, 살자',
     defaultDescription:
       '태국 살이 정보 나눔 — 경험·정리·제보, 중고·알바·맛집·로컬·미니홈',
-    homeTitle: '홈 — 태자 월드',
+    homeTitle: '홈 — 태국에, 살자',
     homeDescription:
       '태국 살이 막힐 때 — 광장·거래·제보·동네·참고 뉴스·미니홈(준비 중)',
     boardsListDescription:
@@ -1254,7 +1257,7 @@ const ko: Dictionary = {
   policy: {
     termsTitle: '이용약관',
     termsBody:
-      '태자월드(Thai Ja World)는 태국에 거주하거나 관심 있는 한국어·태국어권을 위한 정보·커뮤니티 서비스입니다.\n\n회원과 방문자 모두 타인을 존중하고, 허위·명예훼손·불법 거래·스팸을 올리지 않기로 합니다. 운영 정책과 법령에 따라 게시물 삭제·계정 제한이 있을 수 있습니다.\n\n세부 약관은 지속적으로 보완되며, 중요한 변경 시 사이트 내 공지를 통해 안내합니다.',
+      '「태국에, 살자」는 태국에 거주하거나 관심 있는 한국어·태국어권을 위한 정보·커뮤니티 서비스입니다.\n\n회원과 방문자 모두 타인을 존중하고, 허위·명예훼손·불법 거래·스팸을 올리지 않기로 합니다. 운영 정책과 법령에 따라 게시물 삭제·계정 제한이 있을 수 있습니다.\n\n세부 약관은 지속적으로 보완되며, 중요한 변경 시 사이트 내 공지를 통해 안내합니다.',
     privacyTitle: '개인정보처리방침',
     privacyBody:
       '회원 가입·로그인, 서비스 제공을 위해 필요한 최소한의 정보(이메일, 닉네임 등)를 처리합니다.\n\n게시글·댓글·미니홈 등 이용자가 직접 입력한 콘텐츠는 해당 기능의 공개 설정에 따릅니다.\n\n통계·보안·알림(선택) 목적의 쿠키·로그는 관련 법령과 운영 정책 범위에서 사용됩니다. 문의는 아래 «문의하기»를 이용해 주세요.',
@@ -1263,7 +1266,7 @@ const ko: Dictionary = {
       '서비스 관련 문의·버그 신고·제휴 제안은 광장 게시판의 안내 말머리를 이용하거나, 사이트 하단 공지·커뮤니티를 통해 연락해 주세요.\n\n계정·결제 등 민감한 내용은 로그인 후 쪽지·관리자 안내에 따르시기 바랍니다.',
     adsTitle: '광고·제휴 안내',
     adsBody:
-      '태자월드는 동네 정보·커뮤니티와 조화를 이루는 스폰서·배너를 검토합니다.\n\n로컬 가게·서비스 홍보, 이벤트 제휴 등은 사전 협의 후 노출 형태와 기간을 정합니다. 무관한 스팸성 광고는 받지 않습니다.',
+      '「태국에, 살자」는 동네 정보·커뮤니티와 조화를 이루는 스폰서·배너를 검토합니다.\n\n로컬 가게·서비스 홍보, 이벤트 제휴 등은 사전 협의 후 노출 형태와 기간을 정합니다. 무관한 스팸성 광고는 받지 않습니다.',
   },
   push: {
     optInTitle: '🛟 막힐 때 열어 보는 짧은 정리',
@@ -1304,10 +1307,11 @@ const th: Dictionary = {
     mainNavAria: 'เมนูหลัก',
   },
   brandSuffix: 'เวิลด์',
-  logoAria: 'Thai Ja World — หน้าแรก',
+  brandLockup: 'อยู่ไทยกัน',
+  logoAria: 'อยู่ไทยกัน — หน้าแรก',
   lang: { ko: '한국어', th: 'ไทย' },
   footer:
-    '© 2026 Thai Ja World · thaijaworld.com | แบ่งปันข้อมูลชีวิตในไทย — ประสบการณ์·เลี่ยงปัญหา·สรุป, แจ้งเรื่อง·มือสอง·งาน·ร้าน·มินิโฮม',
+    '© 2026 อยู่ไทยกัน · thaijaworld.com | แบ่งปันข้อมูลชีวิตในไทย — ประสบการณ์·เลี่ยงปัญหา·สรุป, แจ้งเรื่อง·มือสอง·งาน·ร้าน·มินิโฮม',
   footerNav: {
     terms: 'ข้อกำหนดการใช้บริการ',
     privacy: 'นโยบายความเป็นส่วนตัว',
@@ -1870,11 +1874,11 @@ const th: Dictionary = {
   },
   weather: { city: 'กรุงเทพฯ', condition: 'แจ่มใส' },
   seo: {
-    defaultTitle: 'Thai Ja World (태자 월드)',
-    titleTemplate: '%s | Thai Ja World',
+    defaultTitle: 'อยู่ไทยกัน',
+    titleTemplate: '%s | อยู่ไทยกัน',
     defaultDescription:
       'แบ่งปันข้อมูลชีวิตในไทย — ประสบการณ์·สรุป·แจ้งเรื่อง · มือสอง·งาน · ร้าน · มินิโฮม',
-    homeTitle: 'หน้าแรก — Thai Ja World',
+    homeTitle: 'หน้าแรก — อยู่ไทยกัน',
     homeDescription:
       'ชีวิตที่ไทยติดขัด — ลานคุย·ซื้อขาย·งาน·แจ้งเรื่อง·ร้าน·สรุปอ้างอิง·มินิโฮม (กำลังเตรียม)',
     boardsListDescription:

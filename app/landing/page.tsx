@@ -19,7 +19,7 @@ import { getLocale } from '@/i18n/get-locale';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: '태자월드 — 태국 사는 한국인 커뮤니티 | 비자·생활정보·한인업체',
+  title: '태국에, 살자 — 태국 사는 한국인 커뮤니티 | 비자·생활정보·한인업체',
   description:
     '태국 거주 한국인을 위한 커뮤니티. 비자 연장, TM30, 병원, 한인 마트 정보부터 AI 뉴스 요약, 환율 계산기, 미니홈피까지. 흘러가는 채팅방이 아닌, 정보가 쌓이는 공간.',
 };

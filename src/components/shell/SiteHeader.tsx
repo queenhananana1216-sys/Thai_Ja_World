@@ -20,7 +20,7 @@ const NAV_ITEMS = [
 ] as const;
 
 type Props = {
-  dict: Pick<Dictionary, 'nav' | 'brandSuffix' | 'logoAria' | 'lang' | 'board'>;
+  dict: Pick<Dictionary, 'nav' | 'brandLockup' | 'logoAria' | 'lang' | 'board'>;
   showAdminConsole?: boolean;
   children?: React.ReactNode;
 };
@@ -69,19 +69,24 @@ export function SiteHeader({ dict, showAdminConsole = false, children }: Props) 
         </div>
       </div>
 
-      {/* Nate band - logo + user panel */}
-      <div className="border-b-2 border-museum-coral bg-white shadow-md">
+      {/* Logo band — 다크 글라스 + 마스코트 (랜딩 등 레거시 셸) */}
+      <div className="border-b border-amber-400/25 bg-[#0B0F19]/95 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-md">
         <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:gap-5 sm:py-4">
           <Link
             href="/"
-            className="flex shrink-0 items-baseline gap-0.5 text-base font-extrabold tracking-tight text-gray-900 no-underline hover:no-underline hover:opacity-90"
+            className="flex shrink-0 items-center gap-2.5 no-underline hover:opacity-95"
             aria-label={dict.logoAria}
           >
-            <span className="text-brand-tai">태</span>
-            <span>국에 살</span>
-            <span className="text-brand-ja">자</span>
-            <span className="ml-1 text-[0.78em] font-semibold tracking-wide text-museum-coral">
-              {dict.brandSuffix}
+            <span className="text-4xl leading-none md:text-5xl" aria-hidden>
+              🐘
+            </span>
+            <span className="rounded-2xl border border-amber-400/40 bg-gradient-to-br from-slate-900/85 via-slate-900/55 to-amber-950/35 px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.09)] backdrop-blur-md">
+              <span
+                className="bg-gradient-to-r from-amber-50 via-amber-300 to-yellow-200 bg-clip-text text-base font-extrabold tracking-tight text-transparent md:text-lg"
+                style={{ fontFamily: 'var(--tj-brand-nunito), system-ui, sans-serif' }}
+              >
+                {dict.brandLockup}
+              </span>
             </span>
           </Link>
 

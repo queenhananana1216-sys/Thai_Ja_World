@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const keywords = [
     catLabel,
     catKey,
-    '태자월드',
+    '태국에 살자',
     '태국',
     '방콕',
     '교민',

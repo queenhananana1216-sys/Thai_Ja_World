@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Thai Ja World',
-    short_name: 'Taeja',
-    description: '태국 생활 참여형 커뮤니티 태자월드',
+    name: '태국에, 살자',
+    short_name: '태국살자',
+    description: '태국 생활 참여형 커뮤니티 — 태국에, 살자',
     start_url: '/',
     scope: '/',
     display: 'standalone',

@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const HOME_METADATA = {
-  title: '태자월드',
-  description: '태국 교민 커뮤니티 태자월드 — 광장·로컬·뉴스 허브',
-  siteName: '태자월드',
+  title: '태국에, 살자',
+  description: '태국에 사는 이웃과 함께 — 광장·로컬·뉴스 허브',
+  siteName: '태국에, 살자',
 } as const;
 
 export function generateMetadata(): Metadata {

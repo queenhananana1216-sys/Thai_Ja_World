@@ -21,7 +21,7 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thTitle: 'หน้าแรก',
     koHint: '/',
     thHint: '/',
-    koBlob: '홈 메인 대시보드 피드 태자월드 thai ja',
+    koBlob: '홈 메인 대시보드 피드 태국에 살자 thailand community',
     thBlob: 'หน้าแรก โฮม ฟีด แดชบอร์ด ไทยจา',
   },
   {

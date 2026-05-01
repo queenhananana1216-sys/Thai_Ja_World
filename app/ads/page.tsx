@@ -4,9 +4,9 @@ import Link from 'next/link';
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: '태자월드 광고 제휴 | 태국 한인 로컬 가게 성과형 홍보',
+    title: '태국에, 살자 광고 제휴 | 태국 한인 로컬 가게 성과형 홍보',
     description:
-      '로컬 가게를 위한 태자월드 광고 제휴 안내. QR 유입, 미니홈 운영, 커뮤니티 신뢰 기반으로 실제 전환을 만드는 광고 모델을 소개합니다.',
+      '로컬 가게를 위한 「태국에, 살자」 광고 제휴 안내. QR 유입, 미니홈 운영, 커뮤니티 신뢰 기반으로 실제 전환을 만드는 광고 모델을 소개합니다.',
     robots: { index: true, follow: true },
   };
 }
@@ -24,7 +24,7 @@ export default async function AdsPage() {
         <h1 className="mt-3 text-3xl font-extrabold leading-tight sm:text-4xl">
           {isThai
             ? 'โฆษณาร้านของคุณใน Thai Ja World ด้วยโมเดลที่วัดผลได้จริง'
-            : '태자월드 광고 제휴, “보이는 광고”가 아니라 “오는 광고”로 설계합니다'}
+            : '「태국에, 살자」 광고 제휴, “보이는 광고”가 아니라 “오는 광고”로 설계합니다'}
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-relaxed text-violet-50 sm:text-base">
           {isThai

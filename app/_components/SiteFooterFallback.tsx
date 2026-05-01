@@ -15,7 +15,7 @@ export function SiteFooterFallback() {
           문의
         </Link>
       </nav>
-      <p className="m-0">&copy; {new Date().getFullYear()} 태자월드</p>
+      <p className="m-0">&copy; {new Date().getFullYear()} 태국에, 살자</p>
     </footer>
   );
 }

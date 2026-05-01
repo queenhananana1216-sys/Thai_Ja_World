@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Nunito } from 'next/font/google';
 import { cookies } from 'next/headers';
 import AnalyticsTracker from './_components/AnalyticsTracker';
 import GlobalNav from './_components/GlobalNav';
@@ -8,18 +9,25 @@ import { isLocale, LOCALE_COOKIE } from '@/i18n/types';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { getSiteBaseUrl } from '@/lib/seo/site';
 
+const brandNunito = Nunito({
+  subsets: ['latin'],
+  weight: ['600', '700', '800'],
+  display: 'swap',
+  variable: '--tj-brand-nunito',
+});
+
 export async function generateMetadata(): Promise<Metadata> {
   const base = getSiteBaseUrl();
-  const title = '태자월드';
-  const description = '태국 교민 커뮤니티 태자월드 — 뉴스·로컬·광장 한 번에.';
+  const title = '태국에, 살자';
+  const description = '태국에 사는 이웃과 함께 — 뉴스·로컬·광장 한곳에 모았어요.';
   return {
     metadataBase: new URL(base),
     title: {
       default: title,
-      template: '%s | 태자월드',
+      template: '%s | 태국에, 살자',
     },
     description,
-    keywords: ['태자월드', '태국', '방콕', '교민', '커뮤니티', '한인', '뉴스'],
+    keywords: ['태국에 살자', '태국', '방콕', '교민', '커뮤니티', '한인', '뉴스', 'Thailand'],
     alternates: { canonical: '/' },
     openGraph: {
       type: 'website',
@@ -52,7 +60,11 @@ export default async function RootLayout({ children }: { children: unknown }) {
   const ui = await loadSiteUiSettings();
 
   return (
-    <html lang={htmlLang} className="overflow-x-hidden" data-tj-text-scale={ui.textScale}>
+    <html
+      lang={htmlLang}
+      className={`overflow-x-hidden ${brandNunito.variable}`}
+      data-tj-text-scale={ui.textScale}
+    >
       <body
         className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-base text-gray-100 antialiased"
         style={{

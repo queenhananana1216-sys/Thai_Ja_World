@@ -26,7 +26,9 @@ export default function GlobalError({
         }}
       >
         <div style={{ maxWidth: 420, padding: 24, textAlign: 'center' }}>
-          <h1 style={{ margin: '0 0 12px', fontSize: '1.25rem', color: '#fbbf24' }}>태자월드 로딩 문제</h1>
+          <h1 style={{ margin: '0 0 12px', fontSize: '1.25rem', color: '#fbbf24' }}>
+            태국에, 살자 — 화면을 불러오지 못했어요
+          </h1>
           <p style={{ margin: '0 0 20px', fontSize: '0.875rem', lineHeight: 1.6, color: '#94a3b8' }}>
             일시적인 오류로 화면을 불러오지 못했습니다. 다시 시도하거나 잠시 후 새로고침해 주세요.
           </p>

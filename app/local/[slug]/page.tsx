@@ -5,6 +5,8 @@ import ShopMinihomeClient, { type ShopSpotPayload } from '../../shop/[slug]/Shop
 import { createServerClient } from '@/lib/supabase/server';
 import JsonLd from '@/lib/seo/JsonLd';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
+import { getLocale } from '@/i18n/get-locale';
+import { getPerceivedViewCount } from '@/lib/utils';
 
 /**
  * `/local/[category]` 와 `/local/[shopId]` 가 같은 깊이에 다른 동적 이름을 쓰면
@@ -233,6 +235,8 @@ async function renderMinihome(spot: NonNullable<Awaited<ReturnType<typeof fetchS
 }
 
 async function renderCategoryHub(normalizedCategory: string, view: string | undefined) {
+  const locale = await getLocale();
+  const numLocale = locale === 'th' ? 'th-TH' : 'ko-KR';
   const asGrid = view === 'grid';
   const [businesses, posts] = await Promise.all([
     fetchLocalBusinesses(normalizedCategory),
@@ -302,7 +306,8 @@ async function renderCategoryHub(normalizedCategory: string, view: string | unde
               >
                 <div className="text-xs font-bold text-slate-100 line-clamp-1">{post.title}</div>
                 <div className="mt-0.5 text-[10px] text-slate-400">
-                  조회 {post.view_count} · 댓글 {post.comment_count}
+                  👀 {getPerceivedViewCount(Number(post.view_count ?? 0), post.id).toLocaleString(numLocale)} · 댓글{' '}
+                  {post.comment_count}
                 </div>
               </Link>
             ))}

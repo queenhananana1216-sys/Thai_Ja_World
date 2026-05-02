@@ -7,6 +7,7 @@ import { thumbGradientForId } from '../../portal/thumb';
 import { portalMetaLine } from '../../portal/text';
 import { categoryLabel, type PostCategorySlug } from '@/lib/community/postCategories';
 import { formatDate } from '@/lib/utils/formatDate';
+import { getPerceivedViewCount } from '@/lib/utils';
 import styles from './home-hub.module.css';
 import { HomeGlassEmptyState } from './HomeGlassEmptyState';
 import { normalizeContainerText } from '@/lib/text/normalizeDisplayText';
@@ -151,7 +152,8 @@ export function HomeFeedClient({
                 <div className="min-w-0 truncate">
                   <span className={`${pillClass(p)} text-[11px]`}>{itemPillLabel(p)}</span>
                   <span className={`${styles.feedMetaMuted} text-[11px]`}>
-                    댓글 {p.comment_count} · 조회 {p.view_count}
+                    댓글 {p.comment_count} · 👀{' '}
+                    {getPerceivedViewCount(Number(p.view_count ?? 0), `${p.kind}-${p.id}`).toLocaleString('ko-KR')}
                   </span>
                 </div>
                 <div className={`${styles.feedTitle} line-clamp-1 text-sm font-semibold text-slate-200`}>{p.title}</div>

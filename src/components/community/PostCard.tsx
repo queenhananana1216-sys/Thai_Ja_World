@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { MessageCircle, Heart, Eye } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { RetroBadge } from '@/components/ui/retro-badge';
-import { cn } from '@/lib/utils';
+import { cn, getPerceivedViewCount } from '@/lib/utils';
 
 type Props = {
   id: string;
@@ -33,6 +33,7 @@ export function PostCard({
   date,
   pinned,
 }: Props) {
+  const perceivedViews = getPerceivedViewCount(viewCount, id);
   return (
     <Link
       href={`/community/boards/${id}`}
@@ -69,11 +70,10 @@ export function PostCard({
             <span className="font-medium text-tj-muted">{author}</span>
             <span>{date}</span>
             <div className="ml-auto flex items-center gap-2">
-              {viewCount > 0 && (
-                <span className="flex items-center gap-0.5">
-                  <Eye className="h-3 w-3" /> {viewCount}
-                </span>
-              )}
+              <span className="flex items-center gap-0.5" title="읽음">
+                <Eye className="h-3 w-3 shrink-0" aria-hidden />
+                {perceivedViews.toLocaleString('ko-KR')}
+              </span>
               {likeCount > 0 && (
                 <span className="flex items-center gap-0.5 text-museum-coral">
                   <Heart className="h-3 w-3" /> {likeCount}

@@ -357,5 +357,34 @@ export async function createModeratedPost(
     }
   }
 
+  if (category === 'greetings') {
+    try {
+      const { data: bonus, error: bonusErr } = await admin.rpc('grant_greetings_board_open_dotori_bonus', {
+        p_profile_id: userId,
+        p_post_id: newId,
+      });
+      if (bonusErr) {
+        logSupabaseWriteFailure('createModeratedPost grant_greetings_board_open_dotori_bonus', {
+          message: bonusErr.message,
+          code: bonusErr.code,
+        });
+      } else if (
+        bonus &&
+        typeof bonus === 'object' &&
+        'ok' in bonus &&
+        (bonus as { ok?: unknown }).ok === false
+      ) {
+        logSupabaseWriteFailure('createModeratedPost grant_greetings_board_open_dotori_bonus declined', {
+          message: JSON.stringify(bonus),
+        });
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      logSupabaseWriteFailure('createModeratedPost grant_greetings_board_open_dotori_bonus throw', {
+        message: msg,
+      });
+    }
+  }
+
   return { ok: true, postId: newId };
 }

@@ -12,6 +12,7 @@ import { getLocale } from '@/i18n/get-locale';
 import JsonLd from '@/lib/seo/JsonLd';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { formatDate } from '@/lib/utils/formatDate';
+import { getPerceivedViewCount } from '@/lib/utils';
 import {
   extractGuestBlurPreview,
   shouldBlurCommunityPostForGuest,
@@ -161,6 +162,10 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const bodyForGuestBlur = blurTrapActive
     ? extractGuestBlurPreview(String(post.content ?? ''))
     : String(post.content ?? '');
+  const perceivedReadLine =
+    locale === 'th'
+      ? `🔥 อ่านแล้ว ${getPerceivedViewCount(Number(post.view_count ?? 0), postId).toLocaleString('th-TH')} คน`
+      : `🔥 ${getPerceivedViewCount(Number(post.view_count ?? 0), postId).toLocaleString('ko-KR')}명이 읽음`;
   const lat =
     typeof (post as { latitude?: number | null }).latitude === 'number'
       ? Number((post as { latitude?: number }).latitude)
@@ -256,7 +261,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
         <article className="rounded-3xl border border-white/10 bg-slate-900/50 p-6 shadow-[0_14px_40px_rgba(2,6,23,0.52)] backdrop-blur-md sm:p-7">
         <div className="text-xs font-medium text-slate-300/80">
           {cat} · {d.board.author} {authorName} · {formatDate(post.created_at as string | null)} ·{' '}
-          {d.board.views} {post.view_count ?? 0}
+          {perceivedReadLine}
           {authorHidden ? (
             <>
               {' '}

@@ -16,15 +16,23 @@ type Props = {
   isLoggedIn: boolean;
   /** 퍼널 적용 강제 끄기(예: 절대 외부 허브) */
   forcePublic?: boolean;
+  title?: string;
 };
 
-export default function GuestGateLink({ href, className, children, isLoggedIn, forcePublic }: Props) {
+export default function GuestGateLink({
+  href,
+  className,
+  children,
+  isLoggedIn,
+  forcePublic,
+  title,
+}: Props) {
   const router = useRouter();
   const gated = !isLoggedIn && !forcePublic && hrefRequiresLoginRedirect(href);
 
   if (!gated) {
     return (
-      <Link prefetch={true} href={href} className={className}>
+      <Link prefetch={true} href={href} className={className} title={title}>
         {children}
       </Link>
     );
@@ -34,6 +42,7 @@ export default function GuestGateLink({ href, className, children, isLoggedIn, f
     <a
       href={href}
       className={className}
+      title={title}
       onClick={(e) => {
         e.preventDefault();
         toast.error(FUNNEL_MSG, { position: 'top-center' });

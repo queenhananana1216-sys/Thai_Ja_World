@@ -23,6 +23,7 @@ import {
 import type { HomeUnifiedFeedItem } from '../../_components/home/home-feed-types';
 import { categoryLabel } from '@/lib/community/postCategories';
 import type { Locale } from '@/i18n/types';
+import { getPerceivedViewCount } from '@/lib/utils';
 import { getLocale } from '@/i18n/get-locale';
 import { isQuestMissionNoiseTitle } from './portalLiveFeedTitle';
 import { isAutoContentKillerFeedTitle } from '@/lib/cron/autoContentGhostwriter';
@@ -134,11 +135,13 @@ function unifiedItemToLine(item: HomeUnifiedFeedItem, locale: Locale): PortalFee
   const excerpt = item.excerpt?.trim();
   const c = item.comment_count ?? 0;
   const v = item.view_count ?? 0;
+  const pv = getPerceivedViewCount(Number(v), id);
+  const viewLabel = th ? `👀 ${pv.toLocaleString('th-TH')}` : `👀 ${pv.toLocaleString('ko-KR')}`;
   const subtitle = excerpt
     ? `${pill} · ${excerpt.slice(0, 96)}${excerpt.length > 96 ? '…' : ''}`
     : th
-      ? `${pill} · ความคิดเห็น ${c} · เข้าชม ${v}`
-      : `${pill} · 댓글 ${c} · 조회 ${v}`;
+      ? `${pill} · ความคิดเห็น ${c} · ${viewLabel}`
+      : `${pill} · 댓글 ${c} · ${viewLabel}`;
   const cat =
     item.kind === 'job' ? 'job' : item.kind === 'market' ? 'market' : String(item.category ?? '').trim() || null;
   return {
@@ -353,7 +356,10 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
         }),
       );
     } else {
-      const f = await withTimeout(fetchHomePostsByCategory('free', 8), { rows: [], error: null });
+      const f = await withTimeout(fetchHomePostsByCategory(['free', 'greetings'], 8), {
+        rows: [],
+        error: null,
+      });
       out.freeBoard = compactLines(
         (f.rows ?? []).map((r) => {
           const id = String(r.id ?? '').trim();

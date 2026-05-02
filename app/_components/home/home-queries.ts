@@ -923,21 +923,21 @@ export async function fetchAutoCuratedBoardPostsForPortalLive(limit = 10): Promi
 }
 
 export async function fetchHomePostsByCategory(
-  category: 'free' | 'qna',
+  category: 'free' | 'qna' | readonly string[],
   limit = 10,
 ): Promise<{ rows: HomeCommunityPostRow[]; error: string | null }> {
   const sb = tryCreate();
   if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
 
-  const { data, error } = await sb
+  let q = sb
     .from('posts')
     .select('id, title, created_at, comment_count, view_count, category')
     .eq('moderation_status', 'safe')
     .eq('author_hidden', false)
-    .eq('is_knowledge_tip', false)
-    .eq('category', category)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+    .eq('is_knowledge_tip', false);
+  q = Array.isArray(category) ? q.in('category', [...category]) : q.eq('category', category);
+
+  const { data, error } = await q.order('created_at', { ascending: false }).limit(limit);
 
   if (error) return { rows: [], error: error.message };
 

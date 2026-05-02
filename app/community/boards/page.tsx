@@ -8,6 +8,7 @@ import {
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { formatDate } from '@/lib/utils/formatDate';
+import { getPerceivedViewCount } from '@/lib/utils';
 import { absoluteUrl } from '@/lib/seo/site';
 import PostAuthorMenu from './_components/PostAuthorMenu';
 
@@ -169,7 +170,11 @@ export default async function BoardsListPage({
                   </>
                 ) : null}
               </div>
-              <p className="mt-1 truncate text-xs text-slate-400">{cat} · {author} · {d.board.views} {p.view_count ?? 0} · 좋아요 {counts.like} · 공감 {counts.heart}</p>
+              <p className="mt-1 truncate text-xs text-slate-400">
+                {cat} · {author} · 👀{' '}
+                {getPerceivedViewCount(Number(p.view_count ?? 0), pid).toLocaleString(locale === 'th' ? 'th-TH' : 'ko-KR')} ·
+                좋아요 {counts.like} · 공감 {counts.heart}
+              </p>
             </Link>
             {isAuthor ? (
               <div className="mt-3">

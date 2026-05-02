@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import styles from './home-hub.module.css';
 import { fetchHomeRealtimeBestPosts } from './home-queries';
+import { getPerceivedViewCount } from '@/lib/utils';
 
 export async function HomeRealtimeBest() {
   try {
@@ -23,7 +24,8 @@ export async function HomeRealtimeBest() {
                 <span className={styles.realtimeBestRank}>{idx + 1}</span>
                 <span className={styles.rowTitle}>{post.title}</span>
                 <span className={styles.realtimeBestMeta}>
-                  뷰 {post.view_count ?? 0} · 댓 {post.comment_count}
+                  👀 {getPerceivedViewCount(Number(post.view_count ?? 0), post.id).toLocaleString('ko-KR')} · 댓{' '}
+                  {post.comment_count}
                 </span>
               </Link>
             </li>

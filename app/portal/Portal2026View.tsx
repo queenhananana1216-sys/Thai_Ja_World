@@ -537,6 +537,14 @@ export default function Portal2026View({
         </aside>
 
         <section className="min-h-0 min-w-0 space-y-1.5">
+          <GuestGateLink
+            href="/boards/new?category=greetings"
+            isLoggedIn={isLoggedIn}
+            className="flex min-h-[3rem] w-full items-center justify-center rounded-2xl border border-white/20 bg-gradient-to-r from-orange-500 to-red-500 px-3 py-2.5 text-center text-base font-black leading-snug text-white shadow-[0_12px_36px_rgba(234,88,12,0.35)] no-underline transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"
+            title={copy.openGreetingBannerAria}
+          >
+            <span className="line-clamp-3 break-words">{copy.openGreetingBannerLine}</span>
+          </GuestGateLink>
           <PortalQuickMenu locale={locale} isLoggedIn={isLoggedIn} />
           <div className="block min-[769px]:hidden">
             <PortalDotoriHallOfFame

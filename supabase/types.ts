@@ -4549,6 +4549,10 @@ export type Database = {
         Args: { p_amount: number; p_event_type: string; p_profile_id: string }
         Returns: Json
       }
+      grant_greetings_board_open_dotori_bonus: {
+        Args: { p_post_id: string; p_profile_id: string }
+        Returns: Json
+      }
       ensure_my_minihome: { Args: never; Returns: undefined }
       get_chat_preview: {
         Args: { limit_n?: number }

@@ -4,6 +4,7 @@ import {
   fetchPortalHomeFeed,
   HONEST_EMPTY_PORTAL_HOME_FEED,
 } from '../lib/home/fetchPortalHomeFeed';
+import { resolveAdminForUser } from '@/lib/admin/resolveAdminAccess';
 import { getLocale } from '@/i18n/get-locale';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
@@ -14,19 +15,31 @@ export default async function PortalFeedSection() {
   const locale = await getLocale();
   const siteUi = await loadSiteUiSettings();
   let isLoggedIn = false;
+  let isAdmin = false;
   try {
     const authSb = await createServerSupabaseAuthClient();
     const {
       data: { user },
     } = await authSb.auth.getUser();
     isLoggedIn = Boolean(user?.id);
+    if (user?.id) {
+      const gate = await resolveAdminForUser(authSb, user.id, user.email);
+      isAdmin = Boolean(gate);
+    }
   } catch {
     isLoggedIn = false;
+    isAdmin = false;
   }
   try {
     const feed = await fetchPortalHomeFeed();
     return (
-      <Portal2026View feed={feed} locale={locale} siteUi={siteUi} isLoggedIn={isLoggedIn} />
+      <Portal2026View
+        feed={feed}
+        locale={locale}
+        siteUi={siteUi}
+        isLoggedIn={isLoggedIn}
+        isAdmin={isAdmin}
+      />
     );
   } catch {
     return (
@@ -35,6 +48,7 @@ export default async function PortalFeedSection() {
         locale={locale}
         siteUi={siteUi}
         isLoggedIn={isLoggedIn}
+        isAdmin={isAdmin}
       />
     );
   }

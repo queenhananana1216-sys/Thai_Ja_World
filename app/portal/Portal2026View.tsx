@@ -63,6 +63,8 @@ export type Portal2026ViewProps = {
   siteUi?: SiteUiSettings;
   /** 홈 퍼널 — 비회원 클릭 시 토스트 후 /login */
   isLoggedIn: boolean;
+  /** 날씨 위젯 옴니 레이더 툴팁(경고 상세) 노출 — 서버에서 `resolveAdminForUser`로 결정 */
+  isAdmin?: boolean;
 };
 
 function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
@@ -388,6 +390,7 @@ export default function Portal2026View({
   locale,
   siteUi: siteUiProp,
   isLoggedIn,
+  isAdmin = false,
 }: Portal2026ViewProps) {
   const siteUi = siteUiProp ?? siteUiDefaults();
   const copy = getPortal2026Copy(locale);
@@ -435,7 +438,9 @@ export default function Portal2026View({
       <div className={styles.grid}>
         <aside className="hidden min-h-0 min-w-0 min-[769px]:flex min-[769px]:flex-col min-[769px]:gap-2">
           <div className="flex min-w-0 flex-col gap-2">
-            {siteUi.weatherWidgetEnabled ? <PortalWeatherWidget locale={locale} /> : null}
+            {siteUi.weatherWidgetEnabled ? (
+              <PortalWeatherWidget locale={locale} isAdmin={isAdmin} />
+            ) : null}
             <section className={`${styles.glassBlue} overflow-hidden p-2.5`}>
               <p className="text-lg font-black uppercase tracking-wide text-blue-200">{copy.sponsorTitle}</p>
               {(wingBanners?.length ?? 0) === 0 ? (

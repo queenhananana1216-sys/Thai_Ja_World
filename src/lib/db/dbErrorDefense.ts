@@ -3,9 +3,9 @@
  * 클라이언트·서버 공통 (서버 전용 모듈에 의존하지 않음).
  */
 
-/** PostgREST 스키마 불일치 등 — 버튼 라벨(등록/올리기)과 무관하게 동일 문구 */
+/** 인프라·스키마 일시 오류 시 — 재시도 유도(동일 버튼 재클릭만으로 해결된다고 단정하지 않음) */
 export const USER_DB_SYNC_TOAST_MESSAGE =
-  '화면을 맞춰 두었습니다. 같은 버튼을 한 번 더 눌러 주세요.';
+  '일시적인 서버 연결 문제일 수 있습니다. 새로고침(F5) 후 다시 등록해 보세요.';
 
 /** 라우터 소프트 리프레시만 — 전체 리로드 없이 서버 컴포넌트·fetch 캐시 갱신 유도 */
 export function scheduleSoftNavigationRefresh(runRefresh: () => void): void {

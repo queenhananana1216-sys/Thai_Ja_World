@@ -16,7 +16,7 @@ async function fetchSpotBySlug(raw: string) {
   const { data: bySlug, error: e1 } = await sb
     .from('local_spots')
     .select(
-      'id,slug,name,description,owner_profile_id,minihome_theme,minihome_menu,is_published,minihome_public_slug',
+      'id,slug,name,description,owner_profile_id,minihome_theme,minihome_menu,minihome_bgm_url,minihome_intro,is_published,minihome_public_slug',
     )
     .eq('slug', slug)
     .maybeSingle();
@@ -24,7 +24,7 @@ async function fetchSpotBySlug(raw: string) {
   const { data: byPublic, error: e2 } = await sb
     .from('local_spots')
     .select(
-      'id,slug,name,description,owner_profile_id,minihome_theme,minihome_menu,is_published,minihome_public_slug',
+      'id,slug,name,description,owner_profile_id,minihome_theme,minihome_menu,minihome_bgm_url,minihome_intro,is_published,minihome_public_slug',
     )
     .eq('minihome_public_slug', slug)
     .maybeSingle();
@@ -92,6 +92,8 @@ export default async function LocalDigitalMenuPage({ params }: PageProps) {
         owner_profile_id: spot.owner_profile_id,
         minihome_theme: spot.minihome_theme,
         minihome_menu: spot.minihome_menu,
+        minihome_bgm_url: spot.minihome_bgm_url ?? null,
+        minihome_intro: spot.minihome_intro ?? null,
         is_published: spot.is_published,
       }}
       menus={(menus ?? []) as LocalMenuRow[]}

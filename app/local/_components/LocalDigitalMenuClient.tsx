@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import QRCodeGenerator from '@/components/local/QRCodeGenerator';
 import { createBrowserClient } from '@/lib/supabase/client';
@@ -25,8 +25,26 @@ type SpotLite = {
   owner_profile_id: string | null;
   minihome_theme: unknown;
   minihome_menu: unknown;
+  minihome_bgm_url?: string | null;
+  minihome_intro?: string | null;
   is_published: boolean;
 };
+
+function bgmAutoplaySrc(raw: string | null | undefined): string | null {
+  const u = raw?.trim();
+  if (!u) return null;
+  try {
+    const url = new URL(u);
+    if (url.hostname.includes('youtube.com')) {
+      url.searchParams.set('autoplay', '1');
+      url.searchParams.set('mute', '1');
+      url.searchParams.set('playsinline', '1');
+    }
+    return url.toString();
+  } catch {
+    return u;
+  }
+}
 
 function themeRecord(raw: unknown): Record<string, unknown> {
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) return raw as Record<string, unknown>;
@@ -68,6 +86,12 @@ export default function LocalDigitalMenuClient(props: {
   const [menus, setMenus] = useState<LocalMenuRow[]>(props.menus);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [orderOpen, setOrderOpen] = useState(false);
+  const [visitAt, setVisitAt] = useState('');
+  const [partySize, setPartySize] = useState(2);
+  const [qtyById, setQtyById] = useState<Record<string, number>>({});
+  const [orderNotes, setOrderNotes] = useState('');
+  const [orderBusy, setOrderBusy] = useState(false);
   const theme = useMemo(() => themeRecord(spot.minihome_theme), [spot.minihome_theme]);
   const accent =
     typeof theme.accent === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(theme.accent.trim())
@@ -85,6 +109,16 @@ export default function LocalDigitalMenuClient(props: {
   const showLegacyFallback = menus.length === 0 && legacy.length > 0;
 
   const sb = useMemo(() => createBrowserClient(), []);
+
+  const bgmSrc = useMemo(() => bgmAutoplaySrc(spot.minihome_bgm_url ?? null), [spot.minihome_bgm_url]);
+
+  useEffect(() => {
+    if (!orderOpen) return;
+    const init: Record<string, number> = {};
+    for (const m of menus) init[m.id] = 0;
+    setQtyById(init);
+    setOrderNotes('');
+  }, [orderOpen, menus]);
 
   const notify = useCallback((t: string) => {
     setToast(t);
@@ -172,8 +206,53 @@ export default function LocalDigitalMenuClient(props: {
     [accentDraft, bgDraft],
   );
 
+  const submitReservationOrder = async () => {
+    if (!viewerId) return;
+    if (!visitAt.trim()) {
+      notify('방문 시간을 선택해 주세요.');
+      return;
+    }
+    const items = menus
+      .filter((m) => !m.is_sold_out && (qtyById[m.id] ?? 0) > 0)
+      .map((m) => ({ menu_id: m.id, qty: Math.floor(qtyById[m.id] ?? 0) }));
+    if (items.length === 0) {
+      notify('주문할 메뉴 수량을 1개 이상 선택해 주세요.');
+      return;
+    }
+    setOrderBusy(true);
+    try {
+      const res = await fetch('/api/local/minihome-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          local_spot_id: spot.id,
+          visit_at: new Date(visitAt).toISOString(),
+          party_size: partySize,
+          items,
+          notes: orderNotes.trim(),
+        }),
+      });
+      const data = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok) throw new Error(data.error ?? '주문 실패');
+      notify('예약·주문 요청이 접수되었습니다. 매장에서 확인 후 연락드릴 수 있습니다.');
+      setOrderOpen(false);
+    } catch (e) {
+      notify(e instanceof Error ? e.message : '주문 실패');
+    } finally {
+      setOrderBusy(false);
+    }
+  };
+
   return (
-    <div style={shellStyle} className="pb-14 text-slate-50">
+    <div style={shellStyle} className="pb-28 text-slate-50">
+      {bgmSrc ? (
+        <iframe
+          title="매장 BGM"
+          src={bgmSrc}
+          className="pointer-events-none fixed bottom-24 left-4 z-[35] h-[72px] w-[128px] rounded-lg opacity-35 shadow-lg ring-1 ring-white/15"
+          allow="autoplay; encrypted-media; fullscreen"
+        />
+      ) : null}
       <header className={`sticky top-0 z-20 ${glassPanel('border-b border-white/10 px-4 py-4')}`}>
         <div className="mx-auto flex max-w-lg flex-col gap-3">
           <div className="flex items-start justify-between gap-3">
@@ -182,6 +261,9 @@ export default function LocalDigitalMenuClient(props: {
               <h1 className="mt-1 text-xl font-black tracking-tight text-white" style={{ color: accentDraft }}>
                 {spot.name}
               </h1>
+              {spot.minihome_intro?.trim() ? (
+                <p className="mt-2 text-sm leading-relaxed text-amber-100/90">{spot.minihome_intro}</p>
+              ) : null}
               {spot.description?.trim() ? (
                 <p className="mt-2 text-sm leading-relaxed text-white/75">{spot.description}</p>
               ) : null}
@@ -356,6 +438,126 @@ export default function LocalDigitalMenuClient(props: {
           <QRCodeGenerator value={canonicalMenuUrl} size={220} caption="스캔하면 디지털 메뉴판이 열립니다." />
         </section>
       </main>
+
+      <button
+        type="button"
+        onClick={() => setOrderOpen(true)}
+        className="fixed bottom-6 left-1/2 z-[45] -translate-x-1/2 rounded-full px-8 py-4 text-base font-black shadow-[0_12px_40px_rgba(0,0,0,0.55)] ring-2 ring-white/25 sm:text-lg"
+        style={{ backgroundColor: accentDraft, color: '#0a0a0a' }}
+      >
+        🔔 당일 예약 및 주문하기
+      </button>
+
+      {orderOpen ? (
+        <div
+          className="fixed inset-0 z-[50] flex items-end justify-center bg-black/65 p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="당일 예약 및 주문"
+          onClick={() => !orderBusy && setOrderOpen(false)}
+        >
+          <div
+            className={`${glassPanel('max-h-[88vh] w-full max-w-md overflow-y-auto p-5')}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-black text-white">당일 예약 · 주문</h2>
+            <p className="mt-1 text-[11px] text-white/55">
+              방문 예정 시각은 태국(방콕) 기준 당일만 선택할 수 있습니다. 로그인 계정으로 접수됩니다.
+            </p>
+
+            {!viewerId ? (
+              <div className="mt-4 rounded-xl border border-amber-400/25 bg-amber-950/40 p-4 text-sm text-amber-50">
+                로그인 후 이용할 수 있습니다.
+                <Link
+                  href={`/auth/login?next=${encodeURIComponent(canonicalMenuUrl)}`}
+                  className="mt-3 block rounded-lg bg-amber-400 px-4 py-2 text-center text-sm font-bold text-black no-underline"
+                >
+                  로그인하기
+                </Link>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-4">
+                <label className="block text-xs text-white/70">
+                  방문 예정 시간
+                  <input
+                    type="datetime-local"
+                    value={visitAt}
+                    onChange={(e) => setVisitAt(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-white/15 bg-black/35 px-3 py-2 text-sm text-white"
+                  />
+                </label>
+                <label className="block text-xs text-white/70">
+                  인원
+                  <input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={partySize}
+                    onChange={(e) => setPartySize(Number(e.target.value))}
+                    className="mt-1 w-full rounded-xl border border-white/15 bg-black/35 px-3 py-2 text-sm text-white"
+                  />
+                </label>
+                <div>
+                  <p className="text-xs font-semibold text-white/80">메뉴 · 수량</p>
+                  <ul className="mt-2 max-h-48 space-y-2 overflow-y-auto">
+                    {menus.map((m) => (
+                      <li key={m.id} className="flex items-center justify-between gap-2 rounded-lg bg-black/25 px-2 py-2 text-sm">
+                        <span className="min-w-0 flex-1 truncate text-white/90">
+                          {m.name}
+                          {m.is_sold_out ? <span className="ml-2 text-rose-300">품절</span> : null}
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={30}
+                          disabled={m.is_sold_out}
+                          value={qtyById[m.id] ?? 0}
+                          onChange={(e) =>
+                            setQtyById((prev) => ({
+                              ...prev,
+                              [m.id]: Math.max(0, Math.min(30, Number(e.target.value) || 0)),
+                            }))
+                          }
+                          className="w-16 rounded-lg border border-white/15 bg-black/40 px-2 py-1 text-center text-white disabled:opacity-40"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <label className="block text-xs text-white/70">
+                  요청 사항 (선택)
+                  <textarea
+                    value={orderNotes}
+                    onChange={(e) => setOrderNotes(e.target.value)}
+                    rows={3}
+                    className="mt-1 w-full resize-none rounded-xl border border-white/15 bg-black/35 px-3 py-2 text-sm text-white"
+                    placeholder="알레르기, 좌석 요청 등"
+                  />
+                </label>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={orderBusy}
+                    onClick={() => setOrderOpen(false)}
+                    className="flex-1 rounded-xl border border-white/20 bg-white/5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    닫기
+                  </button>
+                  <button
+                    type="button"
+                    disabled={orderBusy}
+                    onClick={() => void submitReservationOrder()}
+                    className="flex-1 rounded-xl py-3 text-sm font-black text-black disabled:opacity-50"
+                    style={{ backgroundColor: accentDraft }}
+                  >
+                    {orderBusy ? '전송 중…' : '예약·주문 접수'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

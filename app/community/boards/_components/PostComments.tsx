@@ -2,10 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { toast } from 'sonner';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { boardModMessage } from '@/lib/community/moderationMessages';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils/formatDate';
+
+const FUNNEL_MSG = '로그인 후 이용할 수 있는 기능입니다.' as const;
 
 export type CommentRow = {
   id: string;
@@ -58,7 +61,8 @@ export default function PostComments({
       data: { user },
     } = await sb.auth.getUser();
     if (!user) {
-      router.push(`/auth/login?next=${encodeURIComponent(loginNextPath)}`);
+      toast.error(FUNNEL_MSG, { position: 'top-center' });
+      router.push('/login');
       return;
     }
     const text = body.trim();
@@ -67,7 +71,8 @@ export default function PostComments({
     const accessToken = sess.session?.access_token;
     if (!accessToken) {
       setError(labels.mod.auth);
-      router.push(`/auth/login?next=${encodeURIComponent(loginNextPath)}`);
+      toast.error(FUNNEL_MSG, { position: 'top-center' });
+      router.push('/login');
       return;
     }
     setLoading(true);
@@ -121,10 +126,21 @@ export default function PostComments({
             type="button"
             className="text-slate-400 transition hover:text-white"
             onClick={() => {
-              setReplyTarget({ id: comment.id, name: comment.display_name });
-              setExpanded(true);
-              const textarea = document.getElementById('cbody') as HTMLTextAreaElement | null;
-              textarea?.focus();
+              void (async () => {
+                const sb = createBrowserClient();
+                const {
+                  data: { user },
+                } = await sb.auth.getUser();
+                if (!user) {
+                  toast.error(FUNNEL_MSG, { position: 'top-center' });
+                  router.push('/login');
+                  return;
+                }
+                setReplyTarget({ id: comment.id, name: comment.display_name });
+                setExpanded(true);
+                const textarea = document.getElementById('cbody') as HTMLTextAreaElement | null;
+                textarea?.focus();
+              })();
             }}
           >
             답글 달기 💬
@@ -160,7 +176,14 @@ export default function PostComments({
           id="cbody"
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          onFocus={() => setExpanded(true)}
+          onFocus={() => {
+            if (showLoginHint) {
+              toast.error(FUNNEL_MSG, { position: 'top-center' });
+              router.push('/login');
+              return;
+            }
+            setExpanded(true);
+          }}
           placeholder={labels.commentBody}
           className={`mt-2 w-full rounded-xl border border-white/15 bg-slate-950/70 p-3 text-sm text-slate-100 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-violet-300/60 ${
             expanded ? 'min-h-28' : 'min-h-12'

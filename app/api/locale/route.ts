@@ -1,5 +1,5 @@
 /**
- * POST /api/locale  { "locale": "ko" | "th" } — 쿠키 저장 후 페이지 새로고침으로 반영
+ * POST /api/locale  { "locale": "ko" | "th" | "en" | "zh" } — 쿠키 저장 후 페이지 새로고침으로 반영
  */
 import { NextResponse } from 'next/server';
 import { LOCALE_COOKIE, isLocale, type Locale } from '@/i18n/types';
@@ -20,7 +20,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       : undefined;
 
   if (typeof loc !== 'string' || !isLocale(loc)) {
-    return NextResponse.json({ error: 'locale must be "ko" or "th"' }, { status: 400 });
+    return NextResponse.json({ error: 'locale must be ko, th, en, or zh' }, { status: 400 });
   }
 
   const res = NextResponse.json({ ok: true, locale: loc as Locale });

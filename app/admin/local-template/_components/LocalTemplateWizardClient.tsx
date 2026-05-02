@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import type { VisionMenuItem } from '@/lib/admin/generateLocalTemplateFromVision';
 
 export type LocalSpotOption = { id: string; slug: string; name: string };
 
@@ -10,7 +11,7 @@ type ApiResult = {
   selected_skin_basic_id: string;
   selected_skin_special_id: string | null;
   selected_bgm_id: string;
-  menu_items: Array<{ name: string; price: string }>;
+  menu_items: VisionMenuItem[];
   notes: string;
   resolved: {
     skin_basic: { id: string; name: string; type: string; tags: string[]; color_code?: string | null } | null;
@@ -239,10 +240,15 @@ export default function LocalTemplateWizardClient({ spots }: { spots: LocalSpotO
                     ) : (
                       result.menu_items.map((m, i) => (
                         <li
-                          key={`${m.name}-${i}`}
+                          key={`${m.name_ko}-${m.name_en}-${i}`}
                           className="flex justify-between gap-2 rounded-lg bg-black/25 px-2 py-2 text-[12px]"
                         >
-                          <span className="truncate text-white">{m.name}</span>
+                          <span className="min-w-0 flex-1 text-white">
+                            <span className="block truncate font-medium">{m.name_ko}</span>
+                            <span className="mt-0.5 block truncate text-[10px] text-white/55">
+                              {m.name_th} · {m.name_en} · {m.name_zh}
+                            </span>
+                          </span>
                           <span className="shrink-0 font-semibold text-sky-200">{m.price}</span>
                         </li>
                       ))
@@ -310,9 +316,14 @@ export default function LocalTemplateWizardClient({ spots }: { spots: LocalSpotO
                     <li className="text-slate-500">메뉴 항목 없음 — 메뉴판 이미지를 추가해 보세요.</li>
                   ) : (
                     result.menu_items.map((m, i) => (
-                      <li key={`${m.name}-${i}`} className="flex justify-between gap-2 border-b border-slate-800 py-1">
-                        <span className="text-slate-100">{m.name}</span>
-                        <span className="shrink-0 text-emerald-300">{m.price}</span>
+                      <li key={`${m.name_ko}-${m.name_en}-${i}`} className="border-b border-slate-800 py-2">
+                        <div className="flex justify-between gap-2">
+                          <span className="text-sm font-medium text-slate-100">{m.name_ko}</span>
+                          <span className="shrink-0 text-emerald-300">{m.price}</span>
+                        </div>
+                        <p className="mt-1 text-[11px] leading-snug text-slate-400">
+                          TH {m.name_th} · EN {m.name_en} · ZH {m.name_zh}
+                        </p>
                       </li>
                     ))
                   )}

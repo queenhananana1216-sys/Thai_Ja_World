@@ -1,4 +1,4 @@
-export const LOCALES = ['ko', 'th'] as const;
+export const LOCALES = ['ko', 'th', 'en', 'zh'] as const;
 export type Locale = (typeof LOCALES)[number];
 
 export const LOCALE_COOKIE = 'tj_locale';
@@ -7,5 +7,5 @@ export const LOCALE_COOKIE = 'tj_locale';
 export const TJ_LOCALE_CHANGE_EVENT = 'tj-locale-change';
 
 export function isLocale(v: string): v is Locale {
-  return v === 'ko' || v === 'th';
+  return v === 'ko' || v === 'th' || v === 'en' || v === 'zh';
 }

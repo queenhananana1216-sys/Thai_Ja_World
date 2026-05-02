@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { parsePriceToThb } from '@/lib/local/parseMenuPriceThb';
+import { parseVisionMenuItems, type VisionMenuItem } from '@/lib/admin/generateLocalTemplateFromVision';
 
 export type VisionApplyPayload = {
   vibe_summary: string;
@@ -9,7 +10,8 @@ export type VisionApplyPayload = {
   selected_skin_basic_id: string;
   selected_skin_special_id: string | null;
   selected_bgm_id: string;
-  menu_items: Array<{ name: string; price: string }>;
+  /** 비전 JSON 또는 레거시 `{ name, price }` 혼합 — 적용 시 4개국어로 보정 */
+  menu_items: unknown[];
   notes: string;
 };
 
@@ -75,9 +77,20 @@ export async function applyLocalAiTemplate(params: {
     },
   };
 
+  const menuItems = parseVisionMenuItems(params.vision.menu_items);
+
+  function primaryDbName(m: VisionMenuItem): string {
+    const pick = m.name_ko || m.name_th || m.name_en || m.name_zh;
+    return pick.trim().slice(0, 200);
+  }
+
   const intro = params.vision.vibe_summary.trim().slice(0, 2000);
-  const legacyMenu = params.vision.menu_items.map((m, idx) => ({
-    name: m.name.trim().slice(0, 200),
+  const legacyMenu = menuItems.map((m, idx) => ({
+    name: primaryDbName(m),
+    name_ko: m.name_ko,
+    name_th: m.name_th,
+    name_en: m.name_en,
+    name_zh: m.name_zh,
     price: m.price.trim().slice(0, 80),
     description: '',
     image_url: '',
@@ -112,9 +125,15 @@ export async function applyLocalAiTemplate(params: {
   const { error: delErr } = await admin.from('local_menus').delete().eq('local_spot_id', spotId);
   if (delErr) throw new Error(delErr.message);
 
-  const rows = params.vision.menu_items.map((m, idx) => ({
+  const rows = menuItems.map((m, idx) => ({
     local_spot_id: spotId,
-    name: m.name.trim().slice(0, 200),
+    name: primaryDbName(m),
+    name_i18n: {
+      ko: m.name_ko,
+      th: m.name_th,
+      en: m.name_en,
+      zh: m.name_zh,
+    },
     description: null as string | null,
     price_thb: parsePriceToThb(m.price),
     image_url: null as string | null,

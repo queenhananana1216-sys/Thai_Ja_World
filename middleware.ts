@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const langParam = url.searchParams.get('lang');
-  if (langParam === 'ko' || langParam === 'th') {
+  if (langParam === 'ko' || langParam === 'th' || langParam === 'en' || langParam === 'zh') {
     url.searchParams.delete('lang');
     const redirect = NextResponse.redirect(url);
     redirect.cookies.set(LOCALE_COOKIE, langParam, {

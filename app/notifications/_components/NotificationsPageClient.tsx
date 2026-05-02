@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
+import type { Locale } from '@/i18n/types';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 type Notice = {
@@ -17,10 +18,17 @@ type Notice = {
   read_at: string | null;
 };
 
-function fmt(v: string, locale: 'ko' | 'th'): string {
+function intlLocale(loc: Locale): string {
+  if (loc === 'th') return 'th-TH';
+  if (loc === 'en') return 'en-US';
+  if (loc === 'zh') return 'zh-CN';
+  return 'ko-KR';
+}
+
+function fmt(v: string, locale: Locale): string {
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return '-';
-  return d.toLocaleString(locale === 'th' ? 'th-TH' : 'ko-KR', {
+  return d.toLocaleString(intlLocale(locale), {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',

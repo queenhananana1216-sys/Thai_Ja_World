@@ -44,23 +44,81 @@ const COPY = {
     err: 'ส่งไม่สำเร็จ — ลองใหม่ภายหลัง',
     reqName: 'กรอกชื่ออย่างน้อย 2 ตัวอักษร',
   },
+  en: {
+    fab: '➕ Suggest a Korean business',
+    title: 'Suggest a listing',
+    lead: 'Tell us about a mart, pharmacy, or hospital missing from the map. We review before publishing.',
+    name: 'Business name',
+    address: 'Address (optional)',
+    phone: 'Phone (optional)',
+    region: 'Area',
+    category: 'Category (optional)',
+    note: 'Notes (optional)',
+    submit: 'Send',
+    cancel: 'Close',
+    sending: 'Sending…',
+    ok: 'Thanks — we will review and update the map.',
+    err: 'Could not send. Please try again later.',
+    reqName: 'Please enter at least 2 characters for the name.',
+  },
+  zh: {
+    fab: '➕ 提交韩人店铺',
+    title: '店铺爆料',
+    lead: '若地图上没有某家超市/药房/医院，请告诉我们。审核后会补充。',
+    name: '店名',
+    address: '地址（可选）',
+    phone: '电话（可选）',
+    region: '地区',
+    category: '类型（可选）',
+    note: '备注（可选）',
+    submit: '提交',
+    cancel: '关闭',
+    sending: '发送中…',
+    ok: '感谢提交，我们会审核后更新。',
+    err: '发送失败，请稍后重试。',
+    reqName: '名称请至少填写 2 个字符。',
+  },
 } as const;
 
 const REGIONS: { key: KoreanBizRow['region']; label: Record<Locale, string> }[] = [
-  { key: 'bangkok', label: { ko: '방콕', th: 'กรุงเทพฯ' } },
-  { key: 'pattaya', label: { ko: '파타야', th: 'พัทยา' } },
-  { key: 'chiangmai', label: { ko: '치앙마이', th: 'เชียงใหม่' } },
+  {
+    key: 'bangkok',
+    label: { ko: '방콕', th: 'กรุงเทพฯ', en: 'Bangkok', zh: '曼谷' },
+  },
+  {
+    key: 'pattaya',
+    label: { ko: '파타야', th: 'พัทยา', en: 'Pattaya', zh: '芭提雅' },
+  },
+  {
+    key: 'chiangmai',
+    label: { ko: '치앙마이', th: 'เชียงใหม่', en: 'Chiang Mai', zh: '清迈' },
+  },
 ];
 
 const CAT_OPTIONS: { key: KoreanBizRow['category']; label: Record<Locale, string> }[] = [
-  { key: 'mart', label: { ko: '🛒 마트', th: '🛒 มาร์ท' } },
-  { key: 'pharmacy', label: { ko: '💊 약국', th: '💊 ร้านยา' } },
-  { key: 'hospital', label: { ko: '🏥 병원·클리닉', th: '🏥 โรงพยาบาล/คลินิก' } },
+  {
+    key: 'mart',
+    label: { ko: '🛒 마트', th: '🛒 มาร์ท', en: '🛒 Mart', zh: '🛒 超市' },
+  },
+  {
+    key: 'pharmacy',
+    label: { ko: '💊 약국', th: '💊 ร้านยา', en: '💊 Pharmacy', zh: '💊 药房' },
+  },
+  {
+    key: 'hospital',
+    label: {
+      ko: '🏥 병원·클리닉',
+      th: '🏥 โรงพยาบาล/คลินิก',
+      en: '🏥 Hospital / clinic',
+      zh: '🏥 医院/诊所',
+    },
+  },
 ];
 
 export default function KoreanBizReportFab({ defaultRegion, locale }: Props) {
   const t = COPY[locale];
-  const unsetLabel = locale === 'th' ? 'ไม่ระบุ' : '선택 안 함';
+  const unsetLabel =
+    locale === 'th' ? 'ไม่ระบุ' : locale === 'en' ? 'Not set' : locale === 'zh' ? '未选择' : '선택 안 함';
   const baseId = useId();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');

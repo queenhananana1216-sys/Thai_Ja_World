@@ -31,7 +31,7 @@ export type Dictionary = {
   /** 헤더·푸터 한 줄 로고 텍스트 */
   brandLockup: string;
   logoAria: string;
-  lang: { ko: string; th: string };
+  lang: { ko: string; th: string; en: string; zh: string };
   footer: string;
   /** 홈 하단·푸터 고정 링크 라벨 */
   footerNav: {
@@ -678,7 +678,7 @@ const ko: Dictionary = {
   brandSuffix: '월드',
   brandLockup: '태국에, 살자',
   logoAria: '태국에, 살자 홈',
-  lang: { ko: '한국어', th: 'ไทย' },
+  lang: { ko: '한국어', th: 'ไทย', en: 'English', zh: '中文' },
   footer:
     '© 2026 태국에, 살자 · thaijaworld.com | 태국 살이 정보 나눔 — 경험·피하기·정리, 제보·중고·알바·맛집·미니홈',
   footerNav: {
@@ -1364,7 +1364,7 @@ const th: Dictionary = {
   brandSuffix: 'เวิลด์',
   brandLockup: 'อยู่ไทยกัน',
   logoAria: 'อยู่ไทยกัน — หน้าแรก',
-  lang: { ko: '한국어', th: 'ไทย' },
+  lang: { ko: '한국어', th: 'ไทย', en: 'English', zh: '中文' },
   footer:
     '© 2026 อยู่ไทยกัน · thaijaworld.com | แบ่งปันข้อมูลชีวิตในไทย — ประสบการณ์·เลี่ยงปัญหา·สรุป, แจ้งเรื่อง·มือสอง·งาน·ร้าน·มินิโฮม',
   footerNav: {
@@ -2028,6 +2028,154 @@ const th: Dictionary = {
   },
 };
 
+const en: Dictionary = {
+  ...ko,
+  nav: {
+    ...ko.nav,
+    home: 'Home',
+    tips: 'Tips',
+    local: 'Local',
+    boards: 'Boards',
+    community: 'Plaza',
+    ilchon: 'Friends',
+    minihome: 'Minihome',
+    botConsole: 'Admin',
+    memberMinihome: 'My minihome',
+    memberNotesInbox: 'Requests & notes',
+    memberFriends: 'My friends',
+    memberQuickNavAria: 'Member quick links',
+    mainNavAria: 'Main menu',
+  },
+  lang: { ko: '한국어', th: 'ไทย', en: 'English', zh: '中文' },
+  brandSuffix: 'World',
+  brandLockup: 'Live Well in Thailand',
+  logoAria: 'Live Well in Thailand — Home',
+  footer:
+    '© 2026 Thai Ja World · thaijaworld.com | Community for life in Thailand — tips, boards, local spots & minihome',
+  footerNav: {
+    terms: 'Terms',
+    privacy: 'Privacy',
+    contact: 'Contact',
+    ads: 'Ads',
+  },
+  board: {
+    ...ko.board,
+    pageTitle: 'Community board',
+    newPost: 'New post',
+    login: 'Log in',
+    signup: 'Sign up',
+    logout: 'Log out',
+  },
+  search: {
+    ...ko.search,
+    ariaLabel: 'Search',
+    headerBarLabel: 'Search',
+    heroTitle: 'What are you looking for?',
+    placeholder: 'Search…',
+    noResults: 'No results found.',
+    quickHeading: 'Shortcuts',
+    sectionPages: 'Site pages',
+    sectionNews: 'News highlights',
+    badgeMember: 'Log in to participate',
+    badgePublic: 'Open',
+    searching: 'Searching…',
+  },
+  seo: {
+    ...ko.seo,
+    defaultTitle: 'Thai Ja World',
+    titleTemplate: '%s | Thai Ja World',
+    defaultDescription: 'Life in Thailand — community, news, local spots & minihome',
+    homeTitle: 'Home — Thai Ja World',
+    homeDescription: 'Tips, boards & local spots for living in Thailand',
+    boardsListDescription: 'Share life in Thailand — reviews, tips & marketplace notes',
+    tradeHubDescription: 'Flea market & jobs — share cautions and experiences',
+  },
+  home: {
+    ...ko.home,
+    tag: 'THAI JA WORLD · tips for life in Thailand',
+    title: 'Life in Thailand — figure it out together',
+    heroLead: 'Stuck? Start here',
+  },
+};
+
+const zh: Dictionary = {
+  ...ko,
+  nav: {
+    ...ko.nav,
+    home: '首页',
+    tips: '攻略',
+    local: '本地',
+    boards: '社区',
+    community: '广场',
+    ilchon: '好友',
+    minihome: '迷你主页',
+    botConsole: '管理',
+    memberMinihome: '我的迷你主页',
+    memberNotesInbox: '请求与留言',
+    memberFriends: '我的好友',
+    memberQuickNavAria: '会员快捷菜单',
+    mainNavAria: '主导航',
+  },
+  lang: { ko: '한국어', th: 'ไทย', en: 'English', zh: '中文' },
+  brandSuffix: '世界',
+  brandLockup: '泰国生活圈',
+  logoAria: '泰国生活圈 — 首页',
+  footer: '© 2026 泰国生活圈 · thaijaworld.com | 泰国生活信息与社区',
+  footerNav: {
+    terms: '服务条款',
+    privacy: '隐私政策',
+    contact: '联系我们',
+    ads: '广告合作',
+  },
+  board: {
+    ...ko.board,
+    pageTitle: '社区论坛',
+    newPost: '发帖',
+    login: '登录',
+    signup: '注册',
+    logout: '退出',
+  },
+  search: {
+    ...ko.search,
+    ariaLabel: '搜索',
+    headerBarLabel: '搜索',
+    heroTitle: '您在找什么？',
+    placeholder: '输入关键词',
+    noResults: '没有结果',
+    quickHeading: '常用入口',
+    sectionPages: '网站菜单',
+    sectionNews: '参考资讯',
+    badgeMember: '登录后参与',
+    badgePublic: '直接进入',
+    searching: '搜索中…',
+  },
+  seo: {
+    ...ko.seo,
+    defaultTitle: '泰国生活圈',
+    titleTemplate: '%s | 泰国生活圈',
+    defaultDescription: '泰国生活社区 — 资讯、本地、论坛与迷你主页',
+    homeTitle: '首页 — 泰国生活圈',
+    homeDescription: '泰国生活指南 — 论坛、交易、本地店铺',
+    boardsListDescription: '分享泰国生活经验与攻略',
+    tradeHubDescription: '二手与招聘 — 请注意安全',
+  },
+  home: {
+    ...ko.home,
+    tag: 'THAI JA WORLD · 泰国生活指南',
+    title: '泰国生活，一起搞定',
+    heroLead: '遇到问题？从这里开始',
+  },
+};
+
 export function getDictionary(locale: Locale): Dictionary {
-  return locale === 'th' ? th : ko;
+  switch (locale) {
+    case 'th':
+      return th;
+    case 'en':
+      return en;
+    case 'zh':
+      return zh;
+    default:
+      return ko;
+  }
 }

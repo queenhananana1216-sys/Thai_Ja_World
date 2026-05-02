@@ -1,16 +1,32 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { absoluteUrl } from '@/lib/seo/site';
 
-export default function PostEngagementActions({ postPath }: { postPath: string }) {
+const FUNNEL_MSG = '로그인 후 이용할 수 있는 기능입니다.' as const;
+
+export default function PostEngagementActions({
+  postPath,
+  isLoggedIn,
+}: {
+  postPath: string;
+  isLoggedIn: boolean;
+}) {
+  const router = useRouter();
   const onCommentClick = useCallback(() => {
+    if (!isLoggedIn) {
+      toast.error(FUNNEL_MSG, { position: 'top-center' });
+      router.push('/login');
+      return;
+    }
     const target = document.getElementById('post-comments');
     if (!target) return;
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     const textarea = document.getElementById('cbody') as HTMLTextAreaElement | null;
     textarea?.focus();
-  }, []);
+  }, [isLoggedIn, router]);
 
   const onReactionClick = useCallback(() => {
     const target = document.getElementById('post-reactions');

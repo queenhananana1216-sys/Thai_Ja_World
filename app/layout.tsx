@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Nunito } from 'next/font/google';
 import { cookies } from 'next/headers';
 import AnalyticsTracker from './_components/AnalyticsTracker';
+import GlobalToaster from './_components/GlobalToaster';
 import GlobalNav from './_components/GlobalNav';
 import { SiteFooterFallback } from './_components/SiteFooterFallback';
 import { isLocale, LOCALE_COOKIE } from '@/i18n/types';
@@ -60,7 +61,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: unknown }) {
   const jar = await cookies();
   const locRaw = jar.get(LOCALE_COOKIE)?.value ?? '';
-  const htmlLang = isLocale(locRaw) && locRaw === 'th' ? 'th' : 'ko';
+  const htmlLang: 'ko' | 'th' | 'en' | 'zh' = isLocale(locRaw) ? locRaw : 'ko';
   const ui = await loadSiteUiSettings();
 
   return (
@@ -99,6 +100,7 @@ export default async function RootLayout({ children }: { children: unknown }) {
           </div>
         ) : null}
         <AnalyticsTracker />
+        <GlobalToaster />
         <main className="relative z-0 min-h-[45vh] w-full flex-1 overflow-x-hidden">
           {children as import('react').ReactNode}
         </main>

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import GuestGateLink from '@app/_components/GuestGateLink';
 import KoreanNewsPipelineNotice from '../_components/news/KoreanNewsPipelineNotice';
 import type {
   PortalFeedLine,
@@ -60,6 +61,8 @@ export type Portal2026ViewProps = {
   feed: PortalHomeFeed;
   locale: Locale;
   siteUi?: SiteUiSettings;
+  /** 홈 퍼널 — 비회원 클릭 시 토스트 후 /login */
+  isLoggedIn: boolean;
 };
 
 function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
@@ -189,7 +192,15 @@ function NewsLinesSkeleton({ rows = 7, newsHubMore }: { rows?: number; newsHubMo
   );
 }
 
-function NewsDenseRowLink({ item, locale }: { item: PortalFeedLine; locale: Locale }) {
+function NewsDenseRowLink({
+  item,
+  locale,
+  isLoggedIn,
+}: {
+  item: PortalFeedLine;
+  locale: Locale;
+  isLoggedIn: boolean;
+}) {
   const href = item.href?.trim() ? item.href : '/news';
   const d = getDictionary(locale);
   const map = d.quests.feedPhraseMap;
@@ -198,8 +209,9 @@ function NewsDenseRowLink({ item, locale }: { item: PortalFeedLine; locale: Loca
   const age = formatPortalNewsAge(item.publishedAt ?? null, locale);
   return (
     <li className="border-b border-slate-800/70 py-1 last:border-b-0">
-      <Link
+      <GuestGateLink
         href={href}
+        isLoggedIn={isLoggedIn}
         className="flex min-h-11 min-w-0 flex-nowrap items-center gap-x-1.5 text-base leading-snug text-gray-100 hover:text-amber-200"
       >
         <span className="min-w-0 max-w-[46%] shrink truncate break-words font-semibold text-white">{title}</span>
@@ -208,7 +220,7 @@ function NewsDenseRowLink({ item, locale }: { item: PortalFeedLine; locale: Loca
         {age ? (
           <span className="shrink-0 whitespace-nowrap text-sm text-gray-200 tabular-nums">🕒 {age}</span>
         ) : null}
-      </Link>
+      </GuestGateLink>
     </li>
   );
 }
@@ -221,6 +233,7 @@ function FeedLineList({
   lineLayout = 'default',
   locale,
   newsHubMore,
+  isLoggedIn,
 }: {
   lines: PortalFeedLine[];
   emptyMessage: string;
@@ -231,6 +244,7 @@ function FeedLineList({
   lineLayout?: 'default' | 'news-dense';
   locale: Locale;
   newsHubMore: string;
+  isLoggedIn: boolean;
 }) {
   const d = getDictionary(locale);
   const phraseMap = d.quests.feedPhraseMap;
@@ -251,7 +265,12 @@ function FeedLineList({
     return (
       <ul className="max-h-[min(22rem,48vh)] min-h-0 overflow-y-auto overscroll-contain px-1 py-0.5 md:max-h-[min(11rem,36vh)]">
         {safe.map((item, idx) => (
-          <NewsDenseRowLink key={item?.id ? String(item.id) : `nd-${idx}`} item={item} locale={locale} />
+          <NewsDenseRowLink
+            key={item?.id ? String(item.id) : `nd-${idx}`}
+            item={item}
+            locale={locale}
+            isLoggedIn={isLoggedIn}
+          />
         ))}
       </ul>
     );
@@ -263,8 +282,9 @@ function FeedLineList({
           key={item?.id ? String(item.id) : `feed-${idx}`}
           className="border-b border-slate-800/80 py-1 text-base leading-snug text-gray-100 last:border-b-0"
         >
-          <Link
+          <GuestGateLink
             href={item?.href?.trim() ? item.href : '/boards'}
+            isLoggedIn={isLoggedIn}
             className="flex min-h-11 min-w-0 flex-col justify-center overflow-hidden py-0.5 hover:text-amber-200"
           >
             <span className="line-clamp-2 break-words font-medium text-white">
@@ -275,7 +295,7 @@ function FeedLineList({
                 {localizeQuestFeedText(item.subtitle, locale, phraseMap)}
               </span>
             ) : null}
-          </Link>
+          </GuestGateLink>
         </li>
       ))}
     </ul>
@@ -309,10 +329,12 @@ function LiveFeedList({
   lines,
   emptyMessage,
   locale,
+  isLoggedIn,
 }: {
   lines: PortalFeedLine[];
   emptyMessage: string;
   locale: Locale;
+  isLoggedIn: boolean;
 }) {
   const d = getDictionary(locale);
   const phraseMap = d.quests.feedPhraseMap;
@@ -331,25 +353,26 @@ function LiveFeedList({
               hot ? styles.liveFeedRowHot : 'text-gray-100'
             }`}
           >
-          <Link
+          <GuestGateLink
             href={item?.href?.trim() ? item.href : '/boards'}
+            isLoggedIn={isLoggedIn}
             className={`flex min-h-11 min-w-0 flex-col justify-center overflow-hidden hover:text-amber-200 ${hot ? 'px-0.5' : ''}`}
+          >
+            <span
+              className={`line-clamp-2 break-words ${hot ? 'font-semibold text-white' : 'font-normal text-gray-100'}`}
             >
+              {hot ? splitLiveHotKeywords(titleLoc, locale) : titleLoc}
+            </span>
+            {subLoc ? (
               <span
-                className={`line-clamp-2 break-words ${hot ? 'font-semibold text-white' : 'font-normal text-gray-100'}`}
+                className={`mt-0.5 block line-clamp-2 break-words text-sm ${
+                  hot ? 'font-medium text-gray-200' : 'text-gray-200'
+                }`}
               >
-                {hot ? splitLiveHotKeywords(titleLoc, locale) : titleLoc}
+                {hot ? splitLiveHotKeywords(subLoc, locale) : subLoc}
               </span>
-              {subLoc ? (
-                <span
-                  className={`mt-0.5 block line-clamp-2 break-words text-sm ${
-                    hot ? 'font-medium text-gray-200' : 'text-gray-200'
-                  }`}
-                >
-                  {hot ? splitLiveHotKeywords(subLoc, locale) : subLoc}
-                </span>
-              ) : null}
-            </Link>
+            ) : null}
+          </GuestGateLink>
           </li>
         );
       })}
@@ -360,7 +383,12 @@ function LiveFeedList({
 /**
  * 2026 3열 포털 — `feed`는 서버에서 `fetchPortalHomeFeed()`로만 채움(DB 실데이터).
  */
-export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Portal2026ViewProps) {
+export default function Portal2026View({
+  feed,
+  locale,
+  siteUi: siteUiProp,
+  isLoggedIn,
+}: Portal2026ViewProps) {
   const siteUi = siteUiProp ?? siteUiDefaults();
   const copy = getPortal2026Copy(locale);
   const raw = safeFeed(feed);
@@ -536,7 +564,7 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
                     <h2 className="min-w-0 flex-1 truncate text-lg font-bold tracking-tight text-white">{board.title}</h2>
                     <div className="ml-auto flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-1.5">
                       {showQuestBadge && questCat ? (
-                        <PortalQuestWriteCta category={questCat} variant="badge" />
+                        <PortalQuestWriteCta category={questCat} variant="badge" isLoggedIn={isLoggedIn} />
                       ) : null}
                       <Link
                         href={board.moreHref ?? '/boards'}
@@ -554,6 +582,7 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
                     lineLayout={board.key === 'news' ? 'news-dense' : 'default'}
                     locale={locale}
                     newsHubMore={copy.newsHubMore}
+                    isLoggedIn={isLoggedIn}
                   />
                 </article>
               );
@@ -564,7 +593,12 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
             <header className="border-b border-slate-700/70 px-2 py-2 text-lg font-black text-blue-200">
               {copy.liveFeedTitle}
             </header>
-            <LiveFeedList lines={liveFeed ?? []} emptyMessage={copy.emptyLiveFeed} locale={locale} />
+            <LiveFeedList
+              lines={liveFeed ?? []}
+              emptyMessage={copy.emptyLiveFeed}
+              locale={locale}
+              isLoggedIn={isLoggedIn}
+            />
           </section>
         </section>
 
@@ -577,7 +611,12 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
               ) : (
                 <ul className="mt-1.5 max-h-[min(14rem,42vh)] min-w-0 space-y-0 overflow-y-auto overscroll-contain px-0.5">
                   {(newsWing ?? []).map((n, i) => (
-                    <NewsDenseRowLink key={n?.id != null ? String(n.id) : `nw-${i}`} item={n} locale={locale} />
+                    <NewsDenseRowLink
+                      key={n?.id != null ? String(n.id) : `nw-${i}`}
+                      item={n}
+                      locale={locale}
+                      isLoggedIn={isLoggedIn}
+                    />
                   ))}
                 </ul>
               )}
@@ -592,15 +631,16 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
                 <ul className="mt-2 min-w-0 space-y-1.5">
                   {(localWing ?? []).map((l, i) => (
                     <li key={l?.id != null ? String(l.id) : `rw-${i}`} className="min-w-0 overflow-hidden">
-                      <Link
+                      <GuestGateLink
                         href={l.href?.trim() ? String(l.href) : '/local'}
+                        isLoggedIn={isLoggedIn}
                         className="flex min-h-11 min-w-0 flex-col justify-center overflow-hidden text-base leading-snug text-gray-100 hover:text-amber-200"
                       >
                         <span className="line-clamp-2 break-words font-semibold text-white">{l.title}</span>
                         {l.subtitle ? (
                           <span className="mt-0.5 block line-clamp-2 break-words text-sm text-gray-200">{l.subtitle}</span>
                         ) : null}
-                      </Link>
+                      </GuestGateLink>
                     </li>
                   ))}
                 </ul>

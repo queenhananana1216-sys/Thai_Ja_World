@@ -19,13 +19,22 @@ export type VisionTemplateImage = {
   dataUrl: string;
 };
 
+/** OCR + 번역 — 비전 API가 반환하는 메뉴 한 줄 (레거시 `name`만 있어도 파서가 보정) */
+export type VisionMenuItem = {
+  name_ko: string;
+  name_th: string;
+  name_en: string;
+  name_zh: string;
+  price: string;
+};
+
 export type GenerateLocalTemplateVisionResult = {
   vibe_summary: string;
   vibe_tags: string[];
   selected_skin_basic_id: string;
   selected_skin_special_id: string | null;
   selected_bgm_id: string;
-  menu_items: Array<{ name: string; price: string }>;
+  menu_items: VisionMenuItem[];
   notes: string;
   catalog_snapshot: DecorationCatalogRow[];
   resolved: {
@@ -83,8 +92,8 @@ async function loadDecorationCatalog(): Promise<DecorationCatalogRow[]> {
 
 function buildSystemPrompt(): string {
   return [
-    'You are a vision AI for Thai/Korea local shop digitization.',
-    'Analyze store photos for atmosphere (vibe) and read menu boards with OCR.',
+    'You are a senior vision+localization AI for Thai/Korea local shops serving international tourists.',
+    'Analyze store photos for atmosphere (vibe) and read menu boards with careful OCR.',
     'You MUST choose decoration asset ids ONLY from the catalog JSON provided in the user message.',
     'Rules:',
     '- selected_skin_basic_id: must be type "skin_basic".',
@@ -92,7 +101,14 @@ function buildSystemPrompt(): string {
     '- selected_bgm_id: must be type "bgm".',
     '- Match vibe using overlap between your inferred vibe_tags and each asset tags.',
     '- Prefer tier "basic" or "premium" for typical shops; use "special" only if the venue is clearly ultra-premium or collector-oriented.',
-    '- menu_items: extract ONLY from images marked as menu board region; name and price as printed (keep currency symbols).',
+    '- menu_items: extract ONLY from images in the "menu board" region.',
+    '- For EVERY menu row you MUST output four parallel dish names — Korean (name_ko), Thai (name_th), English (name_en), Simplified Chinese (name_zh).',
+    '  • Read the printed menu text; infer source language (often Thai or English on tourist menus).',
+    '  • Translate naturally for restaurant menus (dish names, not literal word-by-word when a standard name exists, e.g. Pad Thai / 泰式炒河粉).',
+    '  • If the board shows only one language, still fill all four fields using faithful translations.',
+    '  • Keep Thai script for authentic Thai dish names in name_th when appropriate; other locales get readable translations.',
+    '- price: string exactly as useful for the venue (digits + currency if visible, e.g. "120 THB" or "120฿"); if unreadable use "문의" or "Ask".',
+    '- Do NOT output a lone "name" field — only name_ko, name_th, name_en, name_zh, price per item.',
     '- Output JSON only, no markdown fences.',
   ].join('\n');
 }
@@ -123,7 +139,15 @@ function buildUserPrompt(params: { businessName: string; catalog: DecorationCata
         selected_skin_basic_id: 'uuid',
         selected_skin_special_id: 'uuid|null',
         selected_bgm_id: 'uuid',
-        menu_items: [{ name: 'string', price: 'string' }],
+        menu_items: [
+          {
+            name_ko: '팟타이',
+            name_th: 'ผัดไทย',
+            name_en: 'Pad Thai',
+            name_zh: '泰式炒河粉',
+            price: '100 THB',
+          },
+        ],
         notes: 'string',
       },
       null,
@@ -167,16 +191,46 @@ function asStringArray(v: unknown): string[] {
   return v.map((x) => String(x).trim()).filter(Boolean);
 }
 
-function asMenuItems(v: unknown): Array<{ name: string; price: string }> {
+function trimStr(v: unknown): string {
+  return typeof v === 'string' ? v.trim() : '';
+}
+
+/** 관리자 적용 라우트 등에서 동일 규칙으로 보정 */
+export function parseVisionMenuItems(v: unknown): VisionMenuItem[] {
   if (!Array.isArray(v)) return [];
-  const out: Array<{ name: string; price: string }> = [];
+  const out: VisionMenuItem[] = [];
   for (const row of v) {
     if (!row || typeof row !== 'object' || Array.isArray(row)) continue;
     const o = row as Record<string, unknown>;
-    const name = typeof o.name === 'string' ? o.name.trim() : '';
-    if (!name) continue;
-    const price = typeof o.price === 'string' ? o.price.trim() : String(o.price ?? '').trim();
-    out.push({ name, price: price || '문의' });
+    let nk = trimStr(o.name_ko);
+    let nt = trimStr(o.name_th);
+    let ne = trimStr(o.name_en);
+    let nz = trimStr(o.name_zh);
+    const legacy = trimStr(o.name);
+    const priceRaw = typeof o.price === 'string' ? o.price.trim() : String(o.price ?? '').trim();
+    const price = priceRaw || '문의';
+
+    if (!nk && !nt && !ne && !nz) {
+      if (!legacy) continue;
+      nk = legacy;
+      nt = legacy;
+      ne = legacy;
+      nz = legacy;
+    } else {
+      const fb = nk || nt || ne || nz || legacy || 'Menu';
+      nk = nk || fb;
+      nt = nt || fb;
+      ne = ne || fb;
+      nz = nz || fb;
+    }
+
+    out.push({
+      name_ko: nk.slice(0, 200),
+      name_th: nt.slice(0, 200),
+      name_en: ne.slice(0, 200),
+      name_zh: nz.slice(0, 200),
+      price,
+    });
   }
   return out;
 }
@@ -260,7 +314,7 @@ export async function generateLocalTemplateFromVision(params: {
       : typeof specialRaw === 'string' && specialRaw.trim()
         ? specialRaw.trim()
         : null;
-  const menu_items = asMenuItems(parsed.menu_items);
+  const menu_items = parseVisionMenuItems(parsed.menu_items);
   const notes = typeof parsed.notes === 'string' ? parsed.notes.trim() : '';
 
   if (!basicId || !bgmId) throw new Error('vision_missing_required_ids');

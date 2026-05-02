@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
+import type { Locale } from '@/i18n/types';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 type Room = {
@@ -20,10 +21,17 @@ type MessageRow = {
   created_at: string;
 };
 
-function fmt(v: string, locale: 'ko' | 'th'): string {
+function intlLocale(loc: Locale): string {
+  if (loc === 'th') return 'th-TH';
+  if (loc === 'en') return 'en-US';
+  if (loc === 'zh') return 'zh-CN';
+  return 'ko-KR';
+}
+
+function fmt(v: string, locale: Locale): string {
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return '-';
-  return d.toLocaleTimeString(locale === 'th' ? 'th-TH' : 'ko-KR', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(intlLocale(locale), { hour: '2-digit', minute: '2-digit' });
 }
 
 export default function ChatPageClient() {

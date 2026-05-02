@@ -2,6 +2,7 @@
  * 로고/헤더는 이 컴포넌트가 아니라 `app/layout.tsx`의 세그먼트 설정(`dynamic`/`revalidate`)으로 캐시가 결정됩니다.
  */
 import Link from 'next/link';
+import GuestGateButtonLink from './GuestGateButtonLink';
 import AuthBarClient from './AuthBarClient';
 import SpotlightNavSearch from './SpotlightNavSearch';
 import { getLocale } from '@/i18n/get-locale';
@@ -23,6 +24,28 @@ function headerExtraLabels(locale: Locale) {
       menu: 'เมนู',
       myMinihome: 'มินิโฮมของฉัน',
       masterAdmin: 'มาสเตอร์แอดมิน',
+    };
+  }
+  if (locale === 'en') {
+    return {
+      flea: 'Flea market',
+      jobs: 'Jobs',
+      realestate: 'Real estate',
+      news: 'News',
+      menu: 'Menu',
+      myMinihome: 'My minihome',
+      masterAdmin: 'Master admin',
+    };
+  }
+  if (locale === 'zh') {
+    return {
+      flea: '二手市集',
+      jobs: '招聘求职',
+      realestate: '房产',
+      news: '资讯',
+      menu: '菜单',
+      myMinihome: '我的迷你主页',
+      masterAdmin: '总管理员',
     };
   }
   return {
@@ -100,7 +123,11 @@ export default async function GlobalNav() {
   const koreanBizNavLabel =
     locale === 'th'
       ? '🇰🇷 ชีวิตเกาหลี (มาร์ท/ร้านยา/โรงพยาบาล)'
-      : '🇰🇷 한인 생활망 (마트/약국/병원)';
+      : locale === 'en'
+        ? '🇰🇷 Korean community (mart/pharmacy/hospital)'
+        : locale === 'zh'
+          ? '🇰🇷 韩人生活（超市/药房/医院）'
+          : '🇰🇷 한인 생활망 (마트/약국/병원)';
 
   const NAV_MENUS: { href: string; label: string }[] = [
     { href: '/', label: d.nav.home },
@@ -152,8 +179,8 @@ export default async function GlobalNav() {
 
         <div className="flex flex-wrap items-center gap-3">
           <div
-            className="flex shrink-0 items-center gap-1 text-sm font-semibold text-gray-200"
-            aria-label={locale === 'th' ? 'ภาษา' : '언어'}
+            className="flex shrink-0 flex-wrap items-center gap-1 text-sm font-semibold text-gray-200"
+            aria-label={locale === 'th' ? 'ภาษา' : locale === 'zh' ? '语言' : locale === 'en' ? 'Language' : '언어'}
           >
             <a
               href="?lang=ko"
@@ -169,6 +196,24 @@ export default async function GlobalNav() {
               className="inline-flex min-h-11 items-center rounded border border-white/15 px-2.5 text-gray-100 no-underline transition-colors hover:border-white/30 hover:text-white"
             >
               {d.lang.th}
+            </a>
+            <span className="text-gray-300" aria-hidden>
+              |
+            </span>
+            <a
+              href="?lang=en"
+              className="inline-flex min-h-11 items-center rounded border border-white/15 px-2.5 text-gray-100 no-underline transition-colors hover:border-white/30 hover:text-white"
+            >
+              {d.lang.en}
+            </a>
+            <span className="text-gray-300" aria-hidden>
+              |
+            </span>
+            <a
+              href="?lang=zh"
+              className="inline-flex min-h-11 items-center rounded border border-white/15 px-2.5 text-gray-100 no-underline transition-colors hover:border-white/30 hover:text-white"
+            >
+              {d.lang.zh}
             </a>
           </div>
           <div className="order-3 w-full min-w-0 max-w-xl flex-1 md:order-none md:w-auto md:max-w-md">
@@ -208,12 +253,13 @@ export default async function GlobalNav() {
                 masterAdminLabel={x.masterAdmin}
                 showMasterAdmin={showMasterAdmin}
               />
-              <Link
+              <GuestGateButtonLink
                 href={WRITE_HREF}
+                isLoggedIn={Boolean(authUser)}
                 className="flex min-h-11 items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-center text-base font-semibold text-white no-underline"
               >
                 ✎ {d.board.newPost}
-              </Link>
+              </GuestGateButtonLink>
               {NAV_MENUS.map((m) => (
                 <Link
                   key={m.href}
@@ -236,12 +282,13 @@ export default async function GlobalNav() {
                 {m.label}
               </Link>
             ))}
-            <Link
+            <GuestGateButtonLink
               href={WRITE_HREF}
+              isLoggedIn={Boolean(authUser)}
               className="ml-auto inline-flex min-h-11 items-center rounded-full bg-blue-600 px-4 py-2 text-base font-bold text-white no-underline shadow-md hover:bg-blue-500"
             >
               ✎ {d.board.newPost}
-            </Link>
+            </GuestGateButtonLink>
           </div>
         </div>
       </nav>

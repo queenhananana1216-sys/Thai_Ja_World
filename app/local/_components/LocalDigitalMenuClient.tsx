@@ -2,13 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
+import SocialAuthButtons from '@app/auth/_components/SocialAuthButtons';
 import QRCodeGenerator from '@/components/local/QRCodeGenerator';
+import { readLocaleCookie } from '@/i18n/readLocaleCookie';
+import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { createBrowserClient } from '@/lib/supabase/client';
+
+export type MenuLang = 'ko' | 'th' | 'en' | 'zh';
 
 export type LocalMenuRow = {
   id: string;
   local_spot_id: string;
   name: string;
+  /** Vision 파이프라인·DB `name_i18n` — 로케일별 메뉴명 */
+  name_i18n?: Record<string, unknown> | null;
   description: string | null;
   price_thb: number | string | null;
   image_url: string | null;
@@ -51,19 +58,109 @@ function themeRecord(raw: unknown): Record<string, unknown> {
   return {};
 }
 
-function legacyMenuItems(raw: unknown): { name: string; price: string; description?: string; image_url?: string }[] {
+type LegacyMenuItem = {
+  name: string;
+  price: string;
+  description?: string;
+  image_url?: string;
+  name_i18n?: Partial<Record<MenuLang, string>>;
+};
+
+function trimLocaleMap(o: Record<string, unknown>): Partial<Record<MenuLang, string>> | undefined {
+  const out: Partial<Record<MenuLang, string>> = {};
+  for (const k of ['ko', 'th', 'en', 'zh'] as MenuLang[]) {
+    const v = o[k];
+    if (typeof v === 'string' && v.trim()) out[k] = v.trim();
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+function legacyMenuItems(raw: unknown): LegacyMenuItem[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .map((x) => (x && typeof x === 'object' ? (x as Record<string, unknown>) : null))
     .filter(Boolean)
-    .map((o) => ({
-      name: String(o!.name ?? '').trim() || 'Menu',
-      price: String(o!.price ?? ''),
-      description: o!.description != null ? String(o!.description) : undefined,
-      image_url: o!.image_url != null ? String(o!.image_url) : undefined,
-    }))
+    .map((o) => {
+      const name = String(o!.name ?? '').trim() || 'Menu';
+      const nk = typeof o!.name_ko === 'string' ? o!.name_ko.trim() : '';
+      const nt = typeof o!.name_th === 'string' ? o!.name_th.trim() : '';
+      const ne = typeof o!.name_en === 'string' ? o!.name_en.trim() : '';
+      const nz = typeof o!.name_zh === 'string' ? o!.name_zh.trim() : '';
+      const name_i18n: Partial<Record<MenuLang, string>> | undefined =
+        nk || nt || ne || nz
+          ? {
+              ...(nk ? { ko: nk } : {}),
+              ...(nt ? { th: nt } : {}),
+              ...(ne ? { en: ne } : {}),
+              ...(nz ? { zh: nz } : {}),
+            }
+          : undefined;
+      return {
+        name,
+        price: String(o!.price ?? ''),
+        description: o!.description != null ? String(o!.description) : undefined,
+        image_url: o!.image_url != null ? String(o!.image_url) : undefined,
+        name_i18n,
+      };
+    })
     .filter((x) => x.name.length > 0);
 }
+
+function nameI18nFromRow(raw: LocalMenuRow['name_i18n']): Partial<Record<MenuLang, string>> | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  return trimLocaleMap(raw as Record<string, unknown>);
+}
+
+function dishLabel(row: LocalMenuRow, lang: MenuLang): string {
+  const map = nameI18nFromRow(row.name_i18n);
+  const hit = map?.[lang];
+  if (hit) return hit;
+  return row.name;
+}
+
+function legacyDishLabel(it: LegacyMenuItem, lang: MenuLang): string {
+  const hit = it.name_i18n?.[lang];
+  if (hit) return hit;
+  return it.name;
+}
+
+const MENU_SECTION_COPY: Record<
+  MenuLang,
+  { kicker: string; sectionTitle: string; sectionSub: string; soldOut: string; empty: string; legacyHint: string }
+> = {
+  ko: {
+    kicker: 'Digital Menu',
+    sectionTitle: '메뉴 · 시술',
+    sectionSub: '매장 테이블 QR로 접속한 화면에 맞춘 세로 레이아웃입니다.',
+    soldOut: '품절',
+    empty: '등록된 메뉴가 없습니다.',
+    legacyHint: '아직 DB 메뉴가 없어 예전 미니홈 JSON 메뉴만 표시합니다.',
+  },
+  th: {
+    kicker: 'Digital Menu',
+    sectionTitle: 'เมนู · บริการ',
+    sectionSub: 'เลย์เอาต์แนวตั้งสำหรับ QR บนโต๊ะ',
+    soldOut: 'หมด',
+    empty: 'ยังไม่มีเมนู',
+    legacyHint: 'ยังไม่มีเมนูในระบบ — แสดงเมนู JSON เดิมเท่านั้น',
+  },
+  en: {
+    kicker: 'Digital Menu',
+    sectionTitle: 'Menu · Services',
+    sectionSub: 'Optimized for table QR — vertical layout.',
+    soldOut: 'Sold out',
+    empty: 'No menu items yet.',
+    legacyHint: 'Showing legacy minihome JSON only — DB menu not synced yet.',
+  },
+  zh: {
+    kicker: 'Digital Menu',
+    sectionTitle: '菜单 · 项目',
+    sectionSub: '针对桌面二维码扫码的纵向排版。',
+    soldOut: '售罄',
+    empty: '暂无菜品。',
+    legacyHint: '暂无数据库菜单，仅显示旧版 JSON。',
+  },
+};
 
 function formatThb(n: number | string | null): string {
   const num = typeof n === 'number' ? n : Number(String(n ?? '').replace(/[^\d.]/g, ''));
@@ -82,6 +179,7 @@ export default function LocalDigitalMenuClient(props: {
   isOwner: boolean;
   viewerId: string | null;
 }) {
+  const { d } = useClientLocaleDictionary();
   const { spot, canonicalMenuUrl, isOwner, viewerId } = props;
   const [menus, setMenus] = useState<LocalMenuRow[]>(props.menus);
   const [busy, setBusy] = useState(false);
@@ -92,6 +190,8 @@ export default function LocalDigitalMenuClient(props: {
   const [qtyById, setQtyById] = useState<Record<string, number>>({});
   const [orderNotes, setOrderNotes] = useState('');
   const [orderBusy, setOrderBusy] = useState(false);
+  const [menuLang, setMenuLang] = useState<MenuLang>('ko');
+  const [guestContactPhone, setGuestContactPhone] = useState('');
   const theme = useMemo(() => themeRecord(spot.minihome_theme), [spot.minihome_theme]);
   const accent =
     typeof theme.accent === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(theme.accent.trim())
@@ -111,6 +211,13 @@ export default function LocalDigitalMenuClient(props: {
   const sb = useMemo(() => createBrowserClient(), []);
 
   const bgmSrc = useMemo(() => bgmAutoplaySrc(spot.minihome_bgm_url ?? null), [spot.minihome_bgm_url]);
+
+  useEffect(() => {
+    const loc = readLocaleCookie();
+    if (loc === 'ko' || loc === 'th' || loc === 'en' || loc === 'zh') setMenuLang(loc);
+  }, []);
+
+  const mc = MENU_SECTION_COPY[menuLang];
 
   useEffect(() => {
     if (!orderOpen) return;
@@ -255,9 +362,29 @@ export default function LocalDigitalMenuClient(props: {
       ) : null}
       <header className={`sticky top-0 z-20 ${glassPanel('border-b border-white/10 px-4 py-4')}`}>
         <div className="mx-auto flex max-w-lg flex-col gap-3">
+          <div
+            className="flex flex-wrap items-center gap-1 text-[11px] font-semibold text-white/85"
+            role="group"
+            aria-label="Menu language"
+          >
+            {(['ko', 'th', 'en', 'zh'] as const).map((code) => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => setMenuLang(code)}
+                className={`rounded-lg border px-2.5 py-1.5 transition ${
+                  menuLang === code
+                    ? 'border-white/40 bg-white/15 text-white'
+                    : 'border-white/12 bg-black/20 text-white/75 hover:border-white/25'
+                }`}
+              >
+                {code === 'ko' ? '한국어' : code === 'th' ? 'ไทย' : code === 'en' ? 'English' : '中文'}
+              </button>
+            ))}
+          </div>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/45">Digital Menu</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/45">{mc.kicker}</p>
               <h1 className="mt-1 text-xl font-black tracking-tight text-white" style={{ color: accentDraft }}>
                 {spot.name}
               </h1>
@@ -359,8 +486,8 @@ export default function LocalDigitalMenuClient(props: {
 
         <section className={glassPanel('overflow-hidden')}>
           <div className="border-b border-white/10 bg-black/25 px-4 py-3">
-            <h2 className="text-sm font-bold text-white">메뉴 · 시술</h2>
-            <p className="text-[11px] text-white/45">매장 테이블 QR로 접속한 화면에 맞춘 세로 레이아웃입니다.</p>
+            <h2 className="text-sm font-bold text-white">{mc.sectionTitle}</h2>
+            <p className="text-[11px] text-white/45">{mc.sectionSub}</p>
           </div>
           <ul className="divide-y divide-white/[0.07]">
             {menus.map((row) => (
@@ -373,14 +500,14 @@ export default function LocalDigitalMenuClient(props: {
                     className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl text-lg font-black text-white/90 ring-1 ring-white/10"
                     style={{ background: `${accentDraft}44` }}
                   >
-                    {row.name.slice(0, 1)}
+                    {dishLabel(row, menuLang).slice(0, 1)}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <p className="font-semibold text-white">
-                        {row.name}
+                        {dishLabel(row, menuLang)}
                         {row.is_special ? (
                           <span className="ml-2 rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-100">
                             SPECIAL
@@ -394,7 +521,7 @@ export default function LocalDigitalMenuClient(props: {
                     </p>
                   </div>
                   {row.is_sold_out ? (
-                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-rose-300/90">품절</p>
+                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-rose-300/90">{mc.soldOut}</p>
                   ) : null}
                   {isOwner ? (
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -415,11 +542,11 @@ export default function LocalDigitalMenuClient(props: {
 
           {showLegacyFallback ? (
             <div className="border-t border-dashed border-white/15 bg-black/20 px-4 py-3">
-              <p className="text-[11px] font-semibold text-amber-200/90">아직 DB 메뉴가 없어 예전 미니홈 JSON 메뉴만 표시합니다.</p>
+              <p className="text-[11px] font-semibold text-amber-200/90">{mc.legacyHint}</p>
               <ul className="mt-2 space-y-2">
                 {legacy.map((it, i) => (
                   <li key={i} className="flex justify-between gap-2 text-sm">
-                    <span className="text-white/90">{it.name}</span>
+                    <span className="text-white/90">{legacyDishLabel(it, menuLang)}</span>
                     <span className="text-sky-200/90">{it.price || '—'}</span>
                   </li>
                 ))}
@@ -428,7 +555,7 @@ export default function LocalDigitalMenuClient(props: {
           ) : null}
 
           {!showLegacyFallback && menus.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-white/45">등록된 메뉴가 없습니다.</p>
+            <p className="px-4 py-8 text-center text-sm text-white/45">{mc.empty}</p>
           ) : null}
         </section>
 
@@ -466,13 +593,57 @@ export default function LocalDigitalMenuClient(props: {
             </p>
 
             {!viewerId ? (
-              <div className="mt-4 rounded-xl border border-amber-400/25 bg-amber-950/40 p-4 text-sm text-amber-50">
-                로그인 후 이용할 수 있습니다.
-                <Link
-                  href={`/auth/login?next=${encodeURIComponent(canonicalMenuUrl)}`}
-                  className="mt-3 block rounded-lg bg-amber-400 px-4 py-2 text-center text-sm font-bold text-black no-underline"
+              <div className="mt-4 space-y-4 rounded-xl border border-amber-400/25 bg-amber-950/40 p-4 text-sm text-amber-50">
+                <p className="font-semibold text-amber-100">
+                  당일 예약·주문은 본인 확인이 필요합니다. 휴대폰 번호를 남기거나 소셜·일반 로그인으로 계속해 주세요.
+                </p>
+                <label className="block text-xs text-amber-100/85">
+                  연락처 (휴대폰)
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={guestContactPhone}
+                    onChange={(e) => setGuestContactPhone(e.target.value)}
+                    placeholder="+66 · 010 …"
+                    className="mt-1 w-full rounded-xl border border-amber-400/30 bg-black/35 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:ring-2 focus:ring-amber-400/40"
+                  />
+                </label>
+                <p className="text-[11px] text-amber-200/75">
+                  번호는 매장 안내용으로만 쓰이며, 예약 확정은 로그인된 계정으로 처리됩니다.
+                </p>
+                <SocialAuthButtons
+                  next={canonicalMenuUrl}
+                  social={{
+                    googleContinue: d.auth.googleContinue,
+                    devGoogleBadge: d.auth.devGoogleBadge,
+                    devGoogleTail: d.auth.devGoogleTail,
+                  }}
+                />
+                <button
+                  type="button"
+                  className="w-full rounded-xl border border-amber-400/40 bg-amber-400/15 py-3 text-sm font-bold text-amber-50 transition hover:bg-amber-400/25"
+                  onClick={() => {
+                    const p = guestContactPhone.trim();
+                    if (!p) {
+                      notify('연락처를 입력하거나 위에서 소셜 로그인을 선택해 주세요.');
+                      return;
+                    }
+                    try {
+                      sessionStorage.setItem('local_order_phone_hint', p);
+                    } catch {
+                      /* ignore */
+                    }
+                    window.location.href = `/login?next=${encodeURIComponent(canonicalMenuUrl)}`;
+                  }}
                 >
-                  로그인하기
+                  번호 확인 후 로그인으로 이동
+                </button>
+                <Link
+                  href={`/login?next=${encodeURIComponent(canonicalMenuUrl)}`}
+                  className="block rounded-lg bg-amber-400 px-4 py-2.5 text-center text-sm font-bold text-black no-underline hover:bg-amber-300"
+                >
+                  이메일·비밀번호로 로그인
                 </Link>
               </div>
             ) : (
@@ -503,8 +674,8 @@ export default function LocalDigitalMenuClient(props: {
                     {menus.map((m) => (
                       <li key={m.id} className="flex items-center justify-between gap-2 rounded-lg bg-black/25 px-2 py-2 text-sm">
                         <span className="min-w-0 flex-1 truncate text-white/90">
-                          {m.name}
-                          {m.is_sold_out ? <span className="ml-2 text-rose-300">품절</span> : null}
+                          {dishLabel(m, menuLang)}
+                          {m.is_sold_out ? <span className="ml-2 text-rose-300">{mc.soldOut}</span> : null}
                         </span>
                         <input
                           type="number"

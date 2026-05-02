@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getLocale } from '@/i18n/get-locale';
+import type { Locale } from '@/i18n/types';
 import { createServerClient } from '@/lib/supabase/server';
 import { getSiteBaseUrl } from '@/lib/seo/site';
 import { getActiveUxFlagsServer } from '@/lib/ux/flagsServer';
@@ -55,7 +56,7 @@ function SpotCard({
 }: {
   spot: LocalSpotRow;
   qrEmphasis: boolean;
-  locale: 'ko' | 'th';
+  locale: Locale;
 }) {
   const publicSlug = (spot.minihome_public_slug?.trim() || spot.slug || '').trim();
   const shopHref = `/shop/${encodeURIComponent(publicSlug)}`;

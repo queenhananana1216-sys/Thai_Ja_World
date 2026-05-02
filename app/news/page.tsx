@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import KoreanNewsPipelineNotice from '../_components/news/KoreanNewsPipelineNotice';
 import portalStyles from '../portal/portal-2026.module.css';
+import NewsHubArticleList from './_components/NewsHubArticleList';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import {
@@ -10,7 +11,7 @@ import {
   passesKoPublicGate,
 } from '@/lib/news/processedNewsDisplay';
 import { createServerClient } from '@/lib/supabase/server';
-import { extractHostname, formatDate } from '@/lib/utils/formatDate';
+import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -33,6 +34,17 @@ export default async function NewsHubPage() {
   const d = getDictionary(locale);
   const h = d.home;
   const locUi = locale === 'th' ? 'th' : 'ko';
+
+  let isLoggedIn = false;
+  try {
+    const authSb = await createServerSupabaseAuthClient();
+    const {
+      data: { user },
+    } = await authSb.auth.getUser();
+    isLoggedIn = Boolean(user?.id);
+  } catch {
+    isLoggedIn = false;
+  }
 
   const sb = createServerClient();
   const { data: processed, error: procErr } = await sb
@@ -116,39 +128,7 @@ export default async function NewsHubPage() {
           <p className="mb-4 text-sm text-slate-300">{h.newsHubListingNote.replace('{n}', String(rows.length))}</p>
         ) : null}
 
-        <ul className="m-0 flex list-none flex-col gap-3 p-0">
-          {rows.map((r) => {
-            const host = r.external_url !== '#' ? extractHostname(r.external_url) : '';
-            const date = formatDate(r.published_at);
-            return (
-              <li key={r.id} className={`${portalStyles.glassCenter} overflow-hidden px-4 py-4`}>
-                <h2 className="mb-2 text-lg font-bold leading-snug">
-                  <Link href={`/news/${r.id}`} className="text-white hover:text-amber-200">
-                    {r.title}
-                  </Link>
-                </h2>
-                {r.summary_text?.trim() ? (
-                  <p className="mb-3 text-[0.95rem] leading-relaxed text-slate-200">{r.summary_text.trim()}</p>
-                ) : null}
-                <div className="mb-3 flex flex-wrap gap-x-2 text-xs text-slate-400">
-                  {host ? <span>🔗 {host}</span> : null}
-                  {date ? (
-                    <span>
-                      {host ? ' · ' : ''}
-                      🕐 {date}
-                    </span>
-                  ) : null}
-                </div>
-                <Link
-                  href={`/news/${r.id}`}
-                  className="inline-flex min-h-10 items-center text-sm font-semibold text-amber-200 hover:text-amber-100 hover:underline"
-                >
-                  {h.newsHubOpenDetail}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <NewsHubArticleList rows={rows} isLoggedIn={isLoggedIn} openDetailLabel={h.newsHubOpenDetail} />
       </div>
     </div>
   );

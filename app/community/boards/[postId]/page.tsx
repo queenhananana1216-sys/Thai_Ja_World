@@ -291,7 +291,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
           </div>
         ) : null}
         <div className="mt-6 border-t border-white/10 pt-4">
-          <PostEngagementActions postPath={path} />
+          <PostEngagementActions postPath={path} isLoggedIn={Boolean(viewerId)} />
         </div>
         {images.map((url) => (
           // eslint-disable-next-line @next/next/no-img-element

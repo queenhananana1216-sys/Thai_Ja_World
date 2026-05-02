@@ -25,14 +25,25 @@ const REGIONS: {
   key: KoreanBizRow['region'];
   label: Record<Locale, string>;
 }[] = [
-  { key: 'bangkok', label: { ko: '방콕', th: 'กรุงเทพฯ' } },
-  { key: 'pattaya', label: { ko: '파타야', th: 'พัทยา' } },
-  { key: 'chiangmai', label: { ko: '치앙마이', th: 'เชียงใหม่' } },
+  {
+    key: 'bangkok',
+    label: { ko: '방콕', th: 'กรุงเทพฯ', en: 'Bangkok', zh: '曼谷' },
+  },
+  {
+    key: 'pattaya',
+    label: { ko: '파타야', th: 'พัทยา', en: 'Pattaya', zh: '芭提雅' },
+  },
+  {
+    key: 'chiangmai',
+    label: { ko: '치앙마이', th: 'เชียงใหม่', en: 'Chiang Mai', zh: '清迈' },
+  },
 ];
 
 const CATEGORY_LABEL: Record<Locale, Record<KoreanBizRow['category'], string>> = {
   ko: { mart: '마트', pharmacy: '약국', hospital: '병원' },
   th: { mart: 'มาร์ท', pharmacy: 'ร้านยา', hospital: 'โรงพยาบาล' },
+  en: { mart: 'Mart', pharmacy: 'Pharmacy', hospital: 'Hospital' },
+  zh: { mart: '超市', pharmacy: '药房', hospital: '医院' },
 };
 
 type CategoryFilter = 'all' | KoreanBizRow['category'];
@@ -42,10 +53,31 @@ const SUB_CATEGORY_TABS: {
   emoji: string;
   label: Record<Locale, string>;
 }[] = [
-  { key: 'all', emoji: '', label: { ko: '전체', th: 'ทั้งหมด' } },
-  { key: 'mart', emoji: '🛒', label: { ko: '한인 마트', th: 'มาร์ทเกาหลี' } },
-  { key: 'pharmacy', emoji: '💊', label: { ko: '한인 약국', th: 'ร้านยาเกาหลี' } },
-  { key: 'hospital', emoji: '🏥', label: { ko: '한인 병원', th: 'โรงพยาบาลเกาหลี' } },
+  {
+    key: 'all',
+    emoji: '',
+    label: { ko: '전체', th: 'ทั้งหมด', en: 'All', zh: '全部' },
+  },
+  {
+    key: 'mart',
+    emoji: '🛒',
+    label: { ko: '한인 마트', th: 'มาร์ทเกาหลี', en: 'Korean mart', zh: '韩人超市' },
+  },
+  {
+    key: 'pharmacy',
+    emoji: '💊',
+    label: { ko: '한인 약국', th: 'ร้านยาเกาหลี', en: 'Korean pharmacy', zh: '韩人药房' },
+  },
+  {
+    key: 'hospital',
+    emoji: '🏥',
+    label: {
+      ko: '한인 병원',
+      th: 'โรงพยาบาลเกาหลี',
+      en: 'Korean hospital',
+      zh: '韩人医院',
+    },
+  },
 ];
 
 function isBizCategory(v: string): v is KoreanBizRow['category'] {
@@ -64,7 +96,9 @@ function formatVerifiedAt(iso: string | null | undefined, locale: Locale): strin
   if (!iso?.trim()) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'ko-KR', {
+  const intl =
+    locale === 'th' ? 'th-TH' : locale === 'en' ? 'en-US' : locale === 'zh' ? 'zh-CN' : 'ko-KR';
+  return new Intl.DateTimeFormat(intl, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(d);

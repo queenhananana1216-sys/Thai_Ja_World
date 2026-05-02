@@ -9,7 +9,12 @@ export const maxDuration = 60;
 function isMenuItemRow(v: unknown): boolean {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
   const o = v as Record<string, unknown>;
-  return typeof o.name === 'string' && typeof o.price === 'string';
+  if (typeof o.price !== 'string') return false;
+  const hasLegacy = typeof o.name === 'string' && o.name.trim().length > 0;
+  const hasQuad = (['name_ko', 'name_th', 'name_en', 'name_zh'] as const).some(
+    (k) => typeof o[k] === 'string' && String(o[k]).trim().length > 0,
+  );
+  return hasLegacy || hasQuad;
 }
 
 function isVisionPayload(v: unknown): v is VisionApplyPayload {

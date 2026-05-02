@@ -1,8 +1,10 @@
+import type { Locale } from '@/i18n/types';
+
 export type UxEventType = 'page_view' | 'click' | 'dead_click' | 'js_error' | 'api_error';
 
 export type UxTrackEvent = {
   session_id: string;
-  locale: 'ko' | 'th';
+  locale: Locale;
   path: string;
   event_type: UxEventType;
   target_text?: string;

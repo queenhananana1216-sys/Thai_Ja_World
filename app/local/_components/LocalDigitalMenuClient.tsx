@@ -1120,10 +1120,11 @@ export default function LocalDigitalMenuClient(props: {
             <p className="text-[11px] text-white/45">{mc.sectionSub}</p>
           </div>
           <div className="space-y-4 p-4">
-            {menus.map((row) => {
+            {menus.map((row, menuIdx) => {
               const desc = dishDescription(row, menuLang);
               const label = dishLabel(row, menuLang);
               const expanded = expandedMenuId === row.id;
+              const heroImage = menuIdx === 0;
               return (
                 <article key={row.id} className={menuCardShell('flex flex-col sm:flex-row')}>
                   <div className="relative aspect-[5/4] w-full overflow-hidden rounded-t-2xl sm:aspect-auto sm:h-auto sm:w-[42%] sm:max-w-[220px] sm:shrink-0 sm:rounded-l-2xl sm:rounded-tr-none">
@@ -1133,7 +1134,8 @@ export default function LocalDigitalMenuClient(props: {
                         alt=""
                         fill
                         sizes="(max-width: 640px) 100vw, 220px"
-                        loading="lazy"
+                        priority={heroImage}
+                        loading={heroImage ? 'eager' : 'lazy'}
                         quality={88}
                         className="object-cover sm:min-h-[148px]"
                       />

@@ -1,9 +1,61 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
-import { getStripeClient } from '@/lib/payments/stripe';
+import {
+  getStripeClient,
+  mapStripeSubscriptionToLocalStatus,
+} from '@/lib/payments/stripe';
 
 export const runtime = 'nodejs';
+
+function subscriptionTrialEndsIso(sub: Stripe.Subscription): string | null {
+  const end = sub.trial_end;
+  if (!end) return null;
+  return new Date(end * 1000).toISOString();
+}
+
+async function syncLocalSpotSubscriptionFromCheckout(session: Stripe.Checkout.Session) {
+  const localSpotId = session.metadata?.localSpotId?.trim();
+  if (!localSpotId || session.mode !== 'subscription') return;
+
+  const stripe = getStripeClient();
+  const subRef = session.subscription;
+  const subId = typeof subRef === 'string' ? subRef : subRef?.id;
+  if (!subId) return;
+
+  const sub = await stripe.subscriptions.retrieve(subId);
+  const customerRef = sub.customer;
+  const customerId = typeof customerRef === 'string' ? customerRef : customerRef.id;
+
+  const admin = createServiceRoleClient();
+  const { error } = await admin
+    .from('local_spots')
+    .update({
+      stripe_customer_id: customerId,
+      subscription_status: mapStripeSubscriptionToLocalStatus(sub.status),
+      trial_ends_at: subscriptionTrialEndsIso(sub),
+    })
+    .eq('id', localSpotId);
+
+  if (error) throw new Error(error.message);
+}
+
+async function syncLocalSpotSubscriptionRows(sub: Stripe.Subscription) {
+  const customerRef = sub.customer;
+  const customerId = typeof customerRef === 'string' ? customerRef : customerRef.id;
+  if (!customerId) return;
+
+  const admin = createServiceRoleClient();
+  const { error } = await admin
+    .from('local_spots')
+    .update({
+      subscription_status: mapStripeSubscriptionToLocalStatus(sub.status),
+      trial_ends_at: subscriptionTrialEndsIso(sub),
+    })
+    .eq('stripe_customer_id', customerId);
+
+  if (error) throw new Error(error.message);
+}
 
 async function syncOrderStatus(input: {
   orderId: string;
@@ -89,6 +141,9 @@ export async function POST(request: Request) {
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
+      if (session.mode === 'subscription' && session.metadata?.localSpotId) {
+        await syncLocalSpotSubscriptionFromCheckout(session);
+      }
       const orderId = session.metadata?.orderId;
       if (orderId && session.payment_status === 'paid') {
         await syncOrderStatus({
@@ -123,6 +178,12 @@ export async function POST(request: Request) {
           sessionId: session.id,
         });
       }
+    } else if (
+      event.type === 'customer.subscription.updated' ||
+      event.type === 'customer.subscription.deleted'
+    ) {
+      const sub = event.data.object as Stripe.Subscription;
+      await syncLocalSpotSubscriptionRows(sub);
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'sync_failed';

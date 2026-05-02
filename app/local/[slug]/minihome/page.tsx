@@ -9,6 +9,12 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+function readPromptpayTarget(raw: unknown): string | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const v = (raw as Record<string, unknown>).promptpay_target;
+  return typeof v === 'string' && v.trim() ? v.trim().slice(0, 60) : null;
+}
+
 async function fetchSpotBySlug(raw: string) {
   const slug = raw.trim();
   if (!slug) return null;
@@ -16,7 +22,7 @@ async function fetchSpotBySlug(raw: string) {
   const { data: bySlug, error: e1 } = await sb
     .from('local_spots')
     .select(
-      'id,slug,name,description,owner_profile_id,minihome_theme,minihome_menu,minihome_bgm_url,minihome_intro,is_published,minihome_public_slug',
+      'id,slug,name,description,owner_profile_id,minihome_theme,minihome_menu,minihome_bgm_url,minihome_intro,minihome_extra,is_published,minihome_public_slug',
     )
     .eq('slug', slug)
     .maybeSingle();
@@ -24,7 +30,7 @@ async function fetchSpotBySlug(raw: string) {
   const { data: byPublic, error: e2 } = await sb
     .from('local_spots')
     .select(
-      'id,slug,name,description,owner_profile_id,minihome_theme,minihome_menu,minihome_bgm_url,minihome_intro,is_published,minihome_public_slug',
+      'id,slug,name,description,owner_profile_id,minihome_theme,minihome_menu,minihome_bgm_url,minihome_intro,minihome_extra,is_published,minihome_public_slug',
     )
     .eq('minihome_public_slug', slug)
     .maybeSingle();
@@ -82,6 +88,8 @@ export default async function LocalDigitalMenuPage({ params }: PageProps) {
   const pathSlug = String(spot.slug ?? '').trim() || String(spot.minihome_public_slug ?? trimmed).trim();
   const canonicalMenuUrl = absoluteUrl(`/local/${encodeURIComponent(pathSlug)}/minihome`);
 
+  const envPrompt = process.env.NEXT_PUBLIC_PROMPTPAY_DEFAULT_TARGET?.trim() || null;
+
   return (
     <LocalDigitalMenuClient
       spot={{
@@ -100,6 +108,9 @@ export default async function LocalDigitalMenuPage({ params }: PageProps) {
       canonicalMenuUrl={canonicalMenuUrl}
       isOwner={isOwner}
       viewerId={user?.id ?? null}
+      tableOrderConfig={{
+        promptpayTarget: readPromptpayTarget(spot.minihome_extra) ?? envPrompt,
+      }}
     />
   );
 }

@@ -47,12 +47,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let voterKey: string;
   if (user?.id) {
-    voterKey = `user:${user.id}`;
+    voterKey = `user:${user.id.toLowerCase()}`;
   } else {
-    if (!anonRaw || !UUID_RE.test(anonRaw)) {
+    const aid = anonRaw.toLowerCase();
+    if (!aid || !UUID_RE.test(aid)) {
       return NextResponse.json({ ok: false, error: 'anon_required' }, { status: 400 });
     }
-    voterKey = `anon:${anonRaw}`;
+    voterKey = `anon:${aid}`;
   }
 
   const admin = createServiceRoleClient();

@@ -37,15 +37,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       .from('poll_votes')
       .select('choice')
       .eq('poll_id', pollId)
-      .eq('voter_key', `user:${user.id}`)
+      .eq('voter_key', `user:${user.id.toLowerCase()}`)
       .maybeSingle();
     if (row?.choice === 'a' || row?.choice === 'b') myChoice = row.choice;
-  } else if (anonId && UUID_RE.test(anonId)) {
+  } else if (anonId && UUID_RE.test(anonId.toLowerCase())) {
     const { data: row } = await admin
       .from('poll_votes')
       .select('choice')
       .eq('poll_id', pollId)
-      .eq('voter_key', `anon:${anonId}`)
+      .eq('voter_key', `anon:${anonId.toLowerCase()}`)
       .maybeSingle();
     if (row?.choice === 'a' || row?.choice === 'b') myChoice = row.choice;
   }

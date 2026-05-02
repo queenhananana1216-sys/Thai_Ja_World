@@ -56,7 +56,10 @@ export type Portal2026Copy = {
   balanceGameTitle: string;
   balanceGameSub: string;
   balanceVs: string;
-  balanceTotalLabel: string;
+  /** 투표 전 막대(50:50) — 스크린리더용, 득표 수 없음 */
+  balanceSkeletonAria: string;
+  /** 투표 후 비율만 — 총표 미포함 */
+  balanceResultAria: string;
   balanceTapHint: string;
   balanceYourPick: string;
 };
@@ -114,7 +117,8 @@ const ko: Portal2026Copy = {
   balanceGameTitle: '🤔 오늘의 태국 밸런스 게임',
   balanceGameSub: 'LIVE · 한 번만 투표 · 실시간 득표',
   balanceVs: 'VS',
-  balanceTotalLabel: '총 {n}표',
+  balanceSkeletonAria: '아직 투표 전입니다. 양쪽 비율은 투표 후에만 표시됩니다.',
+  balanceResultAria: '투표 결과 비율',
   balanceTapHint: '버튼을 누르면 득표율 바가 살아 움직여요',
   balanceYourPick: '내 선택',
 };
@@ -172,7 +176,8 @@ const th: Portal2026Copy = {
   balanceGameTitle: '🤔 เกมทายใจไทยวันนี้',
   balanceGameSub: 'LIVE · โหวตได้ครั้งเดียว · เรียลไทม์',
   balanceVs: 'VS',
-  balanceTotalLabel: 'รวม {n} โหวต',
+  balanceSkeletonAria: 'ยังไม่ได้โหวต เปอร์เซ็นต์จะแสดงหลังโหวต',
+  balanceResultAria: 'สัดส่วนผลโหวต',
   balanceTapHint: 'แตะแล้วแถบเปอร์เซ็นต์จะขยับทันที',
   balanceYourPick: 'คุณเลือก',
 };

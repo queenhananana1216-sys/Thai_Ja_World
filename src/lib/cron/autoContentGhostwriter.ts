@@ -11,6 +11,19 @@ export type AutoContentTemplate = {
   authorLabel: string;
 };
 
+/** 홈 통합 피드 상단 고정·🔥 HOT 우선 정렬용 (제목은 크론 insert 와 동일해야 함) */
+export const AUTO_CONTENT_KILLER_FEED_TITLES: readonly string[] = [
+  '🇹🇭 태국 이민국 비자(TM30/90일) 최신 단속 동향',
+  '🏢 방콕 주요 콘도(수쿰빗/팔람9) 실시간 월세 시세표',
+  '⛳ 태국 골프장 및 마사지샵 리얼 후기 및 예약 꿀팁',
+] as const;
+
+const KILLER_TITLE_SET = new Set(AUTO_CONTENT_KILLER_FEED_TITLES.map((t) => t.trim()));
+
+export function isAutoContentKillerFeedTitle(title: string): boolean {
+  return KILLER_TITLE_SET.has(title.trim());
+}
+
 export const AUTO_CONTENT_GHOSTWRITER_TEMPLATES: readonly AutoContentTemplate[] = [
   {
     title: '방콕 통로(Thonglor) 핫플 카페 리스트 5곳',
@@ -69,6 +82,21 @@ export const AUTO_CONTENT_GHOSTWRITER_TEMPLATES: readonly AutoContentTemplate[] 
   },
   {
     title: '태국 장마철·침수 구역 확인 — 숙소 고를 때 지도 활용법',
+    boardType: 'tips',
+    authorLabel: '태국에, 살자 운영진',
+  },
+  {
+    title: '🇹🇭 태국 이민국 비자(TM30/90일) 최신 단속 동향',
+    boardType: 'tips',
+    authorLabel: '태국에, 살자 운영진',
+  },
+  {
+    title: '🏢 방콕 주요 콘도(수쿰빗/팔람9) 실시간 월세 시세표',
+    boardType: 'tips',
+    authorLabel: '태국에, 살자 운영진',
+  },
+  {
+    title: '⛳ 태국 골프장 및 마사지샵 리얼 후기 및 예약 꿀팁',
     boardType: 'tips',
     authorLabel: '태국에, 살자 운영진',
   },

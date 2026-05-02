@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
+import { votesToPublicIntPct } from '@/lib/polls/votesToPublicIntPct';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -9,15 +10,12 @@ export const dynamic = 'force-dynamic';
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-async function readTotals(admin: ReturnType<typeof createServiceRoleClient>, pollId: string) {
+async function readPublicPct(admin: ReturnType<typeof createServiceRoleClient>, pollId: string) {
   const { data: totRaw } = await admin.rpc('get_public_poll_totals', { p_poll_id: pollId });
   const totRow = Array.isArray(totRaw) ? totRaw[0] : totRaw;
   const votesA = Number((totRow as { votes_a?: unknown })?.votes_a ?? 0);
   const votesB = Number((totRow as { votes_b?: unknown })?.votes_b ?? 0);
-  return {
-    votesA: Number.isFinite(votesA) ? votesA : 0,
-    votesB: Number.isFinite(votesB) ? votesB : 0,
-  };
+  return votesToPublicIntPct(votesA, votesB);
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -73,13 +71,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       .maybeSingle();
 
     const my = existing?.choice === 'b' ? 'b' : existing?.choice === 'a' ? 'a' : choiceRaw;
-    const { votesA, votesB } = await readTotals(admin, pollId);
+    const { pctA, pctB } = await readPublicPct(admin, pollId);
     return NextResponse.json({
       ok: true,
       duplicate: true,
       myChoice: my,
-      votesA,
-      votesB,
+      pctA,
+      pctB,
     });
   }
 
@@ -87,13 +85,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: error.message, code: error.code }, { status: 500 });
   }
 
-  const { votesA, votesB } = await readTotals(admin, pollId);
+  const { pctA, pctB } = await readPublicPct(admin, pollId);
   revalidatePath('/');
 
   return NextResponse.json({
     ok: true,
     myChoice: choiceRaw,
-    votesA,
-    votesB,
+    pctA,
+    pctB,
   });
 }

@@ -14,6 +14,7 @@ import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { prefetchPublicWeatherLocale } from '@/lib/hooks/usePublicWeatherSwr';
 import type { Locale } from '@/i18n/types';
+import { normalizeLocalMenuListSection, type LocalMenuListSection } from './localMenuListSection';
 
 export type MenuLang = 'ko' | 'th' | 'en' | 'zh';
 
@@ -30,6 +31,8 @@ export type LocalMenuRow = {
   is_sold_out: boolean;
   is_special: boolean;
   sort_order: number;
+  /** `menu` | `pricing` | `service` — 광고주 대시보드 탭 */
+  list_section?: string | null;
 };
 
 type SpotLite = {
@@ -259,6 +262,32 @@ const MENU_SECTION_COPY: Record<
   },
 };
 
+const LIST_SECTION_UI: Record<
+  LocalMenuListSection,
+  Record<MenuLang, { title: string; sub: string; empty: string }>
+> = {
+  menu: {
+    ko: { title: '🍽️ 메뉴판', sub: '대표 메뉴·식사', empty: '등록된 메뉴가 없습니다.' },
+    th: { title: '🍽️ เมนูอาหาร', sub: 'จานเด่น · อาหารจานหลัก', empty: 'ยังไม่มีเมนู' },
+    en: { title: '🍽️ Menu board', sub: 'Signature dishes', empty: 'No items yet.' },
+    zh: { title: '🍽️ 菜单', sub: '主打餐食', empty: '暂无菜品。' },
+  },
+  pricing: {
+    ko: { title: '💰 가격표', sub: '세트·음료·부가 요금', empty: '등록된 항목이 없습니다.' },
+    th: { title: '💰 ราคา', sub: 'เซ็ต · เครื่องดื่ม · ค่าเสริม', empty: 'ยังไม่มีรายการ' },
+    en: { title: '💰 Price list', sub: 'Sets, drinks & extras', empty: 'No items yet.' },
+    zh: { title: '💰 价目表', sub: '套餐·饮料·附加费', empty: '暂无条目。' },
+  },
+  service: {
+    ko: { title: '💆‍♀️ 시술표', sub: '케어·코스·예약 항목', empty: '등록된 시술이 없습니다.' },
+    th: { title: '💆‍♀️ บริการ', sub: 'สปา · คอร์ส · รายการจอง', empty: 'ยังไม่มีรายการ' },
+    en: { title: '💆‍♀️ Services', sub: 'Care, courses & bookings', empty: 'No items yet.' },
+    zh: { title: '💆‍♀️ 服务表', sub: '护理·疗程', empty: '暂无项目。' },
+  },
+};
+
+const LIST_SECTION_ORDER: LocalMenuListSection[] = ['menu', 'pricing', 'service'];
+
 function formatThb(n: number | string | null): string {
   const num = typeof n === 'number' ? n : Number(String(n ?? '').replace(/[^\d.]/g, ''));
   if (!Number.isFinite(num)) return '—';
@@ -425,6 +454,7 @@ export default function LocalDigitalMenuClient(props: {
       .from('local_menus')
       .select('*')
       .eq('local_spot_id', spot.id)
+      .order('list_section', { ascending: true })
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
     if (!error && data) setMenus(data as LocalMenuRow[]);
@@ -607,7 +637,10 @@ export default function LocalDigitalMenuClient(props: {
     const description_i18n = buildI18nPayload(newDescs);
     const description = canonicalDescription(newDescs);
     setBusy(true);
-    const nextOrder = menus.reduce((m, r) => Math.max(m, r.sort_order), -1) + 1;
+    const nextOrder =
+      menus
+        .filter((r) => normalizeLocalMenuListSection(r.list_section) === 'menu')
+        .reduce((m, r) => Math.max(m, r.sort_order), -1) + 1;
     const { error } = await sb.from('local_menus').insert({
       local_spot_id: spot.id,
       name: primary,
@@ -619,6 +652,7 @@ export default function LocalDigitalMenuClient(props: {
       is_sold_out: false,
       sort_order: nextOrder,
       image_url: newImageUrl,
+      list_section: 'menu',
     });
     setBusy(false);
     if (error) {
@@ -1003,6 +1037,12 @@ export default function LocalDigitalMenuClient(props: {
               >
                 색 저장
               </button>
+              <Link
+                href={`/local/${encodeURIComponent(spot.slug)}/minihome/edit`}
+                className="rounded-lg border border-violet-400/35 bg-violet-500/15 px-3 py-1.5 text-xs font-semibold text-violet-100 no-underline hover:bg-violet-500/25"
+              >
+                📝 메뉴·가격·시술 편집
+              </Link>
             </div>
 
             <div className="mt-6 border-t border-white/10 pt-5">
@@ -1124,17 +1164,21 @@ export default function LocalDigitalMenuClient(props: {
           </section>
         ) : null}
 
-        <section className={glassPanel('overflow-hidden')}>
+        {LIST_SECTION_ORDER.map((secKey) => {
+          const secUi = LIST_SECTION_UI[secKey][menuLang];
+          const rows = menus.filter((m) => normalizeLocalMenuListSection(m.list_section) === secKey);
+          return (
+        <section key={secKey} className={glassPanel('overflow-hidden')}>
           <div className="border-b border-white/10 bg-black/30 px-4 py-3 backdrop-blur-md">
-            <h2 className="text-sm font-bold text-white">{mc.sectionTitle}</h2>
-            <p className="text-[11px] text-white/45">{mc.sectionSub}</p>
+            <h2 className="text-sm font-bold text-white">{secUi.title}</h2>
+            <p className="text-[11px] text-white/45">{secUi.sub}</p>
           </div>
           <div className="space-y-4 p-4">
-            {menus.map((row, menuIdx) => {
+            {rows.map((row, menuIdx) => {
               const desc = dishDescription(row, menuLang);
               const label = dishLabel(row, menuLang);
               const expanded = expandedMenuId === row.id;
-              const heroImage = menuIdx === 0;
+              const heroImage = menuIdx === 0 && secKey === 'menu';
               return (
                 <article key={row.id} className={menuCardShell('flex flex-col sm:flex-row')}>
                   <div className="relative aspect-[5/4] w-full overflow-hidden rounded-t-2xl sm:aspect-auto sm:h-auto sm:w-[42%] sm:max-w-[220px] sm:shrink-0 sm:rounded-l-2xl sm:rounded-tr-none">
@@ -1326,7 +1370,7 @@ export default function LocalDigitalMenuClient(props: {
             })}
           </div>
 
-          {showLegacyFallback ? (
+          {secKey === 'menu' && showLegacyFallback ? (
             <div className="border-t border-dashed border-white/15 bg-black/25 px-4 py-4">
               <p className="text-[11px] font-semibold text-amber-200/90">{mc.legacyHint}</p>
               <div className="mt-3 grid gap-3">
@@ -1368,10 +1412,12 @@ export default function LocalDigitalMenuClient(props: {
             </div>
           ) : null}
 
-          {!showLegacyFallback && menus.length === 0 ? (
-            <p className="px-4 py-10 text-center text-sm text-white/45">{mc.empty}</p>
+          {rows.length === 0 && !(secKey === 'menu' && showLegacyFallback) ? (
+            <p className="px-4 py-8 text-center text-sm text-white/45">{secUi.empty}</p>
           ) : null}
         </section>
+          );
+        })}
 
         <section className={`${glassPanel('p-4')} flex flex-col items-center gap-2`}>
           <h2 className="text-sm font-bold text-white">테이블용 QR</h2>

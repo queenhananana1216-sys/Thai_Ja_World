@@ -1,5 +1,6 @@
 /**
  * 고스트라이터 — 태국 생활·여행 템플릿을 주기적으로 board_posts(tips|reports)에 자동 게시.
+ * 주제 배열·킬러 피드 제목: `src/lib/cron/autoContentGhostwriter.ts` 의 `AUTO_CONTENT_GHOSTWRITER_TEMPLATES`.
  * Vercel Cron: `vercel.json` → `/api/cron/auto-content` (4시간마다), Authorization: Bearer CRON_SECRET
  *
  * 작성자: `GHOSTWRITER_SYSTEM_USER_ID` (마이그레이션 138 — bot@taeja.world / profiles 동기화)

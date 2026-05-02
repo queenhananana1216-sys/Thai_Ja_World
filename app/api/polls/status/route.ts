@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
+import { votesToPublicIntPct } from '@/lib/polls/votesToPublicIntPct';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,10 +22,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const admin = createServiceRoleClient();
-  const { data: totRaw } = await admin.rpc('get_public_poll_totals', { p_poll_id: pollId });
-  const totRow = Array.isArray(totRaw) ? totRaw[0] : totRaw;
-  const votesA = Number((totRow as { votes_a?: unknown })?.votes_a ?? 0);
-  const votesB = Number((totRow as { votes_b?: unknown })?.votes_b ?? 0);
 
   const sbUser = await createServerSupabaseAuthClient();
   const {
@@ -50,10 +47,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (row?.choice === 'a' || row?.choice === 'b') myChoice = row.choice;
   }
 
+  let pctA: number | undefined;
+  let pctB: number | undefined;
+  if (myChoice === 'a' || myChoice === 'b') {
+    const { data: totRaw } = await admin.rpc('get_public_poll_totals', { p_poll_id: pollId });
+    const totRow = Array.isArray(totRaw) ? totRaw[0] : totRaw;
+    const votesA = Number((totRow as { votes_a?: unknown })?.votes_a ?? 0);
+    const votesB = Number((totRow as { votes_b?: unknown })?.votes_b ?? 0);
+    const p = votesToPublicIntPct(votesA, votesB);
+    pctA = p.pctA;
+    pctB = p.pctB;
+  }
+
   return NextResponse.json({
     ok: true,
-    votesA: Number.isFinite(votesA) ? votesA : 0,
-    votesB: Number.isFinite(votesB) ? votesB : 0,
     myChoice,
+    ...(pctA !== undefined && pctB !== undefined ? { pctA, pctB } : {}),
   });
 }

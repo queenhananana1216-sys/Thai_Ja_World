@@ -7,6 +7,7 @@ export const MOTHERBRAIN_REVALIDATE_PATHS = [
   '/',
   '/tips',
   '/news',
+  '/local',
   '/local/demo',
   '/korean-biz',
   '/hub',

@@ -25,6 +25,7 @@ import { categoryLabel } from '@/lib/community/postCategories';
 import type { Locale } from '@/i18n/types';
 import { getLocale } from '@/i18n/get-locale';
 import { isQuestMissionNoiseTitle } from './portalLiveFeedTitle';
+import { isAutoContentKillerFeedTitle } from '@/lib/cron/autoContentGhostwriter';
 
 export type PortalFeedLine = {
   id: string;
@@ -53,8 +54,6 @@ export type PortalFeaturedPoll = {
   question: string;
   optionA: string;
   optionB: string;
-  votesA: number;
-  votesB: number;
 };
 
 /** 우측 스티키 데모 롤링(`is_demo` 로컬) — SSR props만 사용 */
@@ -233,14 +232,26 @@ function boardAutoRowToPortalLine(
     liveCategory: row.board_type === 'reports' ? 'reports' : row.board_type === 'tips' ? 'tips' : row.board_type,
     liveViewCount: 0,
     liveCreatedAt: row.created_at.trim() || null,
-    liveHighlight: true,
+    liveHighlight: isAutoContentKillerFeedTitle(row.title),
   };
+}
+
+/** 고스트라이터 킬러 주제 → 자동 큐레이션 블록 최상단 유지 */
+function sortPortalLiveFeedKillerTopicsFirst(lines: PortalFeedLine[]): PortalFeedLine[] {
+  const killers: PortalFeedLine[] = [];
+  const rest: PortalFeedLine[] = [];
+  for (const line of lines) {
+    if (isAutoContentKillerFeedTitle(line.title)) killers.push(line);
+    else rest.push(line);
+  }
+  return [...killers, ...rest];
 }
 
 function mergeLiveFeedPreferAuto(auto: PortalFeedLine[], unified: PortalFeedLine[], maxTotal: number): PortalFeedLine[] {
   const seen = new Set<string>();
   const out: PortalFeedLine[] = [];
-  for (const line of [...auto, ...unified]) {
+  const autoOrdered = sortPortalLiveFeedKillerTopicsFirst(auto);
+  for (const line of [...autoOrdered, ...unified]) {
     const key = line.title.trim().toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -576,8 +587,6 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
         question: fp.row.question,
         optionA: fp.row.optionA,
         optionB: fp.row.optionB,
-        votesA: fp.row.votesA,
-        votesB: fp.row.votesB,
       };
     }
   } catch {

@@ -153,15 +153,11 @@ function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
       ) {
         return null;
       }
-      const va = Number((fp as PortalFeaturedPoll).votesA);
-      const vb = Number((fp as PortalFeaturedPoll).votesB);
       return {
         id: fp.id.trim(),
         question: fp.question.trim(),
         optionA: fp.optionA.trim(),
         optionB: fp.optionB.trim(),
-        votesA: Number.isFinite(va) ? va : 0,
-        votesB: Number.isFinite(vb) ? vb : 0,
       };
     })(),
   };

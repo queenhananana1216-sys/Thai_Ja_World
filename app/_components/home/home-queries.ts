@@ -646,8 +646,6 @@ export type HomeFeaturedPollRow = {
   question: string;
   optionA: string;
   optionB: string;
-  votesA: number;
-  votesB: number;
 };
 
 function todaySeoulIsoDate(): string {
@@ -689,33 +687,12 @@ export async function fetchHomeFeaturedPoll(): Promise<{ row: HomeFeaturedPollRo
 
   if (!poll || typeof poll.id !== 'string') return { row: null, error: null };
 
-  const { data: totRaw, error: e3 } = await sb.rpc('get_public_poll_totals', { p_poll_id: poll.id });
-  if (e3) {
-    return {
-      row: {
-        id: poll.id,
-        question: String(poll.question ?? ''),
-        optionA: String(poll.option_a_label ?? ''),
-        optionB: String(poll.option_b_label ?? ''),
-        votesA: 0,
-        votesB: 0,
-      },
-      error: null,
-    };
-  }
-
-  const totRow = Array.isArray(totRaw) ? totRaw[0] : totRaw;
-  const va = Number((totRow as { votes_a?: unknown })?.votes_a ?? 0);
-  const vb = Number((totRow as { votes_b?: unknown })?.votes_b ?? 0);
-
   return {
     row: {
       id: poll.id,
       question: String(poll.question ?? ''),
       optionA: String(poll.option_a_label ?? ''),
       optionB: String(poll.option_b_label ?? ''),
-      votesA: Number.isFinite(va) ? va : 0,
-      votesB: Number.isFinite(vb) ? vb : 0,
     },
     error: null,
   };

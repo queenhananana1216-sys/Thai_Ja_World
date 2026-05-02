@@ -33,10 +33,10 @@ export default function PortalBalancePoll({
   isLoggedIn: boolean;
 }) {
   const copy = getPortal2026Copy(locale);
-  const numLocale = locale === 'th' ? 'th-TH' : 'ko-KR';
 
-  const [votesA, setVotesA] = useState(poll.votesA);
-  const [votesB, setVotesB] = useState(poll.votesB);
+  /** 서버가 준 정수 %만 보관(원시 득표 수 없음) */
+  const [splitA, setSplitA] = useState(50);
+  const [splitB, setSplitB] = useState(50);
   const [myChoice, setMyChoice] = useState<'a' | 'b' | null>(null);
   const [busy, setBusy] = useState(false);
   const [reveal, setReveal] = useState(false);
@@ -54,13 +54,15 @@ export default function PortalBalancePoll({
         const r = await fetch(`/api/polls/status?${q.toString()}`, { signal: ac.signal });
         if (!r.ok) return;
         const j = (await r.json()) as {
-          votesA?: unknown;
-          votesB?: unknown;
+          pctA?: unknown;
+          pctB?: unknown;
           myChoice?: unknown;
         };
-        if (typeof j.votesA === 'number') setVotesA(j.votesA);
-        if (typeof j.votesB === 'number') setVotesB(j.votesB);
         if (j.myChoice === 'a' || j.myChoice === 'b') {
+          if (typeof j.pctA === 'number' && typeof j.pctB === 'number') {
+            setSplitA(j.pctA);
+            setSplitB(j.pctB);
+          }
           setMyChoice(j.myChoice);
           setReveal(true);
         }
@@ -72,12 +74,10 @@ export default function PortalBalancePoll({
     return () => ac.abort();
   }, [poll.id, isLoggedIn]);
 
-  const total = Math.max(0, votesA + votesB);
-  const pctA = total > 0 ? Math.round((votesA / total) * 1000) / 10 : 50;
-  const pctB = total > 0 ? Math.round((votesB / total) * 1000) / 10 : 50;
-  const showSplit = reveal || total > 0;
-  const barA = showSplit ? pctA : 50;
-  const barB = showSplit ? pctB : 50;
+  /** 투표 전: 50:50 스켈레톤만. 투표 후: API 정수 %만 */
+  const showResults = reveal;
+  const intPctA = showResults ? splitA : 50;
+  const intPctB = showResults ? splitB : 50;
 
   const submit = async (choice: 'a' | 'b') => {
     if (busy || myChoice) return;
@@ -94,12 +94,14 @@ export default function PortalBalancePoll({
         body: JSON.stringify({ pollId: poll.id, choice, anonId }),
       });
       const j = (await r.json()) as {
-        votesA?: unknown;
-        votesB?: unknown;
+        pctA?: unknown;
+        pctB?: unknown;
         myChoice?: unknown;
       };
-      if (typeof j.votesA === 'number') setVotesA(j.votesA);
-      if (typeof j.votesB === 'number') setVotesB(j.votesB);
+      if (typeof j.pctA === 'number' && typeof j.pctB === 'number') {
+        setSplitA(j.pctA);
+        setSplitB(j.pctB);
+      }
       if (j.myChoice === 'a' || j.myChoice === 'b') {
         setMyChoice(j.myChoice);
       }
@@ -178,23 +180,45 @@ export default function PortalBalancePoll({
         </div>
 
         <div
-          className={`mt-3 space-y-2 transition-opacity duration-500 ${showSplit ? 'opacity-100' : 'opacity-40'}`}
+          className={`mt-3 space-y-2 transition-opacity duration-500 ${showResults ? 'opacity-100' : 'opacity-80'}`}
+          aria-label={showResults ? copy.balanceResultAria : copy.balanceSkeletonAria}
         >
-          <div className="flex items-end justify-between gap-2 text-[0.7rem] font-bold text-slate-300">
-            <span className="text-amber-200">{pctA}%</span>
-            <span className="text-center text-slate-400">
-              {copy.balanceTotalLabel.replace('{n}', total.toLocaleString(numLocale))}
+          <div className="flex items-end justify-between gap-3 text-[0.7rem] font-bold">
+            <span
+              className={`tabular-nums transition-all duration-1000 ease-out ${
+                showResults
+                  ? 'text-amber-200 drop-shadow-[0_0_12px_rgba(251,191,36,0.55)]'
+                  : 'text-amber-200/45'
+              }`}
+            >
+              {intPctA}%
             </span>
-            <span className="text-cyan-200">{pctB}%</span>
+            <span
+              className={`tabular-nums transition-all duration-1000 ease-out ${
+                showResults
+                  ? 'text-cyan-200 drop-shadow-[0_0_12px_rgba(34,211,238,0.45)]'
+                  : 'text-cyan-200/45'
+              }`}
+            >
+              {intPctB}%
+            </span>
           </div>
-          <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-900/90 ring-1 ring-white/10">
+          <div
+            className={`flex h-3.5 w-full overflow-hidden rounded-full bg-slate-900/90 ring-1 ring-white/10 ${
+              !showResults ? 'animate-pulse' : ''
+            }`}
+          >
             <div
-              className="h-full min-w-0 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 shadow-[0_0_16px_rgba(251,191,36,0.45)] transition-[width] duration-700 ease-out"
-              style={{ width: `${barA}%` }}
+              className={`h-full min-w-0 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 transition-[width] duration-1000 ease-out ${
+                showResults ? 'shadow-[0_0_20px_rgba(251,191,36,0.5)]' : 'shadow-[0_0_8px_rgba(251,191,36,0.2)]'
+              }`}
+              style={{ width: `${intPctA}%` }}
             />
             <div
-              className="h-full min-w-0 bg-gradient-to-r from-cyan-600 via-cyan-400 to-cyan-500 shadow-[0_0_16px_rgba(34,211,238,0.35)] transition-[width] duration-700 ease-out"
-              style={{ width: `${barB}%` }}
+              className={`h-full min-w-0 bg-gradient-to-r from-cyan-600 via-cyan-400 to-cyan-500 transition-[width] duration-1000 ease-out ${
+                showResults ? 'shadow-[0_0_18px_rgba(34,211,238,0.4)]' : 'shadow-[0_0_8px_rgba(34,211,238,0.18)]'
+              }`}
+              style={{ width: `${intPctB}%` }}
             />
           </div>
         </div>

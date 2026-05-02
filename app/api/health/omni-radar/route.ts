@@ -1,5 +1,5 @@
 /**
- * GET /api/health/omni-radar — DB · Biz Radar 크론 · 날씨 · 쉐도우 QA · UI 인시던트 통합 생존 검증
+ * GET /api/health/omni-radar — Live tier(DB·날씨·런타임) 우선, 크론·로그 기반은 보조(warnings)
  */
 import { NextResponse } from 'next/server';
 import {
@@ -11,6 +11,7 @@ import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 /** 홈·크론과 동일한 Open-Meteo 방콕 단일 지점 (키 불필요) */
 const OPEN_METEO_BANGKOK =
@@ -18,6 +19,12 @@ const OPEN_METEO_BANGKOK =
 
 const CRON_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 10_000;
+
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+} as const;
 
 type CheckDb = { ok: boolean; ping_ms?: number; error?: string };
 type CheckCron = {
@@ -28,18 +35,34 @@ type CheckCron = {
   error?: string;
 };
 type CheckWeather = { ok: boolean; http_status?: number; error?: string };
+type CheckRuntime = { ok: boolean; heap_used_mb?: number; error?: string };
 
-async function checkDatabase(): Promise<CheckDb> {
+/** PostgREST RPC `omni_radar_live_ping` → SELECT 1; 없으면 publish_logs 헤드 폴백 */
+async function checkLiveSqlPing(): Promise<CheckDb> {
   const start = performance.now();
+  const ping_ms = () => Math.round(performance.now() - start);
   try {
     const sb = createServiceRoleClient();
-    const { error } = await sb.from('site_settings').select('key').limit(1);
-    const ping_ms = Math.round(performance.now() - start);
-    if (error) return { ok: false, ping_ms, error: error.message };
-    return { ok: true, ping_ms };
+    const rpc = await sb.rpc('omni_radar_live_ping');
+    if (!rpc.error && rpc.data !== null && rpc.data !== undefined) {
+      return { ok: true, ping_ms: ping_ms() };
+    }
+    const code = rpc.error?.code;
+    const msg = rpc.error?.message ?? '';
+    const missingRpc =
+      code === 'PGRST202' ||
+      code === '42883' ||
+      /function .*omni_radar_live_ping/i.test(msg) ||
+      /does not exist/i.test(msg);
+    if (rpc.error && !missingRpc) {
+      return { ok: false, ping_ms: ping_ms(), error: msg };
+    }
+
+    const { error } = await sb.from('publish_logs').select('id').limit(1);
+    if (error) return { ok: false, ping_ms: ping_ms(), error: error.message };
+    return { ok: true, ping_ms: ping_ms() };
   } catch (e) {
-    const ping_ms = Math.round(performance.now() - start);
-    return { ok: false, ping_ms, error: e instanceof Error ? e.message : String(e) };
+    return { ok: false, ping_ms: ping_ms(), error: e instanceof Error ? e.message : String(e) };
   }
 }
 
@@ -111,65 +134,94 @@ async function checkWeatherPipeline(): Promise<CheckWeather> {
   }
 }
 
+function checkRuntimeResources(): CheckRuntime {
+  try {
+    const mu = process.memoryUsage();
+    const heapMb = mu.heapUsed / (1024 * 1024);
+    if (!Number.isFinite(heapMb)) {
+      return { ok: false, error: 'memory_metrics_invalid' };
+    }
+    // 서버리스에서 극단적 압박만 차단 (과거 로그와 무관한 현재 프로세스 상태)
+    if (heapMb > 3_800) {
+      return { ok: false, heap_used_mb: Math.round(heapMb * 10) / 10, error: 'heap_used_critical' };
+    }
+    return { ok: true, heap_used_mb: Math.round(heapMb * 10) / 10 };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export async function GET(): Promise<NextResponse> {
-  const [database, cron_radar, weather, shadow_qa, chaos_monkey, ui_surface] = await Promise.all([
-    checkDatabase(),
-    checkCronRadar(),
+  const [database, weather, runtime, cron_radar, shadow_qa, chaos_monkey, ui_surface] = await Promise.all([
+    checkLiveSqlPing(),
     checkWeatherPipeline(),
+    Promise.resolve(checkRuntimeResources()),
+    checkCronRadar(),
     checkShadowQaRadar(),
     checkChaosMonkeyRadar(),
     checkUiIncidentRadar(),
   ]);
 
   const chaosOk = chaos_monkey.ok || chaos_monkey.skipped === true;
-  const motherbrainDefenseHealthy =
-    database.ok &&
-    cron_radar.ok &&
-    weather.ok &&
-    shadow_qa.ok &&
-    chaosOk &&
-    ui_surface.ok;
+  const live_ok = database.ok && weather.ok && runtime.ok;
+  const secondary_ok = cron_radar.ok && shadow_qa.ok && chaosOk && ui_surface.ok;
+
+  const motherbrain_all_green = live_ok && secondary_ok;
+  /** 카오스 자가 치유 펄스는 DB·날씨 등 라이브가 살아 있을 때만 표시 */
+  const shield_pulse = Boolean(live_ok && chaos_monkey.shield_pulse);
 
   const checks = {
     database,
-    cron_radar,
     weather,
+    runtime,
+    cron_radar,
     shadow_qa,
     chaos_monkey,
     ui_surface,
     motherbrain: {
-      shield_pulse: motherbrainDefenseHealthy,
-      all_green: motherbrainDefenseHealthy,
+      shield_pulse,
+      all_green: motherbrain_all_green,
       defense_success_rate: chaos_monkey.defense_success_rate ?? null,
       chaos_skipped: chaos_monkey.skipped === true,
+      live_ok,
+      secondary_ok,
     },
   };
 
-  const allOk = motherbrainDefenseHealthy;
+  const warnings: string[] = [];
+  if (live_ok) {
+    if (!cron_radar.ok) warnings.push(`cron_radar: ${cron_radar.error ?? 'unknown'}`);
+    if (!shadow_qa.ok) warnings.push(`shadow_qa: ${shadow_qa.error ?? 'unknown'}`);
+    if (!chaosOk) warnings.push(`chaos_monkey: ${chaos_monkey.error ?? 'unknown'}`);
+    if (!ui_surface.ok) warnings.push(`ui_surface: ${ui_surface.error ?? 'unknown'}`);
+  }
 
-  if (allOk) {
-    return NextResponse.json({
-      status: 'healthy',
-      all_systems_go: true,
-      checks,
-    });
+  if (live_ok) {
+    return NextResponse.json(
+      {
+        status: 'healthy',
+        all_systems_go: true,
+        live_tier: true,
+        ...(warnings.length > 0 ? { warnings, pipeline_secondary_ok: false } : { pipeline_secondary_ok: true }),
+        checks,
+      },
+      { headers: NO_STORE_HEADERS },
+    );
   }
 
   const errors: string[] = [];
   if (!database.ok) errors.push(`database: ${database.error ?? 'unknown'}`);
-  if (!cron_radar.ok) errors.push(`cron_radar: ${cron_radar.error ?? 'unknown'}`);
   if (!weather.ok) errors.push(`weather: ${weather.error ?? 'unknown'}`);
-  if (!shadow_qa.ok) errors.push(`shadow_qa: ${shadow_qa.error ?? 'unknown'}`);
-  if (!chaosOk) errors.push(`chaos_monkey: ${chaos_monkey.error ?? 'unknown'}`);
-  if (!ui_surface.ok) errors.push(`ui_surface: ${ui_surface.error ?? 'unknown'}`);
+  if (!runtime.ok) errors.push(`runtime: ${runtime.error ?? 'unknown'}`);
 
   return NextResponse.json(
     {
       status: 'error',
       all_systems_go: false,
+      live_tier: false,
       checks,
       errors,
     },
-    { status: 503 },
+    { status: 503, headers: NO_STORE_HEADERS },
   );
 }

@@ -7,7 +7,8 @@ import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import { usePublicWeatherSwr } from '@/lib/hooks/usePublicWeatherSwr';
 import styles from './portal-2026.module.css';
 
-const OMNI_RADAR_INTERVAL_MS = 60_000;
+/** 라이브 레이더 — 포커스·마운트 시 즉시 재검증 + 주기 폴링 */
+const OMNI_RADAR_INTERVAL_MS = 10_000;
 
 function iconForWmo(code: number | null | undefined): string {
   if (code == null) return '☀️';
@@ -45,7 +46,10 @@ type OmniMotherbrain = {
 type OmniPack = { ok: boolean; status: number; json: unknown };
 
 async function omniFetcher(url: string): Promise<OmniPack> {
-  const res = await fetch(url, { cache: 'no-store' });
+  const res = await fetch(url, {
+    cache: 'no-store',
+    credentials: 'same-origin',
+  });
   let json: unknown = null;
   try {
     json = await res.json();
@@ -123,8 +127,10 @@ export default function PortalWeatherWidget({
 
   const { data: omniPack } = useSWR('/api/health/omni-radar', omniFetcher, {
     refreshInterval: OMNI_RADAR_INTERVAL_MS,
-    revalidateOnFocus: false,
-    dedupingInterval: 8000,
+    revalidateOnFocus: true,
+    revalidateOnMount: true,
+    revalidateIfStale: true,
+    dedupingInterval: 2000,
   });
 
   const { omniPhase, omniErrors, chaosRadar, motherbrain } = useMemo(() => {

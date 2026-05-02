@@ -13,7 +13,10 @@ export type Portal2026Copy = {
     questCat?: 'job' | 'flea' | 'free';
   }[];
   sponsorTitle: string;
-  scaleTitle: string;
+  /** 좌측 윙 — 필수 앱 런처 */
+  quickAppsTitle: string;
+  quickAppsSub: string;
+  quickAppsAria: string;
   shortcutTitle: string;
   rankTitle: string;
   rankSub: string;
@@ -22,9 +25,6 @@ export type Portal2026Copy = {
   localAsideTitle: string;
   contactTitle: string;
   contactBody: string;
-  statsUnavailable: string;
-  profileLabel: string;
-  postsLabel: string;
   hubBoard: string;
   tradeHub: string;
   /** 🇰🇷 한인 생활망 바로가기 */
@@ -54,7 +54,9 @@ const ko: Portal2026Copy = {
     { title: '생활 Q&A', moreHref: '/community/boards?cat=qna', key: 'qna' },
   ],
   sponsorTitle: '스폰서 · 안내',
-  scaleTitle: '커뮤니티 규모',
+  quickAppsTitle: '태국 생활 퀵 앱',
+  quickAppsSub: '탭하면 새 창에서 열려요',
+  quickAppsAria: '태국 생활 필수 앱 바로가기',
   shortcutTitle: '바로가기',
   rankTitle: '주간 도토리 획득 TOP 5',
   rankSub: '이번 주 서울 주간 미션 집계',
@@ -63,9 +65,6 @@ const ko: Portal2026Copy = {
   localAsideTitle: '로컬 업체',
   contactTitle: '문의',
   contactBody: '게시판·업체 등록은 각 메뉴에서 진행됩니다.',
-  statsUnavailable: '집계 정보를 불러오지 못했습니다.',
-  profileLabel: '프로필',
-  postsLabel: '공개 글·거래',
   hubBoard: '광장',
   tradeHub: '중고·알바',
   koreanBizShortcut: '🇰🇷 한인 생활망 (마트/약국/병원)',
@@ -94,7 +93,9 @@ const th: Portal2026Copy = {
     { title: 'ถาม–ตอบ', moreHref: '/community/boards?cat=qna', key: 'qna' },
   ],
   sponsorTitle: 'สปอนเซอร์ · ประกาศ',
-  scaleTitle: 'ขนาดชุมชน',
+  quickAppsTitle: 'แอปจำเป็นในชีวิตไทย',
+  quickAppsSub: 'แตะแล้วเปิดหน้าต่างใหม่',
+  quickAppsAria: 'ทางลัดแอปสำหรับชีวิตในไทย',
   shortcutTitle: 'ทางลัด',
   rankTitle: 'อันดับดอกท้อยอดเยี่ยม 5 อันดับ',
   rankSub: 'สรุปภารกิจรายสัปดาห์ (โซล)',
@@ -103,9 +104,6 @@ const th: Portal2026Copy = {
   localAsideTitle: 'ร้านท้องถิ่น',
   contactTitle: 'ติดต่อ',
   contactBody: 'โพสต์บอร์ด·ลงร้าน — ใช้เมนูแต่ละส่วนได้เลย',
-  statsUnavailable: 'โหลดตัวเลขสรุปไม่ได้',
-  profileLabel: 'โปรไฟล์',
-  postsLabel: 'โพสต์·ธุรกรรม',
   hubBoard: 'ลานชุมชน',
   tradeHub: 'มือสอง · งาน',
   koreanBizShortcut: '🇰🇷 ชีวิตเกาหลี (มาร์ท/ร้านยา/โรงพยาบาล)',

@@ -15,6 +15,7 @@ import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import { localizeQuestFeedText, stripQuestFeedWeatherClutter } from '@/lib/quests/questFeedLocale';
 import PortalLocalDemoWingRolling from './PortalLocalDemoWingRolling';
 import PortalQuestWriteCta from './PortalQuestWriteCta';
+import QuickAppLauncher from './QuickAppLauncher';
 import PortalWeatherWidget from './PortalWeatherWidget';
 import styles from './portal-2026.module.css';
 
@@ -395,12 +396,6 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
 
   const numLocale = locale === 'th' ? 'th-TH' : 'ko-KR';
 
-  const totals = raw?.siteTotals;
-  const profileCount =
-    totals && typeof totals.profileCount === 'number' ? totals.profileCount : null;
-  const communityItemCount =
-    totals && typeof totals.communityItemCount === 'number' ? totals.communityItemCount : null;
-
   return (
     <div
       className={styles.root}
@@ -410,8 +405,8 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
       aria-label={copy.rootAria}
     >
       <div className={styles.grid}>
-        <aside className="hidden min-h-0 min-w-0 min-[769px]:block">
-          <div className={styles.stickyWing}>
+        <aside className="hidden min-h-0 min-w-0 min-[769px]:flex min-[769px]:flex-col min-[769px]:gap-2">
+          <div className="flex min-w-0 flex-col gap-2">
             {siteUi.weatherWidgetEnabled ? <PortalWeatherWidget locale={locale} /> : null}
             <section className={`${styles.glassBlue} overflow-hidden p-2.5`}>
               <p className="text-lg font-black uppercase tracking-wide text-blue-200">{copy.sponsorTitle}</p>
@@ -443,26 +438,9 @@ export default function Portal2026View({ feed, locale, siteUi: siteUiProp }: Por
                 </ul>
               )}
             </section>
-            <section className={`${styles.glassGold} overflow-hidden p-2.5`}>
-              <p className="text-lg font-black text-amber-200">{copy.scaleTitle}</p>
-              {profileCount != null && communityItemCount != null ? (
-                <p className="mt-1 text-base leading-snug text-gray-100 break-words">
-                  {locale === 'th' ? (
-                    <>
-                      {copy.profileLabel} {profileCount.toLocaleString(numLocale)} · {copy.postsLabel}{' '}
-                      {communityItemCount.toLocaleString(numLocale)}
-                    </>
-                  ) : (
-                    <>
-                      {copy.profileLabel} 약 {profileCount.toLocaleString(numLocale)} · {copy.postsLabel}{' '}
-                      {communityItemCount.toLocaleString(numLocale)}
-                    </>
-                  )}
-                </p>
-              ) : (
-                <p className="mt-1 text-base leading-snug text-gray-200">{copy.statsUnavailable}</p>
-              )}
-            </section>
+          </div>
+          <QuickAppLauncher locale={locale} />
+          <div className="flex min-w-0 flex-col gap-2">
             <section className={`${styles.glassCenter} overflow-hidden p-2 text-base text-gray-100`}>
               <p className="text-lg font-semibold text-white">{copy.shortcutTitle}</p>
               <ul className="mt-1.5 space-y-0">

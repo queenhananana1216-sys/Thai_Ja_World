@@ -15,7 +15,6 @@ import {
   formatSupabaseClientErrorPayload,
   scheduleSoftNavigationRefresh,
   shouldMaskRawDbError,
-  USER_DB_SYNC_TOAST_MESSAGE,
 } from '@/lib/db/dbErrorDefense';
 import { createBrowserClient } from '@/lib/supabase/client';
 
@@ -167,6 +166,7 @@ export default function NewPostForm({
         supabase_details?: string | null;
         supabase_hint?: string | null;
       } = {};
+      let lastHttpStatus: number | null = null;
       let exhaustedAfterTransient = false;
 
       for (let attempt = 0; attempt <= POST_SUBMIT_MAX_RETRIES; attempt++) {
@@ -183,6 +183,8 @@ export default function NewPostForm({
             },
             body: requestBody,
           });
+
+          lastHttpStatus = res.status;
 
           let payload: {
             id?: string;
@@ -208,15 +210,20 @@ export default function NewPostForm({
           }
 
           if (!isTransientPostFailure(res, payload)) {
-            const mod = boardModMessage(board, payload.code);
-            const line = formatSupabaseClientErrorPayload({
-              ...payload,
-              message: payload.message?.trim() || mod,
+            const rawLine = formatSupabaseClientErrorPayload({
+              message: payload.message?.trim() || null,
+              code: payload.code ?? null,
+              supabase_code: payload.supabase_code ?? null,
               supabase_details: payload.supabase_details ?? payload.details ?? null,
               supabase_hint: payload.supabase_hint ?? payload.hint ?? null,
             });
+            const mod = boardModMessage(board, payload.code);
+            const line =
+              rawLine.trim() && rawLine !== '알 수 없는 오류'
+                ? rawLine
+                : [mod, `HTTP ${res.status}`, JSON.stringify(payload)].filter(Boolean).join('\n');
             setError(line);
-            toast.error(line, { position: 'top-center', duration: 14_000 });
+            toast.error(line, { position: 'top-center', duration: 20_000 });
             return;
           }
 
@@ -224,8 +231,11 @@ export default function NewPostForm({
             exhaustedAfterTransient = true;
             break;
           }
-        } catch {
-          lastPayload = {};
+        } catch (fetchErr) {
+          lastPayload = {
+            message: fetchErr instanceof Error ? fetchErr.message : String(fetchErr),
+            code: 'client_fetch',
+          };
           if (attempt === POST_SUBMIT_MAX_RETRIES) {
             exhaustedAfterTransient = true;
             break;
@@ -241,30 +251,41 @@ export default function NewPostForm({
         console.error('[NewPostForm] schema/cache failure (full payload)', lastPayload);
         scheduleSoftNavigationRefresh(() => router.refresh());
         const syncLine = formatSupabaseClientErrorPayload({
-          ...lastPayload,
-          message: lastPayload.message?.trim() || USER_DB_SYNC_TOAST_MESSAGE,
+          message: lastPayload.message?.trim() || null,
+          code: lastPayload.code ?? null,
+          supabase_code: lastPayload.supabase_code ?? null,
           supabase_details: lastPayload.supabase_details ?? lastPayload.details ?? null,
           supabase_hint: lastPayload.supabase_hint ?? lastPayload.hint ?? null,
         });
-        toast.error(syncLine, { position: 'top-center', duration: 16_000 });
+        const syncToast =
+          syncLine.trim() && syncLine !== '알 수 없는 오류'
+            ? syncLine
+            : [`HTTP ${lastHttpStatus ?? '?'}`, JSON.stringify(lastPayload)].join('\n');
+        toast.error(syncToast, { position: 'top-center', duration: 20_000 });
+        setError(syncToast);
         fireDbErrorRadar('NewPostForm:submit_retry_exhausted');
         return;
       }
 
       const failLine = formatSupabaseClientErrorPayload({
-        ...lastPayload,
-        message:
-          lastPayload.message?.trim() ||
-          '네트워크 또는 브라우저 오류로 요청이 끝나지 않았습니다. 다시 시도해 주세요.',
+        message: lastPayload.message?.trim() || null,
+        code: lastPayload.code ?? null,
+        supabase_code: lastPayload.supabase_code ?? null,
         supabase_details: lastPayload.supabase_details ?? lastPayload.details ?? null,
         supabase_hint: lastPayload.supabase_hint ?? lastPayload.hint ?? null,
       });
-      setError(failLine);
-      toast.error(failLine, { position: 'top-center', duration: 14_000 });
+      const failToast =
+        failLine.trim() && failLine !== '알 수 없는 오류'
+          ? failLine
+          : [`HTTP ${lastHttpStatus ?? '?'}`, JSON.stringify(lastPayload)].join('\n');
+      setError(failToast);
+      toast.error(failToast, { position: 'top-center', duration: 20_000 });
       fireDbErrorRadar('NewPostForm:submit_retry_exhausted');
     } catch (err) {
       console.error('[NewPostForm] submit_throw', err);
-      setError('네트워크 또는 브라우저 오류로 요청이 끝나지 않았습니다. 다시 시도해 주세요.');
+      const raw = err instanceof Error ? err.message : String(err);
+      setError(raw);
+      toast.error(raw, { position: 'top-center', duration: 20_000 });
       fireDbErrorRadar('NewPostForm:submit_throw');
     } finally {
       setLoading(false);

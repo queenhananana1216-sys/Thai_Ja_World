@@ -3,9 +3,8 @@
  * 클라이언트·서버 공통 (서버 전용 모듈에 의존하지 않음).
  */
 
-/** 인프라·스키마 일시 오류 시 — 재시도 유도(동일 버튼 재클릭만으로 해결된다고 단정하지 않음) */
-export const USER_DB_SYNC_TOAST_MESSAGE =
-  '일시적인 서버 연결 문제일 수 있습니다. 새로고침(F5) 후 다시 등록해 보세요.';
+/** @deprecated 오너 디버깅용 — 블랙박스 문구 금지; 폼에서 서버 message/details/hint 원문을 우선 표시 */
+export const USER_DB_SYNC_TOAST_MESSAGE = '';
 
 /** 라우터 소프트 리프레시만 — 전체 리로드 없이 서버 컴포넌트·fetch 캐시 갱신 유도 */
 export function scheduleSoftNavigationRefresh(runRefresh: () => void): void {

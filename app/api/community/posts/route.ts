@@ -7,6 +7,7 @@
  *
  * Node 런타임 고정: Edge 최적화 회피하여 Supabase·모더레이션 파이프라인 안정화.
  */
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { createModeratedPost } from '@/lib/moderation/postSubmissionPipeline';
 import { recordQuestProgress } from '@/lib/quests/progress';
@@ -16,7 +17,41 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+/** anon 금지 — 파이프라인과 동일하게 서비스 롤 키로만 클라이언트 생성 (환경 검증용) */
+function createCommunityPostServiceRoleClientOrThrow() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!url || !serviceRoleKey) {
+    throw new Error(
+      'community/posts API: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required; NEXT_PUBLIC_SUPABASE_ANON_KEY must not be used for inserts.',
+    );
+  }
+  return createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
 export async function POST(req: Request) {
+  try {
+    createCommunityPostServiceRoleClientOrThrow();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const missingEnv =
+      /SUPABASE_SERVICE_ROLE_KEY|NEXT_PUBLIC_SUPABASE_URL/i.test(msg) ||
+      msg.includes('community/posts API');
+    return NextResponse.json(
+      {
+        code: 'server',
+        message: msg,
+        details: null,
+        hint: missingEnv
+          ? '서버 환경 변수에 SUPABASE_SERVICE_ROLE_KEY 와 NEXT_PUBLIC_SUPABASE_URL 을 설정하세요. anon 키는 이 라우트에서 사용하지 않습니다.'
+          : null,
+      },
+      { status: 503 },
+    );
+  }
+
   const auth = req.headers.get('authorization') ?? '';
   const m = /^Bearer\s+(.+)$/i.exec(auth.trim());
   const token = m?.[1]?.trim() ?? '';

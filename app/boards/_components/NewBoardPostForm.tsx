@@ -9,7 +9,6 @@ import {
   formatSupabaseClientErrorPayload,
   scheduleSoftNavigationRefresh,
   shouldMaskRawDbError,
-  USER_DB_SYNC_TOAST_MESSAGE,
 } from '@/lib/db/dbErrorDefense';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { LocationPicker, type LocationValue } from './LocationPicker';
@@ -128,17 +127,18 @@ export function NewBoardPostForm({
           console.error('[NewBoardPostForm] PUT /api/boards failed', res.status, j);
           if (isBoardSchemaSync(j)) {
             scheduleSoftNavigationRefresh(() => router.refresh());
+            const raw = formatSupabaseClientErrorPayload({
+              message: j.supabase_message?.trim() || j.error || null,
+              code: j.code ?? null,
+              supabase_code: j.supabase_code ?? null,
+              supabase_details: j.supabase_details ?? null,
+              supabase_hint: j.supabase_hint ?? null,
+            });
             toast.error(
-              [
-                USER_DB_SYNC_TOAST_MESSAGE,
-                formatSupabaseClientErrorPayload({
-                  message: j.supabase_message?.trim() || j.error,
-                  supabase_code: j.supabase_code ?? null,
-                  supabase_details: j.supabase_details ?? null,
-                  supabase_hint: j.supabase_hint ?? null,
-                }),
-              ].join('\n\n'),
-              { position: 'top-center', duration: 14_000 },
+              raw.trim() && raw !== '알 수 없는 오류'
+                ? raw
+                : [`HTTP ${res.status}`, JSON.stringify(j)].join('\n'),
+              { position: 'top-center', duration: 20_000 },
             );
             fireDbErrorRadar('NewBoardPostForm:edit');
             return;
@@ -182,17 +182,18 @@ export function NewBoardPostForm({
         console.error('[NewBoardPostForm] POST /api/boards failed', res.status, json);
         if (isBoardSchemaSync(json)) {
           scheduleSoftNavigationRefresh(() => router.refresh());
+          const raw = formatSupabaseClientErrorPayload({
+            message: json.supabase_message?.trim() || json.error || null,
+            code: json.code ?? null,
+            supabase_code: json.supabase_code ?? null,
+            supabase_details: json.supabase_details ?? null,
+            supabase_hint: json.supabase_hint ?? null,
+          });
           toast.error(
-            [
-              USER_DB_SYNC_TOAST_MESSAGE,
-              formatSupabaseClientErrorPayload({
-                message: json.supabase_message?.trim() || json.error,
-                supabase_code: json.supabase_code ?? null,
-                supabase_details: json.supabase_details ?? null,
-                supabase_hint: json.supabase_hint ?? null,
-              }),
-            ].join('\n\n'),
-            { position: 'top-center', duration: 14_000 },
+            raw.trim() && raw !== '알 수 없는 오류'
+              ? raw
+              : [`HTTP ${res.status}`, JSON.stringify(json)].join('\n'),
+            { position: 'top-center', duration: 20_000 },
           );
           fireDbErrorRadar('NewBoardPostForm:create');
           return;
@@ -221,7 +222,9 @@ export function NewBoardPostForm({
       router.refresh();
     } catch (err) {
       console.error('[NewBoardPostForm] submit_throw', err);
-      setError('요청이 완료되지 않았습니다. 다시 시도해 주세요.');
+      const raw = err instanceof Error ? err.message : String(err);
+      setError(raw);
+      toast.error(raw, { position: 'top-center', duration: 20_000 });
       fireDbErrorRadar('NewBoardPostForm:submit_throw');
     } finally {
       setLoading(false);

@@ -1,45 +1,7 @@
 -- =============================================================================
--- 141_board_greetings_open_dotori_bonus.sql
--- 가입 인사 게시판(`posts.category = greetings`) 첫 성공 글 — 도토리 500 1회 지급
--- 멱등: dotori_events.event_type = greetings_board_open_bonus 는 프로필당 1회
+-- 142_greetings_dotori_bonus_amount_500.sql
+-- 가입 인사 첫글 RPC 보상액을 500 도토리로 고정 (이전에 141이 5,000으로 적용된 DB 패치)
 -- =============================================================================
-
-alter table public.profiles
-  add column if not exists dotori_balance integer not null default 0;
-
-comment on column public.profiles.dotori_balance is
-  '미니홈·포털에서 노출하는 보유 도토리(포인트). style_score_total 과 동일 계열 보상을 반영할 때 함께 증가시킨다.';
-
--- dotori_events.event_type CHECK 확장
-do $$
-declare
-  cname text;
-begin
-  select con.conname into cname
-  from pg_constraint con
-  join pg_class rel on rel.oid = con.conrelid
-  join pg_namespace nsp on nsp.oid = rel.relnamespace
-  where nsp.nspname = 'public'
-    and rel.relname = 'dotori_events'
-    and con.contype = 'c'
-    and pg_get_constraintdef(con.oid) ilike '%event_type%';
-  if cname is not null then
-    execute format('alter table public.dotori_events drop constraint %I', cname);
-  end if;
-end $$;
-
-alter table public.dotori_events
-  add constraint dotori_events_event_type_check check (event_type in (
-    'daily_checkin',
-    'write_post',
-    'receive_like',
-    'guestbook_write',
-    'referral',
-    'purchase',
-    'signup_greeting',
-    'admin_grant',
-    'greetings_board_open_bonus'
-  ));
 
 create or replace function public.grant_greetings_board_open_dotori_bonus(
   p_profile_id uuid,

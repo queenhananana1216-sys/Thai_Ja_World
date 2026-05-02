@@ -58,19 +58,23 @@ export async function PUT(req: Request, ctx: Ctx): Promise<NextResponse> {
   }
 
   const admin = createServiceRoleClient();
-  const { data: updatedId, error } = await admin.rpc('board_posts_update_for_service', {
-    p_post_id: id,
-    p_user_id: user.id,
-    p_title: payload.title,
-    p_content: payload.content,
-    p_image_urls: payload.image_urls,
-    p_lat: payload.lat,
-    p_lng: payload.lng,
-    p_address: payload.address,
-  });
+  const { data: updatedRow, error } = await admin
+    .from('board_posts')
+    .update({
+      title: payload.title,
+      content: payload.content,
+      image_urls: payload.image_urls,
+      lat: payload.lat,
+      lng: payload.lng,
+      address: payload.address,
+    })
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
-    logSupabaseWriteFailure('api/boards PUT board_posts_update_for_service', {
+    logSupabaseWriteFailure('api/boards PUT board_posts.update', {
       message: error.message,
       code: error.code,
       details: error.details,
@@ -84,11 +88,11 @@ export async function PUT(req: Request, ctx: Ctx): Promise<NextResponse> {
     });
     return NextResponse.json(body, { status });
   }
-  if (!updatedId) {
+  if (!updatedRow?.id) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true, id: updatedId });
+  return NextResponse.json({ ok: true, id: updatedRow.id });
 }
 
 export async function DELETE(req: Request, ctx: Ctx): Promise<NextResponse> {
@@ -112,13 +116,15 @@ export async function DELETE(req: Request, ctx: Ctx): Promise<NextResponse> {
   }
 
   const admin = createServiceRoleClient();
-  const { data: deleted, error } = await admin.rpc('board_posts_delete_for_service', {
-    p_post_id: id,
-    p_user_id: user.id,
-  });
+  const { data: deletedRows, error } = await admin
+    .from('board_posts')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select('id');
 
   if (error) {
-    logSupabaseWriteFailure('api/boards DELETE board_posts_delete_for_service', {
+    logSupabaseWriteFailure('api/boards DELETE board_posts.delete', {
       message: error.message,
       code: error.code,
       details: error.details,
@@ -132,7 +138,7 @@ export async function DELETE(req: Request, ctx: Ctx): Promise<NextResponse> {
     });
     return NextResponse.json(body, { status });
   }
-  if (!deleted) {
+  if (!deletedRows?.length) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 

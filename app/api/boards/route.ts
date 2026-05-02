@@ -83,21 +83,25 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  /** SECURITY DEFINER RPC — PostgREST `board_posts` 직접 INSERT 스키마 캐시 불일치 회피 */
+  /** Service role 직접 INSERT — 실제 테이블 컬럼(lat/lng)과 1:1 */
   const admin = createServiceRoleClient();
-  const { data: postId, error } = await admin.rpc('board_posts_insert_for_service', {
-    p_user_id: user.id,
-    p_board_type: payload.board_type,
-    p_title: payload.title,
-    p_content: payload.content,
-    p_image_urls: payload.image_urls,
-    p_lat: payload.lat,
-    p_lng: payload.lng,
-    p_address: payload.address,
-  });
+  const { data: inserted, error } = await admin
+    .from('board_posts')
+    .insert({
+      user_id: user.id,
+      board_type: payload.board_type,
+      title: payload.title,
+      content: payload.content,
+      image_urls: payload.image_urls,
+      lat: payload.lat,
+      lng: payload.lng,
+      address: payload.address,
+    })
+    .select('id')
+    .single();
 
   if (error) {
-    logSupabaseWriteFailure('api/boards POST board_posts_insert_for_service', {
+    logSupabaseWriteFailure('api/boards POST board_posts.insert', {
       message: error.message,
       code: error.code,
       details: error.details,
@@ -111,6 +115,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     });
     return NextResponse.json(body, { status });
   }
+  const postId = inserted?.id;
   if (!postId) {
     return NextResponse.json({ error: 'insert_failed' }, { status: 500 });
   }

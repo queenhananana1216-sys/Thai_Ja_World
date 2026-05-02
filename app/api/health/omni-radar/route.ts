@@ -1,5 +1,5 @@
 /**
- * GET /api/health/omni-radar — Live tier(DB·날씨·런타임) 우선, 크론·로그 기반은 보조(warnings)
+ * GET /api/health/omni-radar — 전 구간 합격 시만 healthy (Shadow QA 쓰기 실패 시 무조건 🔴)
  */
 import { NextResponse } from 'next/server';
 import {
@@ -141,7 +141,6 @@ function checkRuntimeResources(): CheckRuntime {
     if (!Number.isFinite(heapMb)) {
       return { ok: false, error: 'memory_metrics_invalid' };
     }
-    // 서버리스에서 극단적 압박만 차단 (과거 로그와 무관한 현재 프로세스 상태)
     if (heapMb > 3_800) {
       return { ok: false, heap_used_mb: Math.round(heapMb * 10) / 10, error: 'heap_used_critical' };
     }
@@ -164,11 +163,13 @@ export async function GET(): Promise<NextResponse> {
 
   const chaosOk = chaos_monkey.ok || chaos_monkey.skipped === true;
   const live_ok = database.ok && weather.ok && runtime.ok;
-  const secondary_ok = cron_radar.ok && shadow_qa.ok && chaosOk && ui_surface.ok;
+  /** 봇 미설정(skipped)일 때만 생략 — 설정된 경우 마지막 board_posts 쓰기 E2E 실패면 무조건 비정상 */
+  const shadow_write_ok = shadow_qa.skipped === true || shadow_qa.ok;
 
-  const motherbrain_all_green = live_ok && secondary_ok;
-  /** 카오스 자가 치유 펄스는 DB·날씨 등 라이브가 살아 있을 때만 표시 */
-  const shield_pulse = Boolean(live_ok && chaos_monkey.shield_pulse);
+  const healthy =
+    live_ok && cron_radar.ok && shadow_write_ok && chaosOk && ui_surface.ok;
+
+  const shield_pulse = Boolean(healthy && chaos_monkey.shield_pulse);
 
   const checks = {
     database,
@@ -180,29 +181,21 @@ export async function GET(): Promise<NextResponse> {
     ui_surface,
     motherbrain: {
       shield_pulse,
-      all_green: motherbrain_all_green,
+      all_green: healthy,
       defense_success_rate: chaos_monkey.defense_success_rate ?? null,
       chaos_skipped: chaos_monkey.skipped === true,
       live_ok,
-      secondary_ok,
+      shadow_write_ok,
+      /** 이전 호환 */
+      secondary_ok: cron_radar.ok && shadow_write_ok && chaosOk && ui_surface.ok,
     },
   };
 
-  const warnings: string[] = [];
-  if (live_ok) {
-    if (!cron_radar.ok) warnings.push(`cron_radar: ${cron_radar.error ?? 'unknown'}`);
-    if (!shadow_qa.ok) warnings.push(`shadow_qa: ${shadow_qa.error ?? 'unknown'}`);
-    if (!chaosOk) warnings.push(`chaos_monkey: ${chaos_monkey.error ?? 'unknown'}`);
-    if (!ui_surface.ok) warnings.push(`ui_surface: ${ui_surface.error ?? 'unknown'}`);
-  }
-
-  if (live_ok) {
+  if (healthy) {
     return NextResponse.json(
       {
         status: 'healthy',
         all_systems_go: true,
-        live_tier: true,
-        ...(warnings.length > 0 ? { warnings, pipeline_secondary_ok: false } : { pipeline_secondary_ok: true }),
         checks,
       },
       { headers: NO_STORE_HEADERS },
@@ -213,12 +206,17 @@ export async function GET(): Promise<NextResponse> {
   if (!database.ok) errors.push(`database: ${database.error ?? 'unknown'}`);
   if (!weather.ok) errors.push(`weather: ${weather.error ?? 'unknown'}`);
   if (!runtime.ok) errors.push(`runtime: ${runtime.error ?? 'unknown'}`);
+  if (!cron_radar.ok) errors.push(`cron_radar: ${cron_radar.error ?? 'unknown'}`);
+  if (!shadow_write_ok) {
+    errors.push(`shadow_qa_write: ${shadow_qa.error ?? 'board_posts_e2e_failed_or_stale'}`);
+  }
+  if (!chaosOk) errors.push(`chaos_monkey: ${chaos_monkey.error ?? 'unknown'}`);
+  if (!ui_surface.ok) errors.push(`ui_surface: ${ui_surface.error ?? 'unknown'}`);
 
   return NextResponse.json(
     {
       status: 'error',
       all_systems_go: false,
-      live_tier: false,
       checks,
       errors,
     },

@@ -120,16 +120,20 @@ async function runBoardPostsShadowQa(
 
   try {
     const tIns0 = performance.now();
-    const { data: id, error: insErr } = await admin.rpc('board_posts_insert_for_service', {
-      p_user_id: botUserId,
-      p_board_type: payload.board_type,
-      p_title: payload.title,
-      p_content: payload.content,
-      p_image_urls: payload.image_urls,
-      p_lat: payload.lat,
-      p_lng: payload.lng,
-      p_address: payload.address,
-    });
+    const { data: insertedRow, error: insErr } = await admin
+      .from('board_posts')
+      .insert({
+        user_id: botUserId,
+        board_type: payload.board_type,
+        title: payload.title,
+        content: payload.content,
+        image_urls: payload.image_urls,
+        lat: payload.lat,
+        lng: payload.lng,
+        address: payload.address,
+      })
+      .select('id')
+      .single();
     insertMs = Math.round(performance.now() - tIns0);
 
     if (insErr) {
@@ -147,15 +151,15 @@ async function runBoardPostsShadowQa(
       };
     }
 
-    if (!id) {
+    if (!insertedRow?.id) {
       logShadowFailure('insert', 'insert_returned_null', { insertMs });
       return { ok: false, step: 'insert', error: 'insert_failed', httpStatus: 500, ms: { insert: insertMs } };
     }
 
-    postId = String(id);
+    postId = String(insertedRow.id);
 
     const tSel0 = performance.now();
-    const { data: row, error: selErr } = await admin
+    const { data: selRow, error: selErr } = await admin
       .from('board_posts')
       .select('id,user_id,board_type,title')
       .eq('id', postId)
@@ -164,38 +168,48 @@ async function runBoardPostsShadowQa(
 
     if (selErr) {
       logShadowFailure('select', selErr.message, { postId, selectMs, code: selErr.code });
-    } else if (!row) {
+    } else if (!selRow) {
       logShadowFailure('select', 'row_not_found_after_insert', { postId, selectMs });
-    } else if (row.user_id !== botUserId || row.board_type !== payload.board_type || row.title !== payload.title) {
+    } else if (
+      selRow.user_id !== botUserId ||
+      selRow.board_type !== payload.board_type ||
+      selRow.title !== payload.title
+    ) {
       logShadowFailure('select', 'row_mismatch', {
         postId,
         selectMs,
         expected: { user_id: botUserId, board_type: payload.board_type, title: payload.title },
-        got: { user_id: row.user_id, board_type: row.board_type, title: row.title },
+        got: {
+          user_id: selRow.user_id,
+          board_type: selRow.board_type,
+          title: selRow.title,
+        },
       });
     }
 
     const selectOk =
       !selErr &&
-      !!row &&
-      row.user_id === botUserId &&
-      row.board_type === payload.board_type &&
-      row.title === payload.title;
+      !!selRow &&
+      selRow.user_id === botUserId &&
+      selRow.board_type === payload.board_type &&
+      selRow.title === payload.title;
 
     const tDel0 = performance.now();
-    const { data: deleted, error: delErr } = await admin.rpc('board_posts_delete_for_service', {
-      p_post_id: postId,
-      p_user_id: botUserId,
-    });
+    const { data: delRows, error: delErr } = await admin
+      .from('board_posts')
+      .delete()
+      .eq('id', postId)
+      .eq('user_id', botUserId)
+      .select('id');
     deleteMs = Math.round(performance.now() - tDel0);
 
     if (delErr) {
       logShadowFailure('delete', delErr.message, { postId, deleteMs, code: delErr.code });
-    } else if (!deleted) {
-      logShadowFailure('delete', 'delete_returned_false_orphan_risk', { postId, deleteMs });
+    } else if (!delRows?.length) {
+      logShadowFailure('delete', 'delete_returned_zero_rows_orphan_risk', { postId, deleteMs });
     }
 
-    const deleteOk = !delErr && deleted === true;
+    const deleteOk = !delErr && Array.isArray(delRows) && delRows.length > 0;
     const totalMs = Math.round(performance.now() - t0);
     const slaBreach = totalMs >= SLA_MS;
     if (slaBreach) {
@@ -231,10 +245,7 @@ async function runBoardPostsShadowQa(
 
     if (postId) {
       try {
-        await admin.rpc('board_posts_delete_for_service', {
-          p_post_id: postId,
-          p_user_id: botUserId,
-        });
+        await admin.from('board_posts').delete().eq('id', postId).eq('user_id', botUserId);
       } catch {
         console.error('[shadow-qa] cleanup delete after exception failed', { postId });
       }
@@ -329,6 +340,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const { payload } = parsed;
   const admin = createServiceRoleClient();
 
+  /** board_posts 쓰기 E2E가 최우선 — 성공한 뒤에만 HTML 순찰 */
   let uiPatrol: Awaited<ReturnType<typeof runShadowQaUiPatrol>> = { ok: false, routes: [] };
   let board: BoardShadowQaResult = {
     ok: false,
@@ -341,14 +353,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (cycle > 0) {
       await sleep(SHADOW_QA_CYCLE_RETRY_GAP_MS * cycle);
     }
-    uiPatrol = await runShadowQaUiPatrol(patrolOrigin);
-    if (!uiPatrol.ok) {
+    board = await runBoardPostsShadowQa(admin, botUserId, payload);
+    if (!board.ok) {
       continue;
     }
-    board = await runBoardPostsShadowQa(admin, botUserId, payload);
-    if (board.ok) {
+    uiPatrol = await runShadowQaUiPatrol(patrolOrigin);
+    if (uiPatrol.ok) {
       break;
     }
+  }
+
+  if (!board.ok) {
+    console.error('[shadow-qa] FAIL step=board_write_e2e', {
+      step: board.step,
+      error: board.error,
+      attempts: SHADOW_QA_CYCLE_MAX_ATTEMPTS,
+    });
   }
 
   if (!uiPatrol.ok) {
@@ -373,10 +393,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       },
     });
   } else {
-    const failReason = !uiPatrol.ok
-      ? 'shadow_qa_ui_patrol_failed'
-      : !board.ok
-        ? resolveBoardFailureReason(board)
+    const failReason = !board.ok
+      ? resolveBoardFailureReason(board)
+      : !uiPatrol.ok
+        ? 'shadow_qa_ui_patrol_failed'
         : 'shadow_qa_unknown';
 
     await registerFailureAndSelfHeal({

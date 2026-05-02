@@ -35,6 +35,13 @@ type OmniChaosMonkey = {
   skipped?: boolean;
 };
 
+type OmniMotherbrain = {
+  shield_pulse?: boolean;
+  all_green?: boolean;
+  defense_success_rate?: number | null;
+  chaos_skipped?: boolean;
+};
+
 type OmniPack = { ok: boolean; status: number; json: unknown };
 
 async function omniFetcher(url: string): Promise<OmniPack> {
@@ -51,13 +58,13 @@ async function omniFetcher(url: string): Promise<OmniPack> {
 function chaosShieldTooltip(locale: Locale, pulse: boolean, rate?: number): string {
   if (pulse) {
     return locale === 'th'
-      ? '🛡️ โล่ Chaos ทำงาน — บริการไม่หยุดชะงัก'
-      : '🛡️ 카오스 방어막 가동 중: 무중단 서비스 유지';
+      ? '🛡️ Motherbrain — การป้องกัน UI/เซิร์ฟเวอร์และการฟื้นฟูครบถ้วน'
+      : '🛡️ 마더브레인: UI·서버 방어·자가 치유 파이프라인 전 구간 정상(블루 펄스)';
   }
   const pct = rate != null ? `${Math.round(rate * 100)}%` : '—';
   return locale === 'th'
-    ? `การฝึก Chaos — อัตราป้องกันล่าสุด ${pct} (เมื่อซ่อมตัวเองสำเร็จ โล่จะเปล่งแสง)`
-    : `카오스 훈련 최근 방어율 ${pct} — 자가 복구 시 방패에 블루 펄스가 돕니다.`;
+    ? `Motherbrain รอการตรวจ — Chaos ล่าสุด ${pct} (ทุกระบบเขียวเมื่อโล่เรืองแสง)`
+    : `마더브레인 대기 — 카오스 방어율 ${pct}. 옴니 전 구간 정상일 때만 방패 블루 펄스.`;
 }
 
 function parseOmniErrors(body: unknown, httpStatus: number): string[] {
@@ -79,8 +86,8 @@ function omniLedTooltip(
   }
   if (phase === 'ok') {
     return locale === 'th'
-      ? 'System All Green: ทุกระบบปกติ (สภาพอากาศ · DB · Biz · Shadow QA · Chaos)'
-      : 'System All Green: 날씨 · DB · 크론 · 쉐도우 QA · 카오스 훈련 포함 전 구간 정상';
+      ? 'System All Green: สภาพอากาศ · DB · Biz · Shadow QA · Chaos · UI · Motherbrain'
+      : 'System All Green: 날씨 · DB · 크론 · 쉐도우 QA(UI 순찰) · 카오스 · UI 인시던트 · 마더브레인 방패';
   }
   if (isAdmin && errors.length > 0) {
     return `Pipeline 경고 (관리자 전용): ${errors.join(' · ')}`;
@@ -120,20 +127,22 @@ export default function PortalWeatherWidget({
     dedupingInterval: 8000,
   });
 
-  const { omniPhase, omniErrors, chaosRadar } = useMemo(() => {
+  const { omniPhase, omniErrors, chaosRadar, motherbrain } = useMemo(() => {
     if (!omniPack) {
       return {
         omniPhase: 'neutral' as OmniLedPhase,
         omniErrors: [] as string[],
         chaosRadar: null as OmniChaosMonkey | null,
+        motherbrain: null as OmniMotherbrain | null,
       };
     }
     const { ok, status, json } = omniPack;
     const checks =
       json && typeof json === 'object' && !Array.isArray(json)
-        ? (json as { checks?: { chaos_monkey?: OmniChaosMonkey } }).checks
+        ? (json as { checks?: { chaos_monkey?: OmniChaosMonkey; motherbrain?: OmniMotherbrain } }).checks
         : undefined;
     const chaos = checks?.chaos_monkey ?? null;
+    const motherbrain = checks?.motherbrain ?? null;
 
     const healthy =
       ok &&
@@ -143,12 +152,18 @@ export default function PortalWeatherWidget({
       (json as { all_systems_go?: boolean }).all_systems_go === true;
 
     if (healthy) {
-      return { omniPhase: 'ok' as const, omniErrors: [] as string[], chaosRadar: chaos };
+      return {
+        omniPhase: 'ok' as const,
+        omniErrors: [] as string[],
+        chaosRadar: chaos,
+        motherbrain,
+      };
     }
     return {
       omniPhase: 'error' as const,
       omniErrors: parseOmniErrors(json, status),
       chaosRadar: chaos,
+      motherbrain,
     };
   }, [omniPack]);
 
@@ -176,8 +191,9 @@ export default function PortalWeatherWidget({
         ? '시스템 경고'
         : '시스템 상태 확인 중';
 
-  const shieldPulse = chaosRadar?.shield_pulse === true;
-  const chaosRate = chaosRadar?.defense_success_rate;
+  const shieldPulse = motherbrain?.shield_pulse === true;
+  const chaosRate =
+    motherbrain?.defense_success_rate ?? chaosRadar?.defense_success_rate ?? undefined;
   const shieldTitle = useMemo(
     () => chaosShieldTooltip(locale, shieldPulse, chaosRate),
     [locale, shieldPulse, chaosRate],

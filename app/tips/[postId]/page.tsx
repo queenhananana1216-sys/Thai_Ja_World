@@ -95,21 +95,24 @@ export default async function TipsTeaserPage({ params }: PageProps) {
 
   return (
     <div className="page-body board-page">
-      <p style={{ margin: '0 0 12px' }}>
-        <Link href="/tips" style={{ fontSize: '0.85rem', color: 'var(--tj-link)' }}>
+      <p className="mb-3">
+        <Link
+          href="/tips"
+          className="inline-flex text-sm font-semibold text-amber-200 transition hover:text-amber-100 hover:underline"
+        >
           ← {d.tips.backToList}
         </Link>
       </p>
-      <article className="tips-teaser card" style={{ padding: 22, maxWidth: 720 }}>
-        <h1 className="board-title" style={{ marginTop: 0 }}>
+      <article className="tips-teaser max-w-[720px] rounded-xl border border-gray-700 bg-gray-800/50 p-6 text-gray-200 backdrop-blur-md sm:p-8">
+        <h1 className="mb-4 mt-0 text-2xl font-bold leading-snug tracking-tight text-white sm:text-3xl">
           {tipRow.title}
         </h1>
         {tipRow.content?.trim() ? (
-          <p style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: 'var(--tj-ink)', fontSize: '0.95rem' }}>
+          <p className="whitespace-pre-wrap text-[0.95rem] leading-[1.7] text-slate-100">
             {tipRow.content}
           </p>
         ) : tipRow.excerpt ? (
-          <p style={{ whiteSpace: 'pre-wrap', lineHeight: 1.65, color: 'var(--tj-ink)', fontSize: '0.95rem' }}>
+          <p className="whitespace-pre-wrap text-[0.95rem] leading-[1.65] text-slate-100">
             {tipRow.excerpt}
           </p>
         ) : null}

@@ -2,6 +2,7 @@
 
 /**
  * 전역 블랙박스: 루트 레이아웃까지 터질 때 글라스모피즘 복구 UI + UI 인시던트 리포트.
+ * 마더브레인: SystemRecoveringErrorView 가 POST /api/health/motherbrain-heal 로 ISR 무효화 후 최대 3회 자동 재시도(reset).
  */
 import { SystemRecoveringErrorView } from '@/components/system/SystemRecoveringErrorView';
 

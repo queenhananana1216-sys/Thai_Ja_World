@@ -76,7 +76,10 @@ export async function notifyOwnerOmniCritical(params: {
     return;
   }
 
-  const kindLabel = kind === 'shadow_qa' ? '쉐도우 QA(백엔드·board_posts)' : 'UI 렌더링(클라이언트 Error Boundary)';
+  const kindLabel =
+    kind === 'shadow_qa'
+      ? '쉐도우 QA(board_posts·프론트 순찰)'
+      : 'UI 렌더링(클라이언트 Error Boundary)';
   const body = [
     OWNER_OMNI_CRITICAL_PREFIX,
     '',

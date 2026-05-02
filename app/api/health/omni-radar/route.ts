@@ -121,10 +121,31 @@ export async function GET(): Promise<NextResponse> {
     checkUiIncidentRadar(),
   ]);
 
-  const checks = { database, cron_radar, weather, shadow_qa, chaos_monkey, ui_surface };
   const chaosOk = chaos_monkey.ok || chaos_monkey.skipped === true;
-  const allOk =
-    database.ok && cron_radar.ok && weather.ok && shadow_qa.ok && chaosOk && ui_surface.ok;
+  const motherbrainDefenseHealthy =
+    database.ok &&
+    cron_radar.ok &&
+    weather.ok &&
+    shadow_qa.ok &&
+    chaosOk &&
+    ui_surface.ok;
+
+  const checks = {
+    database,
+    cron_radar,
+    weather,
+    shadow_qa,
+    chaos_monkey,
+    ui_surface,
+    motherbrain: {
+      shield_pulse: motherbrainDefenseHealthy,
+      all_green: motherbrainDefenseHealthy,
+      defense_success_rate: chaos_monkey.defense_success_rate ?? null,
+      chaos_skipped: chaos_monkey.skipped === true,
+    },
+  };
+
+  const allOk = motherbrainDefenseHealthy;
 
   if (allOk) {
     return NextResponse.json({

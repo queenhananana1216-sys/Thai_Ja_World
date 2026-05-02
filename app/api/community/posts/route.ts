@@ -1,8 +1,11 @@
 /**
  * POST /api/community/posts
+ * (글쓰기 UI는 `/community/boards/new` — 별도 `boards/route.ts` 없음)
  * Authorization: Bearer <supabase access_token>
  * Body: { category, title, content, image_urls: string[] }
  * 게시글은 service role로만 INSERT (모더레이션·벤 후)
+ *
+ * Node 런타임 고정: Edge 최적화 회피하여 Supabase·모더레이션 파이프라인 안정화.
  */
 import { NextResponse } from 'next/server';
 import { createModeratedPost } from '@/lib/moderation/postSubmissionPipeline';
@@ -10,6 +13,7 @@ import { recordQuestProgress } from '@/lib/quests/progress';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   const auth = req.headers.get('authorization') ?? '';

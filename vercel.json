@@ -71,6 +71,10 @@
     {
       "path": "/api/cron/chaos-monkey",
       "schedule": "40 4 * * *"
+    },
+    {
+      "path": "/api/cron/motherbrain-chaos-train",
+      "schedule": "50 4 * * *"
     }
   ]
 }

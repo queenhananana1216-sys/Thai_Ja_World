@@ -18,6 +18,14 @@ import {
 } from '@/lib/db/dbErrorDefense';
 import { createBrowserClient } from '@/lib/supabase/client';
 
+/** 첫 시도 후 최대 재시도 횟수 (1초 간격, 백그라운드) */
+const POST_SUBMIT_MAX_RETRIES = 3;
+const POST_SUBMIT_RETRY_DELAY_MS = 1000;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function safeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
 }
@@ -56,6 +64,27 @@ export default function NewPostForm({
     if (c === 'schema_sync' || c === 'SCHEMA_SYNC') return true;
     const msg = p.message?.trim();
     return Boolean(msg && shouldMaskRawDbError(msg));
+  }
+
+  function isTransientPostFailure(
+    res: Response | null,
+    payload: { code?: string; message?: string },
+  ): boolean {
+    if (!res) return true;
+    if (res.status === 502 || res.status === 503 || res.status === 504 || res.status === 429) return true;
+    return isSchemaSyncPayload(payload);
+  }
+
+  async function firePgrstReloadHeal(accessToken: string): Promise<void> {
+    try {
+      await fetch('/api/community/posts/pgrst-reload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        keepalive: true,
+      });
+    } catch {
+      /* ignore — 사용자에게 노출하지 않음 */
+    }
   }
 
   async function onSubmit(e: FormEvent) {
@@ -116,49 +145,88 @@ export default function NewPostForm({
         return;
       }
 
-      const res = await fetch('/api/community/posts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          category,
-          title: title.trim(),
-          content: content.trim(),
-          image_urls: uploadUrls,
-          latitude,
-          longitude,
-          location_name: locationName.trim() || null,
-          ...(op ? { owner_password: op } : {}),
-        }),
+      const requestBody = JSON.stringify({
+        category,
+        title: title.trim(),
+        content: content.trim(),
+        image_urls: uploadUrls,
+        latitude,
+        longitude,
+        location_name: locationName.trim() || null,
+        ...(op ? { owner_password: op } : {}),
       });
 
-      let payload: { id?: string; code?: string; message?: string } = {};
-      try {
-        payload = (await res.json()) as typeof payload;
-      } catch {
-        /* ignore */
+      let lastPayload: { id?: string; code?: string; message?: string } = {};
+      let exhaustedAfterTransient = false;
+
+      for (let attempt = 0; attempt <= POST_SUBMIT_MAX_RETRIES; attempt++) {
+        if (attempt > 0) {
+          await delay(POST_SUBMIT_RETRY_DELAY_MS);
+        }
+
+        try {
+          const res = await fetch('/api/community/posts', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: requestBody,
+          });
+
+          let payload: { id?: string; code?: string; message?: string } = {};
+          try {
+            payload = (await res.json()) as typeof payload;
+          } catch {
+            /* ignore */
+          }
+          lastPayload = payload;
+
+          if (res.ok && payload.id) {
+            router.push(`/community/boards/${payload.id}`);
+            router.refresh();
+            return;
+          }
+
+          if (!isTransientPostFailure(res, payload)) {
+            setError(
+              payload.message?.trim()
+                ? payload.message
+                : boardModMessage(board, payload.code),
+            );
+            return;
+          }
+
+          if (attempt === POST_SUBMIT_MAX_RETRIES) {
+            exhaustedAfterTransient = true;
+            break;
+          }
+        } catch {
+          lastPayload = {};
+          if (attempt === POST_SUBMIT_MAX_RETRIES) {
+            exhaustedAfterTransient = true;
+            break;
+          }
+        }
       }
 
-      if (!res.ok) {
-        if (isSchemaSyncPayload(payload)) {
-          scheduleSoftNavigationRefresh(() => router.refresh());
-          toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
-          fireDbErrorRadar('NewPostForm:submit');
-          return;
-        }
-        setError(
-          payload.message?.trim()
-            ? payload.message
-            : boardModMessage(board, payload.code),
-        );
+      if (exhaustedAfterTransient) {
+        void firePgrstReloadHeal(accessToken);
+      }
+
+      if (isSchemaSyncPayload(lastPayload)) {
+        scheduleSoftNavigationRefresh(() => router.refresh());
+        toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
+        fireDbErrorRadar('NewPostForm:submit_retry_exhausted');
         return;
       }
-      if (payload.id) {
-        router.push(`/community/boards/${payload.id}`);
-        router.refresh();
-      }
+
+      setError(
+        lastPayload.message?.trim()
+          ? lastPayload.message
+          : '네트워크 또는 브라우저 오류로 요청이 끝나지 않았습니다. 다시 시도해 주세요.',
+      );
+      fireDbErrorRadar('NewPostForm:submit_retry_exhausted');
     } catch {
       setError('네트워크 또는 브라우저 오류로 요청이 끝나지 않았습니다. 다시 시도해 주세요.');
       fireDbErrorRadar('NewPostForm:submit_throw');

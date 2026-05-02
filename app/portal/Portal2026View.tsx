@@ -15,7 +15,7 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import { localizeQuestFeedText, stripQuestFeedWeatherClutter } from '@/lib/quests/questFeedLocale';
 import PortalLocalDemoWingRolling from './PortalLocalDemoWingRolling';
-import PortalMobileQuickMenu from './PortalMobileQuickMenu';
+import PortalQuickMenu from './PortalQuickMenu';
 import PortalQuestWriteCta from './PortalQuestWriteCta';
 import QuickAppLauncher from './QuickAppLauncher';
 import PortalWeatherWidget from './PortalWeatherWidget';
@@ -573,7 +573,7 @@ export default function Portal2026View({
         </aside>
 
         <section className="min-h-0 min-w-0 space-y-1.5">
-          <PortalMobileQuickMenu locale={locale} isLoggedIn={isLoggedIn} />
+          <PortalQuickMenu locale={locale} isLoggedIn={isLoggedIn} />
           <div className="hidden min-[769px]:block">
             <div className={styles.boardGrid}>
             {copy.boardColumns

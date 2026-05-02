@@ -43,29 +43,46 @@ function quickMenuLabel(locale: Locale, key: string, fallbackTitle: string): str
   return ko[key] ?? fallbackTitle;
 }
 
-type PortalMobileQuickMenuProps = {
+/** 포털 홈 중앙 상단 — 제보함을 맨 앞에 두고 PC·모바일 동일 그리드 */
+function orderedQuickColumns(copy: ReturnType<typeof getPortal2026Copy>) {
+  const cols = copy.boardColumns;
+  const report = cols.find((c) => c.key === 'report');
+  const rest = cols.filter((c) => c.key !== 'report');
+  return report ? [report, ...rest] : rest;
+}
+
+type PortalQuickMenuProps = {
   locale: Locale;
   isLoggedIn: boolean;
 };
 
-/** 모바일 홈 상단 — 원형 아이콘 + 짧은 라벨 퀵 메뉴 (PC에서는 숨김) */
-export default function PortalMobileQuickMenu({ locale, isLoggedIn }: PortalMobileQuickMenuProps) {
+export default function PortalQuickMenu({ locale, isLoggedIn }: PortalQuickMenuProps) {
   const copy = getPortal2026Copy(locale);
   const aria =
     locale === 'th' ? 'เมนูด่วนโพร์ทัล' : locale === 'ko' ? '포털 퀵 메뉴' : 'Portal quick menu';
 
+  const reportIconClasses =
+    'flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-rose-400/55 bg-gradient-to-br from-rose-950/75 via-slate-800/95 to-slate-900/90 text-[1.35rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_0_1px_rgba(251,113,133,0.15),0_10px_28px_rgba(225,29,72,0.22)]';
+
   return (
-    <nav aria-label={aria} className="mb-3 block md:hidden">
-      <div className={`${styles.glassBlue} px-3 py-4`}>
-        <ul className="grid grid-cols-4 gap-4">
-          {copy.boardColumns.map((board) => {
+    <nav aria-label={aria} className="mb-3">
+      <div className={`${styles.glassBlue} px-3 py-3 md:py-3.5`}>
+        <ul className="grid grid-cols-4 gap-3 md:grid-cols-5">
+          {orderedQuickColumns(copy).map((board) => {
             if (board.key === 'fxRate') {
               const label = quickMenuLabel(locale, board.key, board.title);
               return <ThbKrwQuickMenuTile key={board.key} locale={locale} label={label} />;
             }
             if (board.key === 'report') {
               const label = quickMenuLabel(locale, board.key, board.title);
-              return <ReportQuickMenuTile key={board.key} locale={locale} label={label} />;
+              return (
+                <ReportQuickMenuTile
+                  key={board.key}
+                  locale={locale}
+                  label={label}
+                  iconClassName={reportIconClasses}
+                />
+              );
             }
             const href = board.moreHref?.trim() ? board.moreHref : '/boards';
             const icon = ICON_BY_KEY[board.key] ?? '📌';

@@ -15,10 +15,12 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import { localizeQuestFeedText, stripQuestFeedWeatherClutter } from '@/lib/quests/questFeedLocale';
 import PortalLocalDemoWingRolling from './PortalLocalDemoWingRolling';
+import PortalMobileQuickMenu from './PortalMobileQuickMenu';
 import PortalQuestWriteCta from './PortalQuestWriteCta';
 import QuickAppLauncher from './QuickAppLauncher';
 import PortalWeatherWidget from './PortalWeatherWidget';
 import styles from './portal-2026.module.css';
+import { cn } from '@/lib/utils';
 
 /** processed_news.created_at → 상대 시간 (SSR·클라 동일 규칙) */
 function formatPortalNewsAge(iso: string | null | undefined, locale: Locale): string {
@@ -344,7 +346,7 @@ function LiveFeedList({
   const safe = normalizeLines(lines ?? []);
   if (safe.length === 0) return <EmptyState message={emptyMessage} />;
   return (
-    <ul className="max-h-[min(24rem,55vh)] min-h-0 overflow-y-auto overscroll-contain px-2 py-1 md:max-h-[280px]">
+    <ul className="max-h-[min(28rem,62vh)] min-h-0 space-y-2 overflow-y-auto overscroll-contain px-2 py-2 md:max-h-[280px] md:space-y-0 md:py-1">
       {safe.map((item, idx) => {
         const hot = isLiveGamificationLine(item);
         const titleLoc = localizeQuestFeedText(item?.title ?? '', locale, phraseMap);
@@ -352,30 +354,41 @@ function LiveFeedList({
         return (
           <li
             key={item?.id ? String(item.id) : `live-${idx}`}
-            className={`border-b border-slate-800/90 py-1.5 text-base leading-snug last:border-b-0 ${
-              hot ? styles.liveFeedRowHot : 'text-gray-100'
-            }`}
+            className={cn(
+              'rounded-lg bg-gray-800/40 p-3 text-base leading-relaxed max-[768px]:shadow-sm',
+              'min-[769px]:rounded-none min-[769px]:border-b min-[769px]:border-slate-800/90 min-[769px]:bg-transparent min-[769px]:p-0 min-[769px]:py-1.5 min-[769px]:shadow-none min-[769px]:last:border-b-0',
+              hot &&
+                'max-[768px]:bg-gradient-to-br max-[768px]:from-amber-950/40 max-[768px]:to-gray-800/40 max-[768px]:ring-1 max-[768px]:ring-amber-400/20',
+              hot ? cn(styles.liveFeedRowHot, 'min-[769px]:text-gray-100') : 'text-gray-100',
+            )}
           >
-          <GuestGateLink
-            href={item?.href?.trim() ? item.href : '/boards'}
-            isLoggedIn={isLoggedIn}
-            className={`flex min-h-11 min-w-0 flex-col justify-center overflow-hidden hover:text-amber-200 ${hot ? 'px-0.5' : ''}`}
-          >
-            <span
-              className={`line-clamp-2 break-words ${hot ? 'font-semibold text-white' : 'font-normal text-gray-100'}`}
+            <GuestGateLink
+              href={item?.href?.trim() ? item.href : '/boards'}
+              isLoggedIn={isLoggedIn}
+              className={cn(
+                'flex min-h-12 min-w-0 flex-col justify-center gap-1 overflow-hidden hover:text-amber-200 md:min-h-11',
+                hot ? 'min-[769px]:px-0.5' : '',
+              )}
             >
-              {hot ? splitLiveHotKeywords(titleLoc, locale) : titleLoc}
-            </span>
-            {subLoc ? (
               <span
-                className={`mt-0.5 block line-clamp-2 break-words text-sm ${
-                  hot ? 'font-medium text-gray-200' : 'text-gray-200'
-                }`}
+                className={cn(
+                  'line-clamp-2 break-words text-base leading-snug',
+                  hot ? 'font-semibold text-white' : 'font-normal text-gray-100',
+                )}
               >
-                {hot ? splitLiveHotKeywords(subLoc, locale) : subLoc}
+                {hot ? splitLiveHotKeywords(titleLoc, locale) : titleLoc}
               </span>
-            ) : null}
-          </GuestGateLink>
+              {subLoc ? (
+                <span
+                  className={cn(
+                    'block line-clamp-2 break-words text-base leading-relaxed text-gray-200 md:text-sm',
+                    hot ? 'font-medium' : '',
+                  )}
+                >
+                  {hot ? splitLiveHotKeywords(subLoc, locale) : subLoc}
+                </span>
+              ) : null}
+            </GuestGateLink>
           </li>
         );
       })}
@@ -560,7 +573,9 @@ export default function Portal2026View({
         </aside>
 
         <section className="min-h-0 min-w-0 space-y-1.5">
-          <div className={`${styles.boardGrid}`}>
+          <PortalMobileQuickMenu locale={locale} isLoggedIn={isLoggedIn} />
+          <div className="hidden min-[769px]:block">
+            <div className={styles.boardGrid}>
             {copy.boardColumns.map((board) => {
               const colLines = linesByKey?.[board.key] ?? [];
               const hasPosts = normalizeLines(colLines).length > 0;
@@ -599,10 +614,11 @@ export default function Portal2026View({
                 </article>
               );
             })}
+            </div>
           </div>
 
           <section className={`${styles.glassBlue} overflow-hidden`}>
-            <header className="border-b border-slate-700/70 px-2 py-2 text-lg font-black text-blue-200">
+            <header className="border-b border-slate-700/70 px-3 py-3 text-lg font-black text-blue-200 max-[768px]:text-xl">
               {copy.liveFeedTitle}
             </header>
             <LiveFeedList

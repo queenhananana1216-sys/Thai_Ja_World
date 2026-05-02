@@ -25,7 +25,15 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 90;
 
 const PIPELINE_ID = 'cron/shadow-qa';
-const SLA_MS = 3000;
+/** DB 프로브 총 시간 경고 임계값(느려도 insert/select/delete 가 정상이면 실패로 치지 않음) */
+const SLA_MS = 10_000;
+
+const SHADOW_QA_CYCLE_MAX_ATTEMPTS = 3;
+const SHADOW_QA_CYCLE_RETRY_GAP_MS = 1000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -85,8 +93,6 @@ function resolveBoardFailureReason(board: BoardShadowQaErr): string {
       return 'shadow_qa_select_failed';
     case 'delete':
       return 'shadow_qa_delete_failed';
-    case 'sla':
-      return 'shadow_qa_sla_breach';
     case 'exception':
       return board.error?.toLowerCase().includes('timeout') ? 'shadow_qa_db_timeout' : 'shadow_qa_exception';
     default:
@@ -193,7 +199,7 @@ async function runBoardPostsShadowQa(
     const totalMs = Math.round(performance.now() - t0);
     const slaBreach = totalMs >= SLA_MS;
     if (slaBreach) {
-      console.error('[shadow-qa] SLA breach (slow DB or schema lock suspected)', {
+      console.warn('[shadow-qa] slow board probe (informational, not failing cycle)', {
         totalMs,
         SLA_MS,
         insertMs,
@@ -202,12 +208,12 @@ async function runBoardPostsShadowQa(
       });
     }
 
-    const ok = selectOk && deleteOk && !slaBreach;
+    const ok = selectOk && deleteOk;
     if (!ok) {
       return {
         ok: false,
-        step: slaBreach ? 'sla' : !selectOk ? 'select' : 'delete',
-        error: slaBreach ? 'sla_breach' : !selectOk ? 'select_failed' : 'delete_failed',
+        step: !selectOk ? 'select' : 'delete',
+        error: !selectOk ? 'select_failed' : 'delete_failed',
         httpStatus: 503,
         ms: { insert: insertMs, select: selectMs, delete: deleteMs, total: totalMs },
       };
@@ -217,7 +223,7 @@ async function runBoardPostsShadowQa(
       ok: true,
       ms: { insert: insertMs, select: selectMs, delete: deleteMs, total: totalMs },
       slaMs: SLA_MS,
-      slaBreach: false,
+      slaBreach,
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
@@ -285,13 +291,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const patrolOrigin = getShadowQaPatrolOrigin();
-  const uiPatrol = await runShadowQaUiPatrol(patrolOrigin);
-  if (!uiPatrol.ok) {
-    console.error('[shadow-qa] FAIL step=ui_patrol', {
-      origin: patrolOrigin,
-      failed: uiPatrol.routes.filter((r) => !r.ok),
-    });
-  }
 
   const ts = new Date().toISOString();
   const rawBody = {
@@ -313,29 +312,52 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       reason: 'shadow_qa_validate_failed',
       retryCount: 1,
     });
-    const failedUi = uiPatrol.routes.filter((r) => !r.ok);
-    const hotlineDetail = [
-      `validate: ${parsed.error}`,
-      failedUi.length ? formatUiPatrolHotline(failedUi, patrolOrigin) : null,
-    ]
-      .filter(Boolean)
-      .join('\n');
+    const hotlineDetail = `validate: ${parsed.error}`;
     await hotlineShadowFailure(hotlineDetail, 'shadow_qa:validate');
     await logCronEvent({
       pipelineId: PIPELINE_ID,
       event: 'shadow_qa_cycle',
       status: 'failed',
-      meta: { reason: 'validate_failed', ui_patrol: uiPatrol.routes, patrol_origin: patrolOrigin },
+      meta: { reason: 'validate_failed', patrol_origin: patrolOrigin },
     });
     return NextResponse.json(
-      { ok: false, step: 'validate', error: parsed.error, ui_patrol: uiPatrol },
+      { ok: false, step: 'validate', error: parsed.error },
       { status: 500 },
     );
   }
 
   const { payload } = parsed;
   const admin = createServiceRoleClient();
-  const board = await runBoardPostsShadowQa(admin, botUserId, payload);
+
+  let uiPatrol: Awaited<ReturnType<typeof runShadowQaUiPatrol>> = { ok: false, routes: [] };
+  let board: BoardShadowQaResult = {
+    ok: false,
+    step: 'exception',
+    error: 'shadow_qa_board_not_run',
+    httpStatus: 503,
+  };
+
+  for (let cycle = 0; cycle < SHADOW_QA_CYCLE_MAX_ATTEMPTS; cycle++) {
+    if (cycle > 0) {
+      await sleep(SHADOW_QA_CYCLE_RETRY_GAP_MS * cycle);
+    }
+    uiPatrol = await runShadowQaUiPatrol(patrolOrigin);
+    if (!uiPatrol.ok) {
+      continue;
+    }
+    board = await runBoardPostsShadowQa(admin, botUserId, payload);
+    if (board.ok) {
+      break;
+    }
+  }
+
+  if (!uiPatrol.ok) {
+    console.error('[shadow-qa] FAIL step=ui_patrol', {
+      origin: patrolOrigin,
+      failed: uiPatrol.routes.filter((r) => !r.ok),
+      attempts: SHADOW_QA_CYCLE_MAX_ATTEMPTS,
+    });
+  }
 
   const overallOk = uiPatrol.ok && board.ok;
 

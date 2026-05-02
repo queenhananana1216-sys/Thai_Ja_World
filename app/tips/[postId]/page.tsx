@@ -118,7 +118,8 @@ export default async function TipsTeaserPage({ params }: PageProps) {
         ) : null}
         <PostReactionsPanel postId={postId} loginNextPath={path} />
       </article>
-      <div style={{ maxWidth: 720, marginTop: 14 }}>
+
+      <div id="post-comments" className="mt-5 w-full max-w-[720px]">
         <PostComments
           postId={postId}
           initial={comments}

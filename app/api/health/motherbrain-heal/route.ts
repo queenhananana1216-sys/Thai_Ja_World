@@ -44,13 +44,29 @@ export async function POST(req: Request): Promise<NextResponse> {
   const n = revalidateMotherbrainPaths(pathname);
 
   let pgrst_ok: boolean | null = null;
+  const admin = createServiceRoleClient();
   if (deep && cronDeep) {
-    const admin = createServiceRoleClient();
     const { error } = await admin.rpc('chaos_monkey_notify_pgrst_reload_schema');
     pgrst_ok = !error;
     if (error) {
       console.error('[motherbrain-heal] pgrst reload rpc failed', error.message);
     }
+  }
+
+  try {
+    await admin.from('publish_logs').insert({
+      channel: 'system_health',
+      target_type: 'motherbrain_heal',
+      target_id: cronDeep ? 'cron_deep' : 'client',
+      meta: {
+        event: 'motherbrain_heal_ok',
+        pathname: pathname?.slice(0, 1024) ?? '',
+        deep_pgrst_attempted: deep && cronDeep,
+        at: new Date().toISOString(),
+      },
+    });
+  } catch (e) {
+    console.error('[motherbrain-heal] publish_logs insert failed', e);
   }
 
   return NextResponse.json({

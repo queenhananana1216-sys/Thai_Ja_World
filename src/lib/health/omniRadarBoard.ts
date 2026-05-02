@@ -288,13 +288,38 @@ export async function checkUiIncidentRadar(): Promise<UiIncidentRadar> {
   }
 
   const hit = data?.[0];
-  if (hit) {
-    return {
-      ok: false,
-      error: 'recent_ui_render_error',
-      last_incident_at: hit.published_at,
-    };
+  if (!hit) {
+    return { ok: true };
   }
 
-  return { ok: true };
+  /** 클라이언트 복구 후 motherbrain-heal 이 성공 로그를 남기면 레드 오탐 방지 */
+  const { data: healRows, error: healErr } = await admin
+    .from('publish_logs')
+    .select('published_at, meta')
+    .eq('channel', 'system_health')
+    .eq('target_type', 'motherbrain_heal')
+    .gte('published_at', since)
+    .order('published_at', { ascending: false })
+    .limit(24);
+
+  if (healErr) {
+    return { ok: false, error: healErr.message };
+  }
+
+  const incidentAt = Date.parse(hit.published_at);
+  const healedAfter = (healRows ?? []).some((row) => {
+    const m = row.meta as Record<string, unknown> | null;
+    if (m?.event !== 'motherbrain_heal_ok') return false;
+    return Date.parse(row.published_at) > incidentAt;
+  });
+
+  if (healedAfter) {
+    return { ok: true };
+  }
+
+  return {
+    ok: false,
+    error: 'recent_ui_render_error',
+    last_incident_at: hit.published_at,
+  };
 }

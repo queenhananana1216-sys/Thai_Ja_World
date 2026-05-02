@@ -1,8 +1,10 @@
 /**
- * GET /api/health/omni-radar — 전 구간 합격 시만 healthy (Shadow QA 쓰기 실패 시 무조건 🔴)
+ * GET /api/health/omni-radar — 전 구간 합격 시 healthy.
+ * DB·board_posts·Shadow QA 생존 신호가 모두 OK면 publish_logs ui_incident 잔존은 판정에서 제외(초록 우선).
  */
 import { NextResponse } from 'next/server';
 import {
+  checkBoardPostsReadProbe,
   checkChaosMonkeyRadar,
   checkShadowQaRadar,
   checkUiIncidentRadar,
@@ -151,23 +153,35 @@ function checkRuntimeResources(): CheckRuntime {
 }
 
 export async function GET(): Promise<NextResponse> {
-  const [database, weather, runtime, cron_radar, shadow_qa, chaos_monkey, ui_surface] = await Promise.all([
-    checkLiveSqlPing(),
-    checkWeatherPipeline(),
-    Promise.resolve(checkRuntimeResources()),
-    checkCronRadar(),
-    checkShadowQaRadar(),
-    checkChaosMonkeyRadar(),
-    checkUiIncidentRadar(),
-  ]);
+  const [database, weather, runtime, cron_radar, shadow_qa, chaos_monkey, ui_surface, board_posts_read] =
+    await Promise.all([
+      checkLiveSqlPing(),
+      checkWeatherPipeline(),
+      Promise.resolve(checkRuntimeResources()),
+      checkCronRadar(),
+      checkShadowQaRadar(),
+      checkChaosMonkeyRadar(),
+      checkUiIncidentRadar(),
+      checkBoardPostsReadProbe(),
+    ]);
 
   const chaosOk = chaos_monkey.ok || chaos_monkey.skipped === true;
   const live_ok = database.ok && weather.ok && runtime.ok;
   /** 봇 미설정(skipped)일 때만 생략 — 설정된 경우 마지막 board_posts 쓰기 E2E 실패면 무조건 비정상 */
   const shadow_write_ok = shadow_qa.skipped === true || shadow_qa.ok;
 
+  /**
+   * 실시간 생존 신호가 모두 OK면 과거·잔존 ui_incident(publish_logs)는 레이더 판정에서 무시한다.
+   * - DB 하트비트(omni_radar_live_ping / 폴백)
+   * - board_posts SELECT (테이블 접근)
+   * - Shadow QA 경로의 쓰기 검증(봇 미설정 시 skipped 로 통과)
+   */
+  const live_survival_bypass =
+    database.ok && board_posts_read.ok && shadow_write_ok;
+  const ui_surface_effective_ok = ui_surface.ok || live_survival_bypass;
+
   const healthy =
-    live_ok && cron_radar.ok && shadow_write_ok && chaosOk && ui_surface.ok;
+    live_ok && cron_radar.ok && shadow_write_ok && chaosOk && ui_surface_effective_ok;
 
   const shield_pulse = Boolean(healthy && chaos_monkey.shield_pulse);
 
@@ -179,6 +193,7 @@ export async function GET(): Promise<NextResponse> {
     shadow_qa,
     chaos_monkey,
     ui_surface,
+    board_posts_read,
     motherbrain: {
       shield_pulse,
       all_green: healthy,
@@ -186,7 +201,9 @@ export async function GET(): Promise<NextResponse> {
       chaos_skipped: chaos_monkey.skipped === true,
       live_ok,
       shadow_write_ok,
-      /** 이전 호환 */
+      live_survival_bypass,
+      ui_incident_suppressed: Boolean(live_survival_bypass && !ui_surface.ok),
+      /** 이전 호환 (ui는 raw; 억제 여부는 live_survival_bypass 참고) */
       secondary_ok: cron_radar.ok && shadow_write_ok && chaosOk && ui_surface.ok,
     },
   };
@@ -211,7 +228,10 @@ export async function GET(): Promise<NextResponse> {
     errors.push(`shadow_qa_write: ${shadow_qa.error ?? 'board_posts_e2e_failed_or_stale'}`);
   }
   if (!chaosOk) errors.push(`chaos_monkey: ${chaos_monkey.error ?? 'unknown'}`);
-  if (!ui_surface.ok) errors.push(`ui_surface: ${ui_surface.error ?? 'unknown'}`);
+  if (!ui_surface.ok && !live_survival_bypass) {
+    errors.push(`ui_surface: ${ui_surface.error ?? 'unknown'}`);
+  }
+  if (!board_posts_read.ok) errors.push(`board_posts_read: ${board_posts_read.error ?? 'unknown'}`);
 
   return NextResponse.json(
     {

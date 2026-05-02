@@ -25,6 +25,21 @@ export type UiIncidentRadar = {
   last_incident_at?: string | null;
 };
 
+/** 서비스 롤로 board_posts 행 1건 조회 — 테이블·RLS·그랜트 생존 확인 */
+export type BoardPostsReadProbe = {
+  ok: boolean;
+  error?: string;
+};
+
+export async function checkBoardPostsReadProbe(): Promise<BoardPostsReadProbe> {
+  const admin = createServiceRoleClient();
+  const { error } = await admin.from('board_posts').select('id').limit(1);
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}
+
 export type ChaosMonkeyRadar = {
   ok: boolean;
   skipped?: boolean;

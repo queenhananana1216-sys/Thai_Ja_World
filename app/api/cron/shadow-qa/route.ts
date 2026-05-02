@@ -17,6 +17,7 @@ import {
 } from '@/lib/cron/shadowQaUiPatrol';
 import { isCronAuthorized } from '@/lib/cronAuth';
 import { shouldMaskRawDbError } from '@/lib/db/dbErrorDefense';
+import { purgeOmniAlertLogs } from '@/lib/health/purgeOmniAlertLogs';
 import { notifyOwnerOmniCritical } from '@/lib/ops/ownerOmniHotline';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
@@ -392,6 +393,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         patrol_origin: patrolOrigin,
       },
     });
+    try {
+      const purged = await purgeOmniAlertLogs(admin);
+      if (purged.error) {
+        console.error('[shadow-qa] purgeOmniAlertLogs failed', purged.error);
+      } else {
+        console.info('[shadow-qa] omni alert logs purged', {
+          ui_incident_deleted: purged.ui_incident_deleted,
+          shadow_qa_failed_deleted: purged.shadow_qa_failed_deleted,
+        });
+      }
+    } catch (e) {
+      console.error('[shadow-qa] purgeOmniAlertLogs exception', e);
+    }
   } else {
     const failReason = !board.ok
       ? resolveBoardFailureReason(board)

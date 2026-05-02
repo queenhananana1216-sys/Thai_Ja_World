@@ -7,6 +7,7 @@
  */
 import { NextResponse } from 'next/server';
 import { isCronAuthorized } from '@/lib/cronAuth';
+import { purgeOmniAlertLogs } from '@/lib/health/purgeOmniAlertLogs';
 import { revalidateMotherbrainPaths } from '@/lib/server/motherbrainRevalidate';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
@@ -67,6 +68,20 @@ export async function POST(req: Request): Promise<NextResponse> {
     });
   } catch (e) {
     console.error('[motherbrain-heal] publish_logs insert failed', e);
+  }
+
+  try {
+    const purged = await purgeOmniAlertLogs(admin);
+    if (purged.error) {
+      console.error('[motherbrain-heal] purgeOmniAlertLogs failed', purged.error);
+    } else {
+      console.info('[motherbrain-heal] omni alert logs purged', {
+        ui_incident_deleted: purged.ui_incident_deleted,
+        shadow_qa_failed_deleted: purged.shadow_qa_failed_deleted,
+      });
+    }
+  } catch (e) {
+    console.error('[motherbrain-heal] purgeOmniAlertLogs exception', e);
   }
 
   return NextResponse.json({

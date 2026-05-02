@@ -5,12 +5,12 @@
 import { NextResponse } from 'next/server';
 import { parseBoardPostBody } from './boardPayload';
 import {
-  jsonBodyForAuthenticatedWriteError,
+  jsonBodyForBoardWriteVerbose,
   logSupabaseWriteFailure,
   publicBodyFromSupabaseMessage,
 } from '@/lib/db/dbErrorDefense';
 import { recordQuestProgress } from '@/lib/quests/progress';
-import { createServiceRoleClient } from '@/lib/supabase/admin';
+import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 import { createServerClient } from '@/lib/supabase/server';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
@@ -83,9 +83,22 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  /** Service role 직접 INSERT — 실제 테이블 컬럼(lat/lng)과 1:1 */
+  if (!isServiceRoleConfigured()) {
+    console.error('[api/boards POST] SUPABASE_SERVICE_ROLE_KEY 또는 NEXT_PUBLIC_SUPABASE_URL 누락 — 쓰기 불가');
+    return NextResponse.json(
+      {
+        error:
+          '서버에 SUPABASE_SERVICE_ROLE_KEY가 설정되지 않아 글 등록을 할 수 없습니다. Vercel 환경 변수를 확인해 주세요.',
+        code: 'MISSING_SERVICE_ROLE',
+        supabase_message: 'MISSING_SERVICE_ROLE',
+      },
+      { status: 503 },
+    );
+  }
+
+  /** Service role 직접 INSERT — `.single()` 대신 배열로 받아 PGRST116 회피 */
   const admin = createServiceRoleClient();
-  const { data: inserted, error } = await admin
+  const { data: insertedRows, error } = await admin
     .from('board_posts')
     .insert({
       user_id: user.id,
@@ -97,8 +110,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       lng: payload.lng,
       address: payload.address,
     })
-    .select('id')
-    .single();
+    .select('id');
 
   if (error) {
     logSupabaseWriteFailure('api/boards POST board_posts.insert', {
@@ -107,7 +119,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       details: error.details,
       hint: error.hint,
     });
-    const { status, body } = jsonBodyForAuthenticatedWriteError({
+    const { status, body } = jsonBodyForBoardWriteVerbose({
       message: error.message,
       code: error.code,
       details: error.details,
@@ -115,9 +127,21 @@ export async function POST(req: Request): Promise<NextResponse> {
     });
     return NextResponse.json(body, { status });
   }
-  const postId = inserted?.id;
+  const postId = insertedRows?.[0]?.id;
   if (!postId) {
-    return NextResponse.json({ error: 'insert_failed' }, { status: 500 });
+    console.error('[api/boards POST] insert returned no rows (dummy client or silent failure)', {
+      user_id: user.id,
+      rowCount: insertedRows?.length ?? 0,
+    });
+    return NextResponse.json(
+      {
+        error: 'insert_returned_no_rows',
+        code: 'INSERT_NO_ROWS',
+        supabase_message:
+          'DB insert 후 id가 반환되지 않았습니다. SUPABASE_SERVICE_ROLE_KEY·Supabase 연결을 확인하세요.',
+      },
+      { status: 500 },
+    );
   }
 
   try {

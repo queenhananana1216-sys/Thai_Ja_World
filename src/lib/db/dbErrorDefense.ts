@@ -100,3 +100,23 @@ export function jsonBodyForAuthenticatedWriteError(err: SupabaseHttpErrorFields)
     },
   };
 }
+
+/** 통합 게시판(board_posts) 쓰기 — 메시지 마스킹 금지(프로덕션 원인 추적·오너 디버깅) */
+export function jsonBodyForBoardWriteVerbose(err: SupabaseHttpErrorFields): {
+  status: number;
+  body: Record<string, unknown>;
+} {
+  const msg = err.message ?? 'unknown_error';
+  const transient = /pgrst|schema|cache|timeout|57014|53300/i.test(msg) || shouldMaskRawDbError(msg);
+  return {
+    status: transient ? 503 : 500,
+    body: {
+      error: msg,
+      code: err.code ?? 'BOARD_WRITE_ERROR',
+      supabase_message: msg,
+      supabase_code: err.code ?? null,
+      supabase_details: err.details ?? null,
+      supabase_hint: err.hint ?? null,
+    },
+  };
+}

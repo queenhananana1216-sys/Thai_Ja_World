@@ -120,7 +120,7 @@ async function runBoardPostsShadowQa(
 
   try {
     const tIns0 = performance.now();
-    const { data: insertedRow, error: insErr } = await admin
+    const { data: insRows, error: insErr } = await admin
       .from('board_posts')
       .insert({
         user_id: botUserId,
@@ -132,8 +132,7 @@ async function runBoardPostsShadowQa(
         lng: payload.lng,
         address: payload.address,
       })
-      .select('id')
-      .single();
+      .select('id');
     insertMs = Math.round(performance.now() - tIns0);
 
     if (insErr) {
@@ -151,8 +150,9 @@ async function runBoardPostsShadowQa(
       };
     }
 
+    const insertedRow = insRows?.[0];
     if (!insertedRow?.id) {
-      logShadowFailure('insert', 'insert_returned_null', { insertMs });
+      logShadowFailure('insert', 'insert_returned_null', { insertMs, rowCount: insRows?.length ?? 0 });
       return { ok: false, step: 'insert', error: 'insert_failed', httpStatus: 500, ms: { insert: insertMs } };
     }
 

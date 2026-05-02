@@ -127,7 +127,11 @@ export function NewBoardPostForm({
           console.error('[NewBoardPostForm] PUT /api/boards failed', res.status, j);
           if (isBoardSchemaSync(j)) {
             scheduleSoftNavigationRefresh(() => router.refresh());
-            toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
+            const detail = j.supabase_message?.trim() || j.error;
+            toast.error(
+              detail ? `${USER_DB_SYNC_TOAST_MESSAGE}\n${detail}` : USER_DB_SYNC_TOAST_MESSAGE,
+              { position: 'top-center', duration: 12_000 },
+            );
             fireDbErrorRadar('NewBoardPostForm:edit');
             return;
           }
@@ -163,7 +167,11 @@ export function NewBoardPostForm({
         console.error('[NewBoardPostForm] POST /api/boards failed', res.status, json);
         if (isBoardSchemaSync(json)) {
           scheduleSoftNavigationRefresh(() => router.refresh());
-          toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
+          const detail = json.supabase_message?.trim() || json.error;
+          toast.error(
+            detail ? `${USER_DB_SYNC_TOAST_MESSAGE}\n${detail}` : USER_DB_SYNC_TOAST_MESSAGE,
+            { position: 'top-center', duration: 12_000 },
+          );
           fireDbErrorRadar('NewBoardPostForm:create');
           return;
         }

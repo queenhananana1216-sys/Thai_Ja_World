@@ -4,11 +4,8 @@
  */
 import { NextResponse } from 'next/server';
 import { parseBoardPostBody } from '../boardPayload';
-import {
-  jsonBodyForAuthenticatedWriteError,
-  logSupabaseWriteFailure,
-} from '@/lib/db/dbErrorDefense';
-import { createServiceRoleClient } from '@/lib/supabase/admin';
+import { jsonBodyForBoardWriteVerbose, logSupabaseWriteFailure } from '@/lib/db/dbErrorDefense';
+import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
 export const runtime = 'nodejs';
@@ -57,6 +54,17 @@ export async function PUT(req: Request, ctx: Ctx): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (!isServiceRoleConfigured()) {
+    return NextResponse.json(
+      {
+        error: '서버 Supabase 서비스 롤 키가 없어 수정할 수 없습니다.',
+        code: 'MISSING_SERVICE_ROLE',
+        supabase_message: 'MISSING_SERVICE_ROLE',
+      },
+      { status: 503 },
+    );
+  }
+
   const admin = createServiceRoleClient();
   const { data: updatedRow, error } = await admin
     .from('board_posts')
@@ -80,7 +88,7 @@ export async function PUT(req: Request, ctx: Ctx): Promise<NextResponse> {
       details: error.details,
       hint: error.hint,
     });
-    const { status, body } = jsonBodyForAuthenticatedWriteError({
+    const { status, body } = jsonBodyForBoardWriteVerbose({
       message: error.message,
       code: error.code,
       details: error.details,
@@ -115,6 +123,17 @@ export async function DELETE(req: Request, ctx: Ctx): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  if (!isServiceRoleConfigured()) {
+    return NextResponse.json(
+      {
+        error: '서버 Supabase 서비스 롤 키가 없어 삭제할 수 없습니다.',
+        code: 'MISSING_SERVICE_ROLE',
+        supabase_message: 'MISSING_SERVICE_ROLE',
+      },
+      { status: 503 },
+    );
+  }
+
   const admin = createServiceRoleClient();
   const { data: deletedRows, error } = await admin
     .from('board_posts')
@@ -130,7 +149,7 @@ export async function DELETE(req: Request, ctx: Ctx): Promise<NextResponse> {
       details: error.details,
       hint: error.hint,
     });
-    const { status, body } = jsonBodyForAuthenticatedWriteError({
+    const { status, body } = jsonBodyForBoardWriteVerbose({
       message: error.message,
       code: error.code,
       details: error.details,

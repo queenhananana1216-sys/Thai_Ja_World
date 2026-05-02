@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import SocialAuthButtons from '@app/auth/_components/SocialAuthButtons';
 import QRCodeGenerator from '@/components/local/QRCodeGenerator';
@@ -1088,8 +1089,15 @@ export default function LocalDigitalMenuClient(props: {
                     📷 사진 업로드
                   </button>
                   {newImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={newImageUrl} alt="" className="h-12 w-12 rounded-lg object-cover ring-1 ring-white/15" />
+                    <Image
+                      src={newImageUrl}
+                      alt=""
+                      width={48}
+                      height={48}
+                      loading="lazy"
+                      quality={88}
+                      className="h-12 w-12 rounded-lg object-cover ring-1 ring-white/15"
+                    />
                   ) : null}
                   <button
                     type="button"
@@ -1120,11 +1128,14 @@ export default function LocalDigitalMenuClient(props: {
                 <article key={row.id} className={menuCardShell('flex flex-col sm:flex-row')}>
                   <div className="relative aspect-[5/4] w-full overflow-hidden rounded-t-2xl sm:aspect-auto sm:h-auto sm:w-[42%] sm:max-w-[220px] sm:shrink-0 sm:rounded-l-2xl sm:rounded-tr-none">
                     {row.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={row.image_url}
                         alt=""
-                        className="h-full w-full object-cover sm:absolute sm:inset-0 sm:min-h-[148px]"
+                        fill
+                        sizes="(max-width: 640px) 100vw, 220px"
+                        loading="lazy"
+                        quality={88}
+                        className="object-cover sm:min-h-[148px]"
                       />
                     ) : (
                       <div
@@ -1314,10 +1325,13 @@ export default function LocalDigitalMenuClient(props: {
                   >
                     <div className="flex min-w-0 items-start gap-3">
                       {it.image_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={it.image_url}
                           alt=""
+                          width={56}
+                          height={56}
+                          loading="lazy"
+                          quality={88}
                           className="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-white/12"
                         />
                       ) : (
@@ -1539,8 +1553,15 @@ export default function LocalDigitalMenuClient(props: {
                 <p className="text-xs font-semibold text-emerald-200">
                   {menuLang === 'ko' ? 'PromptPay QR' : 'PromptPay QR'}
                 </p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={postPayQrUrl} alt="PromptPay" className="mx-auto mt-3 w-full max-w-[240px] rounded-lg ring-1 ring-white/15" />
+                <Image
+                  src={postPayQrUrl}
+                  alt="PromptPay"
+                  width={240}
+                  height={240}
+                  unoptimized
+                  loading="lazy"
+                  className="mx-auto mt-3 h-auto w-full max-w-[240px] rounded-lg ring-1 ring-white/15"
+                />
                 <p className="mt-3 text-[11px] text-white/55">
                   {menuLang === 'ko'
                     ? '은행 앱으로 스캔하여 송금해 주세요.'

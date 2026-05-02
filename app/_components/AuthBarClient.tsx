@@ -162,29 +162,31 @@ export default function AuthBarClient({
     if (variant === 'mobile') {
       return (
         <>
-          <a
+          <Link
+            prefetch={true}
             href="/auth/login"
             className="flex min-h-11 items-center justify-center rounded-md border border-violet-400/30 bg-violet-500/15 px-3 py-2 text-center text-base font-semibold text-violet-50 no-underline"
           >
             {labels.login}
-          </a>
-          <a
+          </Link>
+          <Link
+            prefetch={true}
             href="/auth/signup"
             className="flex min-h-11 items-center justify-center rounded-md border border-pink-400/30 bg-pink-500/10 px-3 py-2 text-center text-base font-semibold text-pink-50 no-underline"
           >
             {labels.signup}
-          </a>
+          </Link>
         </>
       );
     }
     return (
       <div className="auth-chrome-pills auth-chrome-pills--guest" role="navigation" aria-label="계정">
-        <a href="/auth/login" className="auth-chrome-pills__pill auth-chrome-pills__pill--primary">
+        <Link prefetch={true} href="/auth/login" className="auth-chrome-pills__pill auth-chrome-pills__pill--primary">
           {labels.login}
-        </a>
-        <a href="/auth/signup" className="auth-chrome-pills__pill auth-chrome-pills__pill--ghost">
+        </Link>
+        <Link prefetch={true} href="/auth/signup" className="auth-chrome-pills__pill auth-chrome-pills__pill--ghost">
           {labels.signup}
-        </a>
+        </Link>
       </div>
     );
   }
@@ -193,11 +195,12 @@ export default function AuthBarClient({
     return (
       <>
         {masterAdminUi ? (
-          <Link href="/admin" className={masterAdminMobileClass}>
+          <Link prefetch={true} href="/admin" className={masterAdminMobileClass}>
             ⚙️ {masterAdminLabel}
           </Link>
         ) : null}
         <Link
+          prefetch={true}
           href={hrefProfile}
           className={minihomeMobileClass}
           title={shortLabel ? `${shortLabel} · ${myMinihomeLabel}` : myMinihomeLabel}
@@ -222,11 +225,12 @@ export default function AuthBarClient({
       aria-label="계정"
     >
       {masterAdminUi ? (
-        <Link href="/admin" className={masterAdminHeaderClass}>
+        <Link prefetch={true} href="/admin" className={masterAdminHeaderClass}>
           ⚙️ {masterAdminLabel}
         </Link>
       ) : null}
       <Link
+        prefetch={true}
         href={hrefProfile}
         className={minihomeHeaderClass}
         title={shortLabel ? `${shortLabel} · ${myMinihomeLabel}` : myMinihomeLabel}

@@ -22,7 +22,7 @@ export async function fetchThailandCitiesWeather(
     'https://api.open-meteo.com/v1/forecast?latitude=13.7563,12.9236,18.7883&longitude=100.5018,100.8825,98.9853' +
     '&current=temperature_2m,weather_code&timezone=Asia%2FBangkok';
   try {
-    const res = await fetch(url, { next: { revalidate: 600 } });
+    const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) return { cities: [], updatedAt: null };
     const data = (await res.json()) as unknown;
     const list = Array.isArray(data)

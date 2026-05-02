@@ -80,7 +80,7 @@ export default function PortalQuestWriteCta({
       <p className="mt-1.5 px-0.5 text-center text-sm text-gray-200">
         로그인 시 미션이 자동으로 활성화됩니다.{' '}
         {isLoggedIn ? (
-          <Link href={href} className="text-gray-100 underline hover:text-amber-200" prefetch={false}>
+          <Link prefetch={true} href={href} className="text-gray-100 underline hover:text-amber-200">
             바로 이동
           </Link>
         ) : (

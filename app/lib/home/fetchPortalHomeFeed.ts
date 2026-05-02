@@ -2,7 +2,6 @@ import 'server-only';
 
 /** 홈 공개 피드 — DB 접근은 `home-queries.ts` 의 anon 전용 클라이언트만 사용(쿠키·SSR 없음). */
 
-import { unstable_noStore as noStore } from 'next/cache';
 import {
   fetchHomeJobs,
   fetchHomeMarket,
@@ -190,7 +189,6 @@ function portalLocalMinihomeHref(slug: string, miniHome: unknown): string {
  * 타임아웃·에러·빈 결과는 빈 배열; 샘플 글이나 임의 기사 제목을 넣지 않음.
  */
 async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
-  noStore();
   const portalLocale = await getLocale().catch(() => 'ko' as Locale);
 
   const out: PortalHomeFeed = {

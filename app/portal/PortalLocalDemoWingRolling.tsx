@@ -52,12 +52,14 @@ export default function PortalLocalDemoWingRolling({ cards }: { cards: PortalLoc
           ) : null}
           <div className="flex flex-wrap gap-1.5 pt-0.5">
             <Link
+              prefetch={true}
               href={c.shopHref}
               className="inline-flex min-h-[2rem] flex-1 items-center justify-center rounded-lg border border-amber-400/45 bg-amber-500/15 px-2 text-center text-[10px] font-extrabold text-amber-50 shadow-inner shadow-amber-900/20 transition hover:border-amber-300/70 hover:bg-amber-500/25"
             >
               미니홈 가기
             </Link>
             <Link
+              prefetch={true}
               href="/local"
               className="inline-flex min-h-[2rem] items-center justify-center rounded-lg border border-slate-600/90 px-2.5 text-[9px] font-semibold text-slate-400 transition hover:border-slate-500 hover:text-amber-200"
             >

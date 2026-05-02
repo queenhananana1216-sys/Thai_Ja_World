@@ -28,6 +28,15 @@ function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise
   return fetch(input, { ...init, signal: ctrl.signal }).finally(() => clearTimeout(tid));
 }
 
+/** 홈 꿀팁·실시간 통합 피드 — Next Data Cache 60초 ISR */
+function fetchWithTimeoutRevalidated(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), PUBLIC_FETCH_TIMEOUT_MS);
+  return fetch(input, { ...init, signal: ctrl.signal, next: { revalidate: 60 } }).finally(() =>
+    clearTimeout(tid),
+  );
+}
+
 /** 익명 공개 읽기 전용 — SSR 쿠키/세션 미연동 */
 function createPublicAnonClient(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -39,8 +48,22 @@ function createPublicAnonClient(): SupabaseClient | null {
   });
 }
 
+function createPublicAnonCachedClient(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { fetch: fetchWithTimeoutRevalidated },
+  });
+}
+
 function tryCreate(): SupabaseClient | null {
   return createPublicAnonClient();
+}
+
+function tryCreateCached(): SupabaseClient | null {
+  return createPublicAnonCachedClient();
 }
 
 const POST_COLS =
@@ -664,7 +687,7 @@ export async function fetchHomePersonalizedRecommendations(
 export async function fetchHomeTipsPublic(
   limit = 8,
 ): Promise<{ rows: { id: string; title: string; excerpt: string; created_at: string }[]; error: string | null }> {
-  const sb = tryCreate();
+  const sb = tryCreateCached() ?? tryCreate();
   if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
 
   const safeLimit = Math.min(100, Math.max(1, Math.floor(Number(limit)) || 8));
@@ -847,9 +870,9 @@ export async function fetchHomeRecentCommentTicker(limit = 6): Promise<{
 /** 게시판 전 카테고리(공개 안전 글) — 하단 무한 피드 */
 export async function fetchHomeFeedPosts(
   limit: number,
-  opts?: { beforeIso?: string | null },
+  opts?: { beforeIso?: string | null; sb?: SupabaseClient | null },
 ): Promise<{ rows: PortalPostRow[]; error: string | null }> {
-  const sb = tryCreate();
+  const sb = opts?.sb ?? tryCreate();
   if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
 
   let q = sb
@@ -892,7 +915,7 @@ export async function fetchHomeUnifiedFeed(
   limit: number,
   cursor?: { createdAt: string; id: string } | null,
 ): Promise<{ rows: HomeUnifiedFeedItem[]; error: string | null }> {
-  const sb = tryCreate();
+  const sb = tryCreateCached() ?? tryCreate();
   if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
 
   const { data, error } = await sb.rpc('get_home_unified_feed', {
@@ -906,7 +929,7 @@ export async function fetchHomeUnifiedFeed(
     if (!missing) {
       return { rows: [], error: error.message };
     }
-    const fb = await fetchHomeFeedPosts(limit, { beforeIso: cursor?.createdAt ?? null });
+    const fb = await fetchHomeFeedPosts(limit, { beforeIso: cursor?.createdAt ?? null, sb });
     if (fb.error) return { rows: [], error: fb.error };
     return { rows: fb.rows.map(mapPortalRowToUnified), error: null };
   }

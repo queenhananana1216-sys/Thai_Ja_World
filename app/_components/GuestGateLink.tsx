@@ -24,7 +24,7 @@ export default function GuestGateLink({ href, className, children, isLoggedIn, f
 
   if (!gated) {
     return (
-      <Link href={href} className={className}>
+      <Link prefetch={true} href={href} className={className}>
         {children}
       </Link>
     );

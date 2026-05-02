@@ -280,6 +280,7 @@ export default function SpotlightNavSearch() {
 
           <div className="mt-3 flex flex-wrap gap-2 border-t border-white/10 pt-3">
             <Link
+              prefetch={true}
               href="/search"
               className="text-xs font-semibold text-amber-200/90 underline-offset-2 hover:underline"
               onClick={close}
@@ -287,6 +288,7 @@ export default function SpotlightNavSearch() {
               {locale === 'th' ? 'หน้าค้นหาเต็ม' : '통합 검색 페이지'}
             </Link>
             <Link
+              prefetch={true}
               href="/community/boards"
               className="text-xs text-gray-500 hover:text-gray-300"
               onClick={close}

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import ShopDeliveryRequestPanel from './ShopDeliveryRequestPanel';
@@ -379,12 +380,13 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
                   }}
                 >
                   {it.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={it.image_url}
                       alt=""
                       width={56}
                       height={56}
+                      loading="lazy"
+                      quality={88}
                       style={{ borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
                     />
                   ) : null}
@@ -519,13 +521,17 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
               }}
             >
               {photos.map((u) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={u}
-                  src={u}
-                  alt=""
-                  style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 8 }}
-                />
+                <div key={u} className="relative w-full [aspect-ratio:1] overflow-hidden rounded-lg">
+                  <Image
+                    src={u}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 33vw, 130px"
+                    loading="lazy"
+                    quality={88}
+                    className="object-cover"
+                  />
+                </div>
               ))}
             </div>
           ) : null}
@@ -667,8 +673,15 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
             {bridge?.kind === 'promptpay' ? (
               <div className="mt-4 rounded-xl border border-emerald-300/40 bg-emerald-500/10 p-3">
                 <p className="text-xs font-semibold text-emerald-200">PromptPay 결제 QR</p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={bridge.qrImageUrl} alt="PromptPay QR" className="mt-2 w-full max-w-[240px] rounded-lg" />
+                <Image
+                  src={bridge.qrImageUrl}
+                  alt="PromptPay QR"
+                  width={240}
+                  height={240}
+                  unoptimized
+                  loading="lazy"
+                  className="mt-2 h-auto w-full max-w-[240px] rounded-lg"
+                />
                 <p className="mt-2 text-[11px] text-emerald-100">Ref: {bridge.reference}</p>
               </div>
             ) : null}

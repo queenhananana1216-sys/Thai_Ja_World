@@ -184,6 +184,7 @@ function NewsLinesSkeleton({ rows = 7, newsHubMore }: { rows?: number; newsHubMo
       ))}
       <li className="pt-0.5">
         <Link
+          prefetch={true}
           href="/news"
           className="inline-flex min-h-11 max-w-full items-center break-words text-sm font-semibold text-gray-100 hover:text-amber-200"
         >
@@ -455,6 +456,7 @@ export default function Portal2026View({
                     return (
                       <li key={bid} className="min-w-0 overflow-hidden">
                         <Link
+                          prefetch={true}
                           href={href}
                           className="flex min-h-11 min-w-0 flex-col justify-center overflow-hidden rounded-lg border border-white/5 bg-slate-950/30 p-2 text-base leading-snug hover:border-amber-300/30"
                         >
@@ -479,6 +481,7 @@ export default function Portal2026View({
               <ul className="mt-1.5 space-y-0">
                 <li className="pb-2">
                   <Link
+                    prefetch={true}
                     href="/korean-biz"
                     className="inline-flex w-full min-h-12 max-w-full min-w-0 items-center justify-center rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-950/55 via-slate-900/60 to-rose-950/40 px-3 py-2.5 text-center text-base font-extrabold leading-snug text-amber-50 no-underline shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_10px_36px_rgba(251,191,36,0.12)] backdrop-blur-md transition hover:border-amber-300/55 hover:from-amber-900/50 hover:to-rose-950/50"
                   >
@@ -487,6 +490,7 @@ export default function Portal2026View({
                 </li>
                 <li>
                   <Link
+                    prefetch={true}
                     href="/boards"
                     className="inline-flex min-h-11 max-w-full min-w-0 break-words text-gray-100 hover:text-amber-200 hover:underline"
                   >
@@ -495,6 +499,7 @@ export default function Portal2026View({
                 </li>
                 <li>
                   <Link
+                    prefetch={true}
                     href="/community/trade"
                     className="inline-flex min-h-11 max-w-full min-w-0 break-words text-gray-100 hover:text-amber-200 hover:underline"
                   >
@@ -503,6 +508,7 @@ export default function Portal2026View({
                 </li>
                 <li>
                   <Link
+                    prefetch={true}
                     href="/news"
                     className="inline-flex min-h-11 max-w-full min-w-0 break-words text-gray-100 hover:text-amber-200 hover:underline"
                   >
@@ -572,6 +578,7 @@ export default function Portal2026View({
                         <PortalQuestWriteCta category={questCat} variant="badge" isLoggedIn={isLoggedIn} />
                       ) : null}
                       <Link
+                        prefetch={true}
                         href={board.moreHref ?? '/boards'}
                         className="inline-flex min-h-11 max-w-full shrink-0 items-center truncate text-sm font-semibold text-amber-200 hover:underline"
                       >

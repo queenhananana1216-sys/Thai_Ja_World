@@ -4,6 +4,21 @@ import type { NextConfig } from 'next';
 // CACHE_BUSTER: 2026-05-01-FORCE-DEPLOY — Vercel 이전 빌드 산출물 재사용 회피(설정 해시 변경)
 
 const nextConfig: NextConfig = {
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.qrserver.com',
+        pathname: '/v1/create-qr-code/**',
+      },
+    ],
+  },
   /** 상위 폴더에 다른 package-lock 이 있을 때 추적 루트를 이 앱으로 고정 (Vercel/빌드 경고 제거) */
   outputFileTracingRoot: path.resolve(process.cwd()),
   /**

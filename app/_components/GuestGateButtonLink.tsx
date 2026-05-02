@@ -22,7 +22,7 @@ export default function GuestGateButtonLink({
   const router = useRouter();
   if (isLoggedIn) {
     return (
-      <Link href={href} className={className}>
+      <Link prefetch={true} href={href} className={className}>
         {children}
       </Link>
     );

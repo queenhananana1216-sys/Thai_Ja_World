@@ -4,9 +4,8 @@ import PortalFeedSection from './_components/PortalFeedSection';
 import PortalHomeGlassSkeleton from './_components/PortalHomeGlassSkeleton';
 import { absoluteUrl } from '@/lib/seo/site';
 
-/** 홈(/)만 SSR 데이터 페치 — 레이아웃은 정적 뼈대 유지 */
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+/** 홈 데이터 일부는 `fetch(..., { next: { revalidate: 60 } })`(home-queries)로 Data Cache — 레이아웃 force-dynamic과 병행 */
+export const revalidate = 60;
 
 const HOME_METADATA = {
   title: '태국에, 살자',

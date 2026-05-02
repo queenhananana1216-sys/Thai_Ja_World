@@ -154,6 +154,7 @@ export default async function GlobalNav() {
     <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
       <div className="site-container flex flex-wrap items-center justify-between gap-3 py-2.5">
         <Link
+          prefetch={true}
           href="/"
           className="inline-flex max-w-[min(100%,22rem)] items-center gap-2.5 no-underline md:gap-3"
           aria-label={d.logoAria}
@@ -262,6 +263,7 @@ export default async function GlobalNav() {
               </GuestGateButtonLink>
               {NAV_MENUS.map((m) => (
                 <Link
+                  prefetch={true}
                   key={m.href}
                   href={m.href}
                   className={m.href === '/korean-biz' ? koreanBizMobileClass : navLinkDefaultMobile}
@@ -275,6 +277,7 @@ export default async function GlobalNav() {
           <div className="hidden flex-wrap items-center gap-2 md:flex">
             {NAV_MENUS.map((m) => (
               <Link
+                prefetch={true}
                 key={m.href}
                 href={m.href}
                 className={m.href === '/korean-biz' ? koreanBizDesktopClass : navLinkDefaultDesktop}

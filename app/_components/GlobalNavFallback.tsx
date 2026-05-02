@@ -6,6 +6,7 @@ export function GlobalNavFallback() {
     <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
       <div className="site-container flex flex-wrap items-center justify-between gap-2 py-2">
         <Link
+          prefetch={true}
           href="/"
           className="inline-flex max-w-[min(100%,22rem)] items-center gap-2.5 no-underline md:gap-3"
           aria-label="태국에, 살자 홈"
@@ -24,12 +25,14 @@ export function GlobalNavFallback() {
         </Link>
         <div className="flex gap-2">
           <Link
+            prefetch={true}
             href="/auth/login?next=%2F"
             className="rounded-full border border-violet-400/40 px-3 py-1 text-xs font-bold text-violet-100 no-underline"
           >
             로그인
           </Link>
           <Link
+            prefetch={true}
             href="/auth/signup?next=%2F"
             className="rounded-full border border-white/20 px-3 py-1 text-xs font-bold text-slate-100 no-underline"
           >

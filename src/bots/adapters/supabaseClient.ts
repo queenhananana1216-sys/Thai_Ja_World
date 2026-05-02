@@ -13,14 +13,19 @@
 
 /** Next 앱 외부(tsx CLI 등)에서도 봇을 돌릴 수 있게 server-only 미사용 — 이 모듈은 API·봇에서만 import 할 것 */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createServiceRoleClient } from '@/lib/supabase/admin';
+import { createServiceRoleClient, SUPABASE_SERVICE_ROLE_ENV } from '@/lib/supabase/admin';
 
 let _client: SupabaseClient | null = null;
 
 /**
- * 서버 전용 Supabase 클라이언트 — `createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY)` 단일 경로.
+ * 서버 전용 Supabase 클라이언트 — `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` 단일 경로 (anon 금지).
  */
 export function getServerSupabaseClient(): SupabaseClient {
+  if (!process.env[SUPABASE_SERVICE_ROLE_ENV]?.trim()) {
+    throw new Error(
+      `getServerSupabaseClient: ${SUPABASE_SERVICE_ROLE_ENV} is required for bot/cron DB writes.`,
+    );
+  }
   if (_client) return _client;
   _client = createServiceRoleClient();
   return _client;

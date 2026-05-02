@@ -12,6 +12,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { runNewsIngestPipeline } from '@/bots/orchestrator/runNewsIngestPipeline';
 import { isCronAuthorized } from '@/lib/cronAuth';
+import { isServiceRoleConfigured } from '@/lib/supabase/admin';
 import {
   findActivePause,
   logCronEvent,
@@ -30,6 +31,17 @@ const MAX_LIMIT = 30;
 export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!isCronAuthorized(req.headers.get('authorization'))) {
     return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!isServiceRoleConfigured()) {
+    return NextResponse.json(
+      {
+        status: 'error',
+        error: 'MISSING_SERVICE_ROLE',
+        hint: 'Vercel에 SUPABASE_SERVICE_ROLE_KEY와 NEXT_PUBLIC_SUPABASE_URL을 설정하세요. 뉴스 파이프라인은 anon 키로 쓸 수 없습니다.',
+      },
+      { status: 503 },
+    );
   }
 
   const { searchParams } = new URL(req.url);

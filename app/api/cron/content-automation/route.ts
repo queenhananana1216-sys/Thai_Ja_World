@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { runNewsIngestPipeline } from '@/bots/orchestrator/runNewsIngestPipeline';
 import { isCronAuthorized } from '@/lib/cronAuth';
-import { createServiceRoleClient } from '@/lib/supabase/admin';
+import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 import { findActivePause, logCronEvent, pausedResponse, registerFailureAndSelfHeal } from '@/lib/cron/omniLogger';
 import { sanitizeAiKoreanPhrases, sanitizeAiThaiPhrases } from '@/lib/text/normalizeDisplayText';
 
@@ -249,6 +249,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         hint: 'Use Authorization Bearer token or ?force=1&key=<CRON_SECRET>',
       },
       { status: 401 },
+    );
+  }
+
+  if (!isServiceRoleConfigured()) {
+    return NextResponse.json(
+      {
+        status: 'error',
+        error: 'MISSING_SERVICE_ROLE',
+        hint: 'SUPABASE_SERVICE_ROLE_KEY 미설정 — raw_news·tips_upsert·뉴스 파이프라인이 DB에 쓸 수 없습니다.',
+      },
+      { status: 503 },
     );
   }
 

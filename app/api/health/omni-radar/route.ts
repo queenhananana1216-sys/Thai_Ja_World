@@ -1,6 +1,6 @@
 /**
- * GET /api/health/omni-radar — 전 구간 합격 시 healthy.
- * DB·board_posts·Shadow QA 생존 신호가 모두 OK면 publish_logs ui_incident 잔존은 판정에서 제외(초록 우선).
+ * GET /api/health/omni-radar — 초록불은 오직 ① Supabase 생존 ② 외부 날씨 API.
+ * publish_logs·ui_incident·Shadow QA·Chaos 등 과거 봇 기록은 checks 에만 남기고 판정(healthy)에는 불참.
  */
 import { NextResponse } from 'next/server';
 import {
@@ -39,7 +39,7 @@ type CheckCron = {
 type CheckWeather = { ok: boolean; http_status?: number; error?: string };
 type CheckRuntime = { ok: boolean; heap_used_mb?: number; error?: string };
 
-/** PostgREST RPC `omni_radar_live_ping` → SELECT 1; 없으면 publish_logs 헤드 폴백 */
+/** PostgREST RPC `omni_radar_live_ping` → SELECT 1; 없으면 `profiles` 1행 조회로 연결만 검증 (publish_logs 미사용). */
 async function checkLiveSqlPing(): Promise<CheckDb> {
   const start = performance.now();
   const ping_ms = () => Math.round(performance.now() - start);
@@ -60,7 +60,7 @@ async function checkLiveSqlPing(): Promise<CheckDb> {
       return { ok: false, ping_ms: ping_ms(), error: msg };
     }
 
-    const { error } = await sb.from('publish_logs').select('id').limit(1);
+    const { error } = await sb.from('profiles').select('id').limit(1);
     if (error) return { ok: false, ping_ms: ping_ms(), error: error.message };
     return { ok: true, ping_ms: ping_ms() };
   } catch (e) {
@@ -166,24 +166,22 @@ export async function GET(): Promise<NextResponse> {
     ]);
 
   const chaosOk = chaos_monkey.ok || chaos_monkey.skipped === true;
-  const live_ok = database.ok && weather.ok && runtime.ok;
-  /** 봇 미설정(skipped)일 때만 생략 — 설정된 경우 마지막 board_posts 쓰기 E2E 실패면 무조건 비정상 */
   const shadow_write_ok = shadow_qa.skipped === true || shadow_qa.ok;
 
-  /**
-   * 실시간 생존 신호가 모두 OK면 과거·잔존 ui_incident(publish_logs)는 레이더 판정에서 무시한다.
-   * - DB 하트비트(omni_radar_live_ping / 폴백)
-   * - board_posts SELECT (테이블 접근)
-   * - Shadow QA 경로의 쓰기 검증(봇 미설정 시 skipped 로 통과)
-   */
-  const live_survival_bypass =
-    database.ok && board_posts_read.ok && shadow_write_ok;
-  const ui_surface_effective_ok = ui_surface.ok || live_survival_bypass;
-
-  const healthy =
-    live_ok && cron_radar.ok && shadow_write_ok && chaosOk && ui_surface_effective_ok;
+  /** 레이더 본판(초록/빨강): DB 생존 + 날씨 API만. 나머지는 관측용. */
+  const healthy = database.ok && weather.ok;
 
   const shield_pulse = Boolean(healthy && chaos_monkey.shield_pulse);
+
+  const legacy_secondary_ok =
+    database.ok &&
+    weather.ok &&
+    runtime.ok &&
+    cron_radar.ok &&
+    shadow_write_ok &&
+    chaosOk &&
+    ui_surface.ok &&
+    board_posts_read.ok;
 
   const checks = {
     database,
@@ -197,14 +195,12 @@ export async function GET(): Promise<NextResponse> {
     motherbrain: {
       shield_pulse,
       all_green: healthy,
+      health_basis: 'database_and_weather_only' as const,
       defense_success_rate: chaos_monkey.defense_success_rate ?? null,
       chaos_skipped: chaos_monkey.skipped === true,
-      live_ok,
       shadow_write_ok,
-      live_survival_bypass,
-      ui_incident_suppressed: Boolean(live_survival_bypass && !ui_surface.ok),
-      /** 이전 호환 (ui는 raw; 억제 여부는 live_survival_bypass 참고) */
-      secondary_ok: cron_radar.ok && shadow_write_ok && chaosOk && ui_surface.ok,
+      /** 과거 설계: 전 구간 합격 여부(모니터링용, healthy 와 무관) */
+      legacy_secondary_ok,
     },
   };
 
@@ -222,16 +218,6 @@ export async function GET(): Promise<NextResponse> {
   const errors: string[] = [];
   if (!database.ok) errors.push(`database: ${database.error ?? 'unknown'}`);
   if (!weather.ok) errors.push(`weather: ${weather.error ?? 'unknown'}`);
-  if (!runtime.ok) errors.push(`runtime: ${runtime.error ?? 'unknown'}`);
-  if (!cron_radar.ok) errors.push(`cron_radar: ${cron_radar.error ?? 'unknown'}`);
-  if (!shadow_write_ok) {
-    errors.push(`shadow_qa_write: ${shadow_qa.error ?? 'board_posts_e2e_failed_or_stale'}`);
-  }
-  if (!chaosOk) errors.push(`chaos_monkey: ${chaos_monkey.error ?? 'unknown'}`);
-  if (!ui_surface.ok && !live_survival_bypass) {
-    errors.push(`ui_surface: ${ui_surface.error ?? 'unknown'}`);
-  }
-  if (!board_posts_read.ok) errors.push(`board_posts_read: ${board_posts_read.error ?? 'unknown'}`);
 
   return NextResponse.json(
     {

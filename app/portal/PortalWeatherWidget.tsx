@@ -62,13 +62,13 @@ async function omniFetcher(url: string): Promise<OmniPack> {
 function chaosShieldTooltip(locale: Locale, pulse: boolean, rate?: number): string {
   if (pulse) {
     return locale === 'th'
-      ? '🛡️ Motherbrain — การป้องกัน UI/เซิร์ฟเวอร์และการฟื้นฟูครบถ้วน'
-      : '🛡️ 마더브레인: UI·서버 방어·자가 치유 파이프라인 전 구간 정상(블루 펄스)';
+      ? '🛡️ Motherbrain — DB+อากาศ OK และมีการฟื้นฟูล่าสุด'
+      : '🛡️ 마더브레인: DB·날씨 정상 + 최근 자가 치유 신호(블루 펄스)';
   }
   const pct = rate != null ? `${Math.round(rate * 100)}%` : '—';
   return locale === 'th'
-    ? `Motherbrain รอการตรวจ — Chaos ล่าสุด ${pct} (ทุกระบบเขียวเมื่อโล่เรืองแสง)`
-    : `마더브레인 대기 — 카오스 방어율 ${pct}. 옴니 전 구간 정상일 때만 방패 블루 펄스.`;
+    ? `Motherbrain — Chaos ${pct} (โล่เรืองแสงเมื่อ DB+อากาศ OK และมี self-heal ล่าสุด)`
+    : `마더브레인 — 카오스 방어율 ${pct}. DB·날씨 정상이고 최근 셀프힐이 있으면 방패 펄스.`;
 }
 
 function parseOmniErrors(body: unknown, httpStatus: number): string[] {
@@ -90,8 +90,8 @@ function omniLedTooltip(
   }
   if (phase === 'ok') {
     return locale === 'th'
-      ? 'System All Green: สภาพอากาศ · DB · Biz · Shadow QA · Chaos · UI · Motherbrain'
-      : 'System All Green: 날씨 · DB · 크론 · 쉐도우 QA(UI 순찰) · 카오스 · UI 인시던트 · 마더브레인 방패';
+      ? 'Live OK: เชื่อมต่อ Supabase · Open-Meteo (บันทึกบอทเก่าไม่กระทบสถานะ)'
+      : '실시간 정상: Supabase 연결 · 날씨 API — 과거 봇·로그 실패는 표시등에 반영하지 않음';
   }
   if (isAdmin && errors.length > 0) {
     return `Pipeline 경고 (관리자 전용): ${errors.join(' · ')}`;

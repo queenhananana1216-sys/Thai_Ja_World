@@ -12,6 +12,7 @@ import { runKnowledgeCollectLoop } from '@/bots/orchestrator/runKnowledgeCollect
 import { runKnowledgeProcessLoop } from '@/bots/orchestrator/runKnowledgeProcessLoop';
 import { runKnowledgeStubRepairLoop } from '@/bots/orchestrator/runKnowledgeStubRepairLoop';
 import { isCronAuthorized } from '@/lib/cronAuth';
+import { isServiceRoleConfigured } from '@/lib/supabase/admin';
 import {
   findActivePause,
   logCronEvent,
@@ -30,6 +31,17 @@ const pipelineId = 'cron/pipeline';
 export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!isCronAuthorized(req.headers.get('authorization'))) {
     return NextResponse.json({ status: 'error', error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!isServiceRoleConfigured()) {
+    return NextResponse.json(
+      {
+        status: 'error',
+        error: 'MISSING_SERVICE_ROLE',
+        hint: 'SUPABASE_SERVICE_ROLE_KEY 미설정 — 통합 파이프라인(뉴스·지식) DB 쓰기 불가.',
+      },
+      { status: 503 },
+    );
   }
 
   const paused = await findActivePause(pipelineId);

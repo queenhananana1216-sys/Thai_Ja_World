@@ -19,7 +19,7 @@ import { isCronAuthorized } from '@/lib/cronAuth';
 import { shouldMaskRawDbError } from '@/lib/db/dbErrorDefense';
 import { purgeOmniAlertLogs } from '@/lib/health/purgeOmniAlertLogs';
 import { notifyOwnerOmniCritical } from '@/lib/ops/ownerOmniHotline';
-import { createServiceRoleClient } from '@/lib/supabase/admin';
+import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -129,9 +129,6 @@ async function runBoardPostsShadowQa(
         title: payload.title,
         content: payload.content,
         image_urls: payload.image_urls,
-        lat: payload.lat,
-        lng: payload.lng,
-        address: payload.address,
       })
       .select('id');
     insertMs = Math.round(performance.now() - tIns0);
@@ -283,6 +280,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
+  if (!isServiceRoleConfigured()) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'MISSING_SERVICE_ROLE',
+        hint: 'SUPABASE_SERVICE_ROLE_KEY 미설정 — board_posts 프로브를 실행할 수 없습니다.',
+      },
+      { status: 503 },
+    );
+  }
+
   const botUserId = parseBotUserId();
   if (!botUserId) {
     console.error(
@@ -310,9 +318,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     title: `[shadow-qa] ${ts}`,
     content: 'Automated board_posts shadow QA probe (deleted immediately).',
     image_urls: [] as string[],
-    lat: null,
-    lng: null,
-    address: null,
   };
 
   const parsed = parseBoardPostBody(rawBody);

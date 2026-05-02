@@ -17,11 +17,13 @@ import {
   fetchHomeSiteTotals,
   fetchHomeWeeklyDotoriRanking,
   fetchHomeTipsPublic,
+  fetchAutoCuratedBoardPostsForPortalLive,
 } from '../../_components/home/home-queries';
 import type { HomeUnifiedFeedItem } from '../../_components/home/home-feed-types';
 import { categoryLabel } from '@/lib/community/postCategories';
 import type { Locale } from '@/i18n/types';
 import { getLocale } from '@/i18n/get-locale';
+import { isQuestMissionNoiseTitle } from './portalLiveFeedTitle';
 
 export type PortalFeedLine = {
   id: string;
@@ -30,6 +32,11 @@ export type PortalFeedLine = {
   subtitle: string | null;
   /** 뉴스(processed_news) 한 줄 행 — 상대 시간 표시용 ISO */
   publishedAt?: string | null;
+  /** 통합 피드(liveFeed) 전용 — 뱃지·HOT 판별 */
+  liveCategory?: string | null;
+  liveViewCount?: number;
+  liveCreatedAt?: string | null;
+  liveHighlight?: boolean;
 };
 
 export type PortalWeeklyDotoriRankRow = {
@@ -93,6 +100,7 @@ function unifiedItemToLine(item: HomeUnifiedFeedItem, locale: Locale): PortalFee
   const id = String(item.id ?? '').trim();
   const title = String(item.title ?? '').trim();
   if (!id || !title) return null;
+  if (isQuestMissionNoiseTitle(title)) return null;
   const th = locale === 'th';
   /** jobs·market 테이블 id 는 posts 상세와 불일치 — 허브로만 연결 */
   const href =
@@ -119,11 +127,17 @@ function unifiedItemToLine(item: HomeUnifiedFeedItem, locale: Locale): PortalFee
     : th
       ? `${pill} · ความคิดเห็น ${c} · เข้าชม ${v}`
       : `${pill} · 댓글 ${c} · 조회 ${v}`;
+  const cat =
+    item.kind === 'job' ? 'job' : item.kind === 'market' ? 'market' : String(item.category ?? '').trim() || null;
   return {
     id: `${item.kind}-${id}`,
     title,
     href,
     subtitle,
+    liveCategory: cat,
+    liveViewCount: Number(item.view_count ?? 0),
+    liveCreatedAt: String(item.created_at ?? '').trim() || null,
+    liveHighlight: Boolean(item.highlight),
   };
 }
 
@@ -169,6 +183,58 @@ function marketSubtitle(
 /** Supabase에서 온 행만 노출. 제목·id 없으면 행 자체를 버림(가짜 플레이스홀더 없음). */
 function compactLines(lines: (PortalFeedLine | null)[]): PortalFeedLine[] {
   return lines.filter((x): x is PortalFeedLine => x != null && Boolean(x.id?.trim()) && Boolean(x.title?.trim()));
+}
+
+function boardLiveFeedPill(boardType: string, locale: Locale): string {
+  if (boardType === 'reports') return locale === 'th' ? 'รายงานตรวจสอบ' : '검증 제보';
+  if (boardType === 'tips') return locale === 'th' ? 'ทิปส์ชีวิต' : '생활·여행 팁';
+  if (boardType === 'info') return categoryLabel('info', locale);
+  if (boardType === 'free') return categoryLabel('free', locale);
+  return boardType;
+}
+
+function boardAutoRowToPortalLine(
+  row: {
+    id: string;
+    title: string;
+    content: string;
+    board_type: string;
+    created_at: string;
+    home_highlight: boolean;
+    display_author_label: string | null;
+  },
+  locale: Locale,
+): PortalFeedLine {
+  const rawContent = row.content.trim();
+  const excerpt = rawContent.replace(/\s+/g, ' ').slice(0, 96);
+  const pill = boardLiveFeedPill(row.board_type, locale);
+  const parts: string[] = [pill];
+  const label = row.display_author_label?.trim();
+  if (label) parts.push(label);
+  if (excerpt.length > 0) parts.push(excerpt + (rawContent.length > 96 ? '…' : ''));
+  return {
+    id: `board-${row.id}`,
+    title: row.title.trim(),
+    href: `/boards/${encodeURIComponent(row.id)}`,
+    subtitle: parts.join(' · '),
+    liveCategory: row.board_type === 'reports' ? 'reports' : row.board_type === 'tips' ? 'tips' : row.board_type,
+    liveViewCount: 0,
+    liveCreatedAt: row.created_at.trim() || null,
+    liveHighlight: true,
+  };
+}
+
+function mergeLiveFeedPreferAuto(auto: PortalFeedLine[], unified: PortalFeedLine[], maxTotal: number): PortalFeedLine[] {
+  const seen = new Set<string>();
+  const out: PortalFeedLine[] = [];
+  for (const line of [...auto, ...unified]) {
+    const key = line.title.trim().toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(line);
+    if (out.length >= maxTotal) break;
+  }
+  return out;
 }
 
 function portalLocalMinihomeHref(slug: string, miniHome: unknown): string {
@@ -450,9 +516,21 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
 
   try {
     const u = await withTimeout(fetchHomeUnifiedFeed(14), { rows: [], error: null });
-    out.liveFeed = compactLines((u.rows ?? []).map((row) => unifiedItemToLine(row, portalLocale)));
+    out.liveFeed = compactLines((u.rows ?? []).map((row) => unifiedItemToLine(row, portalLocale))).filter(
+      (line) => !isQuestMissionNoiseTitle(line.title),
+    );
   } catch {
     out.liveFeed = [];
+  }
+
+  try {
+    const autoRows = await withTimeout(fetchAutoCuratedBoardPostsForPortalLive(12), [], HOME_FETCH_TIMEOUT_MS);
+    if (autoRows.length > 0) {
+      const autoLines = autoRows.map((r) => boardAutoRowToPortalLine(r, portalLocale));
+      out.liveFeed = mergeLiveFeedPreferAuto(autoLines, out.liveFeed ?? [], 28);
+    }
+  } catch {
+    /* 마이그레이션 미적용·칼럼 부재 시 통합 피드만 유지 */
   }
 
   try {

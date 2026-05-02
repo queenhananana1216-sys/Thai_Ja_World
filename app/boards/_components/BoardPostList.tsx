@@ -5,7 +5,7 @@ import { createBrowserClient } from '@/lib/supabase/client';
 import { BoardPostCard } from './BoardPostCard';
 import type { BoardPostRow } from './types';
 
-type Tab = 'free' | 'info' | 'reports';
+type Tab = 'free' | 'info' | 'reports' | 'tips';
 
 export function BoardPostList({ tab }: { tab: Tab }) {
   const [posts, setPosts] = useState<BoardPostRow[]>([]);
@@ -62,7 +62,9 @@ export function BoardPostList({ tab }: { tab: Tab }) {
       <div className="rounded-xl border border-dashed border-white/15 bg-slate-950/30 p-10 text-center text-sm text-slate-500">
         {tab === 'reports'
           ? '등록된 검증 제보가 아직 없습니다. 외부 채널 제보는 홈의 제보함 메뉴를 이용해 주세요.'
-          : '아직 게시글이 없습니다. 첫 글을 남겨 보세요.'}
+          : tab === 'tips'
+            ? '큐레이션 팁 글이 아직 없습니다. 자동 발행 크론이 동작하면 여기에 채워집니다.'
+            : '아직 게시글이 없습니다. 첫 글을 남겨 보세요.'}
       </div>
     );
   }

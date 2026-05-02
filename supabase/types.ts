@@ -17,9 +17,12 @@ export type Database = {
       board_posts: {
         Row: {
           address: string | null
+          auto_curated: boolean
           board_type: string
           content: string
           created_at: string
+          display_author_label: string | null
+          home_highlight: boolean
           id: string
           image_urls: string[]
           lat: number | null
@@ -30,9 +33,12 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          auto_curated?: boolean
           board_type: string
           content?: string
           created_at?: string
+          display_author_label?: string | null
+          home_highlight?: boolean
           id?: string
           image_urls?: string[]
           lat?: number | null
@@ -43,9 +49,12 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          auto_curated?: boolean
           board_type?: string
           content?: string
           created_at?: string
+          display_author_label?: string | null
+          home_highlight?: boolean
           id?: string
           image_urls?: string[]
           lat?: number | null

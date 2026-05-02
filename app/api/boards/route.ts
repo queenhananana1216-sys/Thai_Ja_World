@@ -36,12 +36,12 @@ export async function GET(req: Request): Promise<NextResponse> {
   let query = sb
     .from('board_posts')
     .select(
-      'id,user_id,board_type,title,content,image_urls,lat,lng,address,created_at,updated_at',
+      'id,user_id,board_type,title,content,image_urls,lat,lng,address,created_at,updated_at,home_highlight,auto_curated,display_author_label',
     )
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (boardType === 'free' || boardType === 'info' || boardType === 'reports') {
+  if (boardType === 'free' || boardType === 'info' || boardType === 'reports' || boardType === 'tips') {
     query = query.eq('board_type', boardType);
   }
 

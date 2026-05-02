@@ -31,6 +31,7 @@ export function BoardDetailClient({
   const hasGeo =
     post.board_type === 'info' && post.lat != null && post.lng != null;
   const isReports = post.board_type === 'reports';
+  const isTips = post.board_type === 'tips';
 
   async function onDelete() {
     if (!confirm('이 글을 삭제할까요?')) return;
@@ -50,11 +51,17 @@ export function BoardDetailClient({
       return;
     }
     window.location.href = `/boards?tab=${
-      post.board_type === 'info' ? 'info' : post.board_type === 'reports' ? 'reports' : 'free'
+      post.board_type === 'info'
+        ? 'info'
+        : post.board_type === 'reports'
+          ? 'reports'
+          : post.board_type === 'tips'
+            ? 'tips'
+            : 'free'
     }`;
   }
 
-  const listTab = isReports ? 'reports' : post.board_type === 'info' ? 'info' : 'free';
+  const listTab = isReports ? 'reports' : isTips ? 'tips' : post.board_type === 'info' ? 'info' : 'free';
 
   return (
     <article className="rounded-2xl border border-white/15 bg-gradient-to-b from-slate-950/95 to-slate-900/50 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl sm:p-6">
@@ -76,28 +83,43 @@ export function BoardDetailClient({
         </div>
       ) : null}
 
-      <div className="mb-2 inline-flex items-center gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <span
           className={
             post.board_type === 'info'
               ? 'rounded-full border border-sky-400/35 bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold text-sky-100'
-              : isReports
-                ? 'rounded-full border border-rose-400/35 bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold text-rose-100'
-                : 'rounded-full border border-amber-400/35 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-100'
+              : isTips
+                ? 'rounded-full border border-teal-400/35 bg-teal-500/15 px-2 py-0.5 text-[10px] font-bold text-teal-100'
+                : isReports
+                  ? 'rounded-full border border-rose-400/35 bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold text-rose-100'
+                  : 'rounded-full border border-amber-400/35 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-100'
           }
         >
           {post.board_type === 'info'
             ? '정보 공유'
-            : isReports
-              ? '검증 제보'
-              : '자유 게시판'}
+            : isTips
+              ? '생활·여행 팁'
+              : isReports
+                ? '검증 제보'
+                : '자유 게시판'}
         </span>
+        {post.home_highlight ? (
+          <span className="rounded-full border border-orange-400/40 bg-orange-500/15 px-2 py-0.5 text-[10px] font-bold text-orange-100">
+            🔥 HOT
+          </span>
+        ) : null}
         <time className="text-[10px] text-slate-500" dateTime={post.created_at}>
           {new Date(post.created_at).toLocaleString('ko-KR')}
         </time>
       </div>
 
       <h1 className="text-xl font-black tracking-tight text-slate-50 sm:text-2xl">{post.title}</h1>
+
+      {post.display_author_label?.trim() ? (
+        <p className="mt-2 text-xs font-medium text-slate-400">
+          작성 표시 — <span className="text-slate-200">{post.display_author_label.trim()}</span>
+        </p>
+      ) : null}
 
       <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-200/95 [text-wrap:pretty]">
         {post.content}

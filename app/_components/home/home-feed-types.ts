@@ -9,4 +9,6 @@ export type HomeUnifiedFeedItem = {
   comment_count: number;
   view_count: number;
   image_url: string | null;
+  /** RPC가 주면 홈 피드 HOT 뱃지 등에 사용 */
+  highlight?: boolean;
 };

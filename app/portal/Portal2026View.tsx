@@ -14,13 +14,13 @@ import { siteUiDefaults } from '@/lib/site-settings/siteUiSettings';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import { localizeQuestFeedText, stripQuestFeedWeatherClutter } from '@/lib/quests/questFeedLocale';
+import { isQuestMissionNoiseTitle } from '../lib/home/portalLiveFeedTitle';
 import PortalLocalDemoWingRolling from './PortalLocalDemoWingRolling';
 import PortalQuickMenu from './PortalQuickMenu';
 import PortalQuestWriteCta from './PortalQuestWriteCta';
 import QuickAppLauncher from './QuickAppLauncher';
 import PortalWeatherWidget from './PortalWeatherWidget';
 import styles from './portal-2026.module.css';
-import { cn } from '@/lib/utils';
 
 /** processed_news.created_at → 상대 시간 (SSR·클라 동일 규칙) */
 function formatPortalNewsAge(iso: string | null | undefined, locale: Locale): string {
@@ -39,24 +39,6 @@ function formatPortalNewsAge(iso: string | null | undefined, locale: Locale): st
   const days = Math.floor(hours / 24);
   if (days < 10) return rtf.format(-days, 'day');
   return new Intl.DateTimeFormat(loc === 'th' ? 'th-TH' : 'ko-KR', { month: 'short', day: 'numeric' }).format(d);
-}
-
-function splitLiveHotKeywords(text: string, locale: Locale): ReactNode {
-  const re =
-    locale === 'th'
-      ? /(\[(?:ภารกิจรายวัน|ภารกิจรายสัปดาห์|ภารกิจรายเดือน)\]|(?:\[(?:quest|Quest|Mission|เควสต์)\])|ดอกท้อ|🎁|สมุดเยี่ยมชม|Guestbook|guestbook|ข้าวโพด|cheers|Cheer)/gi
-      : /(\[(?:일일|주간|월간)\s+미션\]|(?:\[(?:quest|Quest|Mission|퀘스트|เควสต์)\])|도토리|🎁|방명록|Guestbook|guestbook|미션|옥수수|cheers|Cheer)/gi;
-  const parts = text.split(re);
-  if (parts.length <= 1) return text;
-  return parts.map((part, i) =>
-    i % 2 === 1 ? (
-      <span key={`h-${i}-${part}`} className={styles.liveFeedKeywordGlow}>
-        {part}
-      </span>
-    ) : (
-      <span key={`p-${i}`}>{part}</span>
-    ),
-  );
 }
 
 export type Portal2026ViewProps = {
@@ -147,7 +129,7 @@ function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedL
     let publishedAt: string | undefined;
     if (typeof paRaw === 'string' && paRaw.trim()) publishedAt = paRaw.trim();
     else if (paRaw != null && String(paRaw).trim()) publishedAt = String(paRaw).trim();
-    out.push({
+    const base: PortalFeedLine = {
       id: id.trim(),
       title: title.trim(),
       href: typeof hrefRaw === 'string' && hrefRaw.trim() ? hrefRaw : '/boards',
@@ -158,7 +140,21 @@ function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedL
         return s.trim() ? s : null;
       })(),
       ...(publishedAt ? { publishedAt } : {}),
-    });
+    };
+    const src = l as PortalFeedLine;
+    if (src.liveCategory != null && String(src.liveCategory).trim()) {
+      base.liveCategory = String(src.liveCategory).trim();
+    }
+    if (typeof src.liveViewCount === 'number' && Number.isFinite(src.liveViewCount)) {
+      base.liveViewCount = src.liveViewCount;
+    }
+    if (src.liveCreatedAt != null && String(src.liveCreatedAt).trim()) {
+      base.liveCreatedAt = String(src.liveCreatedAt).trim();
+    }
+    if (src.liveHighlight === true) {
+      base.liveHighlight = true;
+    }
+    out.push(base);
   }
   return out;
 }
@@ -307,27 +303,34 @@ function FeedLineList({
   );
 }
 
-function isLiveGamificationLine(item: PortalFeedLine): boolean {
-  const t = `${item.title} ${item.subtitle ?? ''}`;
-  const lower = t.toLowerCase();
-  return (
-    /\[\s*(?:[Qq]uest|[Mm]ission|퀘스트|เควสต์)\s*\]/u.test(t) ||
-    /\[(?:일일|주간|월간)\s+미션\]/u.test(t) ||
-    /\[(?:ภารกิจรายวัน|ภารกิจรายสัปดาห์|ภารกิจรายเดือน)\]/u.test(t) ||
-    lower.includes('도토리') ||
-    lower.includes('ดอกท้อ') ||
-    lower.includes('방명록') ||
-    lower.includes('guestbook') ||
-    lower.includes('퀘스트') ||
-    lower.includes('미션') ||
-    lower.includes('ภารกิจ') ||
-    lower.includes('옥수수') ||
-    lower.includes('cheers') ||
-    lower.includes('cheer') ||
-    lower.includes('quest') ||
-    lower.includes('달성') ||
-    lower.includes('🎁')
-  );
+/** 통합 피드 내 상대적 인기글 — HOT 뱃지 */
+function computeLiveFeedHotIds(lines: PortalFeedLine[]): Set<string> {
+  const ids = new Set<string>();
+  const withViews = lines.filter((l) => (l.liveViewCount ?? 0) > 0);
+  const sorted = [...withViews].sort((a, b) => (b.liveViewCount ?? 0) - (a.liveViewCount ?? 0));
+  for (const row of sorted.slice(0, 2)) {
+    if ((row.liveViewCount ?? 0) >= 28) ids.add(row.id);
+  }
+  for (const row of lines) {
+    if (row.liveHighlight) ids.add(row.id);
+    if ((row.liveViewCount ?? 0) >= 72) ids.add(row.id);
+  }
+  return ids;
+}
+
+function isLiveFeedFresh(iso: string | null | undefined): boolean {
+  if (!iso?.trim()) return false;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  return Date.now() - d.getTime() < 12 * 60 * 1000;
+}
+
+function liveFeedBadgeCopy(locale: Locale) {
+  return {
+    urgentReport: locale === 'th' ? '🚨 แจ้งด่วน' : '🚨 긴급 제보',
+    hot: '🔥 HOT',
+    fresh: locale === 'th' ? '🆕 เมื่อกี้' : '🆕 방금 전',
+  };
 }
 
 function LiveFeedList({
@@ -343,49 +346,79 @@ function LiveFeedList({
 }) {
   const d = getDictionary(locale);
   const phraseMap = d.quests.feedPhraseMap;
-  const safe = normalizeLines(lines ?? []);
+  const badges = liveFeedBadgeCopy(locale);
+  const safe = normalizeLines(lines ?? []).filter((item) => !isQuestMissionNoiseTitle(item.title));
   if (safe.length === 0) return <EmptyState message={emptyMessage} />;
+  const hotIds = computeLiveFeedHotIds(safe);
   return (
-    <ul className="max-h-[min(28rem,62vh)] min-h-0 space-y-2 overflow-y-auto overscroll-contain px-2 py-2 md:max-h-[280px] md:space-y-0 md:py-1">
+    <ul className="max-h-[min(28rem,62vh)] min-h-0 space-y-0 overflow-y-auto overscroll-contain px-2 py-3 md:max-h-[min(24rem,50vh)]">
       {safe.map((item, idx) => {
-        const hot = isLiveGamificationLine(item);
         const titleLoc = localizeQuestFeedText(item?.title ?? '', locale, phraseMap);
         const subLoc = localizeQuestFeedText(item?.subtitle ?? '', locale, phraseMap);
+        const cat = (item.liveCategory ?? '').toLowerCase();
+        const isReport = cat === 'reports';
+        const isHot = hotIds.has(item.id);
+        const fresh = isLiveFeedFresh(item.liveCreatedAt ?? null);
+        const chipBase =
+          'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide shadow-sm ring-1 ring-white/10';
+
+        const chips: { key: string; node: ReactNode }[] = [];
+        if (isReport) {
+          chips.push({
+            key: 'report',
+            node: (
+              <span
+                className={`${chipBase} bg-gradient-to-r from-red-600 to-rose-700 text-white`}
+                aria-hidden
+              >
+                {badges.urgentReport}
+              </span>
+            ),
+          });
+        }
+        if (isHot) {
+          chips.push({
+            key: 'hot',
+            node: (
+              <span
+                className={`${chipBase} bg-gradient-to-r from-orange-500 to-amber-600 text-white`}
+                aria-hidden
+              >
+                {badges.hot}
+              </span>
+            ),
+          });
+        }
+        if (fresh) {
+          chips.push({
+            key: 'fresh',
+            node: (
+              <span
+                className={`${chipBase} bg-gradient-to-r from-emerald-600 to-teal-700 text-white`}
+                aria-hidden
+              >
+                {badges.fresh}
+              </span>
+            ),
+          });
+        }
+
         return (
-          <li
-            key={item?.id ? String(item.id) : `live-${idx}`}
-            className={cn(
-              'rounded-lg bg-gray-800/40 p-3 text-base leading-relaxed max-[768px]:shadow-sm',
-              'min-[769px]:rounded-none min-[769px]:border-b min-[769px]:border-slate-800/90 min-[769px]:bg-transparent min-[769px]:p-0 min-[769px]:py-1.5 min-[769px]:shadow-none min-[769px]:last:border-b-0',
-              hot &&
-                'max-[768px]:bg-gradient-to-br max-[768px]:from-amber-950/40 max-[768px]:to-gray-800/40 max-[768px]:ring-1 max-[768px]:ring-amber-400/20',
-              hot ? cn(styles.liveFeedRowHot, 'min-[769px]:text-gray-100') : 'text-gray-100',
-            )}
-          >
+          <li key={item?.id ? String(item.id) : `live-${idx}`} className="mb-3 list-none last:mb-1">
             <GuestGateLink
               href={item?.href?.trim() ? item.href : '/boards'}
               isLoggedIn={isLoggedIn}
-              className={cn(
-                'flex min-h-12 min-w-0 flex-col justify-center gap-1 overflow-hidden hover:text-amber-200 md:min-h-11',
-                hot ? 'min-[769px]:px-0.5' : '',
-              )}
+              className="block rounded-2xl border border-gray-700 bg-gray-800/60 p-4 shadow-md backdrop-blur-md transition hover:border-amber-400/35 hover:bg-gray-800/75"
             >
-              <span
-                className={cn(
-                  'line-clamp-2 break-words text-base leading-snug',
-                  hot ? 'font-semibold text-white' : 'font-normal text-gray-100',
-                )}
-              >
-                {hot ? splitLiveHotKeywords(titleLoc, locale) : titleLoc}
+              {chips.length > 0 ? (
+                <div className="mb-2.5 flex min-h-[1.25rem] flex-wrap gap-1.5">{chips.map((c) => <span key={c.key}>{c.node}</span>)}</div>
+              ) : null}
+              <span className="line-clamp-2 break-words text-base font-semibold leading-snug text-white">
+                {titleLoc}
               </span>
               {subLoc ? (
-                <span
-                  className={cn(
-                    'block line-clamp-2 break-words text-base leading-relaxed text-gray-200 md:text-sm',
-                    hot ? 'font-medium' : '',
-                  )}
-                >
-                  {hot ? splitLiveHotKeywords(subLoc, locale) : subLoc}
+                <span className="mt-1.5 block line-clamp-2 break-words text-sm leading-relaxed text-gray-300">
+                  {subLoc}
                 </span>
               ) : null}
             </GuestGateLink>

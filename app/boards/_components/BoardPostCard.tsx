@@ -36,7 +36,13 @@ export function BoardPostCard({ post, showOwnerActions, currentUserId }: Props) 
       return;
     }
     window.location.href = `/boards?tab=${
-      post.board_type === 'info' ? 'info' : post.board_type === 'reports' ? 'reports' : 'free'
+      post.board_type === 'info'
+        ? 'info'
+        : post.board_type === 'reports'
+          ? 'reports'
+          : post.board_type === 'tips'
+            ? 'tips'
+            : 'free'
     }`;
   }
 
@@ -61,9 +67,21 @@ export function BoardPostCard({ post, showOwnerActions, currentUserId }: Props) 
       ) : null}
 
       <Link href={`/boards/${post.id}`} className="block no-underline">
-        <h3 className="pr-24 text-sm font-bold leading-snug text-slate-50 line-clamp-2 hover:text-amber-100">
-          {post.title}
-        </h3>
+        <div className="flex flex-wrap items-center gap-1.5 pr-24">
+          <h3 className="text-sm font-bold leading-snug text-slate-50 line-clamp-2 hover:text-amber-100">
+            {post.title}
+          </h3>
+          {post.home_highlight ? (
+            <span className="shrink-0 rounded-full border border-orange-400/35 bg-orange-500/15 px-1.5 py-0.5 text-[9px] font-bold text-orange-100">
+              🔥 HOT
+            </span>
+          ) : null}
+        </div>
+        {post.display_author_label?.trim() ? (
+          <p className="mt-1 text-[10px] font-medium text-slate-500">
+            {post.display_author_label.trim()}
+          </p>
+        ) : null}
         <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400 line-clamp-4">{preview}</p>
 
         {thumbs.length > 0 ? (

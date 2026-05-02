@@ -126,6 +126,7 @@ function mapUnifiedRpcRow(r: Record<string, unknown>): HomeUnifiedFeedItem {
   const k = r.kind;
   const kind: HomeUnifiedFeedItem['kind'] =
     k === 'job' ? 'job' : k === 'market' ? 'market' : 'post';
+  const highlightRaw = r.highlight ?? r.is_featured ?? r.is_pinned ?? r.force_home_feed ?? r.home_highlight;
   return {
     kind,
     id: String(r.id ?? ''),
@@ -136,6 +137,11 @@ function mapUnifiedRpcRow(r: Record<string, unknown>): HomeUnifiedFeedItem {
     comment_count: Number(r.comment_count ?? 0),
     view_count: Number(r.view_count ?? 0),
     image_url: r.image_url != null ? String(r.image_url) : null,
+    highlight: Boolean(
+      highlightRaw === true ||
+        highlightRaw === 1 ||
+        (typeof highlightRaw === 'string' && ['true', '1', 'yes'].includes(highlightRaw.toLowerCase())),
+    ),
   };
 }
 
@@ -777,6 +783,49 @@ export async function fetchHomeBoardPostsByType(
     })),
     error: null,
   };
+}
+
+/** 크론 고스트라이터 등 자동 큐레이션 board_posts — 홈 실시간 피드 상단 병합용 */
+export async function fetchAutoCuratedBoardPostsForPortalLive(limit = 10): Promise<
+  {
+    id: string;
+    title: string;
+    content: string;
+    board_type: string;
+    created_at: string;
+    home_highlight: boolean;
+    display_author_label: string | null;
+  }[]
+> {
+  const sb = tryCreateCached() ?? tryCreate();
+  if (!sb) return [];
+  const safeLimit = Math.min(40, Math.max(1, Math.floor(Number(limit)) || 10));
+  const { data, error } = await sb
+    .from('board_posts')
+    .select('id, title, content, board_type, created_at, home_highlight, display_author_label')
+    .eq('auto_curated', true)
+    .eq('home_highlight', true)
+    .order('created_at', { ascending: false })
+    .limit(safeLimit);
+
+  if (error) {
+    const missing =
+      error.message.toLowerCase().includes('column') && error.message.toLowerCase().includes('does not exist');
+    if (!missing) {
+      console.warn('[fetchAutoCuratedBoardPostsForPortalLive]', error.message);
+    }
+    return [];
+  }
+
+  return (data ?? []).map((row) => ({
+    id: String(row.id),
+    title: String(row.title ?? ''),
+    content: String(row.content ?? ''),
+    board_type: String(row.board_type ?? ''),
+    created_at: String(row.created_at ?? ''),
+    home_highlight: Boolean(row.home_highlight),
+    display_author_label: row.display_author_label != null ? String(row.display_author_label) : null,
+  }));
 }
 
 export async function fetchHomePostsByCategory(

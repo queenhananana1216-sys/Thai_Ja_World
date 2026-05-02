@@ -12,6 +12,11 @@ import { getLocale } from '@/i18n/get-locale';
 import JsonLd from '@/lib/seo/JsonLd';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { formatDate } from '@/lib/utils/formatDate';
+import {
+  extractGuestBlurPreview,
+  shouldBlurCommunityPostForGuest,
+} from '@/lib/community/postGuestBlurTrap';
+import PostBodyGuestBlur from '../_components/PostBodyGuestBlur';
 
 type PageProps = { params: Promise<{ postId: string }> };
 
@@ -86,7 +91,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const { data: post, error } = await supabase
     .from('posts')
     .select(
-      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set, latitude, longitude, location_name',
+      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set, latitude, longitude, location_name, is_knowledge_tip',
     )
     .eq('id', postId)
     .eq('moderation_status', 'safe')
@@ -139,6 +144,20 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const pageUrl = absoluteUrl(path);
   const isAuthor = viewerId !== null && viewerId === (post.author_id as string);
   const authorHidden = Boolean(post.author_hidden);
+  const knowledgeTip = Boolean((post as { is_knowledge_tip?: boolean }).is_knowledge_tip);
+  const blurTrapActive =
+    !viewerId &&
+    !isAuthor &&
+    shouldBlurCommunityPostForGuest({
+      title: String(post.title ?? ''),
+      category: String(post.category ?? ''),
+      view_count: Number(post.view_count ?? 0),
+      comment_count: Number(post.comment_count ?? 0),
+      is_knowledge_tip: knowledgeTip,
+    });
+  const bodyForGuestBlur = blurTrapActive
+    ? extractGuestBlurPreview(String(post.content ?? ''))
+    : String(post.content ?? '');
   const lat =
     typeof (post as { latitude?: number | null }).latitude === 'number'
       ? Number((post as { latitude?: number }).latitude)
@@ -273,10 +292,12 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
         <h1 className="mt-4 text-2xl font-extrabold leading-tight text-white sm:text-3xl">
           {post.title as string}
         </h1>
-        <div className="mt-4 whitespace-pre-wrap text-base leading-relaxed text-slate-200">
-          {post.content as string}
-        </div>
-        {lat !== null && lng !== null ? (
+        <PostBodyGuestBlur
+          gateActive={blurTrapActive}
+          bodyText={bodyForGuestBlur}
+          loginNextPath={path}
+        />
+        {!blurTrapActive && lat !== null && lng !== null ? (
           <div className="mt-5 rounded-xl border border-slate-700/50 bg-slate-950/50 p-3">
             <p className="mb-2 text-xs font-semibold text-slate-300">
               📍 {locationName?.trim() || '위치 공유'}
@@ -293,15 +314,17 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
         <div className="mt-6 border-t border-white/10 pt-4">
           <PostEngagementActions postPath={path} isLoggedIn={Boolean(viewerId)} />
         </div>
-        {images.map((url) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={url}
-            src={url}
-            alt=""
-            className="mt-4 w-full rounded-xl border border-white/10 object-cover"
-          />
-        ))}
+        {!blurTrapActive
+          ? images.map((url) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={url}
+                src={url}
+                alt=""
+                className="mt-4 w-full rounded-xl border border-white/10 object-cover"
+              />
+            ))
+          : null}
         </article>
       </div>
 

@@ -9,8 +9,9 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const META = {
-  title: '한인 생활망 — 마트·약국·병원 | 태국에, 살자',
-  description: '방콕·파타야·치앙마이 한인 마트, 약국, 병원 연락처. 검증 시각을 함께 표시합니다.',
+  title: '한인 생활망 — 마트·약국·병원·렌트·골프·스파 | 태국에, 살자',
+  description:
+    '방콕·파타야·치앙마이 한인 마트, 약국, 병원, 오토바이·차량 렌트, 골프 투어, 마사지·스파 연락처. 검증 시각을 함께 표시합니다.',
 } as const;
 
 export function generateMetadata(): Metadata {

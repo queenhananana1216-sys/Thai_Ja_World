@@ -22,6 +22,10 @@ export default function EditBoardPage() {
         setErr('글을 찾을 수 없습니다.');
         return;
       }
+      if (data.board_type === 'reports') {
+        router.replace(`/boards/${id}`);
+        return;
+      }
       const {
         data: { user },
       } = await sb.auth.getUser();

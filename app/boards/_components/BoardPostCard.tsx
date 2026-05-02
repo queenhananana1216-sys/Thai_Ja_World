@@ -35,7 +35,9 @@ export function BoardPostCard({ post, showOwnerActions, currentUserId }: Props) 
       alert('삭제에 실패했습니다.');
       return;
     }
-    window.location.href = `/boards?tab=${post.board_type === 'info' ? 'info' : 'free'}`;
+    window.location.href = `/boards?tab=${
+      post.board_type === 'info' ? 'info' : post.board_type === 'reports' ? 'reports' : 'free'
+    }`;
   }
 
   return (

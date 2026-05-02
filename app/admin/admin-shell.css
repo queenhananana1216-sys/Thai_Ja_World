@@ -623,3 +623,32 @@
   font-size: 14px;
   color: var(--admin-muted);
 }
+
+.admin-design__field {
+  display: block;
+  margin-top: 14px;
+}
+
+.admin-design__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-muted);
+  margin-bottom: 6px;
+}
+
+.admin-design__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(51, 65, 85, 0.65);
+  background: rgba(2, 6, 23, 0.66);
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+.admin-design__input:focus {
+  outline: none;
+  border-color: rgba(167, 139, 250, 0.55);
+}

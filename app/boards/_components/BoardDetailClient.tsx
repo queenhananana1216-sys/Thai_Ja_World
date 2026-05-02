@@ -4,10 +4,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@/lib/supabase/client';
+import BoardReportComments, { type BoardReportCommentRow } from './BoardReportComments';
+import BoardReportReactionsPanel from './BoardReportReactionsPanel';
 import { MiniMapView } from './MiniMapView';
 import type { BoardPostRow } from './types';
 
-export function BoardDetailClient({ post }: { post: BoardPostRow }) {
+export function BoardDetailClient({
+  post,
+  reportComments = [],
+}: {
+  post: BoardPostRow;
+  reportComments?: BoardReportCommentRow[];
+}) {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -22,6 +30,7 @@ export function BoardDetailClient({ post }: { post: BoardPostRow }) {
   const imgs = post.image_urls ?? [];
   const hasGeo =
     post.board_type === 'info' && post.lat != null && post.lng != null;
+  const isReports = post.board_type === 'reports';
 
   async function onDelete() {
     if (!confirm('이 글을 삭제할까요?')) return;
@@ -40,8 +49,12 @@ export function BoardDetailClient({ post }: { post: BoardPostRow }) {
       alert('삭제에 실패했습니다.');
       return;
     }
-    window.location.href = `/boards?tab=${post.board_type === 'info' ? 'info' : 'free'}`;
+    window.location.href = `/boards?tab=${
+      post.board_type === 'info' ? 'info' : post.board_type === 'reports' ? 'reports' : 'free'
+    }`;
   }
+
+  const listTab = isReports ? 'reports' : post.board_type === 'info' ? 'info' : 'free';
 
   return (
     <article className="rounded-2xl border border-white/15 bg-gradient-to-b from-slate-950/95 to-slate-900/50 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl sm:p-6">
@@ -68,10 +81,16 @@ export function BoardDetailClient({ post }: { post: BoardPostRow }) {
           className={
             post.board_type === 'info'
               ? 'rounded-full border border-sky-400/35 bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold text-sky-100'
-              : 'rounded-full border border-amber-400/35 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-100'
+              : isReports
+                ? 'rounded-full border border-rose-400/35 bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold text-rose-100'
+                : 'rounded-full border border-amber-400/35 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-100'
           }
         >
-          {post.board_type === 'info' ? '정보 공유' : '자유 게시판'}
+          {post.board_type === 'info'
+            ? '정보 공유'
+            : isReports
+              ? '검증 제보'
+              : '자유 게시판'}
         </span>
         <time className="text-[10px] text-slate-500" dateTime={post.created_at}>
           {new Date(post.created_at).toLocaleString('ko-KR')}
@@ -120,9 +139,20 @@ export function BoardDetailClient({ post }: { post: BoardPostRow }) {
         </div>
       ) : null}
 
+      {isReports ? (
+        <>
+          <BoardReportReactionsPanel boardPostId={post.id} />
+          <BoardReportComments
+            boardPostId={post.id}
+            initial={reportComments}
+            showLoginHint={userId === null}
+          />
+        </>
+      ) : null}
+
       <div className="mt-8 border-t border-white/10 pt-4">
         <Link
-          href={`/boards?tab=${post.board_type === 'info' ? 'info' : 'free'}`}
+          href={`/boards?tab=${listTab}`}
           className="text-xs font-semibold text-amber-200/90 hover:text-amber-100"
         >
           ← 목록으로

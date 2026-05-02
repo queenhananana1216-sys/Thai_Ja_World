@@ -1,4 +1,6 @@
 import GuestGateLink from '@app/_components/GuestGateLink';
+import { ReportQuickMenuTile } from '@app/_components/ReportModal';
+import { ThbKrwQuickMenuTile } from '@app/_components/ThbKrwBottomSheet';
 import type { Locale } from '@/i18n/types';
 import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import styles from './portal-2026.module.css';
@@ -10,6 +12,8 @@ const ICON_BY_KEY: Record<string, string> = {
   local: '🏬',
   news: '📰',
   visaTips: '💡',
+  report: '🚨',
+  fxRate: '💱',
 };
 
 function quickMenuLabel(locale: Locale, key: string, fallbackTitle: string): string {
@@ -21,6 +25,8 @@ function quickMenuLabel(locale: Locale, key: string, fallbackTitle: string): str
       local: 'ท้องถิ่น',
       news: 'ข่าว',
       visaTips: 'ทิปส์',
+      report: 'แจ้งเบาะแส',
+      fxRate: 'เรทบาท',
     };
     return th[key] ?? fallbackTitle;
   }
@@ -31,6 +37,8 @@ function quickMenuLabel(locale: Locale, key: string, fallbackTitle: string): str
     local: '로컬',
     news: '뉴스',
     visaTips: '꿀팁',
+    report: '제보함',
+    fxRate: '바트 환율',
   };
   return ko[key] ?? fallbackTitle;
 }
@@ -51,6 +59,14 @@ export default function PortalMobileQuickMenu({ locale, isLoggedIn }: PortalMobi
       <div className={`${styles.glassBlue} px-3 py-4`}>
         <ul className="grid grid-cols-4 gap-4">
           {copy.boardColumns.map((board) => {
+            if (board.key === 'fxRate') {
+              const label = quickMenuLabel(locale, board.key, board.title);
+              return <ThbKrwQuickMenuTile key={board.key} locale={locale} label={label} />;
+            }
+            if (board.key === 'report') {
+              const label = quickMenuLabel(locale, board.key, board.title);
+              return <ReportQuickMenuTile key={board.key} locale={locale} label={label} />;
+            }
             const href = board.moreHref?.trim() ? board.moreHref : '/boards';
             const icon = ICON_BY_KEY[board.key] ?? '📌';
             const label = quickMenuLabel(locale, board.key, board.title);

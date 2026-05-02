@@ -33,6 +33,7 @@ const adminSections = [
   {
     title: '사이트 · 노출',
     items: [
+      { href: '/admin/site-settings', label: '사이트 설정·제보 링크', icon: '⚙' },
       { href: '/admin/design', label: '사이트 디자인 제어', icon: '◇' },
       { href: '/admin/banners', label: '배너 Control Center', icon: '▣' },
       { href: '/admin/premium-banners', label: '프리미엄 배너', icon: '▦' },
@@ -43,6 +44,7 @@ const adminSections = [
     title: '유저 · 미션 관리',
     items: [
       { href: '/admin/users', label: '이용자 디렉터리', icon: '◍' },
+      { href: '/admin/board-reports', label: '검증 제보 글', icon: '🚨' },
       { href: '/admin/community-posts', label: '광장 글 관리', icon: '◌' },
       { href: '/admin/news', label: '뉴스 큐', icon: '▤' },
       { href: '/admin/knowledge', label: '지식/미션 큐', icon: '▧' },

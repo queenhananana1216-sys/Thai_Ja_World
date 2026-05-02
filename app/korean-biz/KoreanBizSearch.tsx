@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { KoreanBizRow } from './KoreanBizHubClient';
+import type { KoreanBizCategory, KoreanBizRow } from './KoreanBizHubClient';
 import { matchesHangulOrChosung } from '@/lib/utils/hangul';
 
-const CATEGORY_KO: Record<KoreanBizRow['category'], string> = {
+const CATEGORY_KO: Record<KoreanBizCategory, string> = {
   mart: '마트',
   pharmacy: '약국',
   hospital: '병원',
+  vehicle_rent: '오토바이 렌트 차량렌트',
+  golf: '골프 골프장 투어',
+  massage_spa: '마사지 스파',
 };
 
 const REGION_KO: Record<KoreanBizRow['region'], string> = {

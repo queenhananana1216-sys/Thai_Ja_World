@@ -576,7 +576,9 @@ export default function Portal2026View({
           <PortalMobileQuickMenu locale={locale} isLoggedIn={isLoggedIn} />
           <div className="hidden min-[769px]:block">
             <div className={styles.boardGrid}>
-            {copy.boardColumns.map((board) => {
+            {copy.boardColumns
+              .filter((board) => board.key !== 'fxRate')
+              .map((board) => {
               const colLines = linesByKey?.[board.key] ?? [];
               const hasPosts = normalizeLines(colLines).length > 0;
               const questCat = board.questCat;

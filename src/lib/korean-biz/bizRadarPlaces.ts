@@ -5,7 +5,13 @@ import 'server-only';
  * @see https://developers.google.com/maps/documentation/places/web-service/text-search
  */
 
-export type KoreanBizCategory = 'mart' | 'pharmacy' | 'hospital';
+export type KoreanBizCategory =
+  | 'mart'
+  | 'pharmacy'
+  | 'hospital'
+  | 'vehicle_rent'
+  | 'golf'
+  | 'massage_spa';
 export type KoreanBizRegion = 'bangkok' | 'pattaya' | 'chiangmai';
 
 export type BizRadarSearchTask = {
@@ -38,6 +44,21 @@ export const BIZ_RADAR_SEARCH_TASKS: BizRadarSearchTask[] = [
   { query: 'Chiang Mai Korean Hospital', region: 'chiangmai', category: 'hospital' },
   { query: 'Chiang Mai Korean Clinic', region: 'chiangmai', category: 'hospital' },
   { query: 'Chiang Mai Korean Dentist', region: 'chiangmai', category: 'hospital' },
+  { query: 'Bangkok motorbike rental Korean', region: 'bangkok', category: 'vehicle_rent' },
+  { query: 'Bangkok scooter hire Sukhumvit', region: 'bangkok', category: 'vehicle_rent' },
+  { query: 'Pattaya motorbike rental Korean', region: 'pattaya', category: 'vehicle_rent' },
+  { query: 'Pattaya bike rental beach road', region: 'pattaya', category: 'vehicle_rent' },
+  { query: 'Chiang Mai scooter rental Korean', region: 'chiangmai', category: 'vehicle_rent' },
+  { query: 'Bangkok golf tour Korean booking', region: 'bangkok', category: 'golf' },
+  { query: 'Bangkok golf package Korean', region: 'bangkok', category: 'golf' },
+  { query: 'Pattaya golf tour Korean', region: 'pattaya', category: 'golf' },
+  { query: 'Pattaya golf club Korean', region: 'pattaya', category: 'golf' },
+  { query: 'Chiang Mai golf tour Korean', region: 'chiangmai', category: 'golf' },
+  { query: 'Bangkok massage Korean speaking', region: 'bangkok', category: 'massage_spa' },
+  { query: 'Bangkok spa Korean', region: 'bangkok', category: 'massage_spa' },
+  { query: 'Pattaya massage Korean', region: 'pattaya', category: 'massage_spa' },
+  { query: 'Pattaya spa Korean', region: 'pattaya', category: 'massage_spa' },
+  { query: 'Chiang Mai massage Korean', region: 'chiangmai', category: 'massage_spa' },
 ];
 
 /** `/api/admin/force-biz-sync` — 지역 편향 + 키워드 조합으로 초기 시드용 */
@@ -63,6 +84,15 @@ export const FORCE_BIZ_SYNC_SEARCH_TASKS: BizRadarSearchTask[] = [
   { query: 'Korean Clinic', region: 'chiangmai', category: 'hospital' },
   { query: 'Korean Dentist', region: 'chiangmai', category: 'hospital' },
   { query: 'Korean Pharmacy', region: 'chiangmai', category: 'pharmacy' },
+  { query: 'motorbike rental', region: 'bangkok', category: 'vehicle_rent' },
+  { query: 'scooter rental', region: 'pattaya', category: 'vehicle_rent' },
+  { query: 'bike rental', region: 'chiangmai', category: 'vehicle_rent' },
+  { query: 'golf booking', region: 'bangkok', category: 'golf' },
+  { query: 'golf tour', region: 'pattaya', category: 'golf' },
+  { query: 'golf Chiang Mai', region: 'chiangmai', category: 'golf' },
+  { query: 'Korean spa Bangkok', region: 'bangkok', category: 'massage_spa' },
+  { query: 'Thai massage Korean', region: 'pattaya', category: 'massage_spa' },
+  { query: 'spa Nimman', region: 'chiangmai', category: 'massage_spa' },
 ];
 
 const REGION_BIAS: Record<

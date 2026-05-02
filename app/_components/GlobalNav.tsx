@@ -122,12 +122,12 @@ export default async function GlobalNav() {
 
   const koreanBizNavLabel =
     locale === 'th'
-      ? '🇰🇷 ชีวิตเกาหลี (มาร์ท/ร้านยา/โรงพยาบาล)'
+      ? '🇰🇷 ชีวิตเกาหลี (มาร์ท·เช่ารถ·กอล์ฟ·สปา)'
       : locale === 'en'
-        ? '🇰🇷 Korean community (mart/pharmacy/hospital)'
+        ? '🇰🇷 Korean biz (mart, rent, golf, spa)'
         : locale === 'zh'
-          ? '🇰🇷 韩人生活（超市/药房/医院）'
-          : '🇰🇷 한인 생활망 (마트/약국/병원)';
+          ? '🇰🇷 韩人生活（超市·租车·高尔夫·SPA）'
+          : '🇰🇷 한인 생활망 (마트·렌트·골프·스파)';
 
   const NAV_MENUS: { href: string; label: string }[] = [
     { href: '/', label: d.nav.home },

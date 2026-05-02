@@ -41,7 +41,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (boardType === 'free' || boardType === 'info') {
+  if (boardType === 'free' || boardType === 'info' || boardType === 'reports') {
     query = query.eq('board_type', boardType);
   }
 

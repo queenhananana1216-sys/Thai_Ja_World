@@ -64,6 +64,94 @@ export type Database = {
           },
         ]
       }
+      board_post_comments: {
+        Row: {
+          author_id: string
+          board_post_id: string
+          content: string
+          created_at: string
+          id: string
+          parent_comment_id: string | null
+        }
+        Insert: {
+          author_id: string
+          board_post_id: string
+          content: string
+          created_at?: string
+          id?: string
+          parent_comment_id?: string | null
+        }
+        Update: {
+          author_id?: string
+          board_post_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          parent_comment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_post_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_post_comments_board_post_id_fkey"
+            columns: ["board_post_id"]
+            isOneToOne: false
+            referencedRelation: "board_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_post_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "board_post_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      board_post_reactions: {
+        Row: {
+          board_post_id: string
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          board_post_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          user_id: string
+        }
+        Update: {
+          board_post_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_post_reactions_board_post_id_fkey"
+            columns: ["board_post_id"]
+            isOneToOne: false
+            referencedRelation: "board_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_post_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bot_actions: {
         Row: {
           action_type: string

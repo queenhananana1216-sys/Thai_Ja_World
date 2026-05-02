@@ -126,3 +126,107 @@ export async function createModeratedComment(
 
   return { ok: true };
 }
+
+/** `board_posts` 중 `board_type = reports` 글에 대한 댓글 — RLS·테이블 분리 */
+export async function createModeratedBoardPostComment(
+  accessToken: string,
+  boardPostId: string,
+  rawContent: string,
+  parentCommentId?: string | null,
+): Promise<CommentPipelineResult> {
+  const token = accessToken.trim();
+  if (!token) {
+    return { ok: false, status: 401, code: 'auth' };
+  }
+
+  const content = typeof rawContent === 'string' ? rawContent.trim() : '';
+  if (content.length < 1 || content.length > 8000) {
+    return { ok: false, status: 400, code: 'invalid' };
+  }
+
+  const sb = createSupabaseWithUserJwt(token);
+  const { data: u, error: ue } = await sb.auth.getUser();
+  if (ue || !u.user) {
+    return { ok: false, status: 401, code: 'auth' };
+  }
+  const userId = u.user.id;
+
+  const { data: prof, error: pe } = await sb
+    .from('profiles')
+    .select('banned_until')
+    .eq('id', userId)
+    .maybeSingle();
+  if (pe) {
+    return { ok: false, status: 503, code: 'server', message: pe.message };
+  }
+  if (prof?.banned_until && new Date(prof.banned_until).getTime() > Date.now()) {
+    return { ok: false, status: 403, code: 'banned' };
+  }
+
+  const { data: boardRow, error: boardErr } = await sb
+    .from('board_posts')
+    .select('id, board_type')
+    .eq('id', boardPostId)
+    .maybeSingle();
+  if (boardErr || !boardRow || String(boardRow.board_type) !== 'reports') {
+    return { ok: false, status: 404, code: 'invalid' };
+  }
+
+  const parentId = typeof parentCommentId === 'string' ? parentCommentId.trim() : '';
+  if (parentId) {
+    const { data: parentRow, error: parentErr } = await sb
+      .from('board_post_comments')
+      .select('id, board_post_id')
+      .eq('id', parentId)
+      .maybeSingle();
+    if (parentErr || !parentRow || String(parentRow.board_post_id) !== boardPostId) {
+      return { ok: false, status: 400, code: 'invalid', message: 'invalid_parent_comment' };
+    }
+  }
+
+  const local = runLocalPostChecks(' ', content, 'free');
+  if (local.kind === 'ban_scam') {
+    let admin;
+    try {
+      admin = createServiceRoleClient();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return { ok: false, status: 503, code: 'server', message: msg };
+    }
+    const hours = numEnv('MODERATION_SCAM_BAN_HOURS', 72);
+    const until = new Date(Date.now() + hours * 3600_000).toISOString();
+    await admin
+      .from('profiles')
+      .update({ banned_until: until, ban_reason: 'scam_finance_comment' })
+      .eq('id', userId);
+    return { ok: false, status: 403, code: 'scam' };
+  }
+  if (local.kind === 'reject_promo' || local.kind === 'reject_spam') {
+    return { ok: false, status: 422, code: 'promo' };
+  }
+
+  const ai = await moderatePlainText(content);
+  if ('error' in ai && ai.error && ai.error !== 'IMAGE_REQUIRES_OPENAI') {
+    return {
+      ok: false,
+      status: 503,
+      code: 'server',
+      message: ai.detail ?? ai.error,
+    };
+  }
+  if ('flagged' in ai && ai.flagged) {
+    return { ok: false, status: 422, code: 'nsfw' };
+  }
+
+  const { error: insErr } = await sb.from('board_post_comments').insert({
+    board_post_id: boardPostId,
+    author_id: userId,
+    content,
+    parent_comment_id: parentId || null,
+  });
+  if (insErr) {
+    return { ok: false, status: 500, code: 'server', message: insErr.message };
+  }
+
+  return { ok: true };
+}

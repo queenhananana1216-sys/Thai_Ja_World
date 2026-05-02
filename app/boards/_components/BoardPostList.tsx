@@ -5,7 +5,7 @@ import { createBrowserClient } from '@/lib/supabase/client';
 import { BoardPostCard } from './BoardPostCard';
 import type { BoardPostRow } from './types';
 
-type Tab = 'free' | 'info';
+type Tab = 'free' | 'info' | 'reports';
 
 export function BoardPostList({ tab }: { tab: Tab }) {
   const [posts, setPosts] = useState<BoardPostRow[]>([]);
@@ -24,7 +24,7 @@ export function BoardPostList({ tab }: { tab: Tab }) {
     setErr(null);
     void (async () => {
       try {
-        const res = await fetch(`/api/boards?board_type=${tab}&limit=48`);
+        const res = await fetch(`/api/boards?board_type=${encodeURIComponent(tab)}&limit=48`);
         const json = (await res.json()) as { posts?: BoardPostRow[]; error?: string };
         if (!res.ok) {
           throw new Error(json.error ?? 'load_failed');
@@ -60,7 +60,9 @@ export function BoardPostList({ tab }: { tab: Tab }) {
   if (posts.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-white/15 bg-slate-950/30 p-10 text-center text-sm text-slate-500">
-        아직 게시글이 없습니다. 첫 글을 남겨 보세요.
+        {tab === 'reports'
+          ? '등록된 검증 제보가 아직 없습니다. 외부 채널 제보는 홈의 제보함 메뉴를 이용해 주세요.'
+          : '아직 게시글이 없습니다. 첫 글을 남겨 보세요.'}
       </div>
     );
   }

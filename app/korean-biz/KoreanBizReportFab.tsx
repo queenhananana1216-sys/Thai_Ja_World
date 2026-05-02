@@ -13,7 +13,7 @@ const COPY = {
   ko: {
     fab: '➕ 우리 동네 한인 업소 제보하기',
     title: '한인 업소 제보',
-    lead: '목록에 없는 마트·약국·병원을 알려 주세요. 검토 후 반영됩니다.',
+    lead: '목록에 없는 마트·약국·병원·렌트·골프·스파 업소를 알려 주세요. 검토 후 반영됩니다.',
     name: '업소 이름',
     address: '주소 (선택)',
     phone: '연락처 (선택)',
@@ -30,7 +30,7 @@ const COPY = {
   th: {
     fab: '➕ แจ้งร้านเกาหลีในละแวกคุณ',
     title: 'แจ้งร้านเกาหลี',
-    lead: 'หากไม่มีในรายการ แจ้งมาร์ท/ร้านยา/โรงพยาบาลได้ที่นี่ — เราจะตรวจแล้วนำเข้า',
+    lead: 'หากไม่มีในรายการ แจ้งมาร์ท/ร้านยา/โรงพยาบาล/เช่ารถ/กอล์ฟ/สปาได้ที่นี่ — เราจะตรวจแล้วนำเข้า',
     name: 'ชื่อร้าน',
     address: 'ที่อยู่ (ถ้ามี)',
     phone: 'เบอร์โทร (ถ้ามี)',
@@ -47,7 +47,7 @@ const COPY = {
   en: {
     fab: '➕ Suggest a Korean business',
     title: 'Suggest a listing',
-    lead: 'Tell us about a mart, pharmacy, or hospital missing from the map. We review before publishing.',
+    lead: 'Tell us about a mart, pharmacy, hospital, rental, golf desk, or spa missing from the map. We review before publishing.',
     name: 'Business name',
     address: 'Address (optional)',
     phone: 'Phone (optional)',
@@ -64,7 +64,7 @@ const COPY = {
   zh: {
     fab: '➕ 提交韩人店铺',
     title: '店铺爆料',
-    lead: '若地图上没有某家超市/药房/医院，请告诉我们。审核后会补充。',
+    lead: '若地图上没有某家超市/药房/医院/租车/高尔夫/按摩店，请告诉我们。审核后会补充。',
     name: '店名',
     address: '地址（可选）',
     phone: '电话（可选）',
@@ -111,6 +111,33 @@ const CAT_OPTIONS: { key: KoreanBizRow['category']; label: Record<Locale, string
       th: '🏥 โรงพยาบาล/คลินิก',
       en: '🏥 Hospital / clinic',
       zh: '🏥 医院/诊所',
+    },
+  },
+  {
+    key: 'vehicle_rent',
+    label: {
+      ko: '🛵 오토바이·차량 렌트',
+      th: '🛵 เช่ามอเตอร์ไซค์/รถ',
+      en: '🛵 Bike / car rental',
+      zh: '🛵 摩托/租车',
+    },
+  },
+  {
+    key: 'golf',
+    label: {
+      ko: '⛳ 골프·투어',
+      th: '⛳ กอล์ฟ·ทัวร์',
+      en: '⛳ Golf / tours',
+      zh: '⛳ 高尔夫/行程',
+    },
+  },
+  {
+    key: 'massage_spa',
+    label: {
+      ko: '💆 마사지·스파',
+      th: '💆 นวด·สปา',
+      en: '💆 Massage / spa',
+      zh: '💆 按摩/水疗',
     },
   },
 ];

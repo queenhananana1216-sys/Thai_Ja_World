@@ -6,7 +6,14 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const REGIONS = new Set(['bangkok', 'pattaya', 'chiangmai']);
-const CATEGORIES = new Set(['mart', 'pharmacy', 'hospital']);
+const CATEGORIES = new Set([
+  'mart',
+  'pharmacy',
+  'hospital',
+  'vehicle_rent',
+  'golf',
+  'massage_spa',
+]);
 
 function normalizeBody(raw: unknown): {
   name: string;
@@ -63,10 +70,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'invalid_region' }, { status: 400 });
   }
 
-  let category: 'mart' | 'pharmacy' | 'hospital' | null = null;
+  let category:
+    | 'mart'
+    | 'pharmacy'
+    | 'hospital'
+    | 'vehicle_rent'
+    | 'golf'
+    | 'massage_spa'
+    | null = null;
   const catRaw = parsed.suggested_category?.trim().toLowerCase() ?? '';
   if (catRaw && CATEGORIES.has(catRaw)) {
-    category = catRaw as 'mart' | 'pharmacy' | 'hospital';
+    category = catRaw as NonNullable<typeof category>;
   }
 
   const address = parsed.address?.trim() || null;

@@ -7,11 +7,19 @@ import KoreanBizSearch from './KoreanBizSearch';
 import KoreanBizReportFab from './KoreanBizReportFab';
 import type { Locale } from '@/i18n/types';
 
+export type KoreanBizCategory =
+  | 'mart'
+  | 'pharmacy'
+  | 'hospital'
+  | 'vehicle_rent'
+  | 'golf'
+  | 'massage_spa';
+
 export type KoreanBizRow = {
   id: string;
   google_place_id: string;
   name: string;
-  category: 'mart' | 'pharmacy' | 'hospital';
+  category: KoreanBizCategory;
   region: 'bangkok' | 'pattaya' | 'chiangmai';
   address: string | null;
   phone: string | null;
@@ -39,14 +47,42 @@ const REGIONS: {
   },
 ];
 
-const CATEGORY_LABEL: Record<Locale, Record<KoreanBizRow['category'], string>> = {
-  ko: { mart: '마트', pharmacy: '약국', hospital: '병원' },
-  th: { mart: 'มาร์ท', pharmacy: 'ร้านยา', hospital: 'โรงพยาบาล' },
-  en: { mart: 'Mart', pharmacy: 'Pharmacy', hospital: 'Hospital' },
-  zh: { mart: '超市', pharmacy: '药房', hospital: '医院' },
+const CATEGORY_LABEL: Record<Locale, Record<KoreanBizCategory, string>> = {
+  ko: {
+    mart: '마트',
+    pharmacy: '약국',
+    hospital: '병원',
+    vehicle_rent: '오토바이·렌트',
+    golf: '골프·투어',
+    massage_spa: '마사지·스파',
+  },
+  th: {
+    mart: 'มาร์ท',
+    pharmacy: 'ร้านยา',
+    hospital: 'โรงพยาบาล',
+    vehicle_rent: 'เช่ารถ/มอเตอร์ไซค์',
+    golf: 'กอล์ฟ·ทัวร์',
+    massage_spa: 'นวด·สปา',
+  },
+  en: {
+    mart: 'Mart',
+    pharmacy: 'Pharmacy',
+    hospital: 'Hospital',
+    vehicle_rent: 'Bike / car rent',
+    golf: 'Golf / tours',
+    massage_spa: 'Massage / spa',
+  },
+  zh: {
+    mart: '超市',
+    pharmacy: '药房',
+    hospital: '医院',
+    vehicle_rent: '摩托/租车',
+    golf: '高尔夫/行程',
+    massage_spa: '按摩/水疗',
+  },
 };
 
-type CategoryFilter = 'all' | KoreanBizRow['category'];
+type CategoryFilter = 'all' | KoreanBizCategory;
 
 const SUB_CATEGORY_TABS: {
   key: CategoryFilter;
@@ -78,11 +114,37 @@ const SUB_CATEGORY_TABS: {
       zh: '韩人医院',
     },
   },
+  {
+    key: 'vehicle_rent',
+    emoji: '🛵',
+    label: {
+      ko: '오토바이·차량 렌트',
+      th: 'เช่ามอเตอร์ไซค์/รถ',
+      en: 'Bike & car rental',
+      zh: '摩托/租车',
+    },
+  },
+  {
+    key: 'golf',
+    emoji: '⛳',
+    label: {
+      ko: '골프장·투어',
+      th: 'กอล์ฟ·ทัวร์',
+      en: 'Golf & tours',
+      zh: '高尔夫/旅游',
+    },
+  },
+  {
+    key: 'massage_spa',
+    emoji: '💆',
+    label: {
+      ko: '마사지·스파',
+      th: 'นวด·สปา',
+      en: 'Massage & spa',
+      zh: '按摩·水疗',
+    },
+  },
 ];
-
-function isBizCategory(v: string): v is KoreanBizRow['category'] {
-  return v === 'mart' || v === 'pharmacy' || v === 'hospital';
-}
 
 function mapsHref(row: KoreanBizRow): string {
   if (row.latitude != null && row.longitude != null) {
@@ -134,7 +196,7 @@ function GlobalRadarPlaceholder() {
             🤖
           </span>
           <p className="text-lg font-semibold leading-relaxed tracking-tight text-white/95 md:text-xl">
-            AI 레이더가 태국 전역의 한인 마트/약국/병원 정보를 실시간으로 수집하고 검증 중입니다...
+            AI 레이더가 태국 전역의 한인 생활·레저 업소 정보를 실시간으로 수집하고 검증 중입니다...
           </p>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-gray-400">
             곧 이 화면이 최신 연락처로 채워집니다. 잠시만 기다려 주세요.
@@ -193,12 +255,7 @@ export default function KoreanBizHubClient({
 
   const filtered = useMemo(() => {
     const base =
-      categoryFilter === 'all'
-        ? inRegion
-        : inRegion.filter((r) => {
-            const c = r.category;
-            return isBizCategory(c) ? c === categoryFilter : false;
-          });
+      categoryFilter === 'all' ? inRegion : inRegion.filter((r) => r.category === categoryFilter);
     return [...base].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   }, [inRegion, categoryFilter]);
 
@@ -234,7 +291,7 @@ export default function KoreanBizHubClient({
             한인 생활망
           </h1>
           <p className="mt-2 text-base text-gray-300">
-            마트 · 약국 · 병원 — 검증된 연락처를 한곳에서
+            마트 · 약국 · 병원 · 렌트 · 골프 · 스파 — 검증된 연락처를 한곳에서
           </p>
           {fetchError ? (
             <p className="mt-3 text-sm text-rose-300/95">
@@ -262,7 +319,7 @@ export default function KoreanBizHubClient({
           한인 생활망
         </h1>
         <p className="mt-2 text-base text-gray-300">
-          마트 · 약국 · 병원 — 검증된 연락처를 한곳에서
+          마트 · 약국 · 병원 · 렌트 · 골프 · 스파 — 검증된 연락처를 한곳에서
         </p>
       </header>
 
@@ -337,8 +394,7 @@ export default function KoreanBizHubClient({
           </li>
         ) : (
           filtered.map((row) => {
-            const cat = isBizCategory(row.category) ? row.category : 'mart';
-            const catLabel = CATEGORY_LABEL[locale][cat];
+            const catLabel = CATEGORY_LABEL[locale][row.category];
             return (
               <li key={row.id} id={`korean-biz-row-${row.id}`} className="min-w-0">
                 <article

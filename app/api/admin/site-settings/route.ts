@@ -17,6 +17,21 @@ const ALLOWED_KEYS = new Set([
   'health.safe_mode',
 ]);
 
+/** 제보함 외부 채널 — 공개 읽기 전용 JSON 문자열 */
+const REPORT_URL_KEYS = new Set(['report.telegram_url', 'report.line_url', 'report.whatsapp_url']);
+
+function isAllowedOutboundReportUrl(raw: string): boolean {
+  const s = raw.trim();
+  if (s === '') return true;
+  return (
+    /^https:\/\//i.test(s) ||
+    /^http:\/\//i.test(s) ||
+    /^line:\/\//i.test(s) ||
+    /^tg:\/\//i.test(s) ||
+    /^whatsapp:\/\//i.test(s)
+  );
+}
+
 export async function GET(): Promise<NextResponse> {
   const gate = await resolveAdminAccess();
   if (!gate) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
@@ -62,10 +77,25 @@ export async function PATCH(req: Request): Promise<NextResponse> {
   const rows: { key: string; value: unknown }[] = [];
   for (const u of entries) {
     const key = typeof u?.key === 'string' ? u.key.trim() : '';
+    const val = u?.value;
+
+    if (REPORT_URL_KEYS.has(key)) {
+      if (typeof val !== 'string') {
+        return NextResponse.json({ error: `string URL required for ${key}` }, { status: 400 });
+      }
+      if (!isAllowedOutboundReportUrl(val)) {
+        return NextResponse.json(
+          { error: `invalid_url for ${key} (use https://, http://, line://, tg://, or whatsapp://)` },
+          { status: 400 },
+        );
+      }
+      rows.push({ key, value: val.trim() });
+      continue;
+    }
+
     if (!ALLOWED_KEYS.has(key)) {
       return NextResponse.json({ error: `key_not_allowed: ${key}` }, { status: 400 });
     }
-    const val = u?.value;
     if (key === 'ui.text_scale') {
       const v = val as TextScale;
       if (v !== 'compact' && v !== 'normal' && v !== 'large') {
@@ -93,8 +123,10 @@ export async function PATCH(req: Request): Promise<NextResponse> {
     );
     if (error) return NextResponse.json({ error: error.message }, { status: 502 });
     revalidatePath('/');
+    revalidatePath('/boards');
     revalidatePath('/admin');
     revalidatePath('/admin/design');
+    revalidatePath('/admin/site-settings');
     return NextResponse.json({ ok: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

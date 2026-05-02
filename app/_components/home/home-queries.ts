@@ -492,11 +492,17 @@ function koreanBizCategoryLabel(category: string, locale: Locale): string {
     mart: '마트',
     pharmacy: '약국',
     hospital: '병원',
+    vehicle_rent: '렌트',
+    golf: '골프',
+    massage_spa: '마사지·스파',
   };
   const th: Record<string, string> = {
     mart: 'มาร์ท',
     pharmacy: 'ร้านยา',
     hospital: 'โรงพยาบาล',
+    vehicle_rent: 'เช่ารถ',
+    golf: 'กอล์ฟ',
+    massage_spa: 'นวด·สปา',
   };
   const m = locale === 'th' ? th : ko;
   return m[category] ?? category;

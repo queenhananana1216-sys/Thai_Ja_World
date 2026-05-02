@@ -301,6 +301,38 @@
   animation: tj-omni-pulse-red 1.6s ease-in-out infinite;
 }
 
+/** 카오스 방어막 — 날씨 아이콘 좌하단, 자가 복구 시 블루 펄스 */
+.chaosShield {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 1px;
+  font-size: 0.62rem;
+  line-height: 1;
+  cursor: default;
+  z-index: 2;
+  user-select: none;
+  opacity: 0.92;
+}
+
+.chaosShieldPulse {
+  animation: tj-chaos-shield-pulse 2.35s ease-in-out infinite;
+}
+
+@keyframes tj-chaos-shield-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 1px rgba(147, 197, 253, 0.35));
+    opacity: 0.88;
+  }
+  50% {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 9px rgba(59, 130, 246, 0.92));
+    opacity: 1;
+  }
+}
+
 @keyframes tj-omni-pulse-green {
   0%,
   100% {

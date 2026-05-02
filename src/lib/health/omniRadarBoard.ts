@@ -6,6 +6,12 @@ const SHADOW_QA_PIPELINE = 'cron/shadow-qa';
 const SHADOW_SUCCESS_MAX_AGE_MS = 45 * 60 * 1000;
 const UI_INCIDENT_WINDOW_MS = 30 * 60 * 1000;
 
+const CHAOS_MONKEY_PIPELINE = 'cron/chaos-monkey';
+/** 일일 크론 간격 고려 */
+const CHAOS_SUCCESS_MAX_AGE_MS = 52 * 60 * 60 * 1000;
+const CHAOS_STATS_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+const CHAOS_SHIELD_PULSE_MAX_AGE_MS = 8 * 60 * 60 * 1000;
+
 export type ShadowQaRadar = {
   ok: boolean;
   skipped?: boolean;
@@ -17,6 +23,19 @@ export type UiIncidentRadar = {
   ok: boolean;
   error?: string;
   last_incident_at?: string | null;
+};
+
+export type ChaosMonkeyRadar = {
+  ok: boolean;
+  skipped?: boolean;
+  error?: string;
+  /** 최근 샘플에서 성공 비율 (0–1), fallback·pause 스킵 제외 */
+  defense_success_rate?: number;
+  cycles_sample_size?: number;
+  last_cycle_at?: string | null;
+  last_self_heal_at?: string | null;
+  /** 최근 자가 복구(셀프힐) 이벤트가 있으면 날씨 위젯 방패 펄스 */
+  shield_pulse?: boolean;
 };
 
 export async function checkShadowQaRadar(): Promise<ShadowQaRadar> {
@@ -87,6 +106,169 @@ export async function checkShadowQaRadar(): Promise<ShadowQaRadar> {
     ok: false,
     error: `shadow_qa_unknown_status:${String(status)}`,
     last_event_at: publishedAt,
+  };
+}
+
+function metaRecord(row: { meta?: unknown }): Record<string, unknown> | null {
+  const m = row.meta;
+  if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, unknown>;
+  return null;
+}
+
+export async function checkChaosMonkeyRadar(): Promise<ChaosMonkeyRadar> {
+  if (process.env.CHAOS_MONKEY_DISABLED === '1') {
+    return { ok: true, skipped: true, shield_pulse: false };
+  }
+
+  const admin = createServiceRoleClient();
+  const { data, error } = await admin
+    .from('publish_logs')
+    .select('published_at, meta')
+    .eq('channel', 'cron_pipeline')
+    .eq('target_type', 'cron_pipeline')
+    .eq('target_id', CHAOS_MONKEY_PIPELINE)
+    .order('published_at', { ascending: false })
+    .limit(120);
+
+  if (error) {
+    return { ok: false, error: error.message, shield_pulse: false };
+  }
+
+  const rows = data ?? [];
+  const now = Date.now();
+
+  let lastSelfHealAt: string | null = null;
+  for (const row of rows) {
+    const m = metaRecord(row);
+    if (m?.event === 'chaos_monkey_self_heal' && m?.status === 'success') {
+      lastSelfHealAt = row.published_at;
+      break;
+    }
+  }
+
+  const shield_pulse =
+    lastSelfHealAt != null &&
+    Number.isFinite(Date.parse(lastSelfHealAt)) &&
+    now - Date.parse(lastSelfHealAt) <= CHAOS_SHIELD_PULSE_MAX_AGE_MS;
+
+  const terminalCycles = rows.filter((row) => {
+    const m = metaRecord(row);
+    if (m?.event !== 'chaos_monkey_cycle') return false;
+    const st = m.status;
+    return st === 'success' || st === 'failed';
+  });
+
+  const windowCut = now - CHAOS_STATS_WINDOW_MS;
+  const cyclesInWindow = terminalCycles.filter((row) => Date.parse(row.published_at) >= windowCut);
+
+  const successes = cyclesInWindow.filter((row) => metaRecord(row)?.status === 'success').length;
+  const failures = cyclesInWindow.filter((row) => metaRecord(row)?.status === 'failed').length;
+  const denom = successes + failures;
+  const defense_success_rate = denom > 0 ? Math.round((successes / denom) * 1000) / 1000 : undefined;
+
+  const latestAny = rows[0];
+  const latestMeta = latestAny ? metaRecord(latestAny) : null;
+  if (
+    latestMeta?.event === 'chaos_monkey_cycle' &&
+    latestMeta?.status === 'fallback' &&
+    String(latestMeta.mode ?? '') === 'pause_skip'
+  ) {
+    return {
+      ok: true,
+      defense_success_rate,
+      cycles_sample_size: denom,
+      last_cycle_at: terminalCycles[0]?.published_at ?? null,
+      last_self_heal_at: lastSelfHealAt,
+      shield_pulse,
+    };
+  }
+
+  if (terminalCycles.length === 0) {
+    return {
+      ok: false,
+      error: 'chaos_no_training_logs',
+      defense_success_rate,
+      cycles_sample_size: 0,
+      last_cycle_at: null,
+      last_self_heal_at: lastSelfHealAt,
+      shield_pulse,
+    };
+  }
+
+  const latestTerminal = terminalCycles[0]!;
+  const last_cycle_at = latestTerminal.published_at;
+  const st = metaRecord(latestTerminal)?.status;
+
+  if (st === 'failed') {
+    const failAt = Date.parse(last_cycle_at);
+    const mitigated =
+      Number.isFinite(failAt) &&
+      rows.some((row) => {
+        const m = metaRecord(row);
+        return (
+          m?.event === 'chaos_monkey_self_heal' &&
+          m?.status === 'success' &&
+          Date.parse(row.published_at) > failAt
+        );
+      });
+
+    if (mitigated) {
+      const age = now - failAt;
+      if (age <= CHAOS_SUCCESS_MAX_AGE_MS) {
+        return {
+          ok: true,
+          defense_success_rate,
+          cycles_sample_size: denom,
+          last_cycle_at,
+          last_self_heal_at: lastSelfHealAt,
+          shield_pulse,
+        };
+      }
+    }
+
+    return {
+      ok: false,
+      error: 'chaos_last_cycle_failed',
+      defense_success_rate,
+      cycles_sample_size: denom,
+      last_cycle_at,
+      last_self_heal_at: lastSelfHealAt,
+      shield_pulse,
+    };
+  }
+
+  const age = now - Date.parse(last_cycle_at);
+  if (!Number.isFinite(age)) {
+    return {
+      ok: false,
+      error: 'chaos_invalid_timestamp',
+      defense_success_rate,
+      cycles_sample_size: denom,
+      last_cycle_at,
+      last_self_heal_at: lastSelfHealAt,
+      shield_pulse,
+    };
+  }
+
+  if (age > CHAOS_SUCCESS_MAX_AGE_MS) {
+    return {
+      ok: false,
+      error: `chaos_stale_success (${Math.round(age / 3600000)}h)`,
+      defense_success_rate,
+      cycles_sample_size: denom,
+      last_cycle_at,
+      last_self_heal_at: lastSelfHealAt,
+      shield_pulse,
+    };
+  }
+
+  return {
+    ok: true,
+    defense_success_rate,
+    cycles_sample_size: denom,
+    last_cycle_at,
+    last_self_heal_at: lastSelfHealAt,
+    shield_pulse,
   };
 }
 

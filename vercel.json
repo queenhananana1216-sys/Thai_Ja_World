@@ -67,6 +67,10 @@
     {
       "path": "/api/cron/biz-radar",
       "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/cron/chaos-monkey",
+      "schedule": "40 4 * * *"
     }
   ]
 }

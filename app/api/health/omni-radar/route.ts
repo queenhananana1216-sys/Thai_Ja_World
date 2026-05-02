@@ -2,7 +2,11 @@
  * GET /api/health/omni-radar — DB · Biz Radar 크론 · 날씨 · 쉐도우 QA · UI 인시던트 통합 생존 검증
  */
 import { NextResponse } from 'next/server';
-import { checkShadowQaRadar, checkUiIncidentRadar } from '@/lib/health/omniRadarBoard';
+import {
+  checkChaosMonkeyRadar,
+  checkShadowQaRadar,
+  checkUiIncidentRadar,
+} from '@/lib/health/omniRadarBoard';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -108,17 +112,19 @@ async function checkWeatherPipeline(): Promise<CheckWeather> {
 }
 
 export async function GET(): Promise<NextResponse> {
-  const [database, cron_radar, weather, shadow_qa, ui_surface] = await Promise.all([
+  const [database, cron_radar, weather, shadow_qa, chaos_monkey, ui_surface] = await Promise.all([
     checkDatabase(),
     checkCronRadar(),
     checkWeatherPipeline(),
     checkShadowQaRadar(),
+    checkChaosMonkeyRadar(),
     checkUiIncidentRadar(),
   ]);
 
-  const checks = { database, cron_radar, weather, shadow_qa, ui_surface };
+  const checks = { database, cron_radar, weather, shadow_qa, chaos_monkey, ui_surface };
+  const chaosOk = chaos_monkey.ok || chaos_monkey.skipped === true;
   const allOk =
-    database.ok && cron_radar.ok && weather.ok && shadow_qa.ok && ui_surface.ok;
+    database.ok && cron_radar.ok && weather.ok && shadow_qa.ok && chaosOk && ui_surface.ok;
 
   if (allOk) {
     return NextResponse.json({
@@ -133,6 +139,7 @@ export async function GET(): Promise<NextResponse> {
   if (!cron_radar.ok) errors.push(`cron_radar: ${cron_radar.error ?? 'unknown'}`);
   if (!weather.ok) errors.push(`weather: ${weather.error ?? 'unknown'}`);
   if (!shadow_qa.ok) errors.push(`shadow_qa: ${shadow_qa.error ?? 'unknown'}`);
+  if (!chaosOk) errors.push(`chaos_monkey: ${chaos_monkey.error ?? 'unknown'}`);
   if (!ui_surface.ok) errors.push(`ui_surface: ${ui_surface.error ?? 'unknown'}`);
 
   return NextResponse.json(

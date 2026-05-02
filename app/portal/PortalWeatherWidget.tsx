@@ -27,6 +27,24 @@ type WeatherCity = {
 
 type OmniLedPhase = 'neutral' | 'ok' | 'error';
 
+type OmniChaosMonkey = {
+  shield_pulse?: boolean;
+  defense_success_rate?: number;
+  skipped?: boolean;
+};
+
+function chaosShieldTooltip(locale: Locale, pulse: boolean, rate?: number): string {
+  if (pulse) {
+    return locale === 'th'
+      ? '🛡️ โล่ Chaos ทำงาน — บริการไม่หยุดชะงัก'
+      : '🛡️ 카오스 방어막 가동 중: 무중단 서비스 유지';
+  }
+  const pct = rate != null ? `${Math.round(rate * 100)}%` : '—';
+  return locale === 'th'
+    ? `การฝึก Chaos — อัตราป้องกันล่าสุด ${pct} (เมื่อซ่อมตัวเองสำเร็จ โล่จะเปล่งแสง)`
+    : `카오스 훈련 최근 방어율 ${pct} — 자가 복구 시 방패에 블루 펄스가 돕니다.`;
+}
+
 function parseOmniErrors(body: unknown, httpStatus: number): string[] {
   if (body && typeof body === 'object' && !Array.isArray(body)) {
     const errs = (body as { errors?: unknown }).errors;
@@ -46,8 +64,8 @@ function omniLedTooltip(
   }
   if (phase === 'ok') {
     return locale === 'th'
-      ? 'System All Green: ทุกระบบปกติ (สภาพอากาศ · DB · ครอนบอท)'
-      : 'System All Green: 모든 파이프라인 정상 가동 중';
+      ? 'System All Green: ทุกระบบปกติ (สภาพอากาศ · DB · Biz · Shadow QA · Chaos)'
+      : 'System All Green: 날씨 · DB · 크론 · 쉐도우 QA · 카오스 훈련 포함 전 구간 정상';
   }
   if (isAdmin && errors.length > 0) {
     return `Pipeline 경고 (관리자 전용): ${errors.join(' · ')}`;
@@ -72,6 +90,7 @@ export default function PortalWeatherWidget({
 
   const [omniPhase, setOmniPhase] = useState<OmniLedPhase>('neutral');
   const [omniErrors, setOmniErrors] = useState<string[]>([]);
+  const [chaosRadar, setChaosRadar] = useState<OmniChaosMonkey | null>(null);
 
   const fetchOmniRadar = useCallback(async () => {
     try {
@@ -82,6 +101,13 @@ export default function PortalWeatherWidget({
       } catch {
         json = null;
       }
+      const checks =
+        json && typeof json === 'object' && !Array.isArray(json)
+          ? (json as { checks?: { chaos_monkey?: OmniChaosMonkey } }).checks
+          : undefined;
+      const chaos = checks?.chaos_monkey ?? null;
+      setChaosRadar(chaos);
+
       const healthy =
         res.ok &&
         json &&
@@ -99,6 +125,7 @@ export default function PortalWeatherWidget({
     } catch {
       setOmniPhase('error');
       setOmniErrors(['network_or_unreachable']);
+      setChaosRadar(null);
     }
   }, []);
 
@@ -167,6 +194,13 @@ export default function PortalWeatherWidget({
         ? '시스템 경고'
         : '시스템 상태 확인 중';
 
+  const shieldPulse = chaosRadar?.shield_pulse === true;
+  const chaosRate = chaosRadar?.defense_success_rate;
+  const shieldTitle = useMemo(
+    () => chaosShieldTooltip(locale, shieldPulse, chaosRate),
+    [locale, shieldPulse, chaosRate],
+  );
+
   return (
     <section
       className={`${styles.glassGold} overflow-hidden p-2.5`}
@@ -181,6 +215,14 @@ export default function PortalWeatherWidget({
             role="status"
             aria-label={ledAria}
           />
+          <span
+            className={`${styles.chaosShield} ${shieldPulse ? styles.chaosShieldPulse : ''}`}
+            title={shieldTitle}
+            role="img"
+            aria-label={shieldTitle}
+          >
+            🛡️
+          </span>
         </span>
         <div className="min-w-0 flex-1 overflow-hidden">
           <p className="text-[0.7rem] font-bold uppercase tracking-wide text-amber-100/90">

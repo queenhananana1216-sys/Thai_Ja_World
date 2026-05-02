@@ -5,14 +5,12 @@ import { useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import type { Locale } from '@/i18n/types';
 import type { Dictionary } from '@/i18n/dictionaries';
-import { boardModMessage } from '@/lib/community/moderationMessages';
 import {
   categoryOptionsForPosting,
   type PostCategorySlug,
 } from '@/lib/community/postCategories';
 import {
   fireDbErrorRadar,
-  formatSupabaseClientErrorPayload,
   scheduleSoftNavigationRefresh,
   shouldMaskRawDbError,
 } from '@/lib/db/dbErrorDefense';
@@ -24,6 +22,20 @@ const POST_SUBMIT_RETRY_DELAY_MS = 1000;
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** 토스트·인라인 오류 — 백엔드/런타임 원문만 (포장 문구 금지) */
+function rawThrownErrorText(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
+
+function rawApiFailureText(httpStatus: number | null, body: unknown): string {
+  return JSON.stringify({ httpStatus, body });
 }
 
 function safeFileName(name: string): string {
@@ -210,18 +222,7 @@ export default function NewPostForm({
           }
 
           if (!isTransientPostFailure(res, payload)) {
-            const rawLine = formatSupabaseClientErrorPayload({
-              message: payload.message?.trim() || null,
-              code: payload.code ?? null,
-              supabase_code: payload.supabase_code ?? null,
-              supabase_details: payload.supabase_details ?? payload.details ?? null,
-              supabase_hint: payload.supabase_hint ?? payload.hint ?? null,
-            });
-            const mod = boardModMessage(board, payload.code);
-            const line =
-              rawLine.trim() && rawLine !== '알 수 없는 오류'
-                ? rawLine
-                : [mod, `HTTP ${res.status}`, JSON.stringify(payload)].filter(Boolean).join('\n');
+            const line = rawApiFailureText(res.status, payload);
             setError(line);
             toast.error(line, { position: 'top-center', duration: 20_000 });
             return;
@@ -250,40 +251,20 @@ export default function NewPostForm({
       if (isSchemaSyncPayload(lastPayload)) {
         console.error('[NewPostForm] schema/cache failure (full payload)', lastPayload);
         scheduleSoftNavigationRefresh(() => router.refresh());
-        const syncLine = formatSupabaseClientErrorPayload({
-          message: lastPayload.message?.trim() || null,
-          code: lastPayload.code ?? null,
-          supabase_code: lastPayload.supabase_code ?? null,
-          supabase_details: lastPayload.supabase_details ?? lastPayload.details ?? null,
-          supabase_hint: lastPayload.supabase_hint ?? lastPayload.hint ?? null,
-        });
-        const syncToast =
-          syncLine.trim() && syncLine !== '알 수 없는 오류'
-            ? syncLine
-            : [`HTTP ${lastHttpStatus ?? '?'}`, JSON.stringify(lastPayload)].join('\n');
+        const syncToast = rawApiFailureText(lastHttpStatus, lastPayload);
         toast.error(syncToast, { position: 'top-center', duration: 20_000 });
         setError(syncToast);
         fireDbErrorRadar('NewPostForm:submit_retry_exhausted');
         return;
       }
 
-      const failLine = formatSupabaseClientErrorPayload({
-        message: lastPayload.message?.trim() || null,
-        code: lastPayload.code ?? null,
-        supabase_code: lastPayload.supabase_code ?? null,
-        supabase_details: lastPayload.supabase_details ?? lastPayload.details ?? null,
-        supabase_hint: lastPayload.supabase_hint ?? lastPayload.hint ?? null,
-      });
-      const failToast =
-        failLine.trim() && failLine !== '알 수 없는 오류'
-          ? failLine
-          : [`HTTP ${lastHttpStatus ?? '?'}`, JSON.stringify(lastPayload)].join('\n');
+      const failToast = rawApiFailureText(lastHttpStatus, lastPayload);
       setError(failToast);
       toast.error(failToast, { position: 'top-center', duration: 20_000 });
       fireDbErrorRadar('NewPostForm:submit_retry_exhausted');
     } catch (err) {
       console.error('[NewPostForm] submit_throw', err);
-      const raw = err instanceof Error ? err.message : String(err);
+      const raw = rawThrownErrorText(err);
       setError(raw);
       toast.error(raw, { position: 'top-center', duration: 20_000 });
       fireDbErrorRadar('NewPostForm:submit_throw');

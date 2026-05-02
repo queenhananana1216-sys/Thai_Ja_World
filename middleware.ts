@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import type { User } from '@supabase/supabase-js';
 import { isLocale, LOCALE_COOKIE, type Locale } from '@/i18n/types';
 
 function localeFromCookie(request: NextRequest): Locale {
@@ -21,16 +22,68 @@ function minihomeManagementPath(pathname: string): boolean {
 }
 
 /**
- * 모바일·LTE 등에서 매 요청 Supabase 세션 검증(`getUser`) 왕복이 지연·타임아웃을 키울 수 있어,
- * 인증 게이트가 미들웨어에 없는 공개 구간은 세션 호출 없이 즉시 통과한다.
- * (User-Agent·IP 기반 봇 차단은 이 파일에 없음 — Cloudflare/Vercel 대시보드 규칙과 별개.)
+ * Supabase SSR 세션 갱신: 모든 매칭 페이지에서 최우선 실행해 refresh 토큰·쿠키가 응답에 실리도록 한다.
+ * (공개 경로라도 건너뛰면 커뮤니티 글쓰기 등에서 세션이 박살 난다.)
  */
-function isPublicFastPassPath(pathname: string): boolean {
-  const p = normalizePathname(pathname);
-  if (p === '/') return true;
-  if (p === '/community' || p.startsWith('/community/')) return true;
-  if (p === '/local' || p.startsWith('/local/')) return true;
-  return false;
+async function updateSession(
+  request: NextRequest,
+  requestHeaders: Headers,
+): Promise<{ response: NextResponse; user: User | null }> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return { response, user: null };
+  }
+
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+        cookiesToSet.forEach(({ name, value }: { name: string; value: string }) => {
+          request.cookies.set(name, value);
+        });
+        response = NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        });
+        cookiesToSet.forEach(({ name, value, options }: { name: string; value: string; options: CookieOptions }) =>
+          response.cookies.set(name, value, options),
+        );
+      },
+    },
+  });
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return { response, user };
+}
+
+function applyCookiesToRedirect(from: NextResponse, redirect: NextResponse): NextResponse {
+  for (const c of from.cookies.getAll()) {
+    redirect.cookies.set(c.name, c.value, {
+      path: c.path,
+      maxAge: c.maxAge,
+      domain: c.domain,
+      secure: c.secure,
+      httpOnly: c.httpOnly,
+      sameSite: c.sameSite,
+      partitioned: c.partitioned,
+      priority: c.priority,
+    });
+  }
+  return redirect;
 }
 
 export async function middleware(request: NextRequest) {
@@ -58,54 +111,13 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-tj-locale', locale);
 
-  const nextWithLocale = () =>
-    NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
+  const { response: res, user } = await updateSession(request, requestHeaders);
 
-  if (isPublicFastPassPath(url.pathname)) {
-    return nextWithLocale();
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-
-  let res = nextWithLocale();
-
-  if (supabaseUrl && supabaseAnonKey) {
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          cookiesToSet.forEach(({ name, value }: { name: string; value: string }) => {
-            request.cookies.set(name, value);
-          });
-          res = NextResponse.next({
-            request: {
-              headers: requestHeaders,
-            },
-          });
-          cookiesToSet.forEach(({ name, value, options }: { name: string; value: string; options: CookieOptions }) =>
-            res.cookies.set(name, value, options),
-          );
-        },
-      },
-    });
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (minihomeManagementPath(url.pathname) && !user) {
-      const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = '/auth/login';
-      loginUrl.searchParams.set('next', `${url.pathname}${url.search}`);
-      return NextResponse.redirect(loginUrl);
-    }
+  if (minihomeManagementPath(url.pathname) && !user) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/auth/login';
+    loginUrl.searchParams.set('next', `${url.pathname}${url.search}`);
+    return applyCookiesToRedirect(res, NextResponse.redirect(loginUrl));
   }
 
   return res;

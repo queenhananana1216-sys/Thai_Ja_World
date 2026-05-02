@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { uploadBoardImage } from '@/lib/board/uploadBoardImage';
 import {
   fireDbErrorRadar,
-  formatSupabaseClientErrorPayload,
   scheduleSoftNavigationRefresh,
   shouldMaskRawDbError,
 } from '@/lib/db/dbErrorDefense';
@@ -20,6 +19,19 @@ type Props = {
   postId?: string;
   initial?: Partial<BoardPostRow>;
 };
+
+function rawThrownErrorText(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
+
+function rawApiFailureText(httpStatus: number, body: unknown): string {
+  return JSON.stringify({ httpStatus, body });
+}
 
 export function NewBoardPostForm({
   boardType,
@@ -127,28 +139,13 @@ export function NewBoardPostForm({
           console.error('[NewBoardPostForm] PUT /api/boards failed', res.status, j);
           if (isBoardSchemaSync(j)) {
             scheduleSoftNavigationRefresh(() => router.refresh());
-            const raw = formatSupabaseClientErrorPayload({
-              message: j.supabase_message?.trim() || j.error || null,
-              code: j.code ?? null,
-              supabase_code: j.supabase_code ?? null,
-              supabase_details: j.supabase_details ?? null,
-              supabase_hint: j.supabase_hint ?? null,
-            });
-            toast.error(
-              raw.trim() && raw !== '알 수 없는 오류'
-                ? raw
-                : [`HTTP ${res.status}`, JSON.stringify(j)].join('\n'),
-              { position: 'top-center', duration: 20_000 },
-            );
+            const raw = rawApiFailureText(res.status, j);
+            toast.error(raw, { position: 'top-center', duration: 20_000 });
+            setError(raw);
             fireDbErrorRadar('NewBoardPostForm:edit');
             return;
           }
-          const errLine = formatSupabaseClientErrorPayload({
-            message: j.supabase_message?.trim() || j.error || '수정 실패',
-            supabase_code: j.supabase_code ?? null,
-            supabase_details: j.supabase_details ?? null,
-            supabase_hint: j.supabase_hint ?? null,
-          });
+          const errLine = rawApiFailureText(res.status, j);
           setError(errLine);
           toast.error(errLine, { position: 'top-center', duration: 14_000 });
           return;
@@ -182,28 +179,13 @@ export function NewBoardPostForm({
         console.error('[NewBoardPostForm] POST /api/boards failed', res.status, json);
         if (isBoardSchemaSync(json)) {
           scheduleSoftNavigationRefresh(() => router.refresh());
-          const raw = formatSupabaseClientErrorPayload({
-            message: json.supabase_message?.trim() || json.error || null,
-            code: json.code ?? null,
-            supabase_code: json.supabase_code ?? null,
-            supabase_details: json.supabase_details ?? null,
-            supabase_hint: json.supabase_hint ?? null,
-          });
-          toast.error(
-            raw.trim() && raw !== '알 수 없는 오류'
-              ? raw
-              : [`HTTP ${res.status}`, JSON.stringify(json)].join('\n'),
-            { position: 'top-center', duration: 20_000 },
-          );
+          const raw = rawApiFailureText(res.status, json);
+          toast.error(raw, { position: 'top-center', duration: 20_000 });
+          setError(raw);
           fireDbErrorRadar('NewBoardPostForm:create');
           return;
         }
-        const errLine = formatSupabaseClientErrorPayload({
-          message: json.supabase_message?.trim() || json.error || '등록 실패',
-          supabase_code: json.supabase_code ?? null,
-          supabase_details: json.supabase_details ?? null,
-          supabase_hint: json.supabase_hint ?? null,
-        });
+        const errLine = rawApiFailureText(res.status, json);
         setError(errLine);
         toast.error(errLine, { position: 'top-center', duration: 14_000 });
         return;
@@ -222,7 +204,7 @@ export function NewBoardPostForm({
       router.refresh();
     } catch (err) {
       console.error('[NewBoardPostForm] submit_throw', err);
-      const raw = err instanceof Error ? err.message : String(err);
+      const raw = rawThrownErrorText(err);
       setError(raw);
       toast.error(raw, { position: 'top-center', duration: 20_000 });
       fireDbErrorRadar('NewBoardPostForm:submit_throw');

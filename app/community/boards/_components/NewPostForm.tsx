@@ -12,6 +12,7 @@ import {
 } from '@/lib/community/postCategories';
 import {
   fireDbErrorRadar,
+  formatSupabaseClientErrorPayload,
   scheduleSoftNavigationRefresh,
   shouldMaskRawDbError,
   USER_DB_SYNC_TOAST_MESSAGE,
@@ -160,6 +161,8 @@ export default function NewPostForm({
         id?: string;
         code?: string;
         message?: string;
+        details?: string | null;
+        hint?: string | null;
         supabase_code?: string | null;
         supabase_details?: string | null;
         supabase_hint?: string | null;
@@ -185,6 +188,8 @@ export default function NewPostForm({
             id?: string;
             code?: string;
             message?: string;
+            details?: string | null;
+            hint?: string | null;
             supabase_code?: string | null;
             supabase_details?: string | null;
             supabase_hint?: string | null;
@@ -203,11 +208,15 @@ export default function NewPostForm({
           }
 
           if (!isTransientPostFailure(res, payload)) {
-            setError(
-              payload.message?.trim()
-                ? payload.message
-                : boardModMessage(board, payload.code),
-            );
+            const mod = boardModMessage(board, payload.code);
+            const line = formatSupabaseClientErrorPayload({
+              ...payload,
+              message: payload.message?.trim() || mod,
+              supabase_details: payload.supabase_details ?? payload.details ?? null,
+              supabase_hint: payload.supabase_hint ?? payload.hint ?? null,
+            });
+            setError(line);
+            toast.error(line, { position: 'top-center', duration: 14_000 });
             return;
           }
 
@@ -231,16 +240,27 @@ export default function NewPostForm({
       if (isSchemaSyncPayload(lastPayload)) {
         console.error('[NewPostForm] schema/cache failure (full payload)', lastPayload);
         scheduleSoftNavigationRefresh(() => router.refresh());
-        toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
+        const syncLine = formatSupabaseClientErrorPayload({
+          ...lastPayload,
+          message: lastPayload.message?.trim() || USER_DB_SYNC_TOAST_MESSAGE,
+          supabase_details: lastPayload.supabase_details ?? lastPayload.details ?? null,
+          supabase_hint: lastPayload.supabase_hint ?? lastPayload.hint ?? null,
+        });
+        toast.error(syncLine, { position: 'top-center', duration: 16_000 });
         fireDbErrorRadar('NewPostForm:submit_retry_exhausted');
         return;
       }
 
-      setError(
-        lastPayload.message?.trim()
-          ? lastPayload.message
-          : '네트워크 또는 브라우저 오류로 요청이 끝나지 않았습니다. 다시 시도해 주세요.',
-      );
+      const failLine = formatSupabaseClientErrorPayload({
+        ...lastPayload,
+        message:
+          lastPayload.message?.trim() ||
+          '네트워크 또는 브라우저 오류로 요청이 끝나지 않았습니다. 다시 시도해 주세요.',
+        supabase_details: lastPayload.supabase_details ?? lastPayload.details ?? null,
+        supabase_hint: lastPayload.supabase_hint ?? lastPayload.hint ?? null,
+      });
+      setError(failLine);
+      toast.error(failLine, { position: 'top-center', duration: 14_000 });
       fireDbErrorRadar('NewPostForm:submit_retry_exhausted');
     } catch (err) {
       console.error('[NewPostForm] submit_throw', err);

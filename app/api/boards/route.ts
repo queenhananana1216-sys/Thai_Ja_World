@@ -104,11 +104,13 @@ export async function POST(req: Request): Promise<NextResponse> {
       user_id: user.id,
       board_type: payload.board_type,
       title: payload.title,
-      content: payload.content,
-      image_urls: payload.image_urls,
+      content: payload.content ?? '',
+      image_urls: Array.isArray(payload.image_urls) ? payload.image_urls : [],
       lat: payload.lat,
       lng: payload.lng,
-      address: payload.address,
+      address: payload.address ?? null,
+      home_highlight: false,
+      auto_curated: false,
     })
     .select('id');
 

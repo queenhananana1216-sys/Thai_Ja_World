@@ -78,7 +78,7 @@
     },
     {
       "path": "/api/cron/auto-content",
-      "schedule": "25 */8 * * *"
+      "schedule": "0 */4 * * *"
     }
   ]
 }

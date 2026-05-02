@@ -9,6 +9,21 @@ import { useEffect, useState } from 'react';
 
 type RadarPhase = 'scanning' | 'redirecting' | 'processing' | 'idle';
 
+/** Radar fetch — hang 시 무한 "탐색 중" 방지 */
+const RADAR_FETCH_MS = 4500;
+
+function normalizePathForCompare(p: string): string {
+  const t = p.trim();
+  if (!t) return '';
+  try {
+    const u = new URL(t, 'https://placeholder.local');
+    const path = u.pathname.replace(/\/+$/, '') || '/';
+    return path;
+  } catch {
+    return t.split('?')[0]?.split('#')[0]?.replace(/\/+$/, '') || '/';
+  }
+}
+
 export default function NotFound() {
   const pathname = usePathname() ?? '';
   const router = useRouter();
@@ -24,9 +39,13 @@ export default function NotFound() {
         return;
       }
       setPhase('scanning');
+      const pathNorm = normalizePathForCompare(pathname);
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), RADAR_FETCH_MS);
       try {
         const res = await fetch(`/api/public/radar-resolve?path=${encodeURIComponent(pathname)}`, {
           cache: 'no-store',
+          signal: ac.signal,
         });
         const data = (await res.json()) as {
           status?: string;
@@ -35,8 +54,15 @@ export default function NotFound() {
         };
         if (cancelled) return;
         if (data.status === 'redirect' && data.to?.trim()) {
+          const dest = data.to.trim();
+          const destNorm = normalizePathForCompare(dest);
+          /** 이미 해당 URL에서 404 난 경우 replace가 무의미·무한 루프만 유발 */
+          if (destNorm === pathNorm) {
+            setPhase('idle');
+            return;
+          }
           setPhase('redirecting');
-          router.replace(data.to.trim());
+          router.replace(dest);
           return;
         }
         if (data.status === 'processing') {
@@ -50,8 +76,10 @@ export default function NotFound() {
       } catch {
         if (!cancelled) setPhase('idle');
         return;
+      } finally {
+        clearTimeout(timer);
       }
-      setPhase('idle');
+      if (!cancelled) setPhase('idle');
     }
 
     void radar();

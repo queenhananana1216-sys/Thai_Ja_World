@@ -18,6 +18,9 @@ import {
 } from '@/lib/community/postGuestBlurTrap';
 import PostBodyGuestBlur from '../_components/PostBodyGuestBlur';
 
+/** 존재하지 않는 글은 캐시된 404 대신 즉시 `notFound()` — Radar 404 루프 완화 */
+export const dynamic = 'force-dynamic';
+
 type PageProps = { params: Promise<{ postId: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

@@ -233,6 +233,10 @@ export async function createModeratedPost(
     return { ok: false, status: 422, code: 'nsfw' };
   }
 
+  const excerptPlain = content.replace(/\s+/g, ' ').trim();
+  const excerpt =
+    excerptPlain.length > 400 ? `${excerptPlain.slice(0, 397)}…` : excerptPlain || null;
+
   const { data: inserted, error: insErr } = await admin
     .from('posts')
     .insert({
@@ -240,12 +244,18 @@ export async function createModeratedPost(
       category,
       title: title.slice(0, 200),
       content,
-      image_urls,
+      image_urls: Array.isArray(image_urls) ? image_urls : [],
       latitude,
       longitude,
       location_name: locationName || null,
       is_anonymous: false,
       moderation_status: 'safe',
+      author_hidden: false,
+      comment_count: 0,
+      view_count: 0,
+      excerpt,
+      is_knowledge_tip: false,
+      owner_edit_password_set: false,
     })
     .select('id')
     .single();

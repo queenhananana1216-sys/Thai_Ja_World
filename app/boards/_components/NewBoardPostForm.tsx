@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { uploadBoardImage } from '@/lib/board/uploadBoardImage';
 import {
   fireDbErrorRadar,
+  formatSupabaseClientErrorPayload,
   scheduleSoftNavigationRefresh,
   shouldMaskRawDbError,
   USER_DB_SYNC_TOAST_MESSAGE,
@@ -127,15 +128,29 @@ export function NewBoardPostForm({
           console.error('[NewBoardPostForm] PUT /api/boards failed', res.status, j);
           if (isBoardSchemaSync(j)) {
             scheduleSoftNavigationRefresh(() => router.refresh());
-            const detail = j.supabase_message?.trim() || j.error;
             toast.error(
-              detail ? `${USER_DB_SYNC_TOAST_MESSAGE}\n${detail}` : USER_DB_SYNC_TOAST_MESSAGE,
-              { position: 'top-center', duration: 12_000 },
+              [
+                USER_DB_SYNC_TOAST_MESSAGE,
+                formatSupabaseClientErrorPayload({
+                  message: j.supabase_message?.trim() || j.error,
+                  supabase_code: j.supabase_code ?? null,
+                  supabase_details: j.supabase_details ?? null,
+                  supabase_hint: j.supabase_hint ?? null,
+                }),
+              ].join('\n\n'),
+              { position: 'top-center', duration: 14_000 },
             );
             fireDbErrorRadar('NewBoardPostForm:edit');
             return;
           }
-          setError(j.supabase_message?.trim() || j.error || '수정 실패');
+          const errLine = formatSupabaseClientErrorPayload({
+            message: j.supabase_message?.trim() || j.error || '수정 실패',
+            supabase_code: j.supabase_code ?? null,
+            supabase_details: j.supabase_details ?? null,
+            supabase_hint: j.supabase_hint ?? null,
+          });
+          setError(errLine);
+          toast.error(errLine, { position: 'top-center', duration: 14_000 });
           return;
         }
         toast.success('수정되었습니다.', { position: 'top-center' });
@@ -167,15 +182,29 @@ export function NewBoardPostForm({
         console.error('[NewBoardPostForm] POST /api/boards failed', res.status, json);
         if (isBoardSchemaSync(json)) {
           scheduleSoftNavigationRefresh(() => router.refresh());
-          const detail = json.supabase_message?.trim() || json.error;
           toast.error(
-            detail ? `${USER_DB_SYNC_TOAST_MESSAGE}\n${detail}` : USER_DB_SYNC_TOAST_MESSAGE,
-            { position: 'top-center', duration: 12_000 },
+            [
+              USER_DB_SYNC_TOAST_MESSAGE,
+              formatSupabaseClientErrorPayload({
+                message: json.supabase_message?.trim() || json.error,
+                supabase_code: json.supabase_code ?? null,
+                supabase_details: json.supabase_details ?? null,
+                supabase_hint: json.supabase_hint ?? null,
+              }),
+            ].join('\n\n'),
+            { position: 'top-center', duration: 14_000 },
           );
           fireDbErrorRadar('NewBoardPostForm:create');
           return;
         }
-        setError(json.supabase_message?.trim() || json.error || '등록 실패');
+        const errLine = formatSupabaseClientErrorPayload({
+          message: json.supabase_message?.trim() || json.error || '등록 실패',
+          supabase_code: json.supabase_code ?? null,
+          supabase_details: json.supabase_details ?? null,
+          supabase_hint: json.supabase_hint ?? null,
+        });
+        setError(errLine);
+        toast.error(errLine, { position: 'top-center', duration: 14_000 });
         return;
       }
 

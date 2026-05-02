@@ -22,6 +22,27 @@ import QuickAppLauncher from './QuickAppLauncher';
 import PortalWeatherWidget from './PortalWeatherWidget';
 import styles from './portal-2026.module.css';
 
+/** 통합 피드 id 접두(`post-uuid` 등)·순수 UUID 기본 상세 경로 — href 누락 시 허브(`/boards`)로 잘못 가는 것 방지 */
+const PORTAL_LINE_UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function defaultHrefForPortalLine(idRaw: string): string {
+  const id = idRaw.trim();
+  if (!id) return '/boards';
+  if (id.startsWith('board-')) {
+    const rest = id.slice('board-'.length);
+    if (PORTAL_LINE_UUID_RE.test(rest)) return `/boards/${encodeURIComponent(rest)}`;
+  }
+  if (id.startsWith('post-')) {
+    const rest = id.slice('post-'.length);
+    if (PORTAL_LINE_UUID_RE.test(rest)) return `/community/boards/${encodeURIComponent(rest)}`;
+  }
+  if (id.startsWith('job-')) return '/community/boards?cat=job';
+  if (id.startsWith('market-')) return '/community/boards?cat=flea';
+  if (PORTAL_LINE_UUID_RE.test(id)) return `/community/boards/${encodeURIComponent(id)}`;
+  return '/boards';
+}
+
 /** processed_news.created_at → 상대 시간 (SSR·클라 동일 규칙) */
 function formatPortalNewsAge(iso: string | null | undefined, locale: Locale): string {
   if (!iso?.trim()) return '';
@@ -132,7 +153,10 @@ function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedL
     const base: PortalFeedLine = {
       id: id.trim(),
       title: title.trim(),
-      href: typeof hrefRaw === 'string' && hrefRaw.trim() ? hrefRaw : '/boards',
+      href:
+        typeof hrefRaw === 'string' && hrefRaw.trim()
+          ? hrefRaw
+          : defaultHrefForPortalLine(id.trim()),
       subtitle: (() => {
         if (subRaw == null) return null;
         const raw = typeof subRaw === 'string' ? subRaw : String(subRaw);
@@ -284,7 +308,7 @@ function FeedLineList({
           className="border-b border-slate-800/80 py-1 text-base leading-snug text-gray-100 last:border-b-0"
         >
           <GuestGateLink
-            href={item?.href?.trim() ? item.href : '/boards'}
+            href={item?.href?.trim() ? item.href : defaultHrefForPortalLine(item?.id ?? '')}
             isLoggedIn={isLoggedIn}
             className="flex min-h-11 min-w-0 flex-col justify-center overflow-hidden py-0.5 hover:text-amber-200"
           >
@@ -406,7 +430,7 @@ function LiveFeedList({
         return (
           <li key={item?.id ? String(item.id) : `live-${idx}`} className="mb-3 list-none last:mb-1">
             <GuestGateLink
-              href={item?.href?.trim() ? item.href : '/boards'}
+              href={item?.href?.trim() ? item.href : defaultHrefForPortalLine(item?.id ?? '')}
               isLoggedIn={isLoggedIn}
               className="block rounded-2xl border border-gray-700 bg-gray-800/60 p-4 shadow-md backdrop-blur-md transition hover:border-amber-400/35 hover:bg-gray-800/75"
             >

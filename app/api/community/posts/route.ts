@@ -67,6 +67,9 @@ export async function POST(req: Request) {
     {
       code: result.code,
       message: result.message ?? null,
+      /** 토스트·로그용 — message와 동일 계열을 한 필드로 */
+      details: supabase?.details ?? null,
+      hint: supabase?.hint ?? null,
       ...(supabase
         ? {
             supabase_code: supabase.code ?? null,

@@ -1,9 +1,9 @@
 /**
  * 고스트라이터 — 태국 생활·여행 템플릿을 주기적으로 board_posts(tips|reports)에 자동 게시.
- * Vercel Cron: Authorization: Bearer CRON_SECRET
+ * Vercel Cron: `vercel.json` → `/api/cron/auto-content` (4시간마다), Authorization: Bearer CRON_SECRET
  *
- * 필수 env (또는 SHADOW_QA_BOT_USER_ID 폴백): 유효한 profiles.id / Auth user UUID
- *   AUTO_CONTENT_BOARD_USER_ID
+ * 작성자: `GHOSTWRITER_SYSTEM_USER_ID` (마이그레이션 138 — bot@taeja.world / profiles 동기화)
+ * 선택 env로 다른 UUID 덮어쓰기: AUTO_CONTENT_BOARD_USER_ID, SHADOW_QA_BOT_USER_ID
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
@@ -13,6 +13,7 @@ import {
 } from '@/lib/cron/autoContentGhostwriter';
 import { isCronAuthorized } from '@/lib/cronAuth';
 import { findActivePause, logCronEvent, pausedResponse } from '@/lib/cron/omniLogger';
+import { GHOSTWRITER_SYSTEM_USER_ID } from '@/lib/cron/ghostwriterBot';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -21,15 +22,16 @@ export const maxDuration = 60;
 
 const PIPELINE_ID = 'cron/auto-content';
 
+/** RFC UUID + 레거시 시스템 봇 ID(버전 니블 0) 허용 */
 const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function resolveActorUserId(): string | null {
+function resolveActorUserId(): string {
   const a = process.env.AUTO_CONTENT_BOARD_USER_ID?.trim();
   if (a && UUID_RE.test(a)) return a;
   const b = process.env.SHADOW_QA_BOT_USER_ID?.trim();
   if (b && UUID_RE.test(b)) return b;
-  return null;
+  return GHOSTWRITER_SYSTEM_USER_ID;
 }
 
 function pickTemplate() {
@@ -61,16 +63,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const dryRun = req.nextUrl.searchParams.get('dry_run') === '1';
 
   const actorId = resolveActorUserId();
-  if (!actorId) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: 'missing_actor',
-        hint: 'Set AUTO_CONTENT_BOARD_USER_ID (or SHADOW_QA_BOT_USER_ID) to a valid Supabase user UUID.',
-      },
-      { status: 503 },
-    );
-  }
 
   const picked = pickTemplate();
   const content = buildAutoContentBody({ boardType: picked.boardType, title: picked.title });

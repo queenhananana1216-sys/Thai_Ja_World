@@ -120,3 +120,31 @@ export function jsonBodyForBoardWriteVerbose(err: SupabaseHttpErrorFields): {
     },
   };
 }
+
+/** 클라이언트 토스트·인라인 오류 — PostgREST message·details·hint를 한 블록으로 (블랙박스 해제) */
+export function formatSupabaseClientErrorPayload(payload: {
+  message?: string | null;
+  code?: string | null;
+  error?: string | null;
+  supabase_message?: string | null;
+  supabase_code?: string | null;
+  supabase_details?: string | null;
+  supabase_hint?: string | null;
+}): string {
+  const primary =
+    payload.message?.trim() ||
+    payload.supabase_message?.trim() ||
+    payload.error?.trim() ||
+    '';
+  const lines: string[] = [];
+  if (primary) lines.push(primary);
+  const det = payload.supabase_details?.trim();
+  if (det) lines.push(det);
+  const hint = payload.supabase_hint?.trim();
+  if (hint) lines.push(`hint: ${hint}`);
+  const code = payload.supabase_code?.trim() || payload.code?.trim();
+  if (code && code !== 'UNKNOWN' && code !== 'BOARD_WRITE_ERROR') {
+    lines.push(`code: ${code}`);
+  }
+  return lines.length > 0 ? lines.join('\n') : '알 수 없는 오류';
+}

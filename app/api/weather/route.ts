@@ -5,7 +5,8 @@
 import { NextResponse } from 'next/server';
 import { fetchThailandCitiesWeather } from '@/lib/weather/fetchThailandCitiesWeather';
 
-export const runtime = 'nodejs';
+/** Open-Meteo 프록시만 사용 — Edge 에서 저지연 응답 */
+export const runtime = 'edge';
 /** 포털 날씨 위젯·프록시 응답 60초 ISR (Open-Meteo 페치도 동일 revalidate) */
 export const revalidate = 60;
 

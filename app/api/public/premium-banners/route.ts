@@ -7,7 +7,8 @@ import {
   type BannerRouteGroup,
 } from '@/lib/banners/types';
 
-export const runtime = 'nodejs';
+/** anon Supabase 읽기 — Edge (동일 풀러 URL 권장) */
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 /**

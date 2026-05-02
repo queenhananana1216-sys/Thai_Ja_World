@@ -4,6 +4,9 @@
  * anon key 사용 → 공개 SELECT RLS 정책이 걸린 테이블만 읽기 가능.
  * 인증이 필요한 쓰기 작업에는 사용 금지.
  * SERVICE_ROLE 클라이언트(봇 전용): src/bots/adapters/supabaseClient.ts 참조.
+ *
+ * 연결 풀링: Vercel·Edge 등 동시 실행이 많으면 Dashboard 의 Transaction pooler 호스트를
+ * `NEXT_PUBLIC_SUPABASE_URL` 로 쓰는 것을 권장(직접 연결 포화 완화).
  */
 import { createClient } from '@supabase/supabase-js';
 import { createDummySupabaseClient } from './dummy';

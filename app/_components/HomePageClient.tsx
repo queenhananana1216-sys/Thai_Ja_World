@@ -19,6 +19,7 @@ import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate, extractHostname } from '@/lib/utils/formatDate';
 import { SITE_SEARCH_ENTRIES } from '@/lib/search/siteSearchEntries';
 import { useGlobalLanguage } from '@/contexts/GlobalLanguageContext';
+import { usePublicWeatherSwr } from '@/lib/hooks/usePublicWeatherSwr';
 
 const HOME_FETCH_BUDGET_MS = 12_000;
 
@@ -234,10 +235,6 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   const [shops, setShops] = useState<LocalBusiness[]>([]);
   /** 뉴스·가게 fetch 진행 중 (히어로·타일은 바로 표시) */
   const [listsBusy, setListsBusy] = useState(true);
-  const [weatherRows, setWeatherRows] = useState<WeatherRow[]>([]);
-  const [weatherBusy, setWeatherBusy] = useState(true);
-  const [weatherErr, setWeatherErr] = useState(false);
-
   const d = dict;
   const h: Dictionary['home'] = d.home;
   const hAny = h as Dictionary['home'] & Record<string, string>;
@@ -260,6 +257,35 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
   const conversionJobsHint = hAny.conversionJobsHint ?? h.newsEmpty;
   const tips = useMemo(() => tipEnv(), []);
   const hasTip = Boolean(tips.tg || tips.wa || tips.line || tips.fb || tips.tt);
+
+  const { data: weatherPayload, error: weatherSwrError, isLoading: weatherSwrLoading } =
+    usePublicWeatherSwr(locale);
+
+  const { weatherRows, weatherBusy, weatherErr } = useMemo(() => {
+    const busy = weatherSwrLoading && !weatherPayload && !weatherSwrError;
+    if (weatherSwrError) {
+      return { weatherRows: [] as WeatherRow[], weatherBusy: busy, weatherErr: true };
+    }
+    const cities = weatherPayload?.cities ?? [];
+    if (!busy && weatherPayload !== undefined && cities.length === 0) {
+      return { weatherRows: [] as WeatherRow[], weatherBusy: false, weatherErr: true };
+    }
+    if (!weatherPayload?.cities) {
+      return { weatherRows: [] as WeatherRow[], weatherBusy: busy, weatherErr: false };
+    }
+    const rows: WeatherRow[] = weatherPayload.cities.map((c) => ({
+      key: c.key,
+      label:
+        c.key === 'pattaya'
+          ? h.weatherPattaya
+          : c.key === 'chiang_mai'
+            ? h.weatherChiangMai
+            : h.weatherBangkok,
+      temp: c.temperature_c,
+      condition: c.condition || '—',
+    }));
+    return { weatherRows: rows, weatherBusy: busy, weatherErr: false };
+  }, [weatherPayload, weatherSwrError, weatherSwrLoading, h.weatherBangkok, h.weatherChiangMai, h.weatherPattaya]);
 
   const newsLocalized = useMemo(
     () =>
@@ -335,54 +361,6 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
       cancelled = true;
     };
   }, [isLoggedIn]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      setWeatherBusy(true);
-      setWeatherErr(false);
-      try {
-        const loc = locale === 'th' ? 'th' : 'ko';
-        const res = await fetch(`/api/weather?locale=${loc}`);
-        if (!res.ok) {
-          if (!cancelled) {
-            setWeatherRows([]);
-            setWeatherErr(true);
-          }
-          return;
-        }
-        const body = (await res.json()) as {
-          cities?: { key: string; temperature_c: number | null; condition: string }[];
-        };
-        const cities = body.cities ?? [];
-        const labelFor = (key: string) => {
-          if (key === 'pattaya') return h.weatherPattaya;
-          if (key === 'chiang_mai') return h.weatherChiangMai;
-          return h.weatherBangkok;
-        };
-        if (!cancelled) {
-          setWeatherRows(
-            cities.map((c) => ({
-              key: c.key,
-              label: labelFor(c.key),
-              temp: c.temperature_c,
-              condition: c.condition || '—',
-            })),
-          );
-        }
-      } catch {
-        if (!cancelled) {
-          setWeatherRows([]);
-          setWeatherErr(true);
-        }
-      } finally {
-        if (!cancelled) setWeatherBusy(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoggedIn, locale, h.weatherBangkok, h.weatherChiangMai, h.weatherPattaya]);
 
   return (
     <div className="page-body">

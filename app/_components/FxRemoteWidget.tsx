@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import useSWR from 'swr';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Locale } from '@/i18n/types';
 import type { Dictionary } from '@/i18n/dictionaries';
@@ -39,6 +40,12 @@ function saveState(x: number, y: number, minimized: boolean) {
   } catch {
     /* ignore */
   }
+}
+
+async function fxFetcher(url: string): Promise<FxSnapshot> {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('fx_http');
+  return res.json();
 }
 
 function migrateLegacyStorage() {
@@ -105,7 +112,12 @@ export default function FxRemoteWidget({
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [minimized, setMinimized] = useState(true);
 
-  const [snap, setSnap] = useState<FxSnapshot>(initial);
+  const { data: swrFx, mutate: mutateFx } = useSWR<FxSnapshot>('/api/fx', fxFetcher, {
+    fallbackData: initial,
+    dedupingInterval: 25 * 60 * 1000,
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [amountStr, setAmountStr] = useState('0');
   const [base, setBase] = useState<FxCurrency>('THB');
@@ -119,8 +131,8 @@ export default function FxRemoteWidget({
   const shouldHideOnLanding = isLandingRoute;
 
   useEffect(() => {
-    setSnap(initial);
-  }, [initial]);
+    void mutateFx(initial, { revalidate: false });
+  }, [initial, mutateFx]);
 
   useEffect(() => {
     migrateLegacyStorage();
@@ -238,6 +250,8 @@ export default function FxRemoteWidget({
     };
   }, [refreshStyleScore]);
 
+  const snap = swrFx ?? initial;
+
   const amountNum = useMemo(() => {
     const n = parseFloat(amountStr);
     return Number.isFinite(n) ? n : 0;
@@ -269,21 +283,17 @@ export default function FxRemoteWidget({
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const res = await fetch('/api/fx', { cache: 'no-store' });
-      if (res.ok) {
-        const j = (await res.json()) as FxSnapshot;
-        setSnap(j);
-      }
+      await mutateFx();
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [mutateFx]);
 
   /** 개발 SSR이 예시 환율만 줄 때 클라이언트에서 실제 환율 보강 */
   useEffect(() => {
     if (!initial.mock) return;
-    void onRefresh();
-  }, [initial.mock, onRefresh]);
+    void mutateFx();
+  }, [initial.mock, mutateFx]);
 
   async function toggleLocale(next: Locale) {
     if (next === locale) return;

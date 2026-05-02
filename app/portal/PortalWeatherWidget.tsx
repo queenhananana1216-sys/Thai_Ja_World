@@ -1,8 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import useSWR from 'swr';
 import type { Locale } from '@/i18n/types';
 import { getPortal2026Copy } from '@/i18n/portal2026Copy';
+import { usePublicWeatherSwr } from '@/lib/hooks/usePublicWeatherSwr';
 import styles from './portal-2026.module.css';
 
 const OMNI_RADAR_INTERVAL_MS = 60_000;
@@ -32,6 +34,19 @@ type OmniChaosMonkey = {
   defense_success_rate?: number;
   skipped?: boolean;
 };
+
+type OmniPack = { ok: boolean; status: number; json: unknown };
+
+async function omniFetcher(url: string): Promise<OmniPack> {
+  const res = await fetch(url, { cache: 'no-store' });
+  let json: unknown = null;
+  try {
+    json = await res.json();
+  } catch {
+    json = null;
+  }
+  return { ok: res.ok, status: res.status, json };
+}
 
 function chaosShieldTooltip(locale: Locale, pulse: boolean, rate?: number): string {
   if (pulse) {
@@ -84,91 +99,58 @@ export default function PortalWeatherWidget({
   isAdmin?: boolean;
 }) {
   const copy = getPortal2026Copy(locale);
-  const [bangkok, setBangkok] = useState<WeatherCity | null>(null);
-  const [busy, setBusy] = useState(true);
-  const [err, setErr] = useState(false);
 
-  const [omniPhase, setOmniPhase] = useState<OmniLedPhase>('neutral');
-  const [omniErrors, setOmniErrors] = useState<string[]>([]);
-  const [chaosRadar, setChaosRadar] = useState<OmniChaosMonkey | null>(null);
+  const { data: weatherPayload, error: weatherError, isLoading: weatherLoading } = usePublicWeatherSwr(locale);
 
-  const fetchOmniRadar = useCallback(async () => {
-    try {
-      const res = await fetch('/api/health/omni-radar', { cache: 'no-store' });
-      let json: unknown = null;
-      try {
-        json = await res.json();
-      } catch {
-        json = null;
-      }
-      const checks =
-        json && typeof json === 'object' && !Array.isArray(json)
-          ? (json as { checks?: { chaos_monkey?: OmniChaosMonkey } }).checks
-          : undefined;
-      const chaos = checks?.chaos_monkey ?? null;
-      setChaosRadar(chaos);
+  const bangkok = useMemo((): WeatherCity | null => {
+    const cities = weatherPayload?.cities ?? [];
+    return (cities.find((c) => c.key === 'bangkok') ?? cities[0] ?? null) as WeatherCity | null;
+  }, [weatherPayload]);
 
-      const healthy =
-        res.ok &&
-        json &&
-        typeof json === 'object' &&
-        (json as { status?: string }).status === 'healthy' &&
-        (json as { all_systems_go?: boolean }).all_systems_go === true;
+  const busy = weatherLoading && !weatherPayload && !weatherError;
+  const err =
+    Boolean(weatherError) ||
+    (!busy &&
+      weatherPayload !== undefined &&
+      (!weatherPayload.cities || weatherPayload.cities.length === 0));
 
-      if (healthy) {
-        setOmniPhase('ok');
-        setOmniErrors([]);
-      } else {
-        setOmniPhase('error');
-        setOmniErrors(parseOmniErrors(json, res.status));
-      }
-    } catch {
-      setOmniPhase('error');
-      setOmniErrors(['network_or_unreachable']);
-      setChaosRadar(null);
+  const { data: omniPack } = useSWR('/api/health/omni-radar', omniFetcher, {
+    refreshInterval: OMNI_RADAR_INTERVAL_MS,
+    revalidateOnFocus: false,
+    dedupingInterval: 8000,
+  });
+
+  const { omniPhase, omniErrors, chaosRadar } = useMemo(() => {
+    if (!omniPack) {
+      return {
+        omniPhase: 'neutral' as OmniLedPhase,
+        omniErrors: [] as string[],
+        chaosRadar: null as OmniChaosMonkey | null,
+      };
     }
-  }, []);
+    const { ok, status, json } = omniPack;
+    const checks =
+      json && typeof json === 'object' && !Array.isArray(json)
+        ? (json as { checks?: { chaos_monkey?: OmniChaosMonkey } }).checks
+        : undefined;
+    const chaos = checks?.chaos_monkey ?? null;
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      setBusy(true);
-      setErr(false);
-      try {
-        const loc = locale === 'th' ? 'th' : 'ko';
-        const res = await fetch(`/api/weather?locale=${loc}`);
-        if (!res.ok) {
-          if (!cancelled) {
-            setBangkok(null);
-            setErr(true);
-          }
-          return;
-        }
-        const body = (await res.json()) as { cities?: WeatherCity[] };
-        const first = body.cities?.find((c) => c.key === 'bangkok') ?? body.cities?.[0] ?? null;
-        if (!cancelled) {
-          setBangkok(first);
-          setErr(!first);
-        }
-      } catch {
-        if (!cancelled) {
-          setBangkok(null);
-          setErr(true);
-        }
-      } finally {
-        if (!cancelled) setBusy(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
+    const healthy =
+      ok &&
+      json &&
+      typeof json === 'object' &&
+      (json as { status?: string }).status === 'healthy' &&
+      (json as { all_systems_go?: boolean }).all_systems_go === true;
+
+    if (healthy) {
+      return { omniPhase: 'ok' as const, omniErrors: [] as string[], chaosRadar: chaos };
+    }
+    return {
+      omniPhase: 'error' as const,
+      omniErrors: parseOmniErrors(json, status),
+      chaosRadar: chaos,
     };
-  }, [locale]);
-
-  useEffect(() => {
-    void fetchOmniRadar();
-    const id = window.setInterval(() => void fetchOmniRadar(), OMNI_RADAR_INTERVAL_MS);
-    return () => window.clearInterval(id);
-  }, [fetchOmniRadar]);
+  }, [omniPack]);
 
   const tempLabel =
     bangkok?.temperature_c != null ? `${bangkok.temperature_c.toFixed(1)}°C` : '—';

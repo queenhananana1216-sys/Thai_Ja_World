@@ -5,7 +5,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-export const runtime = 'nodejs';
+/**
+ * anon Supabase(읽기 전용) — Edge.
+ * 풀러: `NEXT_PUBLIC_SUPABASE_URL`에 Supabase Transaction pooler 호스트를 쓰면 연결 수 요동을 줄일 수 있음.
+ */
+export const runtime = 'edge';
 
 export async function GET() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

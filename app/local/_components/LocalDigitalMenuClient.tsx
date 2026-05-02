@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * 메뉴·주문 데이터는 RSC props + Supabase 변이 위주.
+ * 홈과 동일한 `/api/weather` SWR 키를 미리 채워 뒤로 가기·허브 왕복 시 체감 지연을 줄임.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -8,6 +12,8 @@ import QRCodeGenerator from '@/components/local/QRCodeGenerator';
 import { readLocaleCookie } from '@/i18n/readLocaleCookie';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { prefetchPublicWeatherLocale } from '@/lib/hooks/usePublicWeatherSwr';
+import type { Locale } from '@/i18n/types';
 
 export type MenuLang = 'ko' | 'th' | 'en' | 'zh';
 
@@ -318,6 +324,10 @@ export default function LocalDigitalMenuClient(props: {
   const [orderNotes, setOrderNotes] = useState('');
   const [orderBusy, setOrderBusy] = useState(false);
   const [menuLang, setMenuLang] = useState<MenuLang>('ko');
+
+  useEffect(() => {
+    prefetchPublicWeatherLocale(menuLang as Locale);
+  }, [menuLang]);
   const [guestContactPhone, setGuestContactPhone] = useState('');
   const [kioskCart, setKioskCart] = useState<Record<string, number>>({});
   const [kioskModalOpen, setKioskModalOpen] = useState(false);

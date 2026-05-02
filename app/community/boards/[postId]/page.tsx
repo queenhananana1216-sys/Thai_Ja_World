@@ -95,7 +95,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const { data: post, error } = await supabase
     .from('posts')
     .select(
-      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set, latitude, longitude, location_name, is_knowledge_tip',
+      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set, is_knowledge_tip',
     )
     .eq('id', postId)
     .eq('moderation_status', 'safe')
@@ -166,18 +166,6 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
     locale === 'th'
       ? `🔥 อ่านแล้ว ${getPerceivedViewCount(Number(post.view_count ?? 0), postId).toLocaleString('th-TH')} คน`
       : `🔥 ${getPerceivedViewCount(Number(post.view_count ?? 0), postId).toLocaleString('ko-KR')}명이 읽음`;
-  const lat =
-    typeof (post as { latitude?: number | null }).latitude === 'number'
-      ? Number((post as { latitude?: number }).latitude)
-      : null;
-  const lng =
-    typeof (post as { longitude?: number | null }).longitude === 'number'
-      ? Number((post as { longitude?: number }).longitude)
-      : null;
-  const locationName =
-    typeof (post as { location_name?: string | null }).location_name === 'string'
-      ? (post as { location_name?: string }).location_name
-      : null;
   const { data: relatedPostsRaw, error: relatedPostsError } = await supabase
     .from('posts')
     .select('id, title, created_at, comment_count, view_count')
@@ -305,20 +293,6 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
           bodyText={bodyForGuestBlur}
           loginNextPath={path}
         />
-        {!blurTrapActive && lat !== null && lng !== null ? (
-          <div className="mt-5 rounded-xl border border-slate-700/50 bg-slate-950/50 p-3">
-            <p className="mb-2 text-xs font-semibold text-slate-300">
-              📍 {locationName?.trim() || '위치 공유'}
-            </p>
-            <iframe
-              title="post-location-map"
-              src={`https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="h-56 w-full rounded-xl border border-slate-700/50"
-            />
-          </div>
-        ) : null}
         <div className="mt-6 border-t border-white/10 pt-4">
           <PostEngagementActions postPath={path} isLoggedIn={Boolean(viewerId)} />
         </div>

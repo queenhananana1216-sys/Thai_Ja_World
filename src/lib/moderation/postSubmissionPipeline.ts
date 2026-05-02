@@ -71,9 +71,6 @@ export async function createModeratedPost(
     title: string;
     content: string;
     image_urls: string[];
-    latitude?: number | null;
-    longitude?: number | null;
-    location_name?: string | null;
     /** 선택: 글 비밀번호(4~128자). 설정 시 삭제·수정·비공개 전환 시 필요 */
     owner_password?: string;
   },
@@ -138,10 +135,6 @@ export async function createModeratedPost(
   const image_urls = Array.isArray(body.image_urls) ? body.image_urls : [];
   const ownerPassword =
     typeof body.owner_password === 'string' ? body.owner_password.trim() : '';
-  const latitude = typeof body.latitude === 'number' ? body.latitude : null;
-  const longitude = typeof body.longitude === 'number' ? body.longitude : null;
-  const locationName =
-    typeof body.location_name === 'string' ? body.location_name.trim() : null;
   if (ownerPassword) {
     if (ownerPassword.length < 4 || ownerPassword.length > 128) {
       return {
@@ -151,18 +144,6 @@ export async function createModeratedPost(
         message: '글 비밀번호는 4자 이상 128자 이하로 정해 주세요.',
       };
     }
-  }
-  if ((latitude === null) !== (longitude === null)) {
-    return { ok: false, status: 400, code: 'invalid', message: 'lat_lng_pair_required' };
-  }
-  if (latitude !== null && (latitude < -90 || latitude > 90)) {
-    return { ok: false, status: 400, code: 'invalid', message: 'invalid_latitude' };
-  }
-  if (longitude !== null && (longitude < -180 || longitude > 180)) {
-    return { ok: false, status: 400, code: 'invalid', message: 'invalid_longitude' };
-  }
-  if (locationName && locationName.length > 120) {
-    return { ok: false, status: 400, code: 'invalid', message: 'location_name_too_long' };
   }
 
   if (title.length < 1 || title.length > 200 || content.length < 2) {
@@ -245,9 +226,6 @@ export async function createModeratedPost(
       title: title.slice(0, 200),
       content,
       image_urls: Array.isArray(image_urls) ? image_urls : [],
-      latitude,
-      longitude,
-      location_name: locationName || null,
       is_anonymous: false,
       moderation_status: 'safe',
       author_hidden: false,

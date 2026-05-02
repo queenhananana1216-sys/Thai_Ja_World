@@ -63,11 +63,6 @@ export default function NewPostForm({
   const [files, setFiles] = useState<FileList | null>(null);
   const [ownerPassword, setOwnerPassword] = useState('');
   const [ownerPassword2, setOwnerPassword2] = useState('');
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [locationName, setLocationName] = useState('');
-  const [geoBusy, setGeoBusy] = useState(false);
-  const [geoError, setGeoError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -162,9 +157,6 @@ export default function NewPostForm({
         title: title.trim(),
         content: content.trim(),
         image_urls: uploadUrls,
-        latitude,
-        longitude,
-        location_name: locationName.trim() || null,
         ...(op ? { owner_password: op } : {}),
       });
 
@@ -273,27 +265,6 @@ export default function NewPostForm({
     }
   }
 
-  async function attachGeoLocation() {
-    setGeoError(null);
-    if (!navigator.geolocation) {
-      setGeoError('이 기기/브라우저는 위치 API를 지원하지 않습니다.');
-      return;
-    }
-    setGeoBusy(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLatitude(position.coords.latitude);
-        setLongitude(position.coords.longitude);
-        setGeoBusy(false);
-      },
-      (err) => {
-        setGeoError(err.message || '위치 권한을 확인해 주세요.');
-        setGeoBusy(false);
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
-    );
-  }
-
   return (
     <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
       <label htmlFor="cat" className="block text-sm font-semibold text-slate-200">{board.category}</label>
@@ -342,37 +313,6 @@ export default function NewPostForm({
           className="mt-2 block w-full text-xs text-slate-300 file:mr-3 file:rounded-full file:border file:border-violet-300/40 file:bg-violet-500/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-violet-100"
         />
       </div>
-      {category === 'info' ? (
-        <div className="rounded-xl border border-emerald-300/30 bg-emerald-500/10 p-3">
-          <p className="m-0 text-sm font-semibold text-emerald-200">정보공유 위치 첨부</p>
-          <button
-            type="button"
-            onClick={() => void attachGeoLocation()}
-            className="mt-2 rounded-full border border-emerald-300/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/25 disabled:opacity-70"
-            disabled={geoBusy}
-          >
-            {geoBusy ? '위치 확인 중…' : '📍 현재 위치 첨부하기'}
-          </button>
-          {latitude !== null && longitude !== null ? (
-            <p className="mt-2 text-xs text-emerald-100">
-              위도 {latitude.toFixed(6)}, 경도 {longitude.toFixed(6)}
-            </p>
-          ) : null}
-          <label htmlFor="location-name" className="mt-2 block text-xs font-semibold text-emerald-100/90">
-            위치 이름(선택)
-          </label>
-          <input
-            id="location-name"
-            type="text"
-            value={locationName}
-            onChange={(e) => setLocationName(e.target.value)}
-            placeholder="예: BTS Asok 근처"
-            maxLength={120}
-            className="mt-1 w-full rounded-lg border border-emerald-300/25 bg-slate-950/70 px-3 py-2 text-xs text-slate-100 outline-none"
-          />
-          {geoError ? <p className="mt-2 text-xs text-rose-300">{geoError}</p> : null}
-        </div>
-      ) : null}
 
       <p className="m-0 text-xs text-slate-400">
         {board.postOwnerPasswordOptional}

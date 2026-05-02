@@ -80,9 +80,6 @@ export async function POST(req: Request) {
     content: typeof b.content === 'string' ? b.content : '',
     image_urls: Array.isArray(b.image_urls) ? b.image_urls.map((x) => String(x)) : [],
     owner_password: typeof b.owner_password === 'string' ? b.owner_password : undefined,
-    latitude: typeof b.latitude === 'number' ? b.latitude : null,
-    longitude: typeof b.longitude === 'number' ? b.longitude : null,
-    location_name: typeof b.location_name === 'string' ? b.location_name : null,
   });
 
   if (result.ok) {

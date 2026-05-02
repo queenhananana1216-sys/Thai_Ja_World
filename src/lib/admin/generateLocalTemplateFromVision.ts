@@ -9,6 +9,9 @@ export type DecorationCatalogRow = {
   tags: string[];
   color_code?: string | null;
   audio_embed_url?: string | null;
+  /** 도토리 가격 — 카탈로그 단계에서만 참고 (정산은 DB 정책 따름) */
+  price?: number;
+  tier?: string;
 };
 
 export type VisionTemplateImage = {
@@ -52,7 +55,7 @@ async function loadDecorationCatalog(): Promise<DecorationCatalogRow[]> {
   const admin = createServiceRoleClient();
   const { data, error } = await admin
     .from('decoration_assets')
-    .select('id, type, name, tags, color_code, audio_embed_url')
+    .select('id, type, name, tags, color_code, audio_embed_url, price, tier')
     .eq('is_active', true)
     .order('sort_order', { ascending: true });
   if (error) throw new Error(`decoration_assets: ${error.message}`);
@@ -63,6 +66,8 @@ async function loadDecorationCatalog(): Promise<DecorationCatalogRow[]> {
     tags: string[] | null;
     color_code: string | null;
     audio_embed_url: string | null;
+    price: number | null;
+    tier: string | null;
   }>;
   return rows.map((r) => ({
     id: r.id,
@@ -71,6 +76,8 @@ async function loadDecorationCatalog(): Promise<DecorationCatalogRow[]> {
     tags: Array.isArray(r.tags) ? r.tags : [],
     color_code: r.color_code ?? null,
     audio_embed_url: r.audio_embed_url ?? null,
+    price: typeof r.price === 'number' ? r.price : undefined,
+    tier: r.tier ?? undefined,
   }));
 }
 
@@ -84,6 +91,7 @@ function buildSystemPrompt(): string {
     '- selected_skin_special_id: type "skin_special" or null if none fits.',
     '- selected_bgm_id: must be type "bgm".',
     '- Match vibe using overlap between your inferred vibe_tags and each asset tags.',
+    '- Prefer tier "basic" or "premium" for typical shops; use "special" only if the venue is clearly ultra-premium or collector-oriented.',
     '- menu_items: extract ONLY from images marked as menu board region; name and price as printed (keep currency symbols).',
     '- Output JSON only, no markdown fences.',
   ].join('\n');
@@ -95,11 +103,13 @@ function buildUserPrompt(params: { businessName: string; catalog: DecorationCata
     type: c.type,
     name: c.name,
     tags: c.tags,
+    tier: c.tier,
+    price: c.price,
   }));
   return [
     `업체명: ${params.businessName}`,
     '',
-    'decoration_assets 카탈로그 (id/type/name/tags):',
+    'decoration_assets 카탈로그 (id/type/name/tags/tier/price):',
     JSON.stringify(slimCatalog, null, 0),
     '',
     '이미지 순서는 사용자 메시지 블록에서 구역 라벨 직후에 이어집니다.',

@@ -40,12 +40,12 @@ const adminSections = [
     ],
   },
   {
-    title: '유저 · 퀘스트 관리',
+    title: '유저 · 미션 관리',
     items: [
       { href: '/admin/users', label: '이용자 디렉터리', icon: '◍' },
       { href: '/admin/community-posts', label: '광장 글 관리', icon: '◌' },
       { href: '/admin/news', label: '뉴스 큐', icon: '▤' },
-      { href: '/admin/knowledge', label: '지식/퀘스트 큐', icon: '▧' },
+      { href: '/admin/knowledge', label: '지식/미션 큐', icon: '▧' },
       { href: '/admin/local-spots', label: '로컬 가게 관리', icon: '▩' },
       { href: '/admin/local-template', label: '로컬 미니홈 템플릿', icon: '✨' },
       { href: '/admin/korean-biz-submissions', label: '한인 업소 제보', icon: '🏪' },

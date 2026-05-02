@@ -37,9 +37,11 @@ function formatPortalNewsAge(iso: string | null | undefined, locale: Locale): st
   return new Intl.DateTimeFormat(loc === 'th' ? 'th-TH' : 'ko-KR', { month: 'short', day: 'numeric' }).format(d);
 }
 
-function splitLiveHotKeywords(text: string): ReactNode {
+function splitLiveHotKeywords(text: string, locale: Locale): ReactNode {
   const re =
-    /(\[(?:quest|퀘스트|เควสต์)\]|도토리|방명록|Guestbook|guestbook|퀘스트|옥수수|cheers|Cheer)/gi;
+    locale === 'th'
+      ? /(\[(?:ภารกิจรายวัน|ภารกิจรายสัปดาห์|ภารกิจรายเดือน)\]|(?:\[(?:quest|Quest|Mission|เควสต์)\])|ดอกท้อ|🎁|สมุดเยี่ยมชม|Guestbook|guestbook|ข้าวโพด|cheers|Cheer)/gi
+      : /(\[(?:일일|주간|월간)\s+미션\]|(?:\[(?:quest|Quest|Mission|퀘스트|เควสต์)\])|도토리|🎁|방명록|Guestbook|guestbook|미션|옥수수|cheers|Cheer)/gi;
   const parts = text.split(re);
   if (parts.length <= 1) return text;
   return parts.map((part, i) =>
@@ -222,7 +224,7 @@ function FeedLineList({
   lines: PortalFeedLine[];
   emptyMessage: string;
   emptyMode?: 'default' | 'news-skeleton' | 'news-translating';
-  /** 퀘스트 CTA를 헤더 뱃지로 쓰는 경우 본문 빈 박스 제거 */
+  /** 미션 CTA를 헤더 뱃지로 쓰는 경우 본문 빈 박스 제거 */
   omitEmptyPlaceholder?: boolean;
   /** processed_news 한 줄(제목·요약·시간) */
   lineLayout?: 'default' | 'news-dense';
@@ -283,16 +285,22 @@ function isLiveGamificationLine(item: PortalFeedLine): boolean {
   const t = `${item.title} ${item.subtitle ?? ''}`;
   const lower = t.toLowerCase();
   return (
-    /\[(?:quest|퀘스트|เควสต์)\]/i.test(t) ||
+    /\[\s*(?:[Qq]uest|[Mm]ission|퀘스트|เควสต์)\s*\]/u.test(t) ||
+    /\[(?:일일|주간|월간)\s+미션\]/u.test(t) ||
+    /\[(?:ภารกิจรายวัน|ภารกิจรายสัปดาห์|ภารกิจรายเดือน)\]/u.test(t) ||
     lower.includes('도토리') ||
+    lower.includes('ดอกท้อ') ||
     lower.includes('방명록') ||
     lower.includes('guestbook') ||
     lower.includes('퀘스트') ||
+    lower.includes('미션') ||
+    lower.includes('ภารกิจ') ||
     lower.includes('옥수수') ||
     lower.includes('cheers') ||
     lower.includes('cheer') ||
     lower.includes('quest') ||
-    lower.includes('달성')
+    lower.includes('달성') ||
+    lower.includes('🎁')
   );
 }
 
@@ -329,7 +337,7 @@ function LiveFeedList({
               <span
                 className={`line-clamp-2 break-words ${hot ? 'font-semibold text-white' : 'font-normal text-gray-100'}`}
               >
-                {hot ? splitLiveHotKeywords(titleLoc) : titleLoc}
+                {hot ? splitLiveHotKeywords(titleLoc, locale) : titleLoc}
               </span>
               {subLoc ? (
                 <span
@@ -337,7 +345,7 @@ function LiveFeedList({
                     hot ? 'font-medium text-gray-200' : 'text-gray-200'
                   }`}
                 >
-                  {hot ? splitLiveHotKeywords(subLoc) : subLoc}
+                  {hot ? splitLiveHotKeywords(subLoc, locale) : subLoc}
                 </span>
               ) : null}
             </Link>

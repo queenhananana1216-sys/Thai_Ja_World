@@ -534,7 +534,7 @@ export type HomeWeeklyDotoriRankRow = {
   dotoriEarned: number;
 };
 
-/** 이번 주(서울 기준) 완료된 주간 퀘스트 보상 도토리 합산 TOP N */
+/** 이번 주(서울 기준) 완료된 주간 미션 보상 도토리 합산 TOP N */
 export async function fetchHomeWeeklyDotoriRanking(
   limit = 5,
 ): Promise<{ rows: HomeWeeklyDotoriRankRow[]; error: string | null }> {

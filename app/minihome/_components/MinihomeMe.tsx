@@ -302,7 +302,7 @@ export default function MinihomeMe() {
     {
       key: 'quest',
       done: Boolean(prof?.signup_greeting_done),
-      title: isTh ? '퀘스트 인사 완료' : '퀘스트 인사 완료',
+      title: isTh ? 'ภารกิจทักทายสำเร็จ' : '미션 인사 완료',
       desc: isTh ? 'โพสต์ทักทายครั้งแรกเพื่อรับ 포인트' : '첫 인사글을 작성해 스타일 포인트를 받으세요.',
     },
     {

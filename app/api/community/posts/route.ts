@@ -52,7 +52,7 @@ export async function POST(req: Request) {
         });
       }
     } catch {
-      // 퀘스트 누적 실패는 게시글 생성 성공을 막지 않는다.
+      // 미션 누적 실패는 게시글 생성 성공을 막지 않는다.
     }
     return NextResponse.json({ id: result.postId });
   }

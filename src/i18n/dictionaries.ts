@@ -626,7 +626,7 @@ export type Dictionary = {
     /** /community/trade — 메타·OG */
     tradeHubDescription: string;
   };
-  /** 퀘스트·통합 피드 등 DB 영문 원문 → ko/th 치환 */
+  /** 미션·통합 피드 등 DB 영문 원문 → ko/th 치환 */
   quests: {
     feedPhraseMap: { en: string; ko: string; th: string }[];
   };
@@ -1286,8 +1286,10 @@ const ko: Dictionary = {
       { en: 'daily login', ko: '오늘의 출석', th: 'ล็อกอินรายวัน' },
       { en: 'First post', ko: '첫 게시글', th: 'โพสต์แรก' },
       { en: 'first post', ko: '첫 게시글', th: 'โพสต์แรก' },
-      { en: 'Quest complete', ko: '퀘스트 완료', th: 'เควสต์สำเร็จ' },
-      { en: 'quest complete', ko: '퀘스트 완료', th: 'เควสต์สำเร็จ' },
+      { en: 'Quest complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
+      { en: 'quest complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
+      { en: 'Mission complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
+      { en: 'mission complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
       { en: 'Dotori', ko: '도토리', th: 'ดอกท้อ' },
       { en: 'dotori', ko: '도토리', th: 'ดอกท้อ' },
       { en: 'Cheer a post', ko: '게시글 응원', th: 'เชียร์โพสต์' },
@@ -1299,10 +1301,12 @@ const ko: Dictionary = {
       { en: 'visit minihome', ko: '미니홈 방문', th: 'เยี่ยมมินิโฮม' },
       { en: 'Guestbook', ko: '방명록', th: 'สมุดเยี่ยมชม' },
       { en: 'guestbook', ko: '방명록', th: 'สมุดเยี่ยมชม' },
-      { en: 'Weekly quest', ko: '주간 퀘스트', th: 'เควสต์ประจำสัปดาห์' },
-      { en: 'weekly quest', ko: '주간 퀘스트', th: 'เควสต์ประจำสัปดาห์' },
-      { en: 'Daily quest', ko: '일일 퀘스트', th: 'เควสต์รายวัน' },
-      { en: 'daily quest', ko: '일일 퀘스트', th: 'เควสต์รายวัน' },
+      { en: 'Weekly quest', ko: '주간 미션', th: 'ภารกิจรายสัปดาห์' },
+      { en: 'weekly quest', ko: '주간 미션', th: 'ภารกิจรายสัปดาห์' },
+      { en: 'Monthly quest', ko: '월간 미션', th: 'ภารกิจรายเดือน' },
+      { en: 'monthly quest', ko: '월간 미션', th: 'ภารกิจรายเดือน' },
+      { en: 'Daily quest', ko: '일일 미션', th: 'ภารกิจรายวัน' },
+      { en: 'daily quest', ko: '일일 미션', th: 'ภารกิจรายวัน' },
     ],
   },
   policy: {
@@ -1965,8 +1969,10 @@ const th: Dictionary = {
       { en: 'daily login', ko: '오늘의 출석', th: 'ล็อกอินรายวัน' },
       { en: 'First post', ko: '첫 게시글', th: 'โพสต์แรก' },
       { en: 'first post', ko: '첫 게시글', th: 'โพสต์แรก' },
-      { en: 'Quest complete', ko: '퀘스트 완료', th: 'เควสต์สำเร็จ' },
-      { en: 'quest complete', ko: '퀘스트 완료', th: 'เควสต์สำเร็จ' },
+      { en: 'Quest complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
+      { en: 'quest complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
+      { en: 'Mission complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
+      { en: 'mission complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
       { en: 'Dotori', ko: '도토리', th: 'ดอกท้อ' },
       { en: 'dotori', ko: '도토리', th: 'ดอกท้อ' },
       { en: 'Cheer a post', ko: '게시글 응원', th: 'เชียร์โพสต์' },
@@ -1978,10 +1984,12 @@ const th: Dictionary = {
       { en: 'visit minihome', ko: '미니홈 방문', th: 'เยี่ยมมินิโฮม' },
       { en: 'Guestbook', ko: '방명록', th: 'สมุดเยี่ยมชม' },
       { en: 'guestbook', ko: '방명록', th: 'สมุดเยี่ยมชม' },
-      { en: 'Weekly quest', ko: '주간 퀘스트', th: 'เควสต์ประจำสัปดาห์' },
-      { en: 'weekly quest', ko: '주간 퀘스트', th: 'เควสต์ประจำสัปดาห์' },
-      { en: 'Daily quest', ko: '일일 퀘스트', th: 'เควสต์รายวัน' },
-      { en: 'daily quest', ko: '일일 퀘스트', th: 'เควสต์รายวัน' },
+      { en: 'Weekly quest', ko: '주간 미션', th: 'ภารกิจรายสัปดาห์' },
+      { en: 'weekly quest', ko: '주간 미션', th: 'ภารกิจรายสัปดาห์' },
+      { en: 'Monthly quest', ko: '월간 미션', th: 'ภารกิจรายเดือน' },
+      { en: 'monthly quest', ko: '월간 미션', th: 'ภารกิจรายเดือน' },
+      { en: 'Daily quest', ko: '일일 미션', th: 'ภารกิจรายวัน' },
+      { en: 'daily quest', ko: '일일 미션', th: 'ภารกิจรายวัน' },
     ],
   },
   policy: {

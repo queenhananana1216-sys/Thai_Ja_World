@@ -142,7 +142,7 @@
   }
 }
 
-/** 실시간 피드 — 퀘스트·도토리 등 키워드 금색 글라스 그라데이션 */
+/** 실시간 피드 — 미션·도토리 등 키워드 금색 글라스 그라데이션 */
 .liveFeedRowHot {
   background: linear-gradient(90deg, rgba(245, 158, 11, 0.09), rgba(251, 191, 36, 0.04), transparent);
   border-left: 2px solid rgba(251, 191, 36, 0.55);

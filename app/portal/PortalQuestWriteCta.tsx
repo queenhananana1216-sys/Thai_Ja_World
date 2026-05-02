@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const LABEL_FULL =
-  '[첫 글 작성하고 도토리 500개 받기 퀘스트 시작!]' as const;
+  '[첫 글 작성하고 도토리 500개 받기 미션 시작!]' as const;
 const LABEL_BADGE = '🔥 첫 글 작성하고 500 도토리 받기' as const;
 
 function hrefForCategory(cat: 'job' | 'flea' | 'free'): string {
@@ -64,7 +64,7 @@ export default function PortalQuestWriteCta({
         {LABEL_FULL}
       </button>
       <p className="mt-1.5 px-0.5 text-center text-sm text-gray-200">
-        로그인 시 퀘스트가 자동으로 활성화됩니다.{' '}
+        로그인 시 미션이 자동으로 활성화됩니다.{' '}
         <Link href={href} className="text-gray-100 underline hover:text-amber-200" prefetch={false}>
           바로 이동
         </Link>

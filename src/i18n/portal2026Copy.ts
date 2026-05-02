@@ -57,7 +57,7 @@ const ko: Portal2026Copy = {
   scaleTitle: '커뮤니티 규모',
   shortcutTitle: '바로가기',
   rankTitle: '주간 도토리 획득 TOP 5',
-  rankSub: '이번 주 서울 주간 퀘스트 집계',
+  rankSub: '이번 주 서울 주간 미션 집계',
   liveFeedTitle: '실시간 통합 피드',
   newsAsideTitle: '오늘의 핫이슈',
   localAsideTitle: '로컬 업체',

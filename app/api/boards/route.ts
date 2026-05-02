@@ -1,6 +1,6 @@
 /**
  * GET /api/boards — 공개 목록 (anon RLS)
- * POST /api/boards — 작성 (Bearer); 성공 후 퀘스트 RPC 연동
+ * POST /api/boards — 작성 (Bearer); 성공 후 미션 RPC 연동
  */
 import { NextResponse } from 'next/server';
 import { parseBoardPostBody } from './boardPayload';
@@ -124,7 +124,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       });
     }
   } catch {
-    // 퀘스트 실패는 글 등록 성공에 영향 없음
+    // 미션 실패는 글 등록 성공에 영향 없음
   }
 
   return NextResponse.json({ id: postId });

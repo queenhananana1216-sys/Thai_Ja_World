@@ -53,7 +53,7 @@ async function createWeatherEventQuest(targetDate: string): Promise<string | nul
     p_title_th: isHeat ? 'Heat check-in quest' : 'Rainy season check-in quest',
     p_event_type: 'daily_checkin',
     p_goal_count: 1,
-    p_reward_corn: isHeat ? 15 : 12,
+    p_reward_corn: isHeat ? 22 : 18,
     p_conditions: {
       signal: 'weather',
       target_date: targetDate,
@@ -95,7 +95,7 @@ async function createNewsEventQuest(targetDate: string): Promise<string | null> 
     p_title_th: 'Daily news briefing participation',
     p_event_type: 'write_post',
     p_goal_count: 1,
-    p_reward_corn: 18,
+    p_reward_corn: 24,
     p_conditions: {
       signal: 'news',
       target_date: targetDate,
@@ -142,7 +142,7 @@ async function createHighTrafficQuest(targetDate: string): Promise<string | null
     p_title_th: 'High-traffic engagement quest',
     p_event_type: 'send_reaction',
     p_goal_count: deadClickRate >= 0.08 ? 3 : 2,
-    p_reward_corn: deadClickRate >= 0.08 ? 28 : 22,
+    p_reward_corn: deadClickRate >= 0.08 ? 30 : 24,
     p_conditions: {
       signal: 'ux_metrics_5m',
       target_date: targetDate,

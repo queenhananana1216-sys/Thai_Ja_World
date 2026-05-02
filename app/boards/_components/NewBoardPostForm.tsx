@@ -157,7 +157,7 @@ export function NewBoardPostForm({
     }
 
     if (boardType === 'info') {
-      toast.success('[퀘스트 달성! 정보 공유로 50 도토리를 획득했습니다]', {
+      toast.success('[미션 달성! 정보 공유로 🎁 24 도토리 획득]', {
         position: 'top-center',
         duration: 4500,
       });

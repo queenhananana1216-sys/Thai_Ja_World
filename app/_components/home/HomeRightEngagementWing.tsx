@@ -137,14 +137,14 @@ export async function HomeRightEngagementWing() {
   return (
     <>
       <section className={styles.socialWingCard} aria-label="내 포인트">
-        <h3 className={styles.socialWingTitle}>내 포인트 · 주간 퀘스트</h3>
+        <h3 className={styles.socialWingTitle}>내 포인트 · 주간 미션</h3>
         {uid ? (
           <div className="min-w-0">
             <p className={`${styles.socialWingMetric} truncate`}>{`${(point ?? 0).toLocaleString('ko-KR')}P`}</p>
             <p className={`${styles.socialWingSub} wrap-break-word`}>
               {quest
-                ? `주간 퀘스트 ${quest.completed}/${quest.total} 완료`
-                : '주간 퀘스트 진행 정보를 불러오는 중'}
+                ? `주간 미션 ${quest.completed}/${quest.total} 완료`
+                : '주간 미션 진행 정보를 불러오는 중'}
             </p>
             <div className={styles.questProgressTrack} aria-hidden="true">
               <div
@@ -163,7 +163,7 @@ export async function HomeRightEngagementWing() {
           </div>
         ) : (
           <Link href="/auth/login?next=%2F" className={styles.loginQuestCta}>
-            🚀 로그인하고 퀘스트 보상받기
+            🚀 로그인하고 미션 보상 받기
           </Link>
         )}
       </section>

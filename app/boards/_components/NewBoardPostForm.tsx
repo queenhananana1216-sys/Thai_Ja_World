@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { uploadBoardImage } from '@/lib/board/uploadBoardImage';
 import {
   fireDbErrorRadar,
+  scheduleSoftNavigationRefresh,
   shouldMaskRawDbError,
   USER_DB_SYNC_TOAST_MESSAGE,
 } from '@/lib/db/dbErrorDefense';
@@ -44,129 +45,136 @@ export function NewBoardPostForm({
     return boardType === 'info' ? '정보 공유 글쓰기' : '자유 게시판 글쓰기';
   }, [boardType, mode]);
 
+  function isBoardSchemaSync(j: { error?: string; code?: string }): boolean {
+    const c = j.code;
+    if (c === 'SCHEMA_SYNC' || c === 'schema_sync') return true;
+    return shouldMaskRawDbError(String(j.error ?? ''));
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
-    const sb = createBrowserClient();
-    const {
-      data: { user },
-      error: ue,
-    } = await sb.auth.getUser();
-    if (ue || !user) {
-      setLoading(false);
-      router.push(
-        `/auth/login?next=${encodeURIComponent(`/boards/new?board_type=${boardType}`)}`,
-      );
-      return;
-    }
-
-    if (boardType === 'info' && (loc.lat == null || loc.lng == null)) {
-      setError('정보 공유 게시판에는 지도에서 위치를 선택해 주세요.');
-      setLoading(false);
-      return;
-    }
-
-    const newUrls: string[] = [];
-    for (const file of files) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('각 이미지는 5MB 이하여야 합니다.');
-        setLoading(false);
+    try {
+      const sb = createBrowserClient();
+      const {
+        data: { user },
+        error: ue,
+      } = await sb.auth.getUser();
+      if (ue || !user) {
+        router.push(
+          `/auth/login?next=${encodeURIComponent(`/boards/new?board_type=${boardType}`)}`,
+        );
         return;
       }
-      const up = await uploadBoardImage(sb, file, user.id);
-      if (!up.ok) {
-        setError(up.error);
-        setLoading(false);
+
+      if (boardType === 'info' && (loc.lat == null || loc.lng == null)) {
+        setError('정보 공유 게시판에는 지도에서 위치를 선택해 주세요.');
         return;
       }
-      newUrls.push(up.publicUrl);
-    }
 
-    const image_urls = [...existingUrls, ...newUrls];
+      const newUrls: string[] = [];
+      for (const file of files) {
+        if (file.size > 5 * 1024 * 1024) {
+          setError('각 이미지는 5MB 이하여야 합니다.');
+          return;
+        }
+        const up = await uploadBoardImage(sb, file, user.id);
+        if (!up.ok) {
+          setError(up.error);
+          return;
+        }
+        newUrls.push(up.publicUrl);
+      }
 
-    const { data: sess } = await sb.auth.getSession();
-    const token = sess.session?.access_token;
-    if (!token) {
-      setLoading(false);
-      setError('세션이 만료되었습니다. 다시 로그인해 주세요.');
-      return;
-    }
+      const image_urls = [...existingUrls, ...newUrls];
 
-    const body = {
-      board_type: boardType,
-      title: title.trim(),
-      content: content.trim(),
-      image_urls,
-      lat: boardType === 'info' ? loc.lat : null,
-      lng: boardType === 'info' ? loc.lng : null,
-      address: boardType === 'info' ? loc.address : null,
-    };
+      const { data: sess } = await sb.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) {
+        setError('세션이 만료되었습니다. 다시 로그인해 주세요.');
+        return;
+      }
 
-    if (mode === 'edit' && postId) {
-      const res = await fetch(`/api/boards/${postId}`, {
-        method: 'PUT',
+      const body = {
+        board_type: boardType,
+        title: title.trim(),
+        content: content.trim(),
+        image_urls,
+        lat: boardType === 'info' ? loc.lat : null,
+        lng: boardType === 'info' ? loc.lng : null,
+        address: boardType === 'info' ? loc.address : null,
+      };
+
+      if (mode === 'edit' && postId) {
+        const res = await fetch(`/api/boards/${postId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const j = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+          if (isBoardSchemaSync(j)) {
+            scheduleSoftNavigationRefresh(() => router.refresh());
+            toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
+            fireDbErrorRadar('NewBoardPostForm:edit');
+            return;
+          }
+          setError(j.error ?? '수정 실패');
+          return;
+        }
+        toast.success('수정되었습니다.', { position: 'top-center' });
+        router.push(`/boards/${postId}`);
+        router.refresh();
+        return;
+      }
+
+      const res = await fetch('/api/boards', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(body),
       });
-      setLoading(false);
-      if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
-        if (j.code === 'SCHEMA_SYNC' || shouldMaskRawDbError(String(j.error ?? ''))) {
+
+      const json = (await res.json().catch(() => ({}))) as {
+        id?: string;
+        error?: string;
+        code?: string;
+      };
+
+      if (!res.ok || !json.id) {
+        if (isBoardSchemaSync(json)) {
+          scheduleSoftNavigationRefresh(() => router.refresh());
           toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
-          fireDbErrorRadar('NewBoardPostForm:edit');
+          fireDbErrorRadar('NewBoardPostForm:create');
           return;
         }
-        setError(j.error ?? '수정 실패');
+        setError(json.error ?? '등록 실패');
         return;
       }
-      toast.success('수정되었습니다.', { position: 'top-center' });
-      router.push(`/boards/${postId}`);
+
+      if (boardType === 'info') {
+        toast.success('[미션 달성! 정보 공유로 🎁 24 도토리 획득]', {
+          position: 'top-center',
+          duration: 4500,
+        });
+      } else {
+        toast.success('글이 등록되었습니다.', { position: 'top-center' });
+      }
+
+      router.push(`/boards/${json.id}`);
       router.refresh();
-      return;
+    } catch {
+      setError('요청이 완료되지 않았습니다. 다시 시도해 주세요.');
+      fireDbErrorRadar('NewBoardPostForm:submit_throw');
+    } finally {
+      setLoading(false);
     }
-
-    const res = await fetch('/api/boards', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    const json = (await res.json().catch(() => ({}))) as {
-      id?: string;
-      error?: string;
-      code?: string;
-    };
-    setLoading(false);
-
-    if (!res.ok || !json.id) {
-      if (json.code === 'SCHEMA_SYNC' || shouldMaskRawDbError(String(json.error ?? ''))) {
-        toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
-        fireDbErrorRadar('NewBoardPostForm:create');
-        return;
-      }
-      setError(json.error ?? '등록 실패');
-      return;
-    }
-
-    if (boardType === 'info') {
-      toast.success('[미션 달성! 정보 공유로 🎁 24 도토리 획득]', {
-        position: 'top-center',
-        duration: 4500,
-      });
-    } else {
-      toast.success('글이 등록되었습니다.', { position: 'top-center' });
-    }
-
-    router.push(`/boards/${json.id}`);
-    router.refresh();
   }
 
   function removeExisting(url: string) {

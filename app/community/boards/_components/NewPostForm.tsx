@@ -12,6 +12,7 @@ import {
 } from '@/lib/community/postCategories';
 import {
   fireDbErrorRadar,
+  scheduleSoftNavigationRefresh,
   shouldMaskRawDbError,
   USER_DB_SYNC_TOAST_MESSAGE,
 } from '@/lib/db/dbErrorDefense';
@@ -50,114 +51,119 @@ export default function NewPostForm({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  function isSchemaSyncPayload(p: { code?: string; message?: string }): boolean {
+    const c = p.code;
+    if (c === 'schema_sync' || c === 'SCHEMA_SYNC') return true;
+    const msg = p.message?.trim();
+    return Boolean(msg && shouldMaskRawDbError(msg));
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const sb = createBrowserClient();
-    const {
-      data: { user },
-      error: userErr,
-    } = await sb.auth.getUser();
-    if (userErr || !user) {
-      setLoading(false);
-      router.push('/auth/login?next=/community/boards/new');
-      return;
-    }
-
-    const op = ownerPassword.trim();
-    const op2 = ownerPassword2.trim();
-    if (op || op2) {
-      if (op.length < 4 || op.length > 128) {
-        setError('글 비밀번호는 4자 이상 128자 이하로 정해 주세요.');
-        setLoading(false);
-        return;
-      }
-      if (op !== op2) {
-        setError(board.postOwnerPasswordMismatch);
-        setLoading(false);
-        return;
-      }
-    }
-
-    const uploadUrls: string[] = [];
-    const list = files ? Array.from(files).slice(0, 3) : [];
-    for (const file of list) {
-      if (file.size > 4 * 1024 * 1024) {
-        setError('각 사진은 4MB 이하로 올려 주세요.');
-        setLoading(false);
-        return;
-      }
-      const path = `${user.id}/${Date.now()}_${safeFileName(file.name)}`;
-      const { error: upErr } = await sb.storage.from('post-images').upload(path, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-      if (upErr) {
-        setError(`이미지 업로드 실패: ${upErr.message} (Supabase에 post-images 버킷·정책·컬럼 image_urls 적용 여부 확인)`);
-        setLoading(false);
-        return;
-      }
-      const { data: pub } = sb.storage.from('post-images').getPublicUrl(path);
-      uploadUrls.push(pub.publicUrl);
-    }
-
-    const { data: sess } = await sb.auth.getSession();
-    const accessToken = sess.session?.access_token;
-    if (!accessToken) {
-      setLoading(false);
-      setError(board.mod.auth);
-      router.push('/auth/login?next=/community/boards/new');
-      return;
-    }
-
-    const res = await fetch('/api/community/posts', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        category,
-        title: title.trim(),
-        content: content.trim(),
-        image_urls: uploadUrls,
-        latitude,
-        longitude,
-        location_name: locationName.trim() || null,
-        ...(op ? { owner_password: op } : {}),
-      }),
-    });
-
-    let payload: { id?: string; code?: string; message?: string } = {};
     try {
-      payload = (await res.json()) as typeof payload;
-    } catch {
-      /* ignore */
-    }
+      const sb = createBrowserClient();
+      const {
+        data: { user },
+        error: userErr,
+      } = await sb.auth.getUser();
+      if (userErr || !user) {
+        router.push('/auth/login?next=/community/boards/new');
+        return;
+      }
 
-    setLoading(false);
-    if (!res.ok) {
-      if (payload.code === 'schema_sync') {
-        toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
-        fireDbErrorRadar('NewPostForm:submit');
+      const op = ownerPassword.trim();
+      const op2 = ownerPassword2.trim();
+      if (op || op2) {
+        if (op.length < 4 || op.length > 128) {
+          setError('글 비밀번호는 4자 이상 128자 이하로 정해 주세요.');
+          return;
+        }
+        if (op !== op2) {
+          setError(board.postOwnerPasswordMismatch);
+          return;
+        }
+      }
+
+      const uploadUrls: string[] = [];
+      const list = files ? Array.from(files).slice(0, 3) : [];
+      for (const file of list) {
+        if (file.size > 4 * 1024 * 1024) {
+          setError('각 사진은 4MB 이하로 올려 주세요.');
+          return;
+        }
+        const path = `${user.id}/${Date.now()}_${safeFileName(file.name)}`;
+        const { error: upErr } = await sb.storage.from('post-images').upload(path, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+        if (upErr) {
+          setError(
+            `이미지 업로드 실패: ${upErr.message} (Supabase에 post-images 버킷·정책·컬럼 image_urls 적용 여부 확인)`,
+          );
+          return;
+        }
+        const { data: pub } = sb.storage.from('post-images').getPublicUrl(path);
+        uploadUrls.push(pub.publicUrl);
+      }
+
+      const { data: sess } = await sb.auth.getSession();
+      const accessToken = sess.session?.access_token;
+      if (!accessToken) {
+        setError(board.mod.auth);
+        router.push('/auth/login?next=/community/boards/new');
         return;
       }
-      if (payload.message?.trim() && shouldMaskRawDbError(payload.message)) {
-        toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
-        fireDbErrorRadar('NewPostForm:submit');
+
+      const res = await fetch('/api/community/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          category,
+          title: title.trim(),
+          content: content.trim(),
+          image_urls: uploadUrls,
+          latitude,
+          longitude,
+          location_name: locationName.trim() || null,
+          ...(op ? { owner_password: op } : {}),
+        }),
+      });
+
+      let payload: { id?: string; code?: string; message?: string } = {};
+      try {
+        payload = (await res.json()) as typeof payload;
+      } catch {
+        /* ignore */
+      }
+
+      if (!res.ok) {
+        if (isSchemaSyncPayload(payload)) {
+          scheduleSoftNavigationRefresh(() => router.refresh());
+          toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
+          fireDbErrorRadar('NewPostForm:submit');
+          return;
+        }
+        setError(
+          payload.message?.trim()
+            ? payload.message
+            : boardModMessage(board, payload.code),
+        );
         return;
       }
-      setError(
-        payload.message?.trim()
-          ? payload.message
-          : boardModMessage(board, payload.code),
-      );
-      return;
-    }
-    if (payload.id) {
-      router.push(`/community/boards/${payload.id}`);
-      router.refresh();
+      if (payload.id) {
+        router.push(`/community/boards/${payload.id}`);
+        router.refresh();
+      }
+    } catch {
+      setError('네트워크 또는 브라우저 오류로 요청이 끝나지 않았습니다. 다시 시도해 주세요.');
+      fireDbErrorRadar('NewPostForm:submit_throw');
+    } finally {
+      setLoading(false);
     }
   }
 

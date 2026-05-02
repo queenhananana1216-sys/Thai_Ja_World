@@ -3,8 +3,21 @@
  * 클라이언트·서버 공통 (서버 전용 모듈에 의존하지 않음).
  */
 
+/** PostgREST 스키마 불일치 등 — 고정 대기 시간 안내 없음 (허위 ‘3초’ 방지) */
 export const USER_DB_SYNC_TOAST_MESSAGE =
-  '🛠️ 서버 데이터를 동기화 중입니다. 3초 뒤에 [올리기] 버튼을 다시 눌러주세요.';
+  '화면 데이터를 다시 불러왔습니다. [올리기]를 한 번 더 눌러 주세요.';
+
+/** 라우터 소프트 리프레시만 — 전체 리로드 없이 서버 컴포넌트·fetch 캐시 갱신 유도 */
+export function scheduleSoftNavigationRefresh(runRefresh: () => void): void {
+  if (typeof window === 'undefined') return;
+  queueMicrotask(() => {
+    try {
+      runRefresh();
+    } catch {
+      /* ignore */
+    }
+  });
+}
 
 export function shouldMaskRawDbError(message: string): boolean {
   const m = message.toLowerCase();

@@ -16,6 +16,7 @@ import {
   fetchHomeUnifiedFeed,
   fetchHomeSiteTotals,
   fetchHomeWeeklyDotoriRanking,
+  fetchHomeFeaturedPoll,
   fetchHomeTipsPublic,
   fetchAutoCuratedBoardPostsForPortalLive,
 } from '../../_components/home/home-queries';
@@ -44,6 +45,16 @@ export type PortalWeeklyDotoriRankRow = {
   profileId: string;
   displayName: string;
   dotoriEarned: number;
+};
+
+/** 홈 밸런스 게임(양자택일) — `polls` + `get_public_poll_totals` */
+export type PortalFeaturedPoll = {
+  id: string;
+  question: string;
+  optionA: string;
+  optionB: string;
+  votesA: number;
+  votesB: number;
 };
 
 /** 우측 스티키 데모 롤링(`is_demo` 로컬) — SSR props만 사용 */
@@ -76,6 +87,7 @@ export type PortalHomeFeed = {
   liveFeed: PortalFeedLine[];
   siteTotals: { profileCount: number; communityItemCount: number } | null;
   weeklyDotoriRanking: PortalWeeklyDotoriRankRow[];
+  featuredPoll: PortalFeaturedPoll | null;
 };
 
 /** DB·네트워크 실패·타임아웃 시 — 빈 배열만(플레이스홀더 글·샘플 제목 없음) */
@@ -92,6 +104,7 @@ export const HONEST_EMPTY_PORTAL_HOME_FEED: PortalHomeFeed = {
   liveFeed: [],
   siteTotals: null,
   weeklyDotoriRanking: [],
+  featuredPoll: null,
 };
 
 const HOME_FETCH_TIMEOUT_MS = 8000;
@@ -270,6 +283,7 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
     liveFeed: [],
     siteTotals: null,
     weeklyDotoriRanking: [],
+    featuredPoll: null,
   };
 
   try {
@@ -552,6 +566,22 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
     }
   } catch {
     out.weeklyDotoriRanking = [];
+  }
+
+  try {
+    const fp = await withTimeout(fetchHomeFeaturedPoll(), { row: null, error: null }, HOME_FETCH_TIMEOUT_MS);
+    if (!fp.error && fp.row?.id && fp.row.question) {
+      out.featuredPoll = {
+        id: fp.row.id,
+        question: fp.row.question,
+        optionA: fp.row.optionA,
+        optionB: fp.row.optionB,
+        votesA: fp.row.votesA,
+        votesB: fp.row.votesB,
+      };
+    }
+  } catch {
+    out.featuredPoll = null;
   }
 
   return out;

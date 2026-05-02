@@ -6,6 +6,7 @@ import AnalyticsTracker from './_components/AnalyticsTracker';
 import GlobalToaster from './_components/GlobalToaster';
 import GlobalNav from './_components/GlobalNav';
 import MobileBottomNav from './_components/MobileBottomNav';
+import PortalActivityTicker from './_components/PortalActivityTicker';
 import { SiteFooterFallback } from './_components/SiteFooterFallback';
 import { isLocale, LOCALE_COOKIE } from '@/i18n/types';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
@@ -102,10 +103,11 @@ export default async function RootLayout({ children }: { children: unknown }) {
         ) : null}
         <AnalyticsTracker />
         <GlobalToaster />
-        <main className="relative z-0 min-h-[45vh] w-full flex-1 overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+        <main className="relative z-0 min-h-[45vh] w-full flex-1 overflow-x-hidden pb-[calc(6.75rem+env(safe-area-inset-bottom,0px))] md:pb-0">
           {children as import('react').ReactNode}
         </main>
         <SiteFooterFallback />
+        <PortalActivityTicker locale={htmlLang === 'th' ? 'th' : 'ko'} />
         <MobileBottomNav />
       </body>
     </html>

@@ -1,8 +1,13 @@
 import Portal2026View from '../portal/Portal2026View';
 import {
+  fetchHomeDotoriBalanceRanking,
+  type HomeDotoriBalanceRankRow,
+} from './home/home-queries';
+import {
   fetchPortalHomeFeed,
   HONEST_EMPTY_PORTAL_HOME_FEED,
 } from '../lib/home/fetchPortalHomeFeed';
+import { fetchViewerDotoriBalanceRank } from '@/lib/home/viewerDotoriRank';
 import { resolveAdminForUser } from '@/lib/admin/resolveAdminAccess';
 import { getLocale } from '@/i18n/get-locale';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
@@ -14,22 +19,36 @@ export default async function PortalFeedSection() {
   const siteUi = await loadSiteUiSettings();
   let isLoggedIn = false;
   let isAdmin = false;
+  let viewerProfileId: string | null = null;
+  let authSb: Awaited<ReturnType<typeof createServerSupabaseAuthClient>> | null = null;
+
   try {
-    const authSb = await createServerSupabaseAuthClient();
+    authSb = await createServerSupabaseAuthClient();
     const {
       data: { user },
     } = await authSb.auth.getUser();
     isLoggedIn = Boolean(user?.id);
     if (user?.id) {
+      viewerProfileId = user.id;
       const gate = await resolveAdminForUser(authSb, user.id, user.email);
       isAdmin = Boolean(gate);
     }
   } catch {
     isLoggedIn = false;
     isAdmin = false;
+    viewerProfileId = null;
+    authSb = null;
   }
+
   try {
-    const feed = await fetchPortalHomeFeed();
+    const [balanceRes, feed, viewerDotori] = await Promise.all([
+      fetchHomeDotoriBalanceRanking(5),
+      fetchPortalHomeFeed(),
+      authSb && viewerProfileId
+        ? fetchViewerDotoriBalanceRank(authSb, viewerProfileId)
+        : Promise.resolve(null),
+    ]);
+
     return (
       <Portal2026View
         feed={feed}
@@ -37,9 +56,18 @@ export default async function PortalFeedSection() {
         siteUi={siteUi}
         isLoggedIn={isLoggedIn}
         isAdmin={isAdmin}
+        dotoriBalanceRanking={balanceRes.rows}
+        viewerDotori={viewerDotori}
+        viewerProfileId={viewerProfileId}
       />
     );
   } catch {
+    let balanceRows: HomeDotoriBalanceRankRow[] = [];
+    try {
+      balanceRows = (await fetchHomeDotoriBalanceRanking(5)).rows;
+    } catch {
+      balanceRows = [];
+    }
     return (
       <Portal2026View
         feed={HONEST_EMPTY_PORTAL_HOME_FEED}
@@ -47,6 +75,9 @@ export default async function PortalFeedSection() {
         siteUi={siteUi}
         isLoggedIn={isLoggedIn}
         isAdmin={isAdmin}
+        dotoriBalanceRanking={balanceRows}
+        viewerDotori={null}
+        viewerProfileId={viewerProfileId}
       />
     );
   }

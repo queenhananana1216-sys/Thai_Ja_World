@@ -2724,6 +2724,79 @@ export type Database = {
           },
         ]
       }
+      poll_votes: {
+        Row: {
+          choice: string
+          created_at: string
+          id: string
+          poll_id: string
+          voter_key: string
+        }
+        Insert: {
+          choice: string
+          created_at?: string
+          id?: string
+          poll_id: string
+          voter_key: string
+        }
+        Update: {
+          choice?: string
+          created_at?: string
+          id?: string
+          poll_id?: string
+          voter_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      polls: {
+        Row: {
+          active_on: string
+          created_at: string
+          created_by: string | null
+          id: string
+          option_a_label: string
+          option_b_label: string
+          question: string
+          source: string
+        }
+        Insert: {
+          active_on?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          option_a_label: string
+          option_b_label: string
+          question: string
+          source?: string
+        }
+        Update: {
+          active_on?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          option_a_label?: string
+          option_b_label?: string
+          question?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "polls_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           activity_grade: number
@@ -4646,6 +4719,13 @@ export type Database = {
       quest_ensure_onboarding_first_post_instance: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      get_public_poll_totals: {
+        Args: { p_poll_id: string }
+        Returns: {
+          votes_a: number
+          votes_b: number
+        }[]
       }
       get_public_weekly_dotori_ranking: {
         Args: { p_limit?: number }

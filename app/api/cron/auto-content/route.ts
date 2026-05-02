@@ -13,6 +13,7 @@ import {
 } from '@/lib/cron/autoContentGhostwriter';
 import { isCronAuthorized } from '@/lib/cronAuth';
 import { findActivePause, logCronEvent, pausedResponse } from '@/lib/cron/omniLogger';
+import { ensureDailyBalancePoll } from '@/lib/cron/ensureDailyBalancePoll';
 import { GHOSTWRITER_SYSTEM_USER_ID } from '@/lib/cron/ghostwriterBot';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 
@@ -68,6 +69,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const content = buildAutoContentBody({ boardType: picked.boardType, title: picked.title });
 
   const admin = createServiceRoleClient();
+
+  try {
+    const pollR = await ensureDailyBalancePoll(admin, actorId);
+    if (pollR.ok && 'id' in pollR && pollR.id) {
+      revalidatePath('/');
+    }
+  } catch (e) {
+    console.warn('[cron/auto-content] ensureDailyBalancePoll', e);
+  }
+
   const since = new Date(Date.now() - 14 * 86400_000).toISOString();
   const { data: dupRows } = await admin
     .from('board_posts')

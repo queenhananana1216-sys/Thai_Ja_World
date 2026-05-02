@@ -604,6 +604,123 @@ export async function fetchHomeWeeklyDotoriRanking(
   return { rows, error: null };
 }
 
+/** 프로필 `dotori_balance` 보유량 기준 공개 랭킹 TOP N (anon RLS) */
+export type HomeDotoriBalanceRankRow = {
+  rank: number;
+  profileId: string;
+  displayName: string;
+  dotoriBalance: number;
+};
+
+export async function fetchHomeDotoriBalanceRanking(
+  limit = 5,
+): Promise<{ rows: HomeDotoriBalanceRankRow[]; error: string | null }> {
+  const sb = tryCreate();
+  if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
+
+  const safeLimit = Math.max(1, Math.min(20, Math.floor(limit)));
+  const { data, error } = await sb
+    .from('profiles')
+    .select('id, display_name, dotori_balance')
+    .order('dotori_balance', { ascending: false })
+    .limit(safeLimit);
+
+  if (error) return { rows: [], error: error.message };
+
+  const rows: HomeDotoriBalanceRankRow[] = (data ?? []).map((r, i) => {
+    const row = r as { id?: unknown; display_name?: unknown; dotori_balance?: unknown };
+    const name = String(row.display_name ?? '').trim() || '익명';
+    return {
+      rank: i + 1,
+      profileId: String(row.id ?? ''),
+      displayName: name,
+      dotoriBalance: Number(row.dotori_balance ?? 0),
+    };
+  });
+
+  return { rows, error: null };
+}
+
+export type HomeFeaturedPollRow = {
+  id: string;
+  question: string;
+  optionA: string;
+  optionB: string;
+  votesA: number;
+  votesB: number;
+};
+
+function todaySeoulIsoDate(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+/** 홈 밸런스 게임 — 당일(서울) 투표 우선, 없으면 최신 1건 */
+export async function fetchHomeFeaturedPoll(): Promise<{ row: HomeFeaturedPollRow | null; error: string | null }> {
+  const sb = tryCreate();
+  if (!sb) return { row: null, error: null };
+
+  const day = todaySeoulIsoDate();
+
+  const { data: todayRow, error: e1 } = await sb
+    .from('polls')
+    .select('id, question, option_a_label, option_b_label')
+    .eq('active_on', day)
+    .maybeSingle();
+
+  if (e1) return { row: null, error: e1.message };
+
+  let poll = todayRow;
+
+  if (!poll) {
+    const { data: latest, error: e2 } = await sb
+      .from('polls')
+      .select('id, question, option_a_label, option_b_label')
+      .order('active_on', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (e2) return { row: null, error: e2.message };
+    poll = latest;
+  }
+
+  if (!poll || typeof poll.id !== 'string') return { row: null, error: null };
+
+  const { data: totRaw, error: e3 } = await sb.rpc('get_public_poll_totals', { p_poll_id: poll.id });
+  if (e3) {
+    return {
+      row: {
+        id: poll.id,
+        question: String(poll.question ?? ''),
+        optionA: String(poll.option_a_label ?? ''),
+        optionB: String(poll.option_b_label ?? ''),
+        votesA: 0,
+        votesB: 0,
+      },
+      error: null,
+    };
+  }
+
+  const totRow = Array.isArray(totRaw) ? totRaw[0] : totRaw;
+  const va = Number((totRow as { votes_a?: unknown })?.votes_a ?? 0);
+  const vb = Number((totRow as { votes_b?: unknown })?.votes_b ?? 0);
+
+  return {
+    row: {
+      id: poll.id,
+      question: String(poll.question ?? ''),
+      optionA: String(poll.option_a_label ?? ''),
+      optionB: String(poll.option_b_label ?? ''),
+      votesA: Number.isFinite(va) ? va : 0,
+      votesB: Number.isFinite(vb) ? vb : 0,
+    },
+    error: null,
+  };
+}
+
 export async function fetchHomePersonalizedRecommendations(
   limit = 6,
 ): Promise<{ rows: HomeRecommendedRow[]; error: string | null }> {

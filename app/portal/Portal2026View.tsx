@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
 import Link from 'next/link';
 import GuestGateLink from '@app/_components/GuestGateLink';
 import KoreanNewsPipelineNotice from '../_components/news/KoreanNewsPipelineNotice';
+import type { HomeDotoriBalanceRankRow } from '../_components/home/home-queries';
 import type {
+  PortalFeaturedPoll,
   PortalFeedLine,
   PortalHomeFeed,
   PortalLocalDemoWingCard,
@@ -20,6 +21,9 @@ import PortalQuickMenu from './PortalQuickMenu';
 import PortalQuestWriteCta from './PortalQuestWriteCta';
 import QuickAppLauncher from './QuickAppLauncher';
 import PortalWeatherWidget from './PortalWeatherWidget';
+import PortalLiveFeedMultiTab from './PortalLiveFeedMultiTab';
+import PortalBalancePoll from './PortalBalancePoll';
+import PortalDotoriHallOfFame from './PortalDotoriHallOfFame';
 import styles from './portal-2026.module.css';
 
 /** 통합 피드 id 접두(`post-uuid` 등)·순수 UUID 기본 상세 경로 — href 누락 시 허브(`/boards`)로 잘못 가는 것 방지 */
@@ -70,6 +74,10 @@ export type Portal2026ViewProps = {
   isLoggedIn: boolean;
   /** 날씨 위젯 옴니 레이더 툴팁(경고 상세) 노출 — 서버에서 `resolveAdminForUser`로 결정 */
   isAdmin?: boolean;
+  /** 보유 도토리 상위 N — `profiles.dotori_balance` */
+  dotoriBalanceRanking?: HomeDotoriBalanceRankRow[];
+  viewerDotori?: { rank: number; balance: number } | null;
+  viewerProfileId?: string | null;
 };
 
 function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
@@ -87,6 +95,7 @@ function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
       liveFeed: [],
       siteTotals: null,
       weeklyDotoriRanking: [],
+      featuredPoll: null,
     };
   }
   const rk = Array.isArray(input.weeklyDotoriRanking) ? input.weeklyDotoriRanking : [];
@@ -130,6 +139,31 @@ function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
           typeof (r as PortalWeeklyDotoriRankRow).dotoriEarned === 'number',
       )
       .slice(0, 10),
+    featuredPoll: ((): PortalFeaturedPoll | null => {
+      const fp = input.featuredPoll;
+      if (
+        !fp ||
+        typeof fp !== 'object' ||
+        typeof fp.id !== 'string' ||
+        !fp.id.trim() ||
+        typeof fp.question !== 'string' ||
+        !fp.question.trim() ||
+        typeof fp.optionA !== 'string' ||
+        typeof fp.optionB !== 'string'
+      ) {
+        return null;
+      }
+      const va = Number((fp as PortalFeaturedPoll).votesA);
+      const vb = Number((fp as PortalFeaturedPoll).votesB);
+      return {
+        id: fp.id.trim(),
+        question: fp.question.trim(),
+        optionA: fp.optionA.trim(),
+        optionB: fp.optionB.trim(),
+        votesA: Number.isFinite(va) ? va : 0,
+        votesB: Number.isFinite(vb) ? vb : 0,
+      };
+    })(),
   };
 }
 
@@ -327,132 +361,6 @@ function FeedLineList({
   );
 }
 
-/** 통합 피드 내 상대적 인기글 — HOT 뱃지 */
-function computeLiveFeedHotIds(lines: PortalFeedLine[]): Set<string> {
-  const ids = new Set<string>();
-  const withViews = lines.filter((l) => (l.liveViewCount ?? 0) > 0);
-  const sorted = [...withViews].sort((a, b) => (b.liveViewCount ?? 0) - (a.liveViewCount ?? 0));
-  for (const row of sorted.slice(0, 2)) {
-    if ((row.liveViewCount ?? 0) >= 28) ids.add(row.id);
-  }
-  for (const row of lines) {
-    if (row.liveHighlight) ids.add(row.id);
-    if ((row.liveViewCount ?? 0) >= 72) ids.add(row.id);
-  }
-  return ids;
-}
-
-function isLiveFeedFresh(iso: string | null | undefined): boolean {
-  if (!iso?.trim()) return false;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return false;
-  return Date.now() - d.getTime() < 12 * 60 * 1000;
-}
-
-function liveFeedBadgeCopy(locale: Locale) {
-  return {
-    urgentReport: locale === 'th' ? '🚨 แจ้งด่วน' : '🚨 긴급 제보',
-    hot: '🔥 HOT',
-    fresh: locale === 'th' ? '🆕 เมื่อกี้' : '🆕 방금 전',
-  };
-}
-
-function LiveFeedList({
-  lines,
-  emptyMessage,
-  locale,
-  isLoggedIn,
-}: {
-  lines: PortalFeedLine[];
-  emptyMessage: string;
-  locale: Locale;
-  isLoggedIn: boolean;
-}) {
-  const d = getDictionary(locale);
-  const phraseMap = d.quests.feedPhraseMap;
-  const badges = liveFeedBadgeCopy(locale);
-  const safe = normalizeLines(lines ?? []).filter((item) => !isQuestMissionNoiseTitle(item.title));
-  if (safe.length === 0) return <EmptyState message={emptyMessage} />;
-  const hotIds = computeLiveFeedHotIds(safe);
-  return (
-    <ul className="max-h-[min(28rem,62vh)] min-h-0 space-y-0 overflow-y-auto overscroll-contain px-2 py-3 md:max-h-[min(24rem,50vh)]">
-      {safe.map((item, idx) => {
-        const titleLoc = localizeQuestFeedText(item?.title ?? '', locale, phraseMap);
-        const subLoc = localizeQuestFeedText(item?.subtitle ?? '', locale, phraseMap);
-        const cat = (item.liveCategory ?? '').toLowerCase();
-        const isReport = cat === 'reports';
-        const isHot = hotIds.has(item.id);
-        const fresh = isLiveFeedFresh(item.liveCreatedAt ?? null);
-        const chipBase =
-          'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide shadow-sm ring-1 ring-white/10';
-
-        const chips: { key: string; node: ReactNode }[] = [];
-        if (isReport) {
-          chips.push({
-            key: 'report',
-            node: (
-              <span
-                className={`${chipBase} bg-gradient-to-r from-red-600 to-rose-700 text-white`}
-                aria-hidden
-              >
-                {badges.urgentReport}
-              </span>
-            ),
-          });
-        }
-        if (isHot) {
-          chips.push({
-            key: 'hot',
-            node: (
-              <span
-                className={`${chipBase} bg-gradient-to-r from-orange-500 to-amber-600 text-white`}
-                aria-hidden
-              >
-                {badges.hot}
-              </span>
-            ),
-          });
-        }
-        if (fresh) {
-          chips.push({
-            key: 'fresh',
-            node: (
-              <span
-                className={`${chipBase} bg-gradient-to-r from-emerald-600 to-teal-700 text-white`}
-                aria-hidden
-              >
-                {badges.fresh}
-              </span>
-            ),
-          });
-        }
-
-        return (
-          <li key={item?.id ? String(item.id) : `live-${idx}`} className="mb-3 list-none last:mb-1">
-            <GuestGateLink
-              href={item?.href?.trim() ? item.href : defaultHrefForPortalLine(item?.id ?? '')}
-              isLoggedIn={isLoggedIn}
-              className="block rounded-2xl border border-gray-700 bg-gray-800/60 p-4 shadow-md backdrop-blur-md transition hover:border-amber-400/35 hover:bg-gray-800/75"
-            >
-              {chips.length > 0 ? (
-                <div className="mb-2.5 flex min-h-[1.25rem] flex-wrap gap-1.5">{chips.map((c) => <span key={c.key}>{c.node}</span>)}</div>
-              ) : null}
-              <span className="line-clamp-2 break-words text-base font-semibold leading-snug text-white">
-                {titleLoc}
-              </span>
-              {subLoc ? (
-                <span className="mt-1.5 block line-clamp-2 break-words text-sm leading-relaxed text-gray-300">
-                  {subLoc}
-                </span>
-              ) : null}
-            </GuestGateLink>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
 /**
  * 2026 3열 포털 — `feed`는 서버에서 `fetchPortalHomeFeed()`로만 채움(DB 실데이터).
  */
@@ -462,6 +370,9 @@ export default function Portal2026View({
   siteUi: siteUiProp,
   isLoggedIn,
   isAdmin = false,
+  dotoriBalanceRanking = [],
+  viewerDotori = null,
+  viewerProfileId = null,
 }: Portal2026ViewProps) {
   const siteUi = siteUiProp ?? siteUiDefaults();
   const copy = getPortal2026Copy(locale);
@@ -631,6 +542,16 @@ export default function Portal2026View({
 
         <section className="min-h-0 min-w-0 space-y-1.5">
           <PortalQuickMenu locale={locale} isLoggedIn={isLoggedIn} />
+          <div className="block min-[769px]:hidden">
+            <PortalDotoriHallOfFame
+              instanceId="mobile"
+              rows={dotoriBalanceRanking}
+              viewer={viewerDotori}
+              viewerProfileId={viewerProfileId}
+              isLoggedIn={isLoggedIn}
+              locale={locale}
+            />
+          </div>
           <div className="hidden min-[769px]:block">
             <div className={styles.boardGrid}>
             {copy.boardColumns
@@ -676,21 +597,38 @@ export default function Portal2026View({
             </div>
           </div>
 
+          {raw.featuredPoll ? (
+            <PortalBalancePoll poll={raw.featuredPoll} locale={locale} isLoggedIn={isLoggedIn} />
+          ) : null}
+
           <section className={`${styles.glassBlue} overflow-hidden`}>
             <header className="border-b border-slate-700/70 px-3 py-3 text-lg font-black text-blue-200 max-[768px]:text-xl">
               {copy.liveFeedTitle}
             </header>
-            <LiveFeedList
+            <PortalLiveFeedMultiTab
               lines={liveFeed ?? []}
-              emptyMessage={copy.emptyLiveFeed}
               locale={locale}
               isLoggedIn={isLoggedIn}
+              emptyAll={copy.emptyLiveFeed}
+              emptyTab={copy.emptyLiveFeedTab}
+              tabAll={copy.liveFeedTabAll}
+              tabHot={copy.liveFeedTabHot}
+              tabQa={copy.liveFeedTabQa}
+              tabFlea={copy.liveFeedTabFlea}
             />
           </section>
         </section>
 
         <aside className="hidden min-h-0 min-w-0 min-[769px]:block">
           <div className={styles.stickyWing}>
+            <PortalDotoriHallOfFame
+              instanceId="aside"
+              rows={dotoriBalanceRanking}
+              viewer={viewerDotori}
+              viewerProfileId={viewerProfileId}
+              isLoggedIn={isLoggedIn}
+              locale={locale}
+            />
             <section className={`${styles.glassBlue} overflow-hidden p-2.5`}>
               <p className="line-clamp-2 text-lg font-black text-blue-200 break-words">{copy.newsAsideTitle}</p>
               {(newsWing?.length ?? 0) === 0 ? (

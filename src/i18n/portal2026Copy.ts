@@ -21,6 +21,13 @@ export type Portal2026Copy = {
   rankTitle: string;
   rankSub: string;
   liveFeedTitle: string;
+  /** 실시간 통합 피드 — 멀티 탭 라벨 */
+  liveFeedTabAll: string;
+  liveFeedTabHot: string;
+  liveFeedTabQa: string;
+  liveFeedTabFlea: string;
+  /** 선택한 탭에 글이 없을 때 */
+  emptyLiveFeedTab: string;
   newsAsideTitle: string;
   localAsideTitle: string;
   contactTitle: string;
@@ -38,6 +45,20 @@ export type Portal2026Copy = {
   weatherUnavailable: string;
   rootAria: string;
   dotoriSuffix: string;
+  /** 우측·모바일 — 보유 도토리 명예의 전당 */
+  balanceHallTitle: string;
+  balanceHallSub: string;
+  balanceHallEmpty: string;
+  balanceHallYourRank: string;
+  balanceHallLoginHint: string;
+  balanceHallWriteCta: string;
+  /** 홈 밸런스 게임 투표 */
+  balanceGameTitle: string;
+  balanceGameSub: string;
+  balanceVs: string;
+  balanceTotalLabel: string;
+  balanceTapHint: string;
+  balanceYourPick: string;
 };
 
 const ko: Portal2026Copy = {
@@ -63,6 +84,11 @@ const ko: Portal2026Copy = {
   rankTitle: '주간 도토리 획득 TOP 5',
   rankSub: '이번 주 서울 주간 미션 집계',
   liveFeedTitle: '실시간 통합 피드',
+  liveFeedTabAll: '🌐 전체 흐름',
+  liveFeedTabHot: '🔥 실시간 인기',
+  liveFeedTabQa: '💬 생활 Q&A',
+  liveFeedTabFlea: '🛍️ 벼룩시장',
+  emptyLiveFeedTab: '이 탭에 맞는 글이 아직 없어요. 다른 탭을 눌러 보세요.',
   newsAsideTitle: '오늘의 핫이슈',
   localAsideTitle: '로컬 업체',
   contactTitle: '문의',
@@ -79,6 +105,18 @@ const ko: Portal2026Copy = {
   weatherUnavailable: '날씨를 불러오지 못했습니다.',
   rootAria: '태국에, 살자 포털',
   dotoriSuffix: '도토리',
+  balanceHallTitle: '🏆 도토리 부자 명예의 전당 TOP 5',
+  balanceHallSub: '보유 도토리 · 실시간',
+  balanceHallEmpty: '아직 랭킹을 표시할 데이터가 없습니다.',
+  balanceHallYourRank: '내 순위',
+  balanceHallLoginHint: '로그인하면 내 순위와 보유량이 보여요.',
+  balanceHallWriteCta: '글 쓰고 도토리 모으기 →',
+  balanceGameTitle: '🤔 오늘의 태국 밸런스 게임',
+  balanceGameSub: 'LIVE · 한 번만 투표 · 실시간 득표',
+  balanceVs: 'VS',
+  balanceTotalLabel: '총 {n}표',
+  balanceTapHint: '버튼을 누르면 득표율 바가 살아 움직여요',
+  balanceYourPick: '내 선택',
 };
 
 const th: Portal2026Copy = {
@@ -104,6 +142,11 @@ const th: Portal2026Copy = {
   rankTitle: 'อันดับดอกท้อยอดเยี่ยม 5 อันดับ',
   rankSub: 'สรุปภารกิจรายสัปดาห์ (โซล)',
   liveFeedTitle: 'ฟีดรวมแบบเรียลไทม์',
+  liveFeedTabAll: '🌐 ทั้งหมด',
+  liveFeedTabHot: '🔥 ยอดนิยม',
+  liveFeedTabQa: '💬 ถาม-ตอบ',
+  liveFeedTabFlea: '🛍️ ตลาดมือสอง',
+  emptyLiveFeedTab: 'ยังไม่มีโพสต์ในแท็บนี้ ลองแท็บอื่น',
   newsAsideTitle: 'ประเด็นร้อนวันนี้',
   localAsideTitle: 'ร้านท้องถิ่น',
   contactTitle: 'ติดต่อ',
@@ -120,6 +163,18 @@ const th: Portal2026Copy = {
   weatherUnavailable: 'โหลดสภาพอากาศไม่ได้',
   rootAria: 'พอร์ทัล อยู่ไทยกัน',
   dotoriSuffix: 'ดอกท้อ',
+  balanceHallTitle: '🏆 อันดับเศรษฐีดอกท้อ TOP 5',
+  balanceHallSub: 'ยอดคงเหลือ · เรียลไทม์',
+  balanceHallEmpty: 'ยังไม่มีข้อมูลจัดอันดับ',
+  balanceHallYourRank: 'อันดับของคุณ',
+  balanceHallLoginHint: 'ล็อกอินเพื่อดูอันดับและยอดคงเหลือ',
+  balanceHallWriteCta: 'โพสต์เพื่อสะสมดอกท้อ →',
+  balanceGameTitle: '🤔 เกมทายใจไทยวันนี้',
+  balanceGameSub: 'LIVE · โหวตได้ครั้งเดียว · เรียลไทม์',
+  balanceVs: 'VS',
+  balanceTotalLabel: 'รวม {n} โหวต',
+  balanceTapHint: 'แตะแล้วแถบเปอร์เซ็นต์จะขยับทันที',
+  balanceYourPick: 'คุณเลือก',
 };
 
 export function getPortal2026Copy(locale: Locale): Portal2026Copy {

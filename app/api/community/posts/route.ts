@@ -32,6 +32,16 @@ function createCommunityPostServiceRoleClientOrThrow() {
 }
 
 export async function POST(req: Request) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    return NextResponse.json(
+      {
+        error:
+          'Vercel 환경변수에 SUPABASE_SERVICE_ROLE_KEY가 등록되지 않았습니다! Vercel 대시보드에서 추가해주세요.',
+      },
+      { status: 500 },
+    );
+  }
+
   try {
     createCommunityPostServiceRoleClientOrThrow();
   } catch (e) {

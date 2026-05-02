@@ -156,7 +156,14 @@ export default function NewPostForm({
         ...(op ? { owner_password: op } : {}),
       });
 
-      let lastPayload: { id?: string; code?: string; message?: string } = {};
+      let lastPayload: {
+        id?: string;
+        code?: string;
+        message?: string;
+        supabase_code?: string | null;
+        supabase_details?: string | null;
+        supabase_hint?: string | null;
+      } = {};
       let exhaustedAfterTransient = false;
 
       for (let attempt = 0; attempt <= POST_SUBMIT_MAX_RETRIES; attempt++) {
@@ -174,7 +181,14 @@ export default function NewPostForm({
             body: requestBody,
           });
 
-          let payload: { id?: string; code?: string; message?: string } = {};
+          let payload: {
+            id?: string;
+            code?: string;
+            message?: string;
+            supabase_code?: string | null;
+            supabase_details?: string | null;
+            supabase_hint?: string | null;
+          } = {};
           try {
             payload = (await res.json()) as typeof payload;
           } catch {
@@ -215,6 +229,7 @@ export default function NewPostForm({
       }
 
       if (isSchemaSyncPayload(lastPayload)) {
+        console.error('[NewPostForm] schema/cache failure (full payload)', lastPayload);
         scheduleSoftNavigationRefresh(() => router.refresh());
         toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
         fireDbErrorRadar('NewPostForm:submit_retry_exhausted');
@@ -227,7 +242,8 @@ export default function NewPostForm({
           : '네트워크 또는 브라우저 오류로 요청이 끝나지 않았습니다. 다시 시도해 주세요.',
       );
       fireDbErrorRadar('NewPostForm:submit_retry_exhausted');
-    } catch {
+    } catch (err) {
+      console.error('[NewPostForm] submit_throw', err);
       setError('네트워크 또는 브라우저 오류로 요청이 끝나지 않았습니다. 다시 시도해 주세요.');
       fireDbErrorRadar('NewPostForm:submit_throw');
     } finally {

@@ -4,12 +4,16 @@
  */
 import { NextResponse } from 'next/server';
 import { parseBoardPostBody } from '../boardPayload';
-import { publicBodyFromSupabaseMessage } from '@/lib/db/dbErrorDefense';
+import {
+  jsonBodyForAuthenticatedWriteError,
+  logSupabaseWriteFailure,
+} from '@/lib/db/dbErrorDefense';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -66,8 +70,18 @@ export async function PUT(req: Request, ctx: Ctx): Promise<NextResponse> {
   });
 
   if (error) {
-    console.error('[api/boards PUT] board_posts_update_for_service:', error.message);
-    const { status, body } = publicBodyFromSupabaseMessage(error.message);
+    logSupabaseWriteFailure('api/boards PUT board_posts_update_for_service', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
+    const { status, body } = jsonBodyForAuthenticatedWriteError({
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
     return NextResponse.json(body, { status });
   }
   if (!updatedId) {
@@ -104,8 +118,18 @@ export async function DELETE(req: Request, ctx: Ctx): Promise<NextResponse> {
   });
 
   if (error) {
-    console.error('[api/boards DELETE] board_posts_delete_for_service:', error.message);
-    const { status, body } = publicBodyFromSupabaseMessage(error.message);
+    logSupabaseWriteFailure('api/boards DELETE board_posts_delete_for_service', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
+    const { status, body } = jsonBodyForAuthenticatedWriteError({
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
     return NextResponse.json(body, { status });
   }
   if (!deleted) {

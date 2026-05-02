@@ -11,7 +11,7 @@ import {
   runLocalPostChecks,
 } from '@/lib/moderation/promoAndSpam';
 import { hashPostOwnerPassword } from '@/lib/community/postOwnerPassword';
-import { shouldMaskRawDbError } from '@/lib/db/dbErrorDefense';
+import { logSupabaseWriteFailure, shouldMaskRawDbError } from '@/lib/db/dbErrorDefense';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
@@ -28,7 +28,14 @@ export type ModerationErrorCode =
 
 export type PostPipelineResult =
   | { ok: true; postId: string }
-  | { ok: false; status: number; code: ModerationErrorCode; message?: string };
+  | {
+      ok: false;
+      status: number;
+      code: ModerationErrorCode;
+      message?: string;
+      /** PostgREST / Postgres 부가 필드(쓰기 실패 시 디버깅) */
+      supabase?: { code?: string; details?: string; hint?: string };
+    };
 
 function isCategory(s: string): s is PostCategorySlug {
   return POST_CATEGORY_SLUGS.includes(s as PostCategorySlug);
@@ -102,7 +109,8 @@ export async function createModeratedPost(
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (shouldMaskRawDbError(msg)) {
-      return { ok: false, status: 503, code: 'schema_sync' };
+      logSupabaseWriteFailure('createModeratedPost loadProfile', { message: msg });
+      return { ok: false, status: 503, code: 'schema_sync', message: msg };
     }
     return { ok: false, status: 503, code: 'server', message: msg };
   }
@@ -244,14 +252,31 @@ export async function createModeratedPost(
 
   if (insErr || !inserted?.id) {
     const raw = insErr?.message ?? 'insert failed';
+    logSupabaseWriteFailure('createModeratedPost posts.insert', {
+      message: raw,
+      code: insErr?.code,
+      details: insErr?.details,
+      hint: insErr?.hint,
+    });
     if (shouldMaskRawDbError(raw)) {
-      return { ok: false, status: 503, code: 'schema_sync' };
+      return {
+        ok: false,
+        status: 503,
+        code: 'schema_sync',
+        message: raw,
+        supabase: insErr
+          ? { code: insErr.code, details: insErr.details, hint: insErr.hint }
+          : undefined,
+      };
     }
     return {
       ok: false,
       status: 500,
       code: 'server',
       message: raw,
+      supabase: insErr
+        ? { code: insErr.code, details: insErr.details, hint: insErr.hint }
+        : undefined,
     };
   }
 
@@ -266,14 +291,27 @@ export async function createModeratedPost(
     if (secErr) {
       await admin.from('posts').delete().eq('id', newId);
       const raw = secErr.message ?? 'post_edit_secrets insert failed';
+      logSupabaseWriteFailure('createModeratedPost post_edit_secrets.insert', {
+        message: raw,
+        code: secErr.code,
+        details: secErr.details,
+        hint: secErr.hint,
+      });
       if (shouldMaskRawDbError(raw)) {
-        return { ok: false, status: 503, code: 'schema_sync' };
+        return {
+          ok: false,
+          status: 503,
+          code: 'schema_sync',
+          message: raw,
+          supabase: { code: secErr.code, details: secErr.details, hint: secErr.hint },
+        };
       }
       return {
         ok: false,
         status: 500,
         code: 'server',
         message: raw,
+        supabase: { code: secErr.code, details: secErr.details, hint: secErr.hint },
       };
     }
     const { error: flagErr } = await admin
@@ -284,14 +322,27 @@ export async function createModeratedPost(
       await admin.from('post_edit_secrets').delete().eq('post_id', newId);
       await admin.from('posts').delete().eq('id', newId);
       const raw = flagErr.message ?? 'owner flag update failed';
+      logSupabaseWriteFailure('createModeratedPost posts.owner_edit_password_set', {
+        message: raw,
+        code: flagErr.code,
+        details: flagErr.details,
+        hint: flagErr.hint,
+      });
       if (shouldMaskRawDbError(raw)) {
-        return { ok: false, status: 503, code: 'schema_sync' };
+        return {
+          ok: false,
+          status: 503,
+          code: 'schema_sync',
+          message: raw,
+          supabase: { code: flagErr.code, details: flagErr.details, hint: flagErr.hint },
+        };
       }
       return {
         ok: false,
         status: 500,
         code: 'server',
         message: raw,
+        supabase: { code: flagErr.code, details: flagErr.details, hint: flagErr.hint },
       };
     }
   }

@@ -14,6 +14,7 @@ import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function POST(req: Request) {
   const auth = req.headers.get('authorization') ?? '';
@@ -61,8 +62,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: result.postId });
   }
 
+  const supabase = result.supabase;
   return NextResponse.json(
-    { code: result.code, message: result.message ?? null },
+    {
+      code: result.code,
+      message: result.message ?? null,
+      ...(supabase
+        ? {
+            supabase_code: supabase.code ?? null,
+            supabase_details: supabase.details ?? null,
+            supabase_hint: supabase.hint ?? null,
+          }
+        : {}),
+    },
     { status: result.status },
   );
 }

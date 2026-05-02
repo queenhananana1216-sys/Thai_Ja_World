@@ -61,3 +61,42 @@ export function publicBodyFromSupabaseMessage(
   }
   return { status: 500, body: { error: message } };
 }
+
+/** Supabase/PostgREST 에러 객체 (라우트 catch 공통) */
+export type SupabaseHttpErrorFields = {
+  message: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+};
+
+/** Bearer 보호된 쓰기 API — 백엔드 로그에 전체 필드, 응답에 supabase_* 로 디버깅 가능하게 */
+export function logSupabaseWriteFailure(context: string, err: SupabaseHttpErrorFields): void {
+  console.error(
+    `[${context}]`,
+    err.message,
+    err.code ? `code=${err.code}` : '',
+    err.details ? `details=${err.details}` : '',
+    err.hint ? `hint=${err.hint}` : '',
+  );
+}
+
+export function jsonBodyForAuthenticatedWriteError(err: SupabaseHttpErrorFields): {
+  status: number;
+  body: Record<string, unknown>;
+} {
+  const msg = err.message ?? '';
+  const masked = shouldMaskRawDbError(msg);
+  const status = masked ? 503 : 500;
+  return {
+    status,
+    body: {
+      error: masked ? 'schema_sync' : msg,
+      code: masked ? 'SCHEMA_SYNC' : (err.code ?? 'UNKNOWN'),
+      supabase_message: msg,
+      supabase_code: err.code ?? null,
+      supabase_details: err.details ?? null,
+      supabase_hint: err.hint ?? null,
+    },
+  };
+}

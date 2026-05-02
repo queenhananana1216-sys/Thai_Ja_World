@@ -4,7 +4,11 @@
  */
 import { NextResponse } from 'next/server';
 import { parseBoardPostBody } from './boardPayload';
-import { publicBodyFromSupabaseMessage } from '@/lib/db/dbErrorDefense';
+import {
+  jsonBodyForAuthenticatedWriteError,
+  logSupabaseWriteFailure,
+  publicBodyFromSupabaseMessage,
+} from '@/lib/db/dbErrorDefense';
 import { recordQuestProgress } from '@/lib/quests/progress';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createServerClient } from '@/lib/supabase/server';
@@ -12,6 +16,7 @@ import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function bearer(req: Request): string {
   const auth = req.headers.get('authorization') ?? '';
@@ -92,8 +97,18 @@ export async function POST(req: Request): Promise<NextResponse> {
   });
 
   if (error) {
-    console.error('[api/boards POST] board_posts_insert_for_service:', error.message);
-    const { status, body } = publicBodyFromSupabaseMessage(error.message);
+    logSupabaseWriteFailure('api/boards POST board_posts_insert_for_service', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
+    const { status, body } = jsonBodyForAuthenticatedWriteError({
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
     return NextResponse.json(body, { status });
   }
   if (!postId) {

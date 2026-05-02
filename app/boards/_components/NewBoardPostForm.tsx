@@ -116,14 +116,22 @@ export function NewBoardPostForm({
           body: JSON.stringify(body),
         });
         if (!res.ok) {
-          const j = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+          const j = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            code?: string;
+            supabase_message?: string;
+            supabase_code?: string | null;
+            supabase_details?: string | null;
+            supabase_hint?: string | null;
+          };
+          console.error('[NewBoardPostForm] PUT /api/boards failed', res.status, j);
           if (isBoardSchemaSync(j)) {
             scheduleSoftNavigationRefresh(() => router.refresh());
             toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
             fireDbErrorRadar('NewBoardPostForm:edit');
             return;
           }
-          setError(j.error ?? '수정 실패');
+          setError(j.supabase_message?.trim() || j.error || '수정 실패');
           return;
         }
         toast.success('수정되었습니다.', { position: 'top-center' });
@@ -145,16 +153,21 @@ export function NewBoardPostForm({
         id?: string;
         error?: string;
         code?: string;
+        supabase_message?: string;
+        supabase_code?: string | null;
+        supabase_details?: string | null;
+        supabase_hint?: string | null;
       };
 
       if (!res.ok || !json.id) {
+        console.error('[NewBoardPostForm] POST /api/boards failed', res.status, json);
         if (isBoardSchemaSync(json)) {
           scheduleSoftNavigationRefresh(() => router.refresh());
           toast.error(USER_DB_SYNC_TOAST_MESSAGE, { position: 'top-center' });
           fireDbErrorRadar('NewBoardPostForm:create');
           return;
         }
-        setError(json.error ?? '등록 실패');
+        setError(json.supabase_message?.trim() || json.error || '등록 실패');
         return;
       }
 
@@ -169,7 +182,8 @@ export function NewBoardPostForm({
 
       router.push(`/boards/${json.id}`);
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error('[NewBoardPostForm] submit_throw', err);
       setError('요청이 완료되지 않았습니다. 다시 시도해 주세요.');
       fireDbErrorRadar('NewBoardPostForm:submit_throw');
     } finally {

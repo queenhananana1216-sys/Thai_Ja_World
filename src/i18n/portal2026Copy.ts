@@ -9,7 +9,7 @@ export type Portal2026Copy = {
   boardColumns: {
     title: string;
     moreHref: string;
-    key: 'job' | 'flea' | 'free' | 'local' | 'news' | 'qna';
+    key: 'job' | 'flea' | 'free' | 'local' | 'news' | 'visaTips';
     questCat?: 'job' | 'flea' | 'free';
   }[];
   sponsorTitle: string;
@@ -51,7 +51,7 @@ const ko: Portal2026Copy = {
     { title: '자유게시판', moreHref: '/boards', key: 'free', questCat: 'free' },
     { title: '로컬 업체', moreHref: '/local', key: 'local' },
     { title: '태국 뉴스', moreHref: '/news', key: 'news' },
-    { title: '생활 Q&A', moreHref: '/community/boards?cat=qna', key: 'qna' },
+    { title: '💡 비자·생활 꿀팁', moreHref: '/tips', key: 'visaTips' },
   ],
   sponsorTitle: '스폰서 · 안내',
   quickAppsTitle: '태국 생활 퀵 앱',
@@ -90,7 +90,7 @@ const th: Portal2026Copy = {
     { title: 'บอร์ดทั่วไป', moreHref: '/boards', key: 'free', questCat: 'free' },
     { title: 'ร้านท้องถิ่น', moreHref: '/local', key: 'local' },
     { title: 'ข่าวไทย', moreHref: '/news', key: 'news' },
-    { title: 'ถาม–ตอบ', moreHref: '/community/boards?cat=qna', key: 'qna' },
+    { title: '💡 วีซ่า·ไลฟ์เคล็ดลับ', moreHref: '/tips', key: 'visaTips' },
   ],
   sponsorTitle: 'สปอนเซอร์ · ประกาศ',
   quickAppsTitle: 'แอปจำเป็นในชีวิตไทย',

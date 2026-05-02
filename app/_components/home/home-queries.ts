@@ -660,6 +660,36 @@ export async function fetchHomePersonalizedRecommendations(
   }
 }
 
+/** 꿀팁 허브와 동일 — `get_tips_public` (파이프라인 승인 글만) */
+export async function fetchHomeTipsPublic(
+  limit = 8,
+): Promise<{ rows: { id: string; title: string; excerpt: string; created_at: string }[]; error: string | null }> {
+  const sb = tryCreate();
+  if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
+
+  const safeLimit = Math.min(100, Math.max(1, Math.floor(Number(limit)) || 8));
+  const { data, error } = await sb.rpc('get_tips_public', { limit_n: safeLimit });
+
+  if (error) return { rows: [], error: error.message };
+
+  const rows = (Array.isArray(data) ? data : []) as {
+    id: string;
+    title: string;
+    excerpt: string;
+    created_at: string;
+  }[];
+
+  return {
+    rows: rows.map((r) => ({
+      id: String(r.id ?? ''),
+      title: String(r.title ?? ''),
+      excerpt: String(r.excerpt ?? ''),
+      created_at: String(r.created_at ?? ''),
+    })),
+    error: null,
+  };
+}
+
 export async function fetchHomeTipsArticles(
   limit = 5,
 ): Promise<{ rows: HomeTipArticleRow[]; error: string | null }> {

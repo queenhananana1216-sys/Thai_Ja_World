@@ -73,7 +73,7 @@ function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
       jobs: [],
       market: [],
       freeBoard: [],
-      qna: [],
+      visaTips: [],
       localBiz: [],
       localBizFromDemoFallback: false,
       localDemoWingCards: [],
@@ -90,7 +90,7 @@ function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
     jobs: Array.isArray(input.jobs) ? input.jobs : [],
     market: Array.isArray(input.market) ? input.market : [],
     freeBoard: Array.isArray(input.freeBoard) ? input.freeBoard : [],
-    qna: Array.isArray(input.qna) ? input.qna : [],
+    visaTips: Array.isArray(input.visaTips) ? input.visaTips : [],
     localBiz: Array.isArray(input.localBiz) ? input.localBiz : [],
     localBizFromDemoFallback: Boolean(input.localBizFromDemoFallback),
     localDemoWingCards: demoCardsRaw.filter(
@@ -401,7 +401,7 @@ export default function Portal2026View({
   const jobs = normalizeLines(raw?.jobs ?? []);
   const market = normalizeLines(raw?.market ?? []);
   const freeBoard = normalizeLines(raw?.freeBoard ?? []);
-  const qna = normalizeLines(raw?.qna ?? []);
+  const visaTips = normalizeLines(raw?.visaTips ?? []);
   const localBiz = normalizeLines(raw?.localBiz ?? []);
   const news = normalizeLines(raw?.news ?? []);
   const wingBanners = normalizeLines(raw?.wingBanners ?? []);
@@ -419,7 +419,7 @@ export default function Portal2026View({
     free: freeBoard,
     local: localBiz,
     news,
-    qna,
+    visaTips,
   };
 
   const newsWing = [...(news ?? [])].slice(0, 6);

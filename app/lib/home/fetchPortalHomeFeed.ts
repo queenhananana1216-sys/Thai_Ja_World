@@ -17,6 +17,7 @@ import {
   fetchHomeUnifiedFeed,
   fetchHomeSiteTotals,
   fetchHomeWeeklyDotoriRanking,
+  fetchHomeTipsPublic,
 } from '../../_components/home/home-queries';
 import type { HomeUnifiedFeedItem } from '../../_components/home/home-feed-types';
 import { categoryLabel } from '@/lib/community/postCategories';
@@ -56,7 +57,8 @@ export type PortalHomeFeed = {
   jobs: PortalFeedLine[];
   market: PortalFeedLine[];
   freeBoard: PortalFeedLine[];
-  qna: PortalFeedLine[];
+  /** 비자·생활 꿀팁 — `/tips` 허브와 동일 RPC */
+  visaTips: PortalFeedLine[];
   localBiz: PortalFeedLine[];
   /** 우측·중앙 로컬이 데모 폴백만으로 채워졌을 때 롤링·라벨용 */
   localBizFromDemoFallback: boolean;
@@ -75,7 +77,7 @@ export const HONEST_EMPTY_PORTAL_HOME_FEED: PortalHomeFeed = {
   jobs: [],
   market: [],
   freeBoard: [],
-  qna: [],
+  visaTips: [],
   localBiz: [],
   localBizFromDemoFallback: false,
   localDemoWingCards: [],
@@ -195,7 +197,7 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
     jobs: [],
     market: [],
     freeBoard: [],
-    qna: [],
+    visaTips: [],
     localBiz: [],
     localBizFromDemoFallback: false,
     localDemoWingCards: [],
@@ -282,22 +284,30 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
   }
 
   try {
-    const q = await withTimeout(fetchHomePostsByCategory('qna', 8), { rows: [], error: null });
-    out.qna = compactLines(
-      (q.rows ?? []).map((r) => {
-        const id = String(r.id ?? '').trim();
-        const title = String(r.title ?? '').trim();
-        if (!id || !title) return null;
-        return {
-          id,
-          title,
-          href: `/community/boards/${encodeURIComponent(id)}`,
-          subtitle: r.comment_count != null ? `댓글 ${r.comment_count}` : null,
-        };
-      }),
-    );
+    const tips = await withTimeout(fetchHomeTipsPublic(8), { rows: [], error: null });
+    const tipRows = tips.rows ?? [];
+    if (!tips.error && tipRows.length > 0) {
+      out.visaTips = compactLines(
+        tipRows.map((r) => {
+          const id = String(r.id ?? '').trim();
+          const title = String(r.title ?? '').trim();
+          if (!id || !title) return null;
+          const ex = String(r.excerpt ?? '').trim();
+          const subtitle =
+            ex.length > 0 ? `${ex.slice(0, 96)}${ex.length > 96 ? '…' : ''}` : null;
+          return {
+            id,
+            title,
+            href: `/tips/${encodeURIComponent(id)}`,
+            subtitle,
+          };
+        }),
+      );
+    } else {
+      out.visaTips = [];
+    }
   } catch {
-    out.qna = [];
+    out.visaTips = [];
   }
 
   try {

@@ -61,6 +61,10 @@
       "schedule": "*/10 * * * *"
     },
     {
+      "path": "/api/cron/shadow-qa",
+      "schedule": "*/10 * * * *"
+    },
+    {
       "path": "/api/cron/biz-radar",
       "schedule": "0 18 * * *"
     }

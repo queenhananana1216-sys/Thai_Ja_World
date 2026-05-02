@@ -3,9 +3,9 @@
  * 클라이언트·서버 공통 (서버 전용 모듈에 의존하지 않음).
  */
 
-/** PostgREST 스키마 불일치 등 — 고정 대기 시간 안내 없음 (허위 ‘3초’ 방지) */
+/** PostgREST 스키마 불일치 등 — 버튼 라벨(등록/올리기)과 무관하게 동일 문구 */
 export const USER_DB_SYNC_TOAST_MESSAGE =
-  '화면 데이터를 다시 불러왔습니다. [올리기]를 한 번 더 눌러 주세요.';
+  '화면을 맞춰 두었습니다. 같은 버튼을 한 번 더 눌러 주세요.';
 
 /** 라우터 소프트 리프레시만 — 전체 리로드 없이 서버 컴포넌트·fetch 캐시 갱신 유도 */
 export function scheduleSoftNavigationRefresh(runRefresh: () => void): void {
@@ -23,7 +23,8 @@ export function shouldMaskRawDbError(message: string): boolean {
   const m = message.toLowerCase();
   if (m.includes('schema cache')) return true;
   if (m.includes('could not find') && m.includes('column')) return true;
-  if (m.includes('postgrest') || m.includes('pgrst')) return true;
+  /** PostgREST 스키마·컬럼 캐시 전용 코드 (문자열 전체에 pgrst/postgrest 가 들어가면 과마스킹됨) */
+  if (m.includes('pgrst204') || m.includes('pgrst205')) return true;
   if (
     (m.includes('latitude') || m.includes('longitude')) &&
     (m.includes('column') || m.includes('schema') || m.includes('does not exist'))

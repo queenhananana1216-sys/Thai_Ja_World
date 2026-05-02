@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { parseBoardPostBody } from '../boardPayload';
 import { publicBodyFromSupabaseMessage } from '@/lib/db/dbErrorDefense';
+import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
 export const runtime = 'nodejs';
@@ -52,7 +53,8 @@ export async function PUT(req: Request, ctx: Ctx): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data, error } = await sb
+  const admin = createServiceRoleClient();
+  const { data, error } = await admin
     .from('board_posts')
     .update({
       title: payload.title,
@@ -68,6 +70,7 @@ export async function PUT(req: Request, ctx: Ctx): Promise<NextResponse> {
     .maybeSingle();
 
   if (error) {
+    console.error('[api/boards PUT] board_posts update:', error.message);
     const { status, body } = publicBodyFromSupabaseMessage(error.message);
     return NextResponse.json(body, { status });
   }
@@ -98,7 +101,8 @@ export async function DELETE(req: Request, ctx: Ctx): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: deleted, error } = await sb
+  const admin = createServiceRoleClient();
+  const { data: deleted, error } = await admin
     .from('board_posts')
     .delete()
     .eq('id', id)
@@ -106,6 +110,7 @@ export async function DELETE(req: Request, ctx: Ctx): Promise<NextResponse> {
     .select('id');
 
   if (error) {
+    console.error('[api/boards DELETE] board_posts delete:', error.message);
     const { status, body } = publicBodyFromSupabaseMessage(error.message);
     return NextResponse.json(body, { status });
   }

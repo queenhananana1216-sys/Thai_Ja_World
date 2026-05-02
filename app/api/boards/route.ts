@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { parseBoardPostBody } from './boardPayload';
 import { publicBodyFromSupabaseMessage } from '@/lib/db/dbErrorDefense';
 import { recordQuestProgress } from '@/lib/quests/progress';
+import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createServerClient } from '@/lib/supabase/server';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
@@ -77,7 +78,9 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data, error } = await sb
+  /** JWT로 본인 확인 후 서비스 롤 INSERT — anon·GRANT·PostgREST 캐시 이슈와 무관하게 안정적 */
+  const admin = createServiceRoleClient();
+  const { data, error } = await admin
     .from('board_posts')
     .insert({
       user_id: user.id,
@@ -93,6 +96,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     .single();
 
   if (error) {
+    console.error('[api/boards POST] board_posts insert:', error.message);
     const { status, body } = publicBodyFromSupabaseMessage(error.message);
     return NextResponse.json(body, { status });
   }

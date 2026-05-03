@@ -8,20 +8,8 @@ import { toast } from 'sonner';
 import type { Locale } from '@/i18n/types';
 import type { Portal2026Copy } from '@/i18n/portal2026Copy';
 import type { PortalDailySparkPayload } from '@/lib/portal/portalDailySpark';
+import { normalizeFortuneRpcPayload } from '@/lib/fortune/fortuneRpcPayload';
 import styles from './portal-2026.module.css';
-
-type FortuneRpcOk = {
-  ok: true;
-  tip?: { id?: string; body?: string; sourcePostId?: string | null };
-  amount?: number;
-  thai_balance?: number;
-};
-
-type FortuneRpcFail = {
-  ok: false;
-  reason?: string;
-  message?: string;
-};
 
 function attendanceLine(locale: Locale, amount: number): string {
   if (locale === 'th') {
@@ -77,14 +65,20 @@ export default function PortalDailyFortune({
         credentials: 'same-origin',
         body: JSON.stringify({ locale }),
       });
-      const raw = (await res.json()) as FortuneRpcOk | FortuneRpcFail;
+      const text = await res.text();
+      let parsed: unknown = null;
+      try {
+        parsed = text ? (JSON.parse(text) as unknown) : null;
+      } catch {
+        parsed = null;
+      }
+      const norm = normalizeFortuneRpcPayload(parsed);
 
       if (
         !res.ok &&
-        raw &&
-        typeof raw === 'object' &&
-        raw.ok === false &&
-        raw.reason === 'NOT_AUTHENTICATED'
+        norm &&
+        norm.ok === false &&
+        norm.reason === 'NOT_AUTHENTICATED'
       ) {
         toast.error(copy.fortuneLoginToast, { position: 'top-center' });
         shutAndReset();
@@ -92,15 +86,15 @@ export default function PortalDailyFortune({
         return;
       }
 
-      if (!raw || typeof raw !== 'object') {
+      if (!norm) {
         toast.error(copy.fortuneErrorGeneric, { position: 'top-center' });
         return;
       }
 
-      if ('ok' in raw && raw.ok === true) {
-        const tipRaw = raw.tip as { body?: string; sourcePostId?: string | null } | undefined;
+      if (norm.ok === true) {
+        const tipRaw = norm.tip;
         const body = typeof tipRaw?.body === 'string' ? tipRaw.body.trim() : '';
-        const amt = typeof raw.amount === 'number' && Number.isFinite(raw.amount) ? raw.amount : 0;
+        const amt = typeof norm.amount === 'number' && Number.isFinite(norm.amount) ? norm.amount : 0;
         const sid =
           typeof tipRaw?.sourcePostId === 'string' ? tipRaw.sourcePostId.trim() : '';
         setTipBody(body || copy.fortuneTipFallback);
@@ -112,7 +106,7 @@ export default function PortalDailyFortune({
         return;
       }
 
-      const reason = raw.reason;
+      const reason = norm.reason;
       if (reason === 'ALREADY_CLAIMED') {
         setAlreadyMode(true);
         return;
@@ -124,6 +118,11 @@ export default function PortalDailyFortune({
       }
       if (reason === 'CONFIG_INVALID') {
         toast.error(copy.fortuneConfigError, { position: 'top-center' });
+        shutAndReset();
+        return;
+      }
+      if (reason === 'PROFILE_NOT_FOUND') {
+        toast.error(copy.fortuneErrorGeneric, { position: 'top-center' });
         shutAndReset();
         return;
       }

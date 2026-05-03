@@ -18,3 +18,13 @@ export function wmoLabel(code: number | undefined, locale: 'ko' | 'th'): string 
   if (c <= 99) return th('뇌우', 'พายุฝนฟ้าคะนอง');
   return th('변동', 'เปลี่ยนแปลง');
 }
+
+/** 강수·이슬비·소나기·뇌우 등 — 생활 꿀팁·활력 트리거용 */
+export function wmoIsPrecipitation(code: number | null | undefined): boolean {
+  if (code == null || !Number.isFinite(code)) return false;
+  const c = Math.floor(code);
+  if (c >= 51 && c <= 67) return true;
+  if (c >= 80 && c <= 82) return true;
+  if (c >= 95 && c <= 99) return true;
+  return false;
+}

@@ -2765,6 +2765,33 @@ export type Database = {
           },
         ]
       }
+      pipeline_error_events: {
+        Row: {
+          id: string
+          scope: string
+          reason_code: string
+          message_excerpt: string | null
+          meta: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          scope: string
+          reason_code: string
+          message_excerpt?: string | null
+          meta?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          scope?: string
+          reason_code?: string
+          message_excerpt?: string | null
+          meta?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
       polls: {
         Row: {
           active_on: string

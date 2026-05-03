@@ -18,6 +18,7 @@ import { createServiceRoleClient } from '@/lib/supabase/admin';
 import type { JobPost, MarketPost, PortalPostRow, PremiumBannerRow } from '../../portal/types';
 import type { LocalBusiness } from '@/types/taeworld';
 import type { HomeUnifiedFeedItem } from './home-feed-types';
+import { mergeWarmupTodayThaiRanking } from '@/lib/vitality/warmupRanking';
 
 export type { HomeUnifiedFeedItem } from './home-feed-types';
 
@@ -611,6 +612,8 @@ export type HomeTodayThaiEarnRankRow = {
   profileId: string;
   displayName: string;
   thaiEarnedToday: number;
+  /** 실제 RPC가 비었을 때만 워밍업 행 */
+  isWarmup?: boolean;
 };
 
 async function fetchHomeTodayThaiEarnRankingImpl(
@@ -644,7 +647,7 @@ async function fetchHomeTodayThaiEarnRankingImpl(
     thaiEarnedToday: Number(r.dotori_earned_today ?? 0),
   }));
 
-  return { rows, error: null };
+  return { rows: mergeWarmupTodayThaiRanking(rows, safeLimit) as HomeTodayThaiEarnRankRow[], error: null };
 }
 
 const getCachedTodayThaiEarnRanking = unstable_cache(

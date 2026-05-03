@@ -54,6 +54,11 @@ export default function RankingWidget({ rows, viewerProfileId, locale, headingId
                   <span className={styles.hallCyberName} title={row.displayName}>
                     {row.displayName}
                     {isYou ? ' · YOU' : ''}
+                    {row.isWarmup ? (
+                      <span className="ml-1 text-[0.6rem] font-normal text-cyan-300/70" title={copy.balanceHallWarmupBadge}>
+                        ({copy.balanceHallWarmupBadge})
+                      </span>
+                    ) : null}
                   </span>
                   <span className={styles.hallCyberBalance}>
                     +{row.thaiEarnedToday.toLocaleString(numLocale)} {copy.thaiSuffix}

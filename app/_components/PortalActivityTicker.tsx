@@ -1,5 +1,6 @@
 'use client';
 
+import useSWR from 'swr';
 import styles from './PortalActivityTicker.module.css';
 
 const LINES_KO = [
@@ -31,12 +32,27 @@ function buildTickerText(locale: 'ko' | 'th'): string {
   return pool.join('   •   ');
 }
 
+async function vitalityTickerFetcher(url: string): Promise<string[]> {
+  const res = await fetch(url, { credentials: 'same-origin' });
+  const j = (await res.json()) as { ok?: boolean; lines?: unknown };
+  if (!res.ok || !j?.ok || !Array.isArray(j.lines)) {
+    throw new Error('vitality_ticker');
+  }
+  return j.lines.filter((x): x is string => typeof x === 'string' && x.trim().length > 0);
+}
+
 /**
- * 모바일 전용 — 하단 탭 바 직상단 고정 마키. `locale`은 루트 레이아웃 `html lang`과 동기.
+ * 모바일 전용 — 하단 탭 바 직상단 고정 마키.
+ * `/api/portal/vitality-ticker` 가 1시간 단위로 갱신되는 문구를 우선 사용(실패 시 정적 풀).
  */
 export default function PortalActivityTicker({ locale }: { locale: 'ko' | 'th' }) {
   const loc = locale === 'th' ? 'th' : 'ko';
-  const text = buildTickerText(loc);
+  const { data } = useSWR(`/api/portal/vitality-ticker?locale=${loc}`, vitalityTickerFetcher, {
+    refreshInterval: 3_600_000,
+    revalidateOnFocus: false,
+    dedupingInterval: 60_000,
+  });
+  const text = data?.length ? data.join('   •   ') : buildTickerText(loc);
 
   return (
     <div

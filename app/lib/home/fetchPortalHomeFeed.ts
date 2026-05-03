@@ -28,7 +28,10 @@ import {
 import type { HomeUnifiedFeedItem } from '../../_components/home/home-feed-types';
 import { categoryLabel } from '@/lib/community/postCategories';
 import type { Locale } from '@/i18n/types';
-import { getPerceivedViewCount } from '@/lib/utils';
+import { getVitalityViewCount } from '@/lib/vitality/dynamicViewCount';
+import { reorderVisaTipsForRain } from '@/lib/vitality/visaTipsWeatherBoost';
+import { fetchThailandCitiesWeather } from '@/lib/weather/fetchThailandCitiesWeather';
+import { wmoIsPrecipitation } from '@/lib/weather/wmoWeatherCode';
 import { getLocale } from '@/i18n/get-locale';
 import { isQuestMissionNoiseTitle } from './portalLiveFeedTitle';
 import { isAutoContentKillerFeedTitle } from '@/lib/cron/autoContentGhostwriter';
@@ -146,7 +149,7 @@ function unifiedItemToLine(item: HomeUnifiedFeedItem, locale: Locale): PortalFee
   const excerpt = item.excerpt?.trim();
   const c = item.comment_count ?? 0;
   const v = item.view_count ?? 0;
-  const pv = getPerceivedViewCount(Number(v), id);
+  const pv = getVitalityViewCount(Number(v), id);
   const viewLabel = th ? `👀 ${pv.toLocaleString('th-TH')}` : `👀 ${pv.toLocaleString('ko-KR')}`;
   const subtitle = excerpt
     ? `${pill} · ${excerpt.slice(0, 96)}${excerpt.length > 96 ? '…' : ''}`
@@ -293,6 +296,11 @@ function portalLocalMinihomeHref(slug: string, miniHome: unknown): string {
  * 타임아웃·에러·빈 결과는 빈 배열; 샘플 글이나 임의 기사 제목을 넣지 않음.
  */
 async function fetchPortalHomeFeedCore(portalLocale: Locale): Promise<PortalHomeFeed> {
+  const { cities: vitalityCities } = await fetchThailandCitiesWeather(portalLocale);
+  const portalRainBoost =
+    vitalityCities.some((c) => wmoIsPrecipitation(c.weather_code)) ||
+    wmoIsPrecipitation(vitalityCities.find((c) => c.key === 'bangkok')?.weather_code);
+
   const out: PortalHomeFeed = {
     jobs: [],
     market: [],
@@ -412,6 +420,11 @@ async function fetchPortalHomeFeedCore(portalLocale: Locale): Promise<PortalHome
     } else {
       out.visaTips = [];
     }
+    out.visaTips = reorderVisaTipsForRain(
+      out.visaTips,
+      portalLocale === 'th' ? 'th' : 'ko',
+      portalRainBoost,
+    );
   } catch {
     out.visaTips = [];
   }

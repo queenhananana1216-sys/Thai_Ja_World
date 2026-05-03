@@ -49,6 +49,8 @@ export type Portal2026Copy = {
   balanceHallTitle: string;
   balanceHallSub: string;
   balanceHallEmpty: string;
+  /** 랭킹 워밍업 행 옆 짧은 뱃지(실데이터 없을 때만) */
+  balanceHallWarmupBadge: string;
   /** 푸터 — 오늘 획득 라벨 */
   balanceHallYouToday: string;
   /** 푸터 — 당일 순위 접두(뒤에 #n) */
@@ -148,6 +150,7 @@ const ko: Portal2026Copy = {
   balanceHallTitle: '오늘 타이(THAI) 획득 랭킹 TOP 5',
   balanceHallSub: '서울 당일 · 적립 합산 · 실시간',
   balanceHallEmpty: '아직 랭킹을 표시할 데이터가 없습니다.',
+  balanceHallWarmupBadge: '커뮤니티 펄스',
   balanceHallYouToday: '오늘 획득',
   balanceHallTodayRankPrefix: '오늘 순위',
   balanceHallLoginHint: '로그인하면 보유량·오늘 획득·순위가 보여요.',
@@ -236,6 +239,7 @@ const th: Portal2026Copy = {
   balanceHallTitle: 'อันดับ THAI ที่ได้วันนี้ TOP 5',
   balanceHallSub: 'ตามวันที่โซล · รวมยอด THAI · เรียลไทม์',
   balanceHallEmpty: 'ยังไม่มีข้อมูลจัดอันดับ',
+  balanceHallWarmupBadge: 'พัลส์ชุมชน',
   balanceHallYouToday: 'วันนี้ได้รับ',
   balanceHallTodayRankPrefix: 'อันดับวันนี้',
   balanceHallLoginHint: 'ล็อกอินเพื่อดูยอดคงเหลือ·ที่ได้วันนี้·อันดับ',

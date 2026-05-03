@@ -627,8 +627,8 @@ async function fetchPortalHomeFeedCore(portalLocale: Locale): Promise<PortalHome
 
 const getCachedPortalHomeFeed = unstable_cache(
   async (locale: Locale) => fetchPortalHomeFeedCore(locale),
-  ['portal-home-feed-v1'],
-  { revalidate: 30 },
+  ['portal-home-feed-v2'],
+  { revalidate: 0 },
 );
 
 /** 어떤 예외도 홈 SSR을 죽이지 않음 — 전체 실패 시 빈 피드로 2026 포털만 렌더 */

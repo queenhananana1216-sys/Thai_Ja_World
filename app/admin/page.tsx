@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import AdminQuickOpsPanel from './_components/AdminQuickOpsPanel';
+import ForceNewsIngestButton from './_components/ForceNewsIngestButton';
 import MainQrGenerator from './_components/MainQrGenerator';
 import { fetchLatestPipelineTouch, probeSiteReachability } from '@/lib/admin/adminDashboardSignals';
 import { fetchSiteTrafficSummary24h } from '@/lib/admin/siteTrafficSummary';
@@ -124,6 +125,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <main className="admin-page">
+      <ForceNewsIngestButton />
       <h1 className="admin-dash__title">관리자 개요</h1>
       <p className="admin-dash__lead">
         태자 월드 회원·접속·뉴스 초안 지표입니다. <strong>마지막 접속</strong>은 사이트 하트비트로 갱신되는{' '}

@@ -1,4 +1,4 @@
--- 태자월드 직접 주입 시드: API/Places 크론 없이 한인 업소 목록 최소 확보
+-- 「태국에, 살자」 직접 주입 시드: API/Places 크론 없이 한인 업소 목록 최소 확보
 -- google_place_id 는 실제 Places ID 대신 충돌 방지용 합성 키(taeja126_*) 사용.
 -- 재실행 안전: ON CONFLICT / WHERE NOT EXISTS
 

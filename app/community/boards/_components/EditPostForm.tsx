@@ -3,7 +3,11 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import PostGeoAutoFields, {
+  type PostGeoAutoFieldsValue,
+} from '@app/_components/schema-autoform/PostGeoAutoFields';
 import type { Dictionary } from '@/i18n/dictionaries';
+import type { Locale } from '@/i18n/types';
 import { boardModMessage } from '@/lib/community/moderationMessages';
 import { createBrowserClient } from '@/lib/supabase/client';
 
@@ -11,21 +15,43 @@ export default function EditPostForm({
   postId,
   initialTitle,
   initialContent,
+  initialGeo,
   ownerGateSet,
   board,
+  locale,
 }: {
   postId: string;
   initialTitle: string;
   initialContent: string;
+  initialGeo: PostGeoAutoFieldsValue;
   ownerGateSet: boolean;
   board: Dictionary['board'];
+  locale: Locale;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
+  const [geo, setGeo] = useState<PostGeoAutoFieldsValue>(initialGeo);
   const [ownerPassword, setOwnerPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const geoLabels =
+    locale === 'th'
+      ? {
+          section: 'พิกัด (ไม่บังคับ)',
+          latitude: 'ละติจูด',
+          longitude: 'ลองจิจูด',
+          locationName: 'ชื่อสถานที่',
+          hint: 'ถ้ากรอกพิกัด ต้องกรอกทั้งคู่ — ชื่อสถานที่ได้แม้ไม่มีพิกัด',
+        }
+      : {
+          section: '위치 (선택)',
+          latitude: '위도',
+          longitude: '경도',
+          locationName: '장소 이름',
+          hint: '위도·경도는 둘 다 입력하거나 비워 두세요. 이름만 넣을 수 있어요.',
+        };
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -54,6 +80,9 @@ export default function EditPostForm({
         title: title.trim(),
         content: content.trim(),
         owner_password: ownerGateSet ? ownerPassword : undefined,
+        latitude: geo.latitude,
+        longitude: geo.longitude,
+        location_name: geo.location_name,
       }),
     });
 
@@ -72,6 +101,10 @@ export default function EditPostForm({
       }
       if (payload.code === 'owner_password_invalid') {
         setError(board.postOwnerPasswordWrong);
+        return;
+      }
+      if (payload.code === 'invalid_geo' && payload.message?.trim()) {
+        setError(payload.message);
         return;
       }
       setError(
@@ -111,6 +144,10 @@ export default function EditPostForm({
         required
         minLength={2}
       />
+
+      <div style={{ marginTop: 16 }}>
+        <PostGeoAutoFields value={geo} onChange={setGeo} labels={geoLabels} />
+      </div>
 
       {ownerGateSet ? (
         <>

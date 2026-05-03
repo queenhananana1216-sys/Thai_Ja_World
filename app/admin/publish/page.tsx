@@ -82,10 +82,10 @@ export default async function AdminPublishHubPage() {
 
   return (
     <div style={{ padding: '20px 24px', maxWidth: 920, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 20, margin: '0 0 8px', fontWeight: 800 }}>최종 승인 · 배포</h1>
+      <h1 style={{ fontSize: 20, margin: '0 0 8px', fontWeight: 800 }}>콘텐츠 관제 허브</h1>
       <p style={{ margin: '0 0 20px', fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-        봇이 가져온 뉴스와 태국 꿀팁은 기본적으로 <strong>초안(published=false)</strong>만 쌓입니다. 여기서 정리한 뒤 각 큐에서{' '}
-        <strong>승인 한 번(또는 일괄 승인)</strong>으로 이용자 화면에 올라갑니다.
+        뉴스·꿀팁은 기본 <strong>승인 대기</strong> 큐에만 쌓입니다. 각 큐에서 <strong>가공 → 즉시 게시</strong> 흐름으로
+        노출합니다.
       </p>
 
       <section

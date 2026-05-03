@@ -93,11 +93,16 @@ export async function POST(req: Request) {
     }
   }
 
+  const koT = (body.ko_title ?? '').trim();
+  const koS = (body.ko_summary ?? '').trim();
+  const thT = (body.th_title ?? '').trim();
+  const thS = (body.th_summary ?? '').trim();
+  /** 관리자 UI는 태국어 필드를 숨기므로, 비었으면 한국어와 동일 값으로 저장(DB·이중언어 호환) */
   const nextBody = mergeBilingualCleanBody(row.clean_body as string | null, {
     ko_title: body.ko_title,
     ko_summary: body.ko_summary,
-    th_title: body.th_title,
-    th_summary: body.th_summary,
+    th_title: thT || koT,
+    th_summary: thS || koS,
   });
 
   const { error: upErr } = await admin
@@ -115,8 +120,9 @@ export async function POST(req: Request) {
   if (body.ko_summary?.trim()) {
     await admin.from('summaries').update({ summary_text: body.ko_summary.trim() }).eq('processed_news_id', id).eq('model', 'ko');
   }
-  if (body.th_summary?.trim()) {
-    await admin.from('summaries').update({ summary_text: body.th_summary.trim() }).eq('processed_news_id', id).eq('model', 'th');
+  const thSummaryPersist = thS || koS;
+  if (thSummaryPersist) {
+    await admin.from('summaries').update({ summary_text: thSummaryPersist }).eq('processed_news_id', id).eq('model', 'th');
   }
 
   revalidatePath('/', 'layout');

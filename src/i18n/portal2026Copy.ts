@@ -87,11 +87,15 @@ export type Portal2026Copy = {
   fortuneTipFallback: string;
   fortuneReadMore: string;
   fortuneClose: string;
+  /** site_settings 일일 스파크 — 포춘 버튼 위 테마 카드 제목 */
+  fortuneSparkThemeTitle: string;
   /** 개인화·공동 미션 허브 */
   missionHubPersonalTitle: string;
   missionHubPersonalLoginHint: string;
   missionHubPersonalEmpty: string;
   missionHubPersonalCta: string;
+  /** DB·크론 기반 일일 추천 미션 배지 */
+  missionHubSparkBadge: string;
   missionHubCollabTitle: string;
   missionHubCollabEmpty: string;
   missionHubCollabFootnote: string;
@@ -174,10 +178,12 @@ const ko: Portal2026Copy = {
   fortuneTipFallback: '태국 생활, 오늘도 안전하게!',
   fortuneReadMore: '꿀팁 허브에서 자세히 보기 →',
   fortuneClose: '닫기',
+  fortuneSparkThemeTitle: '오늘의 운세 테마',
   missionHubPersonalTitle: '오늘 나만의 미션',
   missionHubPersonalLoginHint: '로그인하면 활동 기반 맞춤 미션이 매일 표시됩니다.',
   missionHubPersonalEmpty: '오늘 미션을 준비하는 중이에요. 잠시 후 새로고침해 보세요.',
   missionHubPersonalCta: '미션 하러 가기',
+  missionHubSparkBadge: '오늘의 추천 · 매일 새벽 갱신',
   missionHubCollabTitle: '함께하는 목표',
   missionHubCollabEmpty: '진행 중인 공동 미션이 없습니다.',
   missionHubCollabFootnote: '진행률은 운영 집계·이벤트로 반영됩니다.',
@@ -260,10 +266,12 @@ const th: Portal2026Copy = {
   fortuneTipFallback: 'ชีวิตในไทยวันนี้ ขอให้ปลอดภัย!',
   fortuneReadMore: 'อ่านเพิ่มในฮับเคล็ดลับ →',
   fortuneClose: 'ปิด',
+  fortuneSparkThemeTitle: 'ธีมดวงวันนี้ (ภาษาเกาหลี)',
   missionHubPersonalTitle: 'ภารกิจวันนี้ของคุณ',
   missionHubPersonalLoginHint: 'ล็อกอินเพื่อรับภารกิจรายวันตามพฤติกรรม',
   missionHubPersonalEmpty: 'กำลังเตรียมภารกิจ — ลองรีเฟรชอีกครั้ง',
   missionHubPersonalCta: 'ไปทำภารกิจ',
+  missionHubSparkBadge: 'แนะนำวันนี้ · อัปเดตทุกเช้า (KO)',
   missionHubCollabTitle: 'เป้าร่วมชุมชน',
   missionHubCollabEmpty: 'ยังไม่มีภารกิจร่วมในช่วงนี้',
   missionHubCollabFootnote: 'ความคืบหน้าอัปเดตจากระบบ/กิจกรรม',

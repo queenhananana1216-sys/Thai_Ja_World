@@ -167,14 +167,14 @@ export default async function AdminDashboardPage() {
         <p className="muted">
           키워드·상위 노출은 <strong>기술 SEO</strong>(canonical·메타·구조화 데이터·사이트맵)와{' '}
           <strong>콘텐츠·키워드 의도</strong>가 함께 가야 합니다. 아래 초안은 외장 메모리·로컬 AI로만 생성 —{' '}
-          <strong>배포 전 태자 i18n·브랜드 검수</strong>가 필수입니다.
+          <strong>배포 전 「태국에, 살자」 i18n·브랜드 검수</strong>가 필수입니다.
         </p>
         <ul className={styles.checklist}>
           <li>
             <code>NEXT_PUBLIC_AUTO_SITE_URL</code> 로 공개 베이스 고정 → OG·canonical 일치.
           </li>
           <li>링크 허브 본문은 실제 도메인만; 스팸·도어웨이 링크 금지.</li>
-          <li>Search Console·사이트맵 제출은 태자 월드·이 프로젝트 배포 설정과 함께 점검.</li>
+          <li>Search Console·사이트맵 제출은 「태국에, 살자」 배포 설정과 함께 점검.</li>
         </ul>
         <h3 style={{ fontSize: '0.95rem', margin: '1rem 0 0.5rem' }}>메타 초안 실행</h3>
         <MetaDraftForm />

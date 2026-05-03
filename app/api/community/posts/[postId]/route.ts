@@ -7,6 +7,7 @@ import { isAdminActorEmail } from '@/lib/admin/adminAllowedEmails';
 import { verifyPostOwnerGate } from '@/lib/community/verifyPostOwnerGate';
 import { verifyBearerOwnsPost } from '@/lib/community/verifyPostAuthor';
 import { moderatePostContent } from '@/lib/moderation/openaiModeration';
+import { normalizePostGeoPayload } from '@/lib/schema-autoform/postGeoFieldGroup';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
@@ -42,11 +43,16 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const titleIn = b.title;
   const contentIn = b.content;
   const ownerPassword = typeof b.owner_password === 'string' ? b.owner_password : undefined;
+  const latIn = b.latitude;
+  const lngIn = b.longitude;
+  const locNameIn = b.location_name;
 
   const hasHidden = typeof authorHidden === 'boolean';
   const hasTitle = typeof titleIn === 'string';
   const hasContent = typeof contentIn === 'string';
-  if (!hasHidden && !hasTitle && !hasContent) {
+  const hasGeo =
+    typeof latIn === 'string' || typeof lngIn === 'string' || typeof locNameIn === 'string';
+  if (!hasHidden && !hasTitle && !hasContent && !hasGeo) {
     return NextResponse.json({ code: 'invalid', error: 'no_updates' }, { status: 400 });
   }
 
@@ -78,6 +84,20 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
   if (hasHidden) {
     updates.author_hidden = authorHidden;
+  }
+
+  if (hasGeo) {
+    const geoNorm = normalizePostGeoPayload({
+      latitude: typeof latIn === 'string' ? latIn : '',
+      longitude: typeof lngIn === 'string' ? lngIn : '',
+      location_name: typeof locNameIn === 'string' ? locNameIn : '',
+    });
+    if (!geoNorm.ok) {
+      return NextResponse.json({ code: 'invalid_geo', message: geoNorm.error }, { status: 400 });
+    }
+    updates.latitude = geoNorm.value.latitude;
+    updates.longitude = geoNorm.value.longitude;
+    updates.location_name = geoNorm.value.location_name;
   }
 
   if (hasTitle || hasContent) {

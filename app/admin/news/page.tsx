@@ -3,6 +3,7 @@
  */
 import Link from 'next/link';
 import NewsQueueClient, { type NewsQueueDiagnostics, type QueueItem } from './_components/NewsQueueClient';
+import { isNewsSummaryLlmConfigured } from '@/bots/actions/summarizeAndPersistNews';
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { newsInsertAsPublished } from '@/lib/news/newsPublishMode';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
@@ -109,40 +110,32 @@ export default async function AdminNewsQueuePage() {
     });
   }
 
+  const llmReady = isNewsSummaryLlmConfigured();
+
   return (
     <div style={{ padding: '20px 24px', maxWidth: 920 }}>
-      <h1 style={{ fontSize: 18, margin: '0 0 8px' }}>뉴스 초안 큐</h1>
+      <h1 style={{ fontSize: 18, margin: '0 0 8px' }}>뉴스 승인 큐</h1>
       <p style={{ margin: '0 0 12px', fontSize: 12 }}>
         <Link href="/admin/publish" style={{ color: '#2563eb', fontWeight: 600 }}>
-          최종 승인·편집 가이드(한 페이지 요약) →
+          콘텐츠 관제 허브 →
         </Link>
       </p>
       <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.55 }}>
-        <strong>기본:</strong> 봇이 수집·요약한 기사는 <strong>미게시 초안</strong>(<code>published=false</code>)으로만
-        저장됩니다. 아래에서 한·태 제목·요약을 고친 뒤 <strong>홈에 게시</strong>를 누르면 홈·뉴스 상세에
-        올라갑니다. 올리지 않을 기사는 <strong>삭제(올리지 않음)</strong>으로 원문·요약·댓글을 함께 지울 수
-        있습니다.
-        <br />
-        <br />
-        <strong>예전처럼 저장 즉시 공개</strong>하려면 배포 환경에만 <code>NEWS_PUBLISH_MODE=auto</code> 를 넣으면
-        됩니다. (변수를 비우면 다시 승인 큐 방식입니다.)
-        <br />
-        <br />
-        큐가 계속 비어 있으면 뉴스 크론·LLM 키·봇 기록(<code>/admin/bot-actions</code>)을 확인해 보세요. Vercel Cron은{' '}
-        <code>vercel.json</code> 기준 하루 2회(UTC) 수집+요약입니다.
-        <br />
-        <br />
-        <strong>SQL만 실행했는데 비어 있나요?</strong> 이 화면은 <code>processed_news</code> 중{' '}
-        <code>published=false</code> 인 행만 보여 줍니다. 원문만 <code>raw_news</code>에 있으면 봇이 요약해{' '}
-        <code>processed_news</code>를 만들어야 하고,         예전에 이미 <code>published=true</code> 로 들어간 기사는
-        아래 «승인 대기로 옮기기»로 되돌릴 수 있어요. 원문만 쌓여 있으면 «승인 큐에 올리기»로 스텁 초안을 만들 수 있습니다.
+        <strong>가공</strong>은 «AI 가공 실행»으로 원문→한국어 전용 초안을 만듭니다(승인 대기 유지).{' '}
+        <strong>게시</strong>는 «즉시 게시» 또는 하단 일괄 버튼입니다. 편집은 자동 저장됩니다.
+        {llmReady ? '' : ' LLM 키가 없으면 AI 가공 버튼이 비활성입니다.'}
       </p>
       {error ? (
         <p style={{ color: '#b91c1c', marginTop: 16 }}>
           DB 오류: {error.message} — <code>009_processed_news_published.sql</code> 마이그레이션 적용 여부를 확인하세요.
         </p>
       ) : (
-        <NewsQueueClient items={items} diagnostics={diagnostics} orphanRawNews={orphanRawNews} />
+        <NewsQueueClient
+          items={items}
+          diagnostics={diagnostics}
+          orphanRawNews={orphanRawNews}
+          llmReady={llmReady}
+        />
       )}
     </div>
   );

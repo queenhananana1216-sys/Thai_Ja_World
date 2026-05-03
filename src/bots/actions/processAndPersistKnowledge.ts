@@ -323,6 +323,21 @@ function countRegexMatches(s: string, re: RegExp): number {
   return m ? m.length : 0;
 }
 
+/** 관리자 재가공 정책: DB·이중언어 호환을 위해 th.* 를 ko.* 와 동일 한국어로 저장(공개 UI는 한국어 큐 중심). */
+function mirrorKnowledgeThFromKo(llm: KnowledgeLlmOutput): KnowledgeLlmOutput {
+  return {
+    ...llm,
+    th: {
+      title: llm.ko.title,
+      summary: llm.ko.summary,
+      editorial_note: llm.ko.editorial_note,
+      checklist: [...llm.ko.checklist],
+      cautions: [...llm.ko.cautions],
+      tags: [...llm.ko.tags],
+    },
+  };
+}
+
 /** LLM이 영어를 ko.* 에 넣는 경우 차단 — 재시도 유도 */
 function validateKnowledgeLlmOutputLocales(out: KnowledgeLlmOutput): string | null {
   const koTitle = out.ko.title.trim();
@@ -646,6 +661,7 @@ async function insertProcessedKnowledgeFromLlm(
 export async function processKnowledgeFromResolvedRaw(
   client: ReturnType<typeof getServerSupabaseClient>,
   row: RawKnowledgeRow,
+  opts?: { mirrorThFromKo?: boolean; forceDraft?: boolean },
 ): Promise<KnowledgeProcessRowResult> {
   const rawId = String(row.id);
   const title = (row.title_original ?? '').trim() || '(제목 없음)';
@@ -660,9 +676,11 @@ export async function processKnowledgeFromResolvedRaw(
   const bodyForLlm = resolved.llmText;
   const llmReady = isKnowledgeLlmConfigured();
   const allowStub = stubKnowledgeOnLlmFailure();
+  const finalize = (llm: KnowledgeLlmOutput) => (opts?.mirrorThFromKo ? mirrorKnowledgeThFromKo(llm) : llm);
 
   if (!llmReady) {
-    const stubLlm = buildKnowledgeStubLlmOutput(title, bodyForLlm, url, fetchedAt);
+    let stubLlm = buildKnowledgeStubLlmOutput(title, bodyForLlm, url, fetchedAt);
+    stubLlm = finalize(stubLlm);
     const r = await insertProcessedKnowledgeFromLlm(client, rawId, stubLlm, false);
     return r.ok
       ? { raw_knowledge_id: rawId, ok: true, board_target: stubLlm.board_target }
@@ -670,15 +688,18 @@ export async function processKnowledgeFromResolvedRaw(
   }
 
   try {
-    const llm = await callKnowledgeLlm(title, bodyForLlm, url, fetchedAt);
-    const r = await insertProcessedKnowledgeFromLlm(client, rawId, llm, knowledgeInsertAsPublished());
+    let llm = await callKnowledgeLlm(title, bodyForLlm, url, fetchedAt);
+    llm = finalize(llm);
+    const publishedInsert = opts?.forceDraft ? false : knowledgeInsertAsPublished();
+    const r = await insertProcessedKnowledgeFromLlm(client, rawId, llm, publishedInsert);
     return r.ok
       ? { raw_knowledge_id: rawId, ok: true, board_target: llm.board_target }
       : { raw_knowledge_id: rawId, ok: false, error: r.error };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (allowStub) {
-      const stubLlm = buildKnowledgeStubLlmOutput(title, bodyForLlm, url, fetchedAt);
+      let stubLlm = buildKnowledgeStubLlmOutput(title, bodyForLlm, url, fetchedAt);
+      stubLlm = finalize(stubLlm);
       const r = await insertProcessedKnowledgeFromLlm(client, rawId, stubLlm, false);
       return r.ok
         ? { raw_knowledge_id: rawId, ok: true, board_target: stubLlm.board_target }
@@ -734,7 +755,10 @@ export async function reprocessKnowledgeDraftWithLlm(
     };
   }
 
-  const rowResult = await processKnowledgeFromResolvedRaw(client, raw as RawKnowledgeRow);
+  const rowResult = await processKnowledgeFromResolvedRaw(client, raw as RawKnowledgeRow, {
+    mirrorThFromKo: true,
+    forceDraft: true,
+  });
   if (!rowResult.ok) {
     return { ok: false, error: rowResult.error ?? '재가공 실패' };
   }

@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const tabs = [
-  { href: '/admin', label: '개요', icon: '◎' },
-  { href: '/admin/design', label: '디자인', icon: '◆' },
-  { href: '/admin/ops-center', label: '운영', icon: '◉' },
+  { href: '/admin/publish', label: '관제', icon: '◉' },
+  { href: '/admin/design', label: '디자인', icon: '◇' },
+  { href: '/admin/users', label: '소통', icon: '◍' },
+  { href: '/admin/sandbox', label: 'AI', icon: '🧬' },
 ] as const;
 
 export default function AdminMobileTabBar() {
@@ -15,7 +16,7 @@ export default function AdminMobileTabBar() {
   return (
     <nav className="admin-mtab" aria-label="모바일 관리자 빠른 메뉴">
       {tabs.map((t) => {
-        const active = pathname === t.href || (t.href !== '/admin' && pathname.startsWith(t.href));
+        const active = pathname === t.href || pathname.startsWith(`${t.href}/`);
         return (
           <Link
             prefetch={true}

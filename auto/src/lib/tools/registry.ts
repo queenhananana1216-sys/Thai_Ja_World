@@ -1,6 +1,6 @@
 /**
  * llangkka 전용 파이프라인 도구 레지스트리.
- * 태자 월드 SEO·다른 패키지에서 import 해 확장할 수 있음.
+ * 「태국에, 살자」 SEO·다른 패키지에서 import 해 확장할 수 있음.
  */
 
 export type PipelineToolId = string;

@@ -3,6 +3,7 @@ import type { CollaborativeMissionRow } from '../_components/home/home-queries';
 import type { PersonalMissionBrief } from '@/lib/missions/ensurePersonalMissionToday';
 import type { Locale } from '@/i18n/types';
 import type { Portal2026Copy } from '@/i18n/portal2026Copy';
+import type { PortalDailySparkPayload } from '@/lib/portal/portalDailySpark';
 import styles from './portal-2026.module.css';
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
   personal: PersonalMissionBrief | null;
   collaborative: CollaborativeMissionRow[];
   isLoggedIn: boolean;
+  dailySpark?: PortalDailySparkPayload | null;
 };
 
 function scopeLabel(locale: Locale, scope: string): string {
@@ -26,8 +28,27 @@ function scopeLabel(locale: Locale, scope: string): string {
   return scope;
 }
 
-export default function PortalMissionHub({ locale, copy, personal, collaborative, isLoggedIn }: Props) {
+export default function PortalMissionHub({
+  locale,
+  copy,
+  personal,
+  collaborative,
+  isLoggedIn,
+  dailySpark,
+}: Props) {
   const numLocale = locale === 'th' ? 'th-TH' : 'ko-KR';
+
+  const sparkAsPersonal: PersonalMissionBrief | null =
+    dailySpark && dailySpark.mission_title.trim()
+      ? {
+          title: dailySpark.mission_title,
+          body: dailySpark.mission_body,
+          cta_href: dailySpark.mission_cta_href || '/community/boards',
+          mission_kind: 'portal_daily_spark',
+        }
+      : null;
+  const displayPersonal = personal ?? sparkAsPersonal;
+  const showSparkBadge = Boolean(!personal && sparkAsPersonal);
 
   return (
     <section className={`${styles.glassCenter} overflow-hidden p-2 text-sm text-gray-100 md:p-2.5 md:text-base`}>
@@ -36,20 +57,25 @@ export default function PortalMissionHub({ locale, copy, personal, collaborative
           <p className="m-0 text-xs font-black uppercase tracking-wide text-violet-200 md:text-sm">
             {copy.missionHubPersonalTitle}
           </p>
-          {!isLoggedIn ? (
-            <p className="mt-1.5 m-0 text-xs leading-snug text-gray-300 md:text-sm">{copy.missionHubPersonalLoginHint}</p>
-          ) : personal ? (
+          {displayPersonal ? (
             <>
-              <p className="mt-1.5 m-0 text-base font-bold text-white md:text-lg">{personal.title}</p>
-              <p className="mt-1 m-0 text-xs leading-relaxed text-gray-200 md:text-sm">{personal.body}</p>
+              {showSparkBadge ? (
+                <p className="mt-1 m-0 text-[10px] font-bold uppercase tracking-wide text-violet-300/90 md:text-xs">
+                  {copy.missionHubSparkBadge}
+                </p>
+              ) : null}
+              <p className="mt-1.5 m-0 text-base font-bold text-white md:text-lg">{displayPersonal.title}</p>
+              <p className="mt-1 m-0 text-xs leading-relaxed text-gray-200 md:text-sm">{displayPersonal.body}</p>
               <GuestGateLink
-                href={personal.cta_href || '/boards'}
+                href={displayPersonal.cta_href || '/boards'}
                 isLoggedIn={isLoggedIn}
                 className="mt-2 inline-flex min-h-10 max-w-full items-center justify-center rounded-lg bg-violet-600 px-3 py-1.5 text-center text-sm font-bold text-white no-underline hover:bg-violet-500"
               >
                 {copy.missionHubPersonalCta}
               </GuestGateLink>
             </>
+          ) : !isLoggedIn ? (
+            <p className="mt-1.5 m-0 text-xs leading-snug text-gray-300 md:text-sm">{copy.missionHubPersonalLoginHint}</p>
           ) : (
             <p className="mt-1.5 m-0 text-xs text-gray-400 md:text-sm">{copy.missionHubPersonalEmpty}</p>
           )}

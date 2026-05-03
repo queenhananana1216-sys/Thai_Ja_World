@@ -37,9 +37,9 @@ export function knowledgeLlmFromQueueFields(
       tags: item.ko_tags,
     },
     th: {
-      title: f.th_title.trim(),
-      summary: f.th_summary.trim(),
-      editorial_note: f.th_editorial_note.trim() || undefined,
+      title: (f.th_title.trim() || f.ko_title.trim()).trim(),
+      summary: (f.th_summary.trim() || f.ko_summary.trim()).trim(),
+      editorial_note: (f.th_editorial_note.trim() || f.ko_editorial_note.trim() || undefined) || undefined,
       checklist: [],
       cautions: [],
       tags: [],

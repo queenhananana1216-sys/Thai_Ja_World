@@ -45,7 +45,7 @@ function fallbackFromHits(path: string, hits: MemoryEntry[]): MetaDraftFromMemor
   const titleBase = hits[0]?.text?.replace(/\s+/g, ' ').trim().slice(0, 48) ?? '';
   const title = titleBase
     ? `${titleBase}${titleBase.length >= 48 ? '…' : ''} | ${path}`
-    : `태자 월드 — ${path}`;
+    : `태국에, 살자 — ${path}`;
 
   const descParts = hits
     .slice(0, 4)
@@ -58,7 +58,7 @@ function fallbackFromHits(path: string, hits: MemoryEntry[]): MetaDraftFromMemor
     title: title.slice(0, 72),
     description: description.slice(0, 165),
     note:
-      '규칙 기반 초안(외장 메모리 조각만 사용). 배포 전 태자 i18n·브랜드 규칙으로 반드시 검수·치환.',
+      '규칙 기반 초안(외장 메모리 조각만 사용). 배포 전 「태국에, 살자」 i18n·브랜드 규칙으로 반드시 검수·치환.',
     memoryIds: hits.map((h) => h.id),
   };
 }
@@ -116,7 +116,7 @@ export async function draftMetaFromMemory(
 
   if (hits.length === 0) {
     return {
-      title: `태자 월드 — ${path}`,
+      title: `태국에, 살자 — ${path}`,
       description: `이 경로와 관련된 메모가 외장 메모리에 없습니다. 로컬에서 npm run memory -- add 로 메모를 쌓은 뒤 다시 실행하세요.`,
       note: '외장 메모리 0건 — 스텁만. 배포 금지 아님, 내용 보강 권장.',
     };

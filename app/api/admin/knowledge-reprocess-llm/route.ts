@@ -48,5 +48,6 @@ export async function POST(req: Request) {
   }
 
   revalidatePath('/admin/knowledge');
+  revalidatePath('/tips', 'layout');
   return NextResponse.json(r);
 }

@@ -419,7 +419,7 @@
   }
 }
 
-/** 실시간 피드 — 미션·도토리 등 키워드 금색 글라스 그라데이션 */
+/** 실시간 피드 — 미션·타이(THAI) 등 키워드 금색 글라스 그라데이션 */
 .liveFeedRowHot {
   background: linear-gradient(90deg, rgba(245, 158, 11, 0.09), rgba(251, 191, 36, 0.04), transparent);
   border-left: 2px solid rgba(251, 191, 36, 0.55);
@@ -449,7 +449,7 @@
   }
 }
 
-/** 좌측 스티키 — 주간 타이 랭킹 (RPC `get_public_weekly_dotori_ranking`) */
+/** 좌측 스티키 — 주간 타이(THAI) 랭킹 (공개 주간 랭킹 RPC) */
 .wingRankFirst {
   display: flex;
   align-items: center;
@@ -675,7 +675,7 @@
   }
 }
 
-/** 우측·모바일 — 사이버펑크 보유 도토리 명예의 전당 */
+/** 우측·모바일 — 사이버펑크 보유 타이(THAI) 명예의 전당 */
 .glassCyberHall {
   border-radius: 0.75rem;
   border: 1px solid rgba(34, 211, 238, 0.38);
@@ -762,6 +762,39 @@
   font-size: 0.75rem;
   font-weight: 800;
   color: #a5f3fc;
+}
+
+/** site_settings `portal.daily_spark_ko` — 포춘 버튼 위 테마 */
+.fortuneSparkWrap {
+  margin-bottom: 0.35rem;
+}
+.fortuneSparkCard {
+  border-radius: 0.85rem;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(49, 46, 129, 0.45));
+  padding: 0.55rem 0.65rem 0.6rem;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
+}
+.fortuneSparkTitle {
+  margin: 0 0 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ddd6fe;
+}
+.fortuneSparkLine {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #f5f3ff;
+}
+.fortuneSparkDetail {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: rgba(226, 232, 240, 0.92);
 }
 
 /** 일일 태국 포춘 */

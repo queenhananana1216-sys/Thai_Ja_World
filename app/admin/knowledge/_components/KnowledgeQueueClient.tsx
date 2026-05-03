@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KnowledgeLlmOutput } from '@/lib/knowledge/knowledgeLlmTypes';
 import { isKnowledgeStubKoSummary } from '@/lib/knowledge/knowledgeStubConstants';
 import { buildPostContent, excerptFromKnowledgeKo, validateKnowledgePublish } from '@/lib/knowledge/knowledgePostBodyShared';
@@ -216,121 +216,6 @@ function StubLlmBulkToolbar({
   );
 }
 
-function BulkPublishToolbar({ items }: { items: KnowledgeQueueItem[] }) {
-  const router = useRouter();
-  const [busy, setBusy] = useState<'tips' | 'all' | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  const tipsCount = items.filter((x) => x.board_target === 'tips_board').length;
-  const total = items.length;
-
-  async function run(scope: 'tips_board' | 'all') {
-    const label =
-      scope === 'tips_board'
-        ? `꿀팁(한 스푼) 초안 ${tipsCount}건`
-        : `이 화면의 모든 초안 ${total}건(비자·가이드 포함)`;
-    if (
-      !window.confirm(
-        `${label}을(를) 최대 80건까지 DB에 저장된 제목·요약 그대로 최종 승인할까요?\n` +
-          '요약이 너무 짧거나 스텁인 건은 건너뛰고, 실패 목록은 알림으로 확인할 수 있습니다.',
-      )
-    ) {
-      return;
-    }
-    setMsg(null);
-    setBusy(scope === 'tips_board' ? 'tips' : 'all');
-    try {
-      const res = await fetch('/api/admin/knowledge-queue-bulk', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scope }),
-      });
-      const j = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        succeeded?: number;
-        failed?: number;
-        results?: { id: string; ok: boolean; error?: string }[];
-      };
-      if (!res.ok) {
-        setMsg(j.error ?? `오류 (${res.status})`);
-        return;
-      }
-      const fails = (j.results ?? []).filter((r) => !r.ok);
-      const failSample = fails
-        .slice(0, 5)
-        .map((r) => `${r.id.slice(0, 8)}… ${r.error ?? ''}`)
-        .join(' | ');
-      setMsg(
-        `일괄 승인 완료: 성공 ${j.succeeded ?? 0}건, 실패 ${j.failed ?? 0}건.` +
-          (failSample ? ` 실패 예시: ${failSample}` : ''),
-      );
-      router.refresh();
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  if (total === 0) return null;
-
-  return (
-    <div
-      style={{
-        marginBottom: 18,
-        padding: 14,
-        background: '#eef2ff',
-        border: '1px solid #c7d2fe',
-        borderRadius: 10,
-      }}
-    >
-      <strong style={{ display: 'block', marginBottom: 8, fontSize: 14, color: '#312e81' }}>일괄 최종 승인 (배포)</strong>
-      <p style={{ margin: '0 0 10px', fontSize: 12, color: '#4338ca', lineHeight: 1.55 }}>
-        위쪽 주황 칸에서 «LLM 미가공» 스텁을 먼저 재가공한 뒤 쓰는 것을 권장합니다. 요약이 스텁이면 편집팀 안내 25자 없이는 일괄 승인이
-        막힙니다. 가공이 끝난 초안만 여기서 한 번에 공개할 수 있어요. 각 카드의 <strong>미리보기</strong>는 이용자 광장 글 본문·발췌와 같은
-        규칙입니다.
-      </p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-        <button
-          type="button"
-          disabled={busy !== null || tipsCount === 0}
-          onClick={() => void run('tips_board')}
-          style={{
-            padding: '10px 14px',
-            background: '#7c3aed',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: busy || tipsCount === 0 ? 'not-allowed' : 'pointer',
-            opacity: tipsCount === 0 ? 0.5 : 1,
-          }}
-        >
-          {busy === 'tips' ? '처리 중…' : `꿀팁 한 스푼만 일괄 승인 (${tipsCount}건)`}
-        </button>
-        <button
-          type="button"
-          disabled={busy !== null}
-          onClick={() => void run('all')}
-          style={{
-            padding: '10px 14px',
-            background: '#4f46e5',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: busy ? 'wait' : 'pointer',
-          }}
-        >
-          {busy === 'all' ? '처리 중…' : `전체 초안 일괄 승인 (${total}건)`}
-        </button>
-      </div>
-      {msg ? <p style={{ margin: '10px 0 0', fontSize: 13, color: '#3730a3' }}>{msg}</p> : null}
-    </div>
-  );
-}
-
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────
 
 export default function KnowledgeQueueClient({
@@ -350,61 +235,114 @@ export default function KnowledgeQueueClient({
   const [bulkLlmBusy, setBulkLlmBusy] = useState(false);
   const [bulkLlmProgress, setBulkLlmProgress] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [bulkPubBusy, setBulkPubBusy] = useState(false);
 
-  async function submit(
-    id: string,
-    action: 'publish' | 'draft' | 'delete',
-    fields: Pick<
-      KnowledgeQueueItem,
-      | 'ko_title'
-      | 'ko_summary'
-      | 'ko_editorial_note'
-      | 'th_title'
-      | 'th_summary'
-      | 'th_editorial_note'
-    >,
-  ) {
+  const submit = useCallback(
+    async (
+      id: string,
+      action: 'publish' | 'draft' | 'delete',
+      fields: Pick<KnowledgeQueueItem, 'ko_title' | 'ko_summary' | 'ko_editorial_note'>,
+    ) => {
+      setMsg(null);
+      setBusyId(id);
+      try {
+        const res = await fetch('/api/admin/knowledge-queue', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            processed_knowledge_id: id,
+            action,
+            ...(action === 'delete'
+              ? {}
+              : {
+                  ko_title: fields.ko_title,
+                  ko_summary: fields.ko_summary,
+                  ko_editorial_note: fields.ko_editorial_note,
+                }),
+          }),
+        });
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setMsg(j.error ?? `오류 (${res.status})`);
+          return;
+        }
+        if (action === 'delete') {
+          setMsg('삭제했습니다. (원문·요약·관련 데이터가 DB에서 함께 제거됩니다)');
+        } else {
+          setMsg(
+            action === 'publish'
+              ? '즉시 게시: 광장·/tips 에 반영했습니다.'
+              : '편집 내용을 저장했습니다.',
+          );
+        }
+        router.refresh();
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [router],
+  );
+
+  const saveDraftQuiet = useCallback(
+    async (id: string, fields: Pick<KnowledgeQueueItem, 'ko_title' | 'ko_summary' | 'ko_editorial_note'>) => {
+      try {
+        const res = await fetch('/api/admin/knowledge-queue', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            processed_knowledge_id: id,
+            action: 'draft',
+            ko_title: fields.ko_title,
+            ko_summary: fields.ko_summary,
+            ko_editorial_note: fields.ko_editorial_note,
+          }),
+        });
+        if (!res.ok) {
+          const j = (await res.json().catch(() => ({}))) as { error?: string };
+          setMsg(j.error ?? `자동 저장 실패 (${res.status})`);
+        }
+      } catch {
+        setMsg('자동 저장 중 네트워크 오류');
+      }
+    },
+    [],
+  );
+
+  const runBulkPublishAll = useCallback(async () => {
+    const total = items.length;
+    if (
+      !window.confirm(
+        `승인 대기 초안 ${total}건(최대 80건)을 일괄 즉시 게시할까요?\n요약·편집 안내 기준 미달 건은 건너뜁니다.`,
+      )
+    ) {
+      return;
+    }
     setMsg(null);
-    setBusyId(id);
+    setBulkPubBusy(true);
     try {
-      const res = await fetch('/api/admin/knowledge-queue', {
+      const res = await fetch('/api/admin/knowledge-queue-bulk', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          processed_knowledge_id: id,
-          action,
-          ...(action === 'delete'
-            ? {}
-            : {
-                ko_title: fields.ko_title,
-                ko_summary: fields.ko_summary,
-                ko_editorial_note: fields.ko_editorial_note,
-                th_title: fields.th_title,
-                th_summary: fields.th_summary,
-                th_editorial_note: fields.th_editorial_note,
-              }),
-        }),
+        body: JSON.stringify({ scope: 'all' }),
       });
-      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      const j = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        succeeded?: number;
+        failed?: number;
+      };
       if (!res.ok) {
         setMsg(j.error ?? `오류 (${res.status})`);
         return;
       }
-      if (action === 'delete') {
-        setMsg('삭제했습니다. (원문·요약·관련 데이터가 DB에서 함께 제거됩니다)');
-      } else {
-        setMsg(
-          action === 'publish'
-            ? '최종 승인: 광장(정보) + 비회원 /tips 허브에 반영했습니다.'
-            : '초안 저장했습니다.',
-        );
-      }
+      setMsg(`일괄 게시: 성공 ${j.succeeded ?? 0}건 · 실패 ${j.failed ?? 0}건`);
       router.refresh();
     } finally {
-      setBusyId(null);
+      setBulkPubBusy(false);
     }
-  }
+  }, [items.length, router]);
 
   async function ensureDraftForRaw(rawKnowledgeId: string) {
     setMsg(null);
@@ -697,8 +635,23 @@ export default function KnowledgeQueueClient({
 
   const boardOrder: Array<'tips_board' | 'board_board'> = ['board_board', 'tips_board'];
 
+  const llmReady = diagnostics?.knowledgeLlmConfigured ?? false;
+
   return (
-    <div style={{ marginTop: 12 }}>
+    <div style={{ marginTop: 12, paddingBottom: items.length > 0 ? 100 : 0 }}>
+      {items.length > 0 ? (
+        <div className="admin-news-float" role="toolbar" aria-label="꿀팁·지식 일괄 게시">
+          <span className="admin-news-float__meta">승인 대기 {items.length}</span>
+          <button
+            type="button"
+            className="admin-news-float__btn admin-news-float__btn--primary"
+            disabled={bulkPubBusy}
+            onClick={() => void runBulkPublishAll()}
+          >
+            {bulkPubBusy ? '…' : '일괄 즉시 게시'}
+          </button>
+        </div>
+      ) : null}
       <KnowledgeLlmEnvBanner diagnostics={diagnostics} />
       <StubLlmBulkToolbar
         items={items}
@@ -706,7 +659,6 @@ export default function KnowledgeQueueClient({
         progress={bulkLlmProgress}
         onStart={() => void reprocessAllStubsWithLlm()}
       />
-      <BulkPublishToolbar items={items} />
       {orphanPanel}
       {msg ? <p style={{ color: '#059669', fontSize: 13, marginBottom: 12 }}>{msg}</p> : null}
       {boardOrder.map((board) => {
@@ -727,7 +679,9 @@ export default function KnowledgeQueueClient({
                   item={it}
                   busy={busyId === it.id}
                   reprocessBusy={reprocessBusyId === it.id}
+                  llmReady={llmReady}
                   onSubmit={submit}
+                  onSaveDraftQuiet={saveDraftQuiet}
                   onReprocessLlm={() => void reprocessWithLlm(it.id)}
                 />
               ))}
@@ -745,49 +699,65 @@ function DraftCard({
   item,
   busy,
   reprocessBusy,
+  llmReady,
   onSubmit,
+  onSaveDraftQuiet,
   onReprocessLlm,
 }: {
   item: KnowledgeQueueItem;
   busy: boolean;
   reprocessBusy: boolean;
+  llmReady: boolean;
   onSubmit: (
     id: string,
     action: 'publish' | 'draft' | 'delete',
-    fields: Pick<
-      KnowledgeQueueItem,
-      | 'ko_title'
-      | 'ko_summary'
-      | 'ko_editorial_note'
-      | 'th_title'
-      | 'th_summary'
-      | 'th_editorial_note'
-    >,
+    fields: Pick<KnowledgeQueueItem, 'ko_title' | 'ko_summary' | 'ko_editorial_note'>,
   ) => Promise<void>;
+  onSaveDraftQuiet: (id: string, fields: Pick<KnowledgeQueueItem, 'ko_title' | 'ko_summary' | 'ko_editorial_note'>) => Promise<void>;
   onReprocessLlm: () => void;
 }) {
   const [koTitle, setKoTitle] = useState(item.ko_title);
   const [koSummary, setKoSummary] = useState(item.ko_summary);
   const [koEditorialNote, setKoEditorialNote] = useState(item.ko_editorial_note);
-  const [thTitle, setThTitle] = useState(item.th_title);
-  const [thSummary, setThSummary] = useState(item.th_summary);
-  const [thEditorialNote, setThEditorialNote] = useState(item.th_editorial_note);
-  const [showDetail, setShowDetail] = useState(false);
-  const [showPreview, setShowPreview] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
+  const [touched, setTouched] = useState(false);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stubLike = isKnowledgeStubKoSummary(koSummary);
 
-  const fields = () => ({
+  const fieldsKo = (): Pick<KnowledgeQueueItem, 'ko_title' | 'ko_summary' | 'ko_editorial_note'> => ({
     ko_title: koTitle,
     ko_summary: koSummary,
     ko_editorial_note: koEditorialNote,
-    th_title: thTitle,
-    th_summary: thSummary,
-    th_editorial_note: thEditorialNote,
   });
 
+  const fieldsForPreview = () => ({
+    ...fieldsKo(),
+    th_title: koTitle,
+    th_summary: koSummary,
+    th_editorial_note: koEditorialNote,
+  });
+
+  useEffect(() => {
+    setKoTitle(item.ko_title);
+    setKoSummary(item.ko_summary);
+    setKoEditorialNote(item.ko_editorial_note);
+    setTouched(false);
+  }, [item.id, item.ko_title, item.ko_summary, item.ko_editorial_note]);
+
+  useEffect(() => {
+    if (!touched) return;
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = setTimeout(() => {
+      void onSaveDraftQuiet(item.id, fieldsKo());
+    }, 900);
+    return () => {
+      if (draftTimer.current) clearTimeout(draftTimer.current);
+    };
+  }, [koTitle, koSummary, koEditorialNote, touched, item.id, onSaveDraftQuiet]);
+
   function tryPublish() {
-    const f = fields();
+    const f = fieldsKo();
     const v = validateKnowledgePublish(f.ko_summary, f.ko_editorial_note);
     if (v) {
       window.alert(v);
@@ -796,18 +766,18 @@ function DraftCard({
     void onSubmit(item.id, 'publish', f);
   }
 
-  const previewLlm = knowledgeLlmFromQueueFields(item, fields());
+  const previewLlm = knowledgeLlmFromQueueFields(item, fieldsForPreview());
   const previewBody = buildPostContent(previewLlm, item.raw_url);
   const previewExcerpt = excerptFromKnowledgeKo({
-    summary: fields().ko_summary,
-    editorial_note: fields().ko_editorial_note || undefined,
+    summary: fieldsKo().ko_summary,
+    editorial_note: fieldsKo().ko_editorial_note || undefined,
   });
-  const previewErr = validateKnowledgePublish(fields().ko_summary, fields().ko_editorial_note);
+  const previewErr = validateKnowledgePublish(fieldsKo().ko_summary, fieldsKo().ko_editorial_note);
 
   function confirmAndReprocess() {
     if (
       !window.confirm(
-        '이 초안을 삭제한 뒤, 원문 URL에서 본문을 다시 가져와 LLM으로 처음부터 다시 만듭니다. 편집 중이던 내용은 사라집니다. 계속할까요?',
+        '원문 URL에서 본문을 다시 가져와 LLM으로 초안을 새로 만듭니다. 편집 중이던 내용은 사라지며, 승인 대기 상태로 들어갑니다. 계속할까요?',
       )
     ) {
       return;
@@ -816,127 +786,130 @@ function DraftCard({
   }
 
   return (
-    <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: 16, background: '#fafafa' }}>
-      {/* 헤더 */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10 }}>
+    <div style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, background: '#fafafa' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            padding: '3px 10px',
+            borderRadius: 999,
+            background: '#ede9fe',
+            color: '#5b21b6',
+          }}
+        >
+          승인 대기
+        </span>
         <span style={{ ...boardBadgeStyle(item.board_target), padding: '2px 8px', borderRadius: 10, fontSize: 11, whiteSpace: 'nowrap' }}>
           {boardLabel(item.board_target)}
         </span>
-        <span
-          style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#f3f4f6', color: confidenceColor(item.confidence_level), border: '1px solid #e5e7eb' }}
-        >
-          신뢰도: {item.confidence_level} · 유용성: {item.usefulness_score}
-        </span>
+        {!llmReady ? (
+          <span style={{ fontSize: 11, color: '#9ca3af' }}>LLM 미구성</span>
+        ) : (
+          <span style={{ fontSize: 11, color: '#059669' }}>AI 가공 가능</span>
+        )}
         <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 'auto' }}>
           {new Date(item.created_at).toLocaleString('ko-KR')}
         </span>
       </div>
 
-      {/* 원문 링크 */}
       <p style={{ margin: '0 0 12px', fontSize: 12, color: '#9ca3af' }}>
-        원문 ·{' '}
         <a href={item.raw_url} target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1' }}>
-          {item.raw_title.slice(0, 90)}{item.raw_title.length > 90 ? '…' : ''}
+          원문 링크
         </a>
+        <span style={{ margin: '0 6px', color: '#d1d5db' }}>·</span>
+        {item.raw_title.slice(0, 88)}
+        {item.raw_title.length > 88 ? '…' : ''}
       </p>
 
       {stubLike ? (
         <div
           style={{
             marginBottom: 14,
-            padding: 14,
+            padding: 12,
             background: '#fff7ed',
-            border: '2px solid #fb923c',
+            border: '1px solid #fdba74',
             borderRadius: 10,
+            fontSize: 12,
+            color: '#9a3412',
           }}
         >
-          <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 800, color: '#9a3412' }}>
-            LLM 가공 전(자동 스텁) — 여기서 한 번에 다시 돌리세요
-          </p>
-          <p style={{ margin: '0 0 12px', fontSize: 12, color: '#c2410c', lineHeight: 1.55 }}>
-            아래 버튼은 카드 맨 아래에도 같은 동작으로 있습니다. 출처 URL에서 본문을 다시 가져온 뒤 Gemini 등으로 한·태 초안을
-            채웁니다. (배포 환경에 <code>GEMINI_API_KEY</code> 등 필요)
-          </p>
-          <button
-            type="button"
-            disabled={busy || reprocessBusy}
-            onClick={() => confirmAndReprocess()}
-            style={{
-              display: 'inline-block',
-              padding: '12px 18px',
-              background: '#ea580c',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              cursor: busy || reprocessBusy ? 'wait' : 'pointer',
-              fontSize: 14,
-              fontWeight: 800,
-              boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-            }}
-          >
-            {reprocessBusy ? '재가공 중…' : '원문 다시 불러와 LLM 재가공'}
-          </button>
+          스텁 초안입니다. «AI 가공 실행» 또는 상단 일괄 스텁 재가공을 사용하세요.
         </div>
       ) : null}
 
-      {/* 한국어 */}
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>한국어 제목</label>
       <input
         value={koTitle}
-        onChange={(e) => setKoTitle(e.target.value)}
+        onChange={(e) => {
+          setTouched(true);
+          setKoTitle(e.target.value);
+        }}
         style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13, border: '1px solid #d1d5db', borderRadius: 6, boxSizing: 'border-box' }}
       />
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>한국어 요약</label>
-      <p style={{ margin: '0 0 6px', fontSize: 11, color: '#6b7280', lineHeight: 1.45 }}>
-        앞부분은 비회원 /tips 에 보이는 <strong>클릭 유도 훅</strong>으로 쓰입니다. 과장·거짓은 피하고, 출처 범위 안에서
-        궁금증이 나게 다듬은 뒤 게시하세요.
-      </p>
       <textarea
         value={koSummary}
-        onChange={(e) => setKoSummary(e.target.value)}
-        rows={4}
+        onChange={(e) => {
+          setTouched(true);
+          setKoSummary(e.target.value);
+        }}
+        rows={5}
         style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13, border: '1px solid #d1d5db', borderRadius: 6, boxSizing: 'border-box' }}
       />
 
-      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
-        태국에, 살자 편집팀·이용자 안내 <span style={{ fontWeight: 400, color: '#6b7280' }}>(선택, 스텁 요약일 때 권장)</span>
-      </label>
-      {stubLike ? (
-        <p
-          style={{
-            margin: '0 0 6px',
-            padding: '8px 10px',
-            fontSize: 12,
-            lineHeight: 1.5,
-            background: '#fffbeb',
-            border: '1px solid #fcd34d',
-            borderRadius: 6,
-            color: '#92400e',
-          }}
-        >
-          위 한국어 요약이 «원문이 비었다»는 스텁이면, <strong>여기에 편집팀 생각·이용자가 이해하기 쉬운 풀어쓰기</strong>를
-          25자 이상 적으면 그대로 최종 승인·게시할 수 있어요. /tips 짧은 훅도 이 안내를 우선 씁니다.
-        </p>
-      ) : (
-        <p style={{ margin: '0 0 6px', fontSize: 11, color: '#6b7280', lineHeight: 1.45 }}>
-          LLM 요약이 짧거나 부족할 때 덧붙이는 설명입니다. 적으면 광장 글 본문에 「태국에, 살자 편집팀·이용자 안내」로 붙고, 요약과 함께
-          훅 문구에도 반영됩니다.
-        </p>
-      )}
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>편집팀·이용자 안내 (선택)</label>
       <textarea
         value={koEditorialNote}
-        onChange={(e) => setKoEditorialNote(e.target.value)}
-        rows={5}
-        placeholder="예: 이 기사는 ○○ 사기 경고입니다. 태국 체류 중 ○○에 해당하면 …"
+        onChange={(e) => {
+          setTouched(true);
+          setKoEditorialNote(e.target.value);
+        }}
+        rows={4}
+        placeholder="스텁일 때는 25자 이상 권장"
         style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13, border: '1px solid #d1d5db', borderRadius: 6, boxSizing: 'border-box' }}
       />
+
+      {(item.ko_checklist.length > 0 || item.ko_cautions.length > 0 || item.ko_tags.length > 0) && (
+        <div style={{ marginBottom: 12, padding: 10, background: '#f9fafb', borderRadius: 8, fontSize: 12, color: '#374151' }}>
+          {item.ko_checklist.length > 0 ? (
+            <>
+              <p style={{ margin: '0 0 4px', fontWeight: 700 }}>체크리스트</p>
+              <ul style={{ margin: '0 0 8px', paddingLeft: 18 }}>
+                {item.ko_checklist.map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {item.ko_cautions.length > 0 ? (
+            <>
+              <p style={{ margin: '0 0 4px', fontWeight: 700, color: '#b45309' }}>주의</p>
+              <ul style={{ margin: '0 0 8px', paddingLeft: 18, color: '#b45309' }}>
+                {item.ko_cautions.map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          {item.ko_tags.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {item.ko_tags.map((t, i) => (
+                <span key={i} style={{ background: '#e0e7ff', color: '#3730a3', padding: '2px 8px', borderRadius: 8, fontSize: 11 }}>
+                  #{t}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
 
       <button
         type="button"
         onClick={() => setShowPreview((v) => !v)}
         style={{ fontSize: 12, color: '#0d9488', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 8 }}
       >
-        {showPreview ? '▲ 이용자에게 보이는 본문·발췌 미리보기 접기' : '▼ 이용자에게 보이는 본문·발췌 미리보기'}
+        {showPreview ? '▲ 미리보기 접기' : '▼ 노출 미리보기'}
       </button>
       {showPreview ? (
         <div
@@ -951,137 +924,77 @@ function DraftCard({
             color: '#134e4a',
           }}
         >
-          <p style={{ margin: '0 0 8px', fontWeight: 700 }}>발췌(로그인 전 /tips·목록 훅에 쓰임)</p>
+          <p style={{ margin: '0 0 8px', fontWeight: 700 }}>발췌</p>
           <p style={{ margin: '0 0 10px', whiteSpace: 'pre-wrap' }}>{previewExcerpt || '(비어 있음)'}</p>
-          <p style={{ margin: '0 0 8px', fontWeight: 700 }}>광장 글 본문(로그인 후 동일)</p>
-          <pre
-            style={{
-              margin: 0,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              maxHeight: 220,
-              overflow: 'auto',
-              fontFamily: 'inherit',
-              fontSize: 12,
-            }}
-          >
+          <p style={{ margin: '0 0 8px', fontWeight: 700 }}>본문</p>
+          <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 220, overflow: 'auto', fontFamily: 'inherit', fontSize: 12 }}>
             {previewBody}
           </pre>
           {previewErr ? (
-            <p style={{ margin: '10px 0 0', color: '#b45309', fontWeight: 600 }}>승인 불가: {previewErr}</p>
+            <p style={{ margin: '10px 0 0', color: '#b45309', fontWeight: 600 }}>게시 불가: {previewErr}</p>
           ) : (
-            <p style={{ margin: '10px 0 0', color: '#059669', fontWeight: 600 }}>현재 필드 기준 승인 검증 통과</p>
+            <p style={{ margin: '10px 0 0', color: '#059669', fontWeight: 600 }}>게시 검증 통과</p>
           )}
         </div>
       ) : null}
 
-      {/* 태국어 (접힘/펼침) */}
-      <button
-        type="button"
-        onClick={() => setShowDetail((v) => !v)}
-        style={{ fontSize: 12, color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 10 }}
-      >
-        {showDetail ? '▲ 태국어·체크리스트·주의사항 접기' : '▼ 태국어·체크리스트·주의사항 보기'}
-      </button>
-
-      {showDetail && (
-        <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, marginBottom: 10 }}>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>ไทย หัวข้อ</label>
-          <input
-            value={thTitle}
-            onChange={(e) => setThTitle(e.target.value)}
-            style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13, border: '1px solid #d1d5db', borderRadius: 6, boxSizing: 'border-box' }}
-          />
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>ไทย สรุป</label>
-          <textarea
-            value={thSummary}
-            onChange={(e) => setThSummary(e.target.value)}
-            rows={4}
-            style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13, border: '1px solid #d1d5db', borderRadius: 6, boxSizing: 'border-box' }}
-          />
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
-            หมายเหตุทีมบรรณาธิการ <span style={{ fontWeight: 400, color: '#6b7280' }}>(ไม่บังคับ)</span>
-          </label>
-          <textarea
-            value={thEditorialNote}
-            onChange={(e) => setThEditorialNote(e.target.value)}
-            rows={3}
-            style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13, border: '1px solid #d1d5db', borderRadius: 6, boxSizing: 'border-box' }}
-          />
-
-          {item.ko_checklist.length > 0 && (
-            <>
-              <p style={{ fontSize: 12, fontWeight: 600, margin: '0 0 4px' }}>체크리스트</p>
-              <ul style={{ margin: '0 0 10px', paddingLeft: 20, fontSize: 12, color: '#374151' }}>
-                {item.ko_checklist.map((c, i) => <li key={i}>{c}</li>)}
-              </ul>
-            </>
-          )}
-          {item.ko_cautions.length > 0 && (
-            <>
-              <p style={{ fontSize: 12, fontWeight: 600, margin: '0 0 4px', color: '#b45309' }}>⚠ 주의사항</p>
-              <ul style={{ margin: '0 0 10px', paddingLeft: 20, fontSize: 12, color: '#b45309' }}>
-                {item.ko_cautions.map((c, i) => <li key={i}>{c}</li>)}
-              </ul>
-            </>
-          )}
-          {item.ko_tags.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-              {item.ko_tags.map((t, i) => (
-                <span key={i} style={{ background: '#e0e7ff', color: '#3730a3', padding: '2px 8px', borderRadius: 8, fontSize: 11 }}>#{t}</span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 버튼 */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <button
           type="button"
-          disabled={busy || reprocessBusy}
+          disabled={busy || reprocessBusy || !llmReady}
           onClick={() => confirmAndReprocess()}
           style={{
-            padding: '8px 14px',
-            background: '#eef2ff',
-            color: '#4338ca',
-            border: '1px solid #a5b4fc',
-            borderRadius: 6,
+            padding: '10px 16px',
+            background: 'linear-gradient(135deg,#0d9488,#0f766e)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            fontWeight: 800,
+            cursor: busy || reprocessBusy || !llmReady ? 'not-allowed' : 'pointer',
+            opacity: !llmReady ? 0.55 : 1,
+          }}
+        >
+          {reprocessBusy ? '가공 중…' : 'AI 가공 실행'}
+        </button>
+        <button
+          type="button"
+          disabled={busy || reprocessBusy}
+          onClick={() => tryPublish()}
+          style={{
+            padding: '10px 16px',
+            background: '#7c3aed',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            fontWeight: 800,
             cursor: busy || reprocessBusy ? 'wait' : 'pointer',
-            fontSize: 13,
+          }}
+        >
+          즉시 게시
+        </button>
+        <button
+          type="button"
+          disabled={busy || reprocessBusy}
+          onClick={() => {
+            if (!window.confirm(`"${item.ko_title.slice(0, 50)}" — DB에서 삭제합니다.`)) return;
+            void onSubmit(item.id, 'delete', fieldsKo());
+          }}
+          style={{
+            padding: '8px 12px',
+            marginLeft: 'auto',
+            background: 'transparent',
+            color: '#b91c1c',
+            border: 'none',
+            textDecoration: 'underline',
+            cursor: busy || reprocessBusy ? 'wait' : 'pointer',
+            fontSize: 12,
             fontWeight: 600,
           }}
-        >
-          {reprocessBusy ? '재가공 중…' : '원문 다시 불러와 LLM 재가공'}
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => tryPublish()}
-          style={{ padding: '8px 14px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: busy ? 'wait' : 'pointer', fontSize: 13 }}
-        >
-          최종 승인 · 게시
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void onSubmit(item.id, 'draft', fields())}
-          style={{ padding: '8px 14px', background: '#e5e7eb', color: '#374151', border: 'none', borderRadius: 6, cursor: busy ? 'wait' : 'pointer', fontSize: 13 }}
-        >
-          초안만 저장
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => {
-            if (!window.confirm(`"${item.ko_title.slice(0, 50)}" — 원문·요약까지 DB에서 삭제합니다. 계속하시겠습니까?`)) return;
-            void onSubmit(item.id, 'delete', fields());
-          }}
-          style={{ padding: '8px 14px', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fca5a5', borderRadius: 6, cursor: busy ? 'wait' : 'pointer', fontSize: 13 }}
         >
           삭제
         </button>
       </div>
+      <p style={{ margin: '10px 0 0', fontSize: 11, color: '#9ca3af' }}>한국어 필드만 편집합니다. 변경은 잠시 후 자동 저장됩니다.</p>
     </div>
   );
 }

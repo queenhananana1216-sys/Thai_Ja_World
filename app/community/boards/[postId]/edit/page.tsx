@@ -29,7 +29,9 @@ export default async function EditBoardPostPage({ params }: PageProps) {
 
   const { data: post, error } = await supabase
     .from('posts')
-    .select('id, title, content, author_id, moderation_status, owner_edit_password_set')
+    .select(
+      'id, title, content, author_id, moderation_status, owner_edit_password_set, latitude, longitude, location_name',
+    )
     .eq('id', postId)
     .maybeSingle();
 
@@ -52,8 +54,14 @@ export default async function EditBoardPostPage({ params }: PageProps) {
         postId={postId}
         initialTitle={String(post.title ?? '')}
         initialContent={String(post.content ?? '')}
+        initialGeo={{
+          latitude: post.latitude != null ? String(post.latitude) : '',
+          longitude: post.longitude != null ? String(post.longitude) : '',
+          location_name: String(post.location_name ?? ''),
+        }}
         ownerGateSet={Boolean(post.owner_edit_password_set)}
         board={d.board}
+        locale={locale}
       />
       <p style={{ marginTop: 20, fontSize: '0.78rem', color: 'var(--tj-muted)' }}>
         <Link href={`/community/boards/${postId}`} style={{ color: 'var(--tj-link)' }}>

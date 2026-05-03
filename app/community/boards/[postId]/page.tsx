@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const supabase = await createServerSupabaseAuthClient();
   const { data: post } = await supabase
     .from('posts')
-    .select('id, title, content, created_at, image_urls, author_hidden, category')
+    .select('id, title, content, created_at, image_urls, author_hidden, category, location_name')
     .eq('id', postId)
     .eq('moderation_status', 'safe')
     .maybeSingle();
@@ -51,6 +51,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const titleStr = String(post.title ?? '');
   const catKey = String(post.category ?? '');
   const catLabel = categoryLabel(catKey, locale);
+  const locName = String((post as { location_name?: string | null }).location_name ?? '').trim();
   const keywords = [
     catLabel,
     catKey,
@@ -59,7 +60,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     '방콕',
     '교민',
     locale === 'th' ? 'ชุมชน' : '커뮤니티',
-  ].filter(Boolean);
+    ...(locName ? [locName] : []),
+  ];
 
   return {
     title: titleStr,
@@ -99,7 +101,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const { data: post, error } = await supabase
     .from('posts')
     .select(
-      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set, is_knowledge_tip',
+      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set, is_knowledge_tip, latitude, longitude, location_name',
     )
     .eq('id', postId)
     .eq('moderation_status', 'safe')
@@ -261,6 +263,27 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
             </>
           ) : null}
         </div>
+        {(() => {
+          const lat = (post as { latitude?: number | null }).latitude;
+          const lng = (post as { longitude?: number | null }).longitude;
+          const loc = String((post as { location_name?: string | null }).location_name ?? '').trim();
+          const hasCoords =
+            lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+          if (!hasCoords && !loc) return null;
+          return (
+            <div className="mt-2 rounded-lg border border-white/10 bg-slate-950/40 px-3 py-2 text-[11px] text-slate-300">
+              <span className="font-semibold text-slate-200">
+                {locale === 'th' ? 'สถานที่' : '위치'}
+              </span>
+              {loc ? <span className="ml-2">{loc}</span> : null}
+              {hasCoords ? (
+                <span className="ml-2 font-mono text-slate-400">
+                  {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
+                </span>
+              ) : null}
+            </div>
+          );
+        })()}
         {isAuthor ? (
           <div className="mt-3">
             <PostAuthorMenu

@@ -29,6 +29,12 @@ export default async function AdminSandboxPage() {
 
   return (
     <div className="admin-page admin-page--sandbox space-y-12">
+      <header className="admin-dash__title" style={{ marginBottom: 4 }}>
+        AI 연구소
+      </header>
+      <p className="admin-dash__lead" style={{ marginTop: 0 }}>
+        샌드박스 스크립트·상점 제안을 안전하게 실험합니다. 운영 반영 전 검증용입니다.
+      </p>
       <SandboxDashboardClient proposals={proposals} activeScripts={activeScripts} />
       <ShopItemProposalsClient proposals={shopProposals} />
     </div>

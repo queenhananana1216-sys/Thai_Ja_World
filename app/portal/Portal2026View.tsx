@@ -13,6 +13,7 @@ import type {
 import type { Locale } from '@/i18n/types';
 import type { PersonalMissionBrief } from '@/lib/missions/ensurePersonalMissionToday';
 import type { CollaborativeMissionRow } from '../_components/home/home-queries';
+import type { PortalDailySparkPayload } from '@/lib/portal/portalDailySpark';
 import type { SiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { siteUiDefaults } from '@/lib/site-settings/siteUiSettings';
 import { getDictionary } from '@/i18n/dictionaries';
@@ -88,6 +89,8 @@ export type Portal2026ViewProps = {
   viewerProfileId?: string | null;
   personalMission?: PersonalMissionBrief | null;
   collaborativeMissions?: CollaborativeMissionRow[];
+  /** `site_settings` 일일 스파크 — 운세 테마 + 추천 미션 폴백 */
+  dailySpark?: PortalDailySparkPayload | null;
 };
 
 function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
@@ -421,6 +424,7 @@ export default function Portal2026View({
   viewerProfileId = null,
   personalMission = null,
   collaborativeMissions = [],
+  dailySpark = null,
 }: Portal2026ViewProps) {
   const siteUi = siteUiProp ?? siteUiDefaults();
   const copy = getPortal2026Copy(locale, siteUi.siteDisplayName);
@@ -605,7 +609,7 @@ export default function Portal2026View({
           >
             <span className="line-clamp-3 break-words">{copy.openGreetingBannerLine}</span>
           </GuestGateLink>
-          <PortalDailyFortune locale={locale} isLoggedIn={isLoggedIn} copy={copy} />
+          <PortalDailyFortune locale={locale} isLoggedIn={isLoggedIn} copy={copy} dailySpark={dailySpark} />
           <PortalQuickMenu
             locale={locale}
             isLoggedIn={isLoggedIn}
@@ -617,6 +621,7 @@ export default function Portal2026View({
             personal={personalMission}
             collaborative={collaborativeMissions}
             isLoggedIn={isLoggedIn}
+            dailySpark={dailySpark}
           />
           <div className="block min-[769px]:hidden">
             <PortalThaiHallOfFame

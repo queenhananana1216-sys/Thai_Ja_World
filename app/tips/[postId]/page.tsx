@@ -17,6 +17,9 @@ type TipPostRow = {
   content: string;
   created_at: string;
   author_id: string;
+  latitude: number | null;
+  longitude: number | null;
+  location_name: string | null;
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -54,7 +57,7 @@ export default async function TipsTeaserPage({ params }: PageProps) {
   const auth = await createServerSupabaseAuthClient();
   const { data: post, error } = await auth
     .from('posts')
-    .select('id,title,content,excerpt,created_at,author_id')
+    .select('id,title,content,excerpt,created_at,author_id,latitude,longitude,location_name')
     .eq('id', postId)
     .eq('category', 'info')
     .eq('is_knowledge_tip', true)
@@ -108,6 +111,27 @@ export default async function TipsTeaserPage({ params }: PageProps) {
         <h1 className="mb-4 mt-0 text-2xl font-bold leading-snug tracking-tight text-white sm:text-3xl">
           {tipRow.title}
         </h1>
+        {(() => {
+          const lat = tipRow.latitude;
+          const lng = tipRow.longitude;
+          const loc = String(tipRow.location_name ?? '').trim();
+          const hasCoords =
+            lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+          if (!hasCoords && !loc) return null;
+          return (
+            <div className="mb-4 rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-[11px] text-slate-300">
+              <span className="font-semibold text-slate-200">
+                {locale === 'th' ? 'สถานที่' : '위치'}
+              </span>
+              {loc ? <span className="ml-2">{loc}</span> : null}
+              {hasCoords ? (
+                <span className="ml-2 font-mono text-slate-400">
+                  {Number(lat).toFixed(5)}, {Number(lng).toFixed(5)}
+                </span>
+              ) : null}
+            </div>
+          );
+        })()}
         {tipRow.content?.trim() ? (
           <p className="whitespace-pre-wrap text-[0.95rem] leading-[1.7] text-slate-100">
             {tipRow.content}

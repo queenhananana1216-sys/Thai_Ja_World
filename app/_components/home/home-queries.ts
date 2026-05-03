@@ -605,7 +605,7 @@ export async function fetchHomeWeeklyThaiRanking(
   return { rows, error: null };
 }
 
-/** 서울 당일 `dotori_logs` 양수 합산 기준 공개 랭킹 TOP N — RPC `get_public_today_dotori_earnings_ranking` */
+/** 서울 당일 타이(THAI) 획득량 합산 기준 공개 랭킹 TOP N (랭킹 RPC; DB 응답 필드명은 레거시) */
 export type HomeTodayThaiEarnRankRow = {
   rank: number;
   profileId: string;

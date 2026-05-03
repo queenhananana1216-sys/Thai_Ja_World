@@ -51,7 +51,7 @@ export default function MinihomeMe() {
     const sb = createBrowserClient();
     const { data: { user } } = await sb.auth.getUser();
     if (!user) {
-      // auto 앱에는 /auth/login이 아직 없을 수 있지만, 일단 태자 월드 라우트와 동일하게 둔다.
+      // auto 앱에는 /auth/login이 아직 없을 수 있지만, 일단 메인 앱 라우트와 동일하게 둔다.
       // 또는 / 경로로 리다이렉트
       router.replace(`/?next=${encodeURIComponent('/minihome')}`);
       return null;

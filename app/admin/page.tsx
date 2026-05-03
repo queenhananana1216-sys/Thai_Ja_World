@@ -218,7 +218,7 @@ export default async function AdminDashboardPage() {
         </div>
         <p style={{ margin: '16px 0 0', fontSize: 13, color: '#64748b', lineHeight: 1.55 }}>
           <strong>아침 루틴:</strong> 크론이 돌면 뉴스·지식 초안이 쌓입니다.{' '}
-          <Link href="/admin/publish">최종 승인 허브</Link>에서 편집 팁을 보고,{' '}
+          <Link href="/admin/publish">콘텐츠 관제 허브</Link>에서 흐름을 보고,{' '}
           <Link href="/admin/news">뉴스 큐</Link>·<Link href="/admin/knowledge">지식 큐</Link>에서 승인하면 홈·광장에
           반영됩니다. 맛집·마사지 초안은{' '}
           <Link href="/admin/local-spots">로컬 가게</Link>에서 «승인·공개» 후 문구만 손보면 됩니다. 수동으로 봇을 돌릴
@@ -309,7 +309,7 @@ export default async function AdminDashboardPage() {
         </li>
         <li>
           <Link href="/admin/ops-center">
-            운영 통합센터
+            운영·로그
             <span>뉴스·꿀정보·UX 전체 실행 및 실패 재실행</span>
           </Link>
         </li>

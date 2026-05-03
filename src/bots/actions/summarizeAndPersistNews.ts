@@ -1,5 +1,5 @@
 /**
- * summarizeAndPersistNews.ts — raw_news → LLM 한국어·태국어 제목·요약 → processed_news / summaries
+ * summarizeAndPersistNews.ts — raw_news → LLM 가공 → processed_news / summaries (크론: 이중언어, 관리자 재가공: 한국어 전용 API)
  *
  * 환경 변수:
  * - NEWS_SUMMARY_PROVIDER: openai | gemini | local | auto (기본 auto)
@@ -784,6 +784,124 @@ async function callBilingualSummary(
   return runNewsSummaryProviders(messages, parseBilingualPayloadFromContent, 3100);
 }
 
+/** 관리자 한국어 전용 가공 — 크론 이중언어 파이프라인과 별도 */
+const KOREAN_ONLY_SYSTEM_PROMPT = [
+  'You are the lead editor for "Thai Ja World" (태국에, 살자) Korean news desk.',
+  'The source may be Thai, English, or any language. Output MUST be 100% Korean Hangul only in title_kr, content_kr, ko_blurb, ko_editor_note.',
+  'Do not output Thai script, English sentences, romanized quotes, or mixed-language lines in those fields. If a proper noun must stay in Latin (e.g. BTS, UNESCO), keep it short.',
+  'Output valid JSON only with exactly these keys: title_kr, content_kr, ko_blurb, ko_editor_note, seo_keywords.',
+  '',
+  '=== Structure (plain text, newlines allowed) ===',
+  '- title_kr: one line, punchy Korean headline from facts only (no lies, no invented victims).',
+  '- content_kr: Line 1 = the same headline text as title_kr (repeat once). Line 2 = blank line. From line 3 = Korean article body (bullets with "- " or "• ", short sections). No foreign-language paragraphs.',
+  '- ko_blurb: ultra-short feed hook in Korean (40~100 chars).',
+  '- ko_editor_note: 1~3 short Korean sentences; optional wit. Do NOT repeat facts from content_kr.',
+  '- seo_keywords: one string — exactly five comma-separated Korean search phrases (no numbering, no quotes inside phrases).',
+  '',
+  '=== Safety ===',
+  '- Use ONLY supplied title/body/source_url. Hedge when uncertain.',
+  'Output one JSON object only.',
+].join('\n');
+
+function buildKoreanOnlyUserBlock(title: string, body: string | null, sourceUrl: string): string {
+  const sanitizedTitle = sanitizeAiKoreanPhrases(title);
+  const sanitizedBody = sanitizeAiKoreanPhrases(body);
+  return [
+    `원문 제목: ${sanitizedTitle || title}`,
+    `원문 본문(없으면 빈 값): ${sanitizedBody?.trim() || '(없음)'}`,
+    `출처 URL: ${sourceUrl}`,
+    '',
+    '위 원문에서 사실만 추출해 한국어 독자용 기사로 재작성하라. JSON 스키마는 시스템 지시를 따른다.',
+  ].join('\n');
+}
+
+function parseKoreanOnlyLlmPayload(raw: unknown): LlmBilingualPayload | null {
+  if (raw === null || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  const titleKr = isNonEmptyString(o.title_kr) ? o.title_kr.trim() : null;
+  const contentKr = isNonEmptyString(o.content_kr) ? o.content_kr.trim() : null;
+  if (!titleKr || !contentKr || !isNonEmptyString(o.ko_blurb)) return null;
+  const clamp = (s: string, max: number) => {
+    const t = s.trim();
+    return t.length > max ? `${t.slice(0, max - 1).trim()}…` : t;
+  };
+  const editorClamp = 300;
+  const koEd = isNonEmptyString(o.ko_editor_note) ? clamp(String(o.ko_editor_note), editorClamp) : '';
+  const seo_keywords = parseSeoKeywordsField(o.seo_keywords);
+  const seo = seo_keywords.length > 0 ? seo_keywords : stubSeoKeywordsFromTitle(titleKr);
+  const ko_blurb = clamp(String(o.ko_blurb), 160);
+  const thEd = koEd || ko_blurb;
+  return {
+    title_kr: titleKr,
+    content_kr: contentKr,
+    ko_blurb,
+    ko_editor_note: koEd,
+    title_th: titleKr,
+    content_th: contentKr,
+    th_blurb: ko_blurb,
+    th_editor_note: thEd,
+    seo_keywords: seo,
+  };
+}
+
+function parseKoreanOnlyPayloadFromContent(content: string, label: string): LlmBilingualPayload {
+  const raw = stripMarkdownJsonFence(content);
+  const truncateForError = (s: string) => (s.length > 500 ? `${s.slice(0, 500)}…(truncated)` : s);
+  const repairJson = (s: string): string => s.trim().replace(/,\s*([}\]])/g, '$1');
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    const payload = parseKoreanOnlyLlmPayload(parsed);
+    if (!payload) {
+      throw new Error(`${label} JSON 스키마 불일치 (한국어 전용 title_kr·content_kr·ko_blurb 필수)`);
+    }
+    return payload;
+  } catch {
+    const m = raw.match(/\{[\s\S]*?\}/m);
+    const first = raw.indexOf('{');
+    const last = raw.lastIndexOf('}');
+    const candidates: string[] = [];
+    if (m?.[0]) candidates.push(m[0]);
+    if (first >= 0 && last > first) candidates.push(raw.slice(first, last + 1));
+
+    let parsed: unknown | null = null;
+    for (const c of candidates) {
+      try {
+        parsed = JSON.parse(c) as unknown;
+        break;
+      } catch {
+        try {
+          parsed = JSON.parse(repairJson(c)) as unknown;
+          break;
+        } catch {
+          parsed = null;
+        }
+      }
+    }
+    if (!parsed) {
+      throw new Error(`${label} JSON 파싱 실패: ${truncateForError(raw)}`);
+    }
+    const payload = parseKoreanOnlyLlmPayload(parsed);
+    if (!payload) {
+      throw new Error(`${label} JSON 스키마 불일치 (한국어 전용 필드)`);
+    }
+    return payload;
+  }
+}
+
+async function callKoreanOnlySummary(
+  title: string,
+  body: string | null,
+  sourceUrl: string,
+): Promise<LlmBilingualPayload> {
+  const userBlock = buildKoreanOnlyUserBlock(title, body, sourceUrl);
+  const messages: Array<{ role: string; content: string }> = [
+    { role: 'system', content: KOREAN_ONLY_SYSTEM_PROMPT },
+    { role: 'user', content: userBlock },
+  ];
+  return runNewsSummaryProviders(messages, parseKoreanOnlyPayloadFromContent, 3100);
+}
+
 const EDITOR_NOTES_ONLY_SYSTEM_PROMPT = [
   'You are the same cynical-but-funny "Thai Ja World" desk editor (교민 커뮤니티 편집장 voice). Output valid JSON only: keys ko_editor_note and th_editor_note (strings only).',
   '- Do NOT repeat or summarize article facts again. No new factual claims.',
@@ -1147,6 +1265,8 @@ async function updateBilingualProcessedNews(
   processedNewsId: string,
   row: RawNewsTodoRow,
   llm: LlmBilingualPayload,
+  /** 넣으면 `published` 를 함께 갱신 (관리자 한국어 재가공 시 false 로 승인 대기 고정) */
+  publishedPatch?: boolean,
 ): Promise<SummarizeRowResult> {
   const url = row.external_url ?? '';
   const sanitized = sanitizeNewsPayloadTone(llm);
@@ -1179,6 +1299,7 @@ async function updateBilingualProcessedNews(
         sanitized.seo_keywords.length > 0
           ? sanitized.seo_keywords
           : stubSeoKeywordsFromTitle(sanitized.title_kr),
+      ...(publishedPatch !== undefined ? { published: publishedPatch } : {}),
     })
     .eq('id', processedNewsId);
 
@@ -1318,6 +1439,61 @@ export async function forceTranslateIncompleteProcessedNews(maxRows: number): Pr
     failed,
     llmConfigured: true,
   };
+}
+
+/**
+ * 관리자 «AI 가공 실행»: `raw_news` 원문으로 한국어 전용 LLM 재가공 후 **항상** `published=false`(승인 대기).
+ */
+export async function adminReprocessProcessedNewsKoreanOnly(
+  processedNewsId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const id = processedNewsId.trim();
+  if (!id) return { ok: false, error: 'processed_news_id 가 비었습니다.' };
+  if (!isNewsSummaryLlmConfigured()) {
+    return {
+      ok: false,
+      error:
+        '뉴스 요약 LLM이 구성되어 있지 않습니다. OPENAI_API_KEY·GEMINI_API_KEY·LOCAL_LLM_BASE_URL 등을 확인하세요.',
+    };
+  }
+
+  const client = getServerSupabaseClient();
+  const { data: pn, error: pe } = await client
+    .from('processed_news')
+    .select('id, raw_news_id')
+    .eq('id', id)
+    .maybeSingle();
+  if (pe || !pn?.raw_news_id) {
+    return { ok: false, error: pe?.message ?? 'processed_news 를 찾을 수 없습니다.' };
+  }
+
+  const rawNewsId = String(pn.raw_news_id);
+  const { data: raw, error: re } = await client
+    .from('raw_news')
+    .select('id,title,raw_body,external_url')
+    .eq('id', rawNewsId)
+    .maybeSingle();
+  if (re || !raw) {
+    return { ok: false, error: re?.message ?? '연결된 raw_news 가 없습니다.' };
+  }
+
+  const rowTodo = raw as RawNewsTodoRow;
+  let llm: LlmBilingualPayload;
+  try {
+    llm = await callKoreanOnlySummary(
+      rowTodo.title?.trim() || '(제목 없음)',
+      rowTodo.raw_body,
+      rowTodo.external_url ?? '',
+    );
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message.slice(0, 800) : String(e) };
+  }
+
+  const ur = await updateBilingualProcessedNews(client, id, rowTodo, llm, false);
+  if (!ur.ok) {
+    return { ok: false, error: ur.error ?? 'DB 갱신 실패' };
+  }
+  return { ok: true };
 }
 
 export type EnsureNewsDraftResult = {

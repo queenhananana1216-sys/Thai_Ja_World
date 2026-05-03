@@ -93,6 +93,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: '로그인 사용자 id 가 없습니다.' }, { status: 401 });
   }
 
+  const koT = (body.ko_title ?? '').trim();
+  const koS = (body.ko_summary ?? '').trim();
+  const koE = (body.ko_editorial_note ?? '').trim();
+  const thT = (body.th_title ?? '').trim() || koT;
+  const thS = (body.th_summary ?? '').trim() || koS;
+  const thE = (body.th_editorial_note ?? '').trim() || koE;
+
   const result = await executeKnowledgePublishOrDraft(admin, {
     row: processedRow,
     authorId,
@@ -101,9 +108,9 @@ export async function POST(req: Request) {
       ko_title: body.ko_title,
       ko_summary: body.ko_summary,
       ko_editorial_note: body.ko_editorial_note,
-      th_title: body.th_title,
-      th_summary: body.th_summary,
-      th_editorial_note: body.th_editorial_note,
+      th_title: thT,
+      th_summary: thS,
+      th_editorial_note: thE,
     },
   });
 

@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 const LABEL_FULL =
-  '[첫 글 작성하고 도토리 500개 받기 미션 시작!]' as const;
-const LABEL_BADGE = '🔥 첫 글 작성하고 500 도토리 받기' as const;
+  '[첫 글 작성하고 타이(THAI) 500 받기 미션 시작!]' as const;
+const LABEL_BADGE = '🔥 첫 글 작성하고 타이(THAI) 500 받기' as const;
 
 function hrefForCategory(cat: 'job' | 'flea' | 'free'): string {
   if (cat === 'job') return '/community/boards/new?cat=job';

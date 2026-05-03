@@ -14,6 +14,7 @@ import { getLocale } from '@/i18n/get-locale';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { ensurePersonalMissionToday } from '@/lib/missions/ensurePersonalMissionToday';
+import { loadPortalDailySpark } from '@/lib/portal/loadPortalDailySpark';
 
 /** 홈 SSR 페치 전용 — 부모 `Suspense`가 즉시 폴백을 보여준 뒤 이 컴포넌트가 치환 */
 export default async function PortalFeedSection() {
@@ -43,7 +44,7 @@ export default async function PortalFeedSection() {
   }
 
   try {
-    const [todayRankRes, feed, viewerHall, collabRes, personalRes] = await Promise.all([
+    const [todayRankRes, feed, viewerHall, collabRes, personalRes, dailySpark] = await Promise.all([
       fetchHomeTodayThaiEarnRanking(5),
       fetchPortalHomeFeed(),
       authSb && viewerProfileId
@@ -53,6 +54,7 @@ export default async function PortalFeedSection() {
       authSb && viewerProfileId
         ? ensurePersonalMissionToday(authSb, viewerProfileId)
         : Promise.resolve({ row: null, error: null as string | null }),
+      loadPortalDailySpark(),
     ]);
 
     return (
@@ -67,6 +69,7 @@ export default async function PortalFeedSection() {
         viewerProfileId={viewerProfileId}
         collaborativeMissions={collabRes.rows}
         personalMission={personalRes.row}
+        dailySpark={dailySpark}
       />
     );
   } catch {
@@ -77,6 +80,12 @@ export default async function PortalFeedSection() {
       balanceRows = [];
     }
     const collabRows = (await fetchCollaborativeMissionsActive().catch(() => ({ rows: [] }))).rows;
+    let dailySpark = null;
+    try {
+      dailySpark = await loadPortalDailySpark();
+    } catch {
+      dailySpark = null;
+    }
     let personalMission = null;
     try {
       if (authSb && viewerProfileId) {
@@ -97,6 +106,7 @@ export default async function PortalFeedSection() {
         viewerProfileId={viewerProfileId}
         collaborativeMissions={collabRows}
         personalMission={personalMission}
+        dailySpark={dailySpark}
       />
     );
   }

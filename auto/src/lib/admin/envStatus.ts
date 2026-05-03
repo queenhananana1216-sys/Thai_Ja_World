@@ -57,7 +57,7 @@ export function getAdminEnvChecks(): EnvCheckRow[] {
     },
     {
       key: 'TAEJA_PUBLIC_URL',
-      label: '태자 월드 URL',
+      label: '「태국에, 살자」 공개 URL',
       ok: has('TAEJA_PUBLIC_URL'),
       role: 'ops',
       hint: '헬스 HEAD·이상 감지 대상.',
@@ -74,7 +74,7 @@ export function getAdminEnvChecks(): EnvCheckRow[] {
       label: 'Edge Config',
       ok: has('EDGE_CONFIG') || has('EDGE_CONFIG_ID'),
       role: 'ops',
-      hint: '태자 middleware와 standby 동기화.',
+      hint: '메인 앱 middleware와 standby 동기화.',
     },
   ];
 }

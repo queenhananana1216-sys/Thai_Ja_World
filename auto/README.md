@@ -1,6 +1,6 @@
 # taeja-auto
 
-태자 월드(`taeja-world`)용 **운영 제어 플레인**: 도메인 풀, Vercel 도메인 연결, 대기(standby) 모드, 헬스·이상 감지 크론.
+「태국에, 살자」(`taeja-world` 패키지명)용 **운영 제어 플레인**: 도메인 풀, Vercel 도메인 연결, 대기(standby) 모드, 헬스·이상 감지 크론.
 
 ## 파이프라인 분리 (taeja-world 와 역할 나누기)
 
@@ -11,7 +11,7 @@
 - **강령만 편집**: 루트 [`PIPELINE_CHARTER.md`](./PIPELINE_CHARTER.md) — 코드 없이 지침을 바꿉니다.
 - **외부로 안 보냄**: `AUTO_PIPELINE_LOCAL_ONLY=1` 이면 클라우드 AI를 호출하지 않고 규칙 엔진만 사용합니다.
 - **선택적 강령 주입**: `AUTO_BRAIN_INCLUDE_CHARTER=1` 일 때만 외부 브레인 프롬프트에 강령 일부 포함(기본 `0`).
-- **확장 도구**: [`src/lib/tools/registry.ts`](./src/lib/tools/registry.ts)에 SEO·운영 도구 ID를 등록해, 태자 월드 쪽과 공유할 수 있습니다. 기본: `seo.metaDraft`, `ops.charterExcerpt`.
+- **확장 도구**: [`src/lib/tools/registry.ts`](./src/lib/tools/registry.ts)에 SEO·운영 도구 ID를 등록해, 메인 제품 앱과 공유할 수 있습니다. 기본: `seo.metaDraft`, `ops.charterExcerpt`.
 
 ## 배포
 
@@ -32,9 +32,9 @@ npm run dev
 - 앱: `http://127.0.0.1:3010`
 - 관리: `/admin` (로그인에 `AUTO_ADMIN_SECRET` 사용)
 
-## 태자 월드 연동
+## 메인 앱(「태국에, 살자」) 연동
 
-- `EDGE_CONFIG` + 키 `site_mode` / `canonical_host`를 태자 월드 `middleware`에서 읽습니다.
+- `EDGE_CONFIG` + 키 `site_mode` / `canonical_host`를 제품 앱 `middleware`에서 읽습니다.
 - `auto`가 standby 전환 시 Edge Config를 PATCH할 수 있도록 `EDGE_CONFIG_ID`와 `VERCEL_TOKEN` 권한을 맞춥니다.
 
 ## 관리자 봇 · Nord VPN 전용 IP · 미디어 업로드

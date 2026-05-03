@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { mergeBilingualCleanBody } from '@/lib/news/mergeCleanBody';
 import { newsDetailFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { validateNewsPublishFields } from '@/lib/news/validateNewsPublish';
@@ -39,10 +39,12 @@ export default function NewsQueueClient({
   items,
   diagnostics,
   orphanRawNews = [],
+  llmReady = false,
 }: {
   items: QueueItem[];
   diagnostics?: NewsQueueDiagnostics | null;
   orphanRawNews?: OrphanRawNewsItem[];
+  llmReady?: boolean;
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -52,13 +54,46 @@ export default function NewsQueueClient({
   const [ensureBulkBusy, setEnsureBulkBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  async function submit(
-    id: string,
-    action: 'publish' | 'draft' | 'delete',
-    fields: Pick<QueueItem, 'ko_title' | 'ko_summary' | 'th_title' | 'th_summary'>,
-  ) {
-    setMsg(null);
-    setBusyId(id);
+  const submit = useCallback(
+    async (id: string, action: 'publish' | 'draft' | 'delete', fields: Pick<QueueItem, 'ko_title' | 'ko_summary'>) => {
+      setMsg(null);
+      setBusyId(id);
+      try {
+        const res = await fetch('/api/admin/news-queue', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            processed_news_id: id,
+            action,
+            ...(action === 'delete'
+              ? {}
+              : {
+                  ko_title: fields.ko_title,
+                  ko_summary: fields.ko_summary,
+                }),
+          }),
+        });
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setMsg(j.error ?? `오류 (${res.status})`);
+          return;
+        }
+        if (action === 'delete') {
+          setMsg('삭제했습니다. (수집 원문·요약·댓글까지 DB에서 제거됩니다)');
+        } else {
+          setMsg(action === 'publish' ? '사이트에 게시했습니다.' : '편집 내용을 저장했습니다.');
+        }
+        router.refresh();
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [router],
+  );
+
+  /** 디바운스 자동 저장 — busy·토스트·목록 갱신 없음 */
+  const saveDraftQuiet = useCallback(async (id: string, fields: Pick<QueueItem, 'ko_title' | 'ko_summary'>) => {
     try {
       const res = await fetch('/api/admin/news-queue', {
         method: 'POST',
@@ -66,32 +101,19 @@ export default function NewsQueueClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           processed_news_id: id,
-          action,
-          ...(action === 'delete'
-            ? {}
-            : {
-                ko_title: fields.ko_title,
-                ko_summary: fields.ko_summary,
-                th_title: fields.th_title,
-                th_summary: fields.th_summary,
-              }),
+          action: 'draft',
+          ko_title: fields.ko_title,
+          ko_summary: fields.ko_summary,
         }),
       });
-      const j = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setMsg(j.error ?? `오류 (${res.status})`);
-        return;
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        setMsg(j.error ?? `자동 저장 실패 (${res.status})`);
       }
-      if (action === 'delete') {
-        setMsg('삭제했습니다. (수집 원문·요약·댓글까지 DB에서 제거됩니다)');
-      } else {
-        setMsg(action === 'publish' ? '게시했습니다.' : '초안 저장했습니다.');
-      }
-      router.refresh();
-    } finally {
-      setBusyId(null);
+    } catch {
+      setMsg('자동 저장 중 네트워크 오류');
     }
-  }
+  }, []);
 
   async function unpublishRecentForQueue() {
     const n = Math.min(20, Math.max(1, diagnostics?.publishedCount ?? 0));
@@ -254,7 +276,7 @@ export default function NewsQueueClient({
           원문만 있는 기사 (processed_news 없음) — {orphanRawNews.length}건 표시
         </strong>
         <p style={{ margin: '0 0 12px', fontSize: 12, color: '#92400e', lineHeight: 1.55 }}>
-          스텁 초안은 원문 발췌·고정 문구로 채워집니다. «승인 큐에 올리기» 후 아래처럼 편집하고 «홈에 게시»하면 됩니다.
+          큐에 올린 뒤 «AI 가공» 또는 직접 편집 후 «즉시 게시»하세요.
         </p>
         <button
           type="button"
@@ -386,27 +408,29 @@ export default function NewsQueueClient({
   const weeks = [...byWeek.keys()].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
 
   return (
-    <div style={{ marginTop: 12 }}>
-      <div style={{ marginBottom: 12 }}>
-        <button
-          type="button"
-          disabled={publishBulkBusy || items.length === 0}
-          onClick={() => void publishAllDrafts()}
-          style={{
-            padding: '10px 14px',
-            background: '#4f46e5',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: publishBulkBusy ? 'wait' : 'pointer',
-            opacity: items.length === 0 ? 0.6 : 1,
-          }}
-        >
-          {publishBulkBusy ? '처리 중…' : `승인 대기 뉴스 일괄 게시 (${items.length}건)`}
-        </button>
-      </div>
+    <div style={{ marginTop: 12, paddingBottom: items.length > 0 ? 100 : 0 }}>
+      {items.length > 0 ? (
+        <div className="admin-news-float" role="toolbar" aria-label="승인 대기 일괄 작업">
+          <span className="admin-news-float__meta">승인 대기 {items.length}</span>
+          <button
+            type="button"
+            className="admin-news-float__btn admin-news-float__btn--primary"
+            disabled={publishBulkBusy}
+            onClick={() => void publishAllDrafts()}
+          >
+            {publishBulkBusy ? '…' : '일괄 즉시 게시'}
+          </button>
+          <button
+            type="button"
+            className="admin-news-float__btn admin-news-float__btn--ghost"
+            disabled={bulkBusy || !(diagnostics && diagnostics.publishedCount > 0)}
+            onClick={() => void unpublishRecentForQueue()}
+            title="최근 공개분을 다시 승인 대기로"
+          >
+            {bulkBusy ? '…' : '최근 공개 되돌리기'}
+          </button>
+        </div>
+      ) : null}
       {orphanPanel}
       {msg ? (
         <p style={{ color: '#059669', fontSize: 13, marginBottom: 12 }}>{msg}</p>
@@ -418,7 +442,14 @@ export default function NewsQueueClient({
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {byWeek.get(wk)!.map((it) => (
-              <DraftCard key={it.id} item={it} busy={busyId === it.id} onSubmit={submit} />
+              <DraftCard
+                key={it.id}
+                item={it}
+                busy={busyId === it.id}
+                llmReady={llmReady}
+                onSubmit={submit}
+                onSaveDraftQuiet={saveDraftQuiet}
+              />
             ))}
           </div>
         </section>
@@ -430,85 +461,150 @@ export default function NewsQueueClient({
 function DraftCard({
   item,
   busy,
+  llmReady,
   onSubmit,
+  onSaveDraftQuiet,
 }: {
   item: QueueItem;
   busy: boolean;
+  llmReady: boolean;
   onSubmit: (
     id: string,
     action: 'publish' | 'draft' | 'delete',
-    fields: Pick<QueueItem, 'ko_title' | 'ko_summary' | 'th_title' | 'th_summary'>,
+    fields: Pick<QueueItem, 'ko_title' | 'ko_summary'>,
   ) => Promise<void>;
+  onSaveDraftQuiet: (id: string, fields: Pick<QueueItem, 'ko_title' | 'ko_summary'>) => Promise<void>;
 }) {
+  const router = useRouter();
   const [koTitle, setKoTitle] = useState(item.ko_title);
   const [koSummary, setKoSummary] = useState(item.ko_summary);
-  const [thTitle, setThTitle] = useState(item.th_title);
-  const [thSummary, setThSummary] = useState(item.th_summary);
-  const [showPreview, setShowPreview] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [touched, setTouched] = useState(false);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setKoTitle(item.ko_title);
+    setKoSummary(item.ko_summary);
+    setTouched(false);
+  }, [item.id, item.ko_title, item.ko_summary]);
 
   const mergedJson = mergeBilingualCleanBody(item.clean_body, {
     ko_title: koTitle,
     ko_summary: koSummary,
-    th_title: thTitle,
-    th_summary: thSummary,
+    th_title: koTitle,
+    th_summary: koSummary,
   });
   const userView = newsDetailFromProcessed(mergedJson, item.raw_title, item.raw_url, item.summaries, 'ko', {
     allowRawTitleFallback: true,
   });
   const publishErr = validateNewsPublishFields(koTitle, koSummary);
 
+  useEffect(() => {
+    if (!touched) return;
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = setTimeout(() => {
+      void onSaveDraftQuiet(item.id, { ko_title: koTitle, ko_summary: koSummary });
+    }, 900);
+    return () => {
+      if (draftTimer.current) clearTimeout(draftTimer.current);
+    };
+  }, [koTitle, koSummary, touched, item.id, onSaveDraftQuiet]);
+
+  async function runAiProcess() {
+    setAiBusy(true);
+    try {
+      const res = await fetch('/api/admin/news-ai-reprocess', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ processed_news_id: item.id }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        window.alert(j.error ?? `오류 (${res.status})`);
+        return;
+      }
+      router.refresh();
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
   return (
     <div
       style={{
         border: '1px solid #e5e7eb',
-        borderRadius: 10,
+        borderRadius: 12,
         padding: 14,
         background: '#fafafa',
       }}
     >
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 800,
+            letterSpacing: '0.04em',
+            padding: '3px 10px',
+            borderRadius: 999,
+            background: '#ede9fe',
+            color: '#5b21b6',
+          }}
+        >
+          승인 대기
+        </span>
+        {!llmReady ? (
+          <span style={{ fontSize: 11, color: '#9ca3af' }}>LLM 미구성</span>
+        ) : (
+          <span style={{ fontSize: 11, color: '#059669' }}>AI 가공 가능</span>
+        )}
+      </div>
       <p style={{ margin: '0 0 8px', fontSize: 12, color: '#9ca3af' }}>
-        원문 ·{' '}
         <a href={item.raw_url} target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1' }}>
-          {item.raw_title.slice(0, 80)}
-          {item.raw_title.length > 80 ? '…' : ''}
+          원문 링크
         </a>
+        <span style={{ margin: '0 6px', color: '#d1d5db' }}>·</span>
+        {item.raw_title.slice(0, 72)}
+        {item.raw_title.length > 72 ? '…' : ''}
       </p>
       <p style={{ margin: '0 0 12px', fontSize: 11, color: '#9ca3af' }}>
-        초안 id: {item.id} · {new Date(item.created_at).toLocaleString('ko-KR')}
+        {item.id.slice(0, 8)}… · {new Date(item.created_at).toLocaleString('ko-KR')}
       </p>
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>한국어 제목</label>
       <input
         value={koTitle}
-        onChange={(e) => setKoTitle(e.target.value)}
+        onChange={(e) => {
+          setTouched(true);
+          setKoTitle(e.target.value);
+        }}
         style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13 }}
       />
-      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>한국어 요약</label>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>한국어 본문·요약</label>
       <textarea
         value={koSummary}
-        onChange={(e) => setKoSummary(e.target.value)}
-        rows={4}
-        style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13 }}
-      />
-      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>ไทย หัวข้อ</label>
-      <input
-        value={thTitle}
-        onChange={(e) => setThTitle(e.target.value)}
-        style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13 }}
-      />
-      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>ไทย สรุป</label>
-      <textarea
-        value={thSummary}
-        onChange={(e) => setThSummary(e.target.value)}
-        rows={4}
+        onChange={(e) => {
+          setTouched(true);
+          setKoSummary(e.target.value);
+        }}
+        rows={6}
         style={{ width: '100%', marginBottom: 12, padding: 8, fontSize: 13 }}
       />
 
       <button
         type="button"
         onClick={() => setShowPreview((v) => !v)}
-        style={{ fontSize: 12, color: '#0369a1', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 8 }}
+        style={{
+          fontSize: 12,
+          color: '#0369a1',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+          marginBottom: 8,
+        }}
       >
-        {showPreview ? '▲ 이용자 홈·뉴스에 보이는 형태 미리보기 접기' : '▼ 이용자 홈·뉴스에 보이는 형태 미리보기'}
+        {showPreview ? '▲ 미리보기 접기' : '▼ 노출 미리보기'}
       </button>
       {showPreview ? (
         <div
@@ -527,11 +623,11 @@ function DraftCard({
           <p style={{ margin: '0 0 10px' }}>{userView.title}</p>
           {userView.blurb ? (
             <>
-              <p style={{ margin: '0 0 6px', fontWeight: 700 }}>짧은 훅(blurb)</p>
+              <p style={{ margin: '0 0 6px', fontWeight: 700 }}>훅</p>
               <p style={{ margin: '0 0 10px' }}>{userView.blurb}</p>
             </>
           ) : null}
-          <p style={{ margin: '0 0 6px', fontWeight: 700 }}>요약 본문</p>
+          <p style={{ margin: '0 0 6px', fontWeight: 700 }}>본문</p>
           <p style={{ margin: '0 0 10px', whiteSpace: 'pre-wrap' }}>{userView.summary ?? '(없음)'}</p>
           {userView.editorNote ? (
             <>
@@ -540,17 +636,35 @@ function DraftCard({
             </>
           ) : null}
           {publishErr ? (
-            <p style={{ margin: 0, color: '#b45309', fontWeight: 600 }}>승인 불가: {publishErr}</p>
+            <p style={{ margin: 0, color: '#b45309', fontWeight: 600 }}>게시 불가: {publishErr}</p>
           ) : (
-            <p style={{ margin: 0, color: '#059669', fontWeight: 600 }}>현재 필드 기준 승인 검증 통과</p>
+            <p style={{ margin: 0, color: '#059669', fontWeight: 600 }}>게시 검증 통과</p>
           )}
         </div>
       ) : null}
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || aiBusy || !llmReady}
+          onClick={() => void runAiProcess()}
+          style={{
+            padding: '10px 16px',
+            background: 'linear-gradient(135deg,#0d9488,#0f766e)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            fontWeight: 800,
+            cursor: busy || aiBusy || !llmReady ? 'not-allowed' : 'pointer',
+            opacity: !llmReady ? 0.55 : 1,
+          }}
+          title={!llmReady ? 'LLM 환경 변수를 설정하세요' : '원문 기준 한국어 재가공 → 승인 대기'}
+        >
+          {aiBusy ? '가공 중…' : 'AI 가공 실행'}
+        </button>
+        <button
+          type="button"
+          disabled={busy || aiBusy}
           onClick={() => {
             const err = validateNewsPublishFields(koTitle, koSummary);
             if (err) {
@@ -560,67 +674,51 @@ function DraftCard({
             void onSubmit(item.id, 'publish', {
               ko_title: koTitle,
               ko_summary: koSummary,
-              th_title: thTitle,
-              th_summary: thSummary,
             });
           }}
           style={{
-            padding: '8px 14px',
+            padding: '10px 16px',
             background: '#7c3aed',
             color: '#fff',
             border: 'none',
-            borderRadius: 6,
-            cursor: busy ? 'wait' : 'pointer',
+            borderRadius: 8,
+            fontWeight: 800,
+            cursor: busy || aiBusy ? 'wait' : 'pointer',
           }}
         >
-          홈에 게시
+          즉시 게시
         </button>
         <button
           type="button"
-          disabled={busy}
-          onClick={() => void onSubmit(item.id, 'draft', { ko_title: koTitle, ko_summary: koSummary, th_title: thTitle, th_summary: thSummary })}
-          style={{
-            padding: '8px 14px',
-            background: '#e5e7eb',
-            color: '#374151',
-            border: 'none',
-            borderRadius: 6,
-            cursor: busy ? 'wait' : 'pointer',
-          }}
-        >
-          초안만 저장
-        </button>
-        <button
-          type="button"
-          disabled={busy}
+          disabled={busy || aiBusy}
           onClick={() => {
             if (
               !window.confirm(
-                '이 기사를 완전히 삭제할까요?\n수집된 원문(raw_news)·요약·댓글이 DB에서 지워지며, 같은 피드가 다시 들어오면 새로 수집될 수 있습니다.',
+                '이 기사를 완전히 삭제할까요?\n수집된 원문(raw_news)·요약·댓글이 DB에서 지워집니다.',
               )
             ) {
               return;
             }
-            void onSubmit(item.id, 'delete', {
-              ko_title: koTitle,
-              ko_summary: koSummary,
-              th_title: thTitle,
-              th_summary: thSummary,
-            });
+            void onSubmit(item.id, 'delete', { ko_title: koTitle, ko_summary: koSummary });
           }}
           style={{
-            padding: '8px 14px',
+            padding: '8px 12px',
             marginLeft: 'auto',
-            background: '#fef2f2',
+            background: 'transparent',
             color: '#b91c1c',
-            border: '1px solid #fecaca',
-            borderRadius: 6,
-            cursor: busy ? 'wait' : 'pointer',
+            border: 'none',
+            textDecoration: 'underline',
+            cursor: busy || aiBusy ? 'wait' : 'pointer',
+            fontSize: 12,
+            fontWeight: 600,
           }}
         >
-          삭제(올리지 않음)
+          삭제
         </button>
       </div>
+      <p style={{ margin: '10px 0 0', fontSize: 11, color: '#9ca3af' }}>
+        제목·본문을 고치면 잠시 후 자동 저장됩니다. 가공 후에는 항상 승인 대기로 둡니다.
+      </p>
     </div>
   );
 }

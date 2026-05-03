@@ -9,7 +9,7 @@ export type DecorationCatalogRow = {
   tags: string[];
   color_code?: string | null;
   audio_embed_url?: string | null;
-  /** 도토리 가격 — 카탈로그 단계에서만 참고 (정산은 DB 정책 따름) */
+  /** 타이(THAI) 포인트 가격 — 카탈로그 단계에서만 참고 (정산은 DB 정책 따름) */
   price?: number;
   tier?: string;
 };

@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import type { Locale } from '@/i18n/types';
 import type { Portal2026Copy } from '@/i18n/portal2026Copy';
+import type { PortalDailySparkPayload } from '@/lib/portal/portalDailySpark';
 import styles from './portal-2026.module.css';
 
 type FortuneRpcOk = {
@@ -33,10 +34,12 @@ export default function PortalDailyFortune({
   locale,
   isLoggedIn,
   copy,
+  dailySpark,
 }: {
   locale: Locale;
   isLoggedIn: boolean;
   copy: Portal2026Copy;
+  dailySpark?: PortalDailySparkPayload | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -202,6 +205,15 @@ export default function PortalDailyFortune({
 
   return (
     <>
+      {dailySpark ? (
+        <div className={styles.fortuneSparkWrap}>
+          <div className={styles.fortuneSparkCard}>
+            <p className={styles.fortuneSparkTitle}>{copy.fortuneSparkThemeTitle}</p>
+            <p className={styles.fortuneSparkLine}>{dailySpark.fortune_line}</p>
+            <p className={styles.fortuneSparkDetail}>{dailySpark.fortune_detail}</p>
+          </div>
+        </div>
+      ) : null}
       <button type="button" className={styles.fortuneBtn} onClick={onOpenClick}>
         {copy.fortuneButton}
       </button>

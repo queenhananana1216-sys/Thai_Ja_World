@@ -93,6 +93,25 @@ export function mergeKnowledgeCleanBody(
     else delete parsed.th.editorial_note;
   }
 
+  /** th_* 비어 있으면 한국어 필드로 미러링(DB·요약 동기화) */
+  if (parsed.ko && parsed.th) {
+    const kot = parsed.ko.title?.trim() ?? '';
+    const kos = parsed.ko.summary?.trim() ?? '';
+    const koe = parsed.ko.editorial_note?.trim() ?? '';
+    if (!parsed.th.title?.trim() && kot) parsed.th.title = kot;
+    if (!parsed.th.summary?.trim() && kos) parsed.th.summary = kos;
+    if (!parsed.th.editorial_note?.trim() && koe) parsed.th.editorial_note = koe;
+    if ((!parsed.th.checklist || parsed.th.checklist.length === 0) && parsed.ko.checklist?.length) {
+      parsed.th.checklist = [...parsed.ko.checklist];
+    }
+    if ((!parsed.th.cautions || parsed.th.cautions.length === 0) && parsed.ko.cautions?.length) {
+      parsed.th.cautions = [...parsed.ko.cautions];
+    }
+    if ((!parsed.th.tags || parsed.th.tags.length === 0) && parsed.ko.tags?.length) {
+      parsed.th.tags = [...parsed.ko.tags];
+    }
+  }
+
   return JSON.stringify(parsed);
 }
 

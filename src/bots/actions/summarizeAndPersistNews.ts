@@ -11,7 +11,7 @@
  * - NEWS_SUMMARY_FALLBACK_STUB: LLM 없음/호출 실패 시 원문 메타만으로 초안(processed_news) 생성 여부.
  *   1|true|yes|on = 항상 허용, 0|false|no|off = 끔. 미설정 시 NEWS_PUBLISH_MODE 가 auto 가 아니면(manual·미설정) 켜짐.
  *
- * processed_news.clean_body: { ko: {title,summary,blurb,editor_note}, th: {...}, source_url }
+ * processed_news.clean_body: { ko: {title,summary,blurb,editor_note,insight_impact?,countermeasure?}, th: {...}, source_url, ai_signals? }
  * 가공 톤은 `BILINGUAL_SYSTEM_PROMPT`(교민 커뮤니티 편집장 페르소나·불릿 썰·핵심 한 줄 레이블) — 뉴스 크론 요약의 단일 소스.
  */
 
@@ -131,6 +131,15 @@ interface LlmBilingualPayload {
   th_editor_note: string;
   /** 구글 검색 유입용 키워드(중복 제거·순서 유지, 최대 8개까지 저장) */
   seo_keywords: string[];
+  /** 교민·거주자에게 미치는 영향(팩트 범위) */
+  ko_insight_impact: string;
+  ko_countermeasure: string;
+  th_insight_impact: string;
+  th_countermeasure: string;
+  /** 목록 경고·뱃지 강도: none | elevated | high */
+  incident_attention: 'none' | 'elevated' | 'high';
+  feed_warning_ko: string;
+  feed_warning_th: string;
 }
 
 function normalizeSeoKeywords(input: string[]): string[] {
@@ -170,6 +179,14 @@ function stubSeoKeywordsFromTitle(title: string): string[] {
   return normalizeSeoKeywords(base);
 }
 
+function normalizeIncidentAttention(
+  raw: string | undefined,
+): 'none' | 'elevated' | 'high' {
+  const s = (raw ?? '').trim().toLowerCase();
+  if (s === 'high' || s === 'elevated' || s === 'none') return s;
+  return 'none';
+}
+
 function sanitizeNewsPayloadTone(payload: LlmBilingualPayload): LlmBilingualPayload {
   const sanitizeThai = (input: string, max: number) => {
     const noAi = sanitizeAiThaiPhrases(input);
@@ -192,6 +209,13 @@ function sanitizeNewsPayloadTone(payload: LlmBilingualPayload): LlmBilingualPayl
     th_blurb: sanitizeThai(payload.th_blurb, 130),
     th_editor_note: sanitizeThai(payload.th_editor_note, 260),
     seo_keywords: normalizeSeoKeywords(payload.seo_keywords ?? []),
+    ko_insight_impact: sanitizeKorean(payload.ko_insight_impact, 420),
+    ko_countermeasure: sanitizeKorean(payload.ko_countermeasure, 520),
+    th_insight_impact: sanitizeThai(payload.th_insight_impact, 420),
+    th_countermeasure: sanitizeThai(payload.th_countermeasure, 520),
+    incident_attention: normalizeIncidentAttention(payload.incident_attention),
+    feed_warning_ko: sanitizeKorean(payload.feed_warning_ko, 72),
+    feed_warning_th: sanitizeThai(payload.feed_warning_th, 72),
   };
 }
 
@@ -224,6 +248,15 @@ function parseLlmPayload(raw: unknown): LlmBilingualPayload | null {
   const koEd = isNonEmptyString(o.ko_editor_note) ? clamp(String(o.ko_editor_note), editorClamp) : '';
   const thEd = isNonEmptyString(o.th_editor_note) ? clamp(String(o.th_editor_note), editorClamp) : '';
   const seo_keywords = parseSeoKeywordsField(o.seo_keywords);
+  const koInsight = isNonEmptyString(o.ko_insight_impact) ? String(o.ko_insight_impact).trim() : '';
+  const koCm = isNonEmptyString(o.ko_countermeasure) ? String(o.ko_countermeasure).trim() : '';
+  const thInsight = isNonEmptyString(o.th_insight_impact) ? String(o.th_insight_impact).trim() : '';
+  const thCm = isNonEmptyString(o.th_countermeasure) ? String(o.th_countermeasure).trim() : '';
+  const incident_attention = normalizeIncidentAttention(
+    typeof o.incident_attention === 'string' ? o.incident_attention : 'none',
+  );
+  const fwKo = typeof o.feed_warning_ko === 'string' ? o.feed_warning_ko.trim() : '';
+  const fwTh = typeof o.feed_warning_th === 'string' ? o.feed_warning_th.trim() : '';
   return {
     title_kr: titleKr.trim(),
     content_kr: contentKr.trim(),
@@ -234,6 +267,13 @@ function parseLlmPayload(raw: unknown): LlmBilingualPayload | null {
     th_blurb: clamp(String(o.th_blurb), 160),
     th_editor_note: thEd,
     seo_keywords,
+    ko_insight_impact: koInsight,
+    ko_countermeasure: koCm,
+    th_insight_impact: thInsight,
+    th_countermeasure: thCm,
+    incident_attention,
+    feed_warning_ko: fwKo,
+    feed_warning_th: fwTh,
   };
 }
 
@@ -270,44 +310,64 @@ function buildStubBilingualPayload(
     th_blurb: clampPlainText(head, 100),
     th_editor_note: 'ร่างอัตโนมัติ — แก้ภาษาไทยก่อนเผยแพร่',
     seo_keywords: stubSeoKeywordsFromTitle(head),
+    ko_insight_impact: '',
+    ko_countermeasure: '',
+    th_insight_impact: '',
+    th_countermeasure: '',
+    incident_attention: 'none',
+    feed_warning_ko: '',
+    feed_warning_th: '',
   };
 }
 
-/** 뉴스 크론 가공 톤 — 교민 커뮤니티 ‘편집장’ 페르소나 + 클릭·가독성 + 팩트 가드레일 */
+/** 뉴스 크론 가공 톤 — 인사이트·대비책 중심 + 중립적 위트(태국 생활 페이스) */
 const BILINGUAL_SYSTEM_PROMPT = [
-  'You are the cynical-but-humorous editor-in-chief of "Thai Ja World", a Thailand–Korea 교민 community site (autonomous news pipeline).',
-  'BRAND LOCK / NON-NEGOTIABLE VOICE (tattoo these rules):',
-  '• You are Thailand\'s top "issue maker" for this desk: every article MUST lead with insane readability (미친 가독성) and a punchy one-line takeaway — never bury the lede.',
-  '• Accident/incident/crime pieces: no forced gags — mix expat knee-slap wit (촌철살인) that skates the line without cruelty; 교민 readers should mutter "that\'s us", not cringe.',
-  '• Headlines (title_kr / title_th): must feel impossible not to click — fact-bound but fierce hook energy (Korean example shape only: "방콕 시내 한복판에서 벌어진 충격적 사건, 알고보니…"). Boring wire titles are failure.',
-  '• Never "translate the wire": reinterpret in Thai Ja World\'s color — same facts, our rhythm, both languages.',
-  'Readers doom-scroll: your job is dopamine + clarity, NOT a dry wire-service summary. Never sound like a government press release.',
-  'Output valid JSON only. Exactly these 9 keys: title_kr, content_kr, ko_blurb, ko_editor_note, title_th, content_th, th_blurb, th_editor_note, seo_keywords.',
+  'You are the lead editor AND resident-life strategist for "Thai Ja World" / 「태국에, 살자」(Thailand–Korea 교민 autonomous news pipeline).',
+  'MISSION: Do NOT "copy the wire". Deliver insight-first packaging: witty one-line headline energy, clear user impact, and concrete countermeasures — without losing trust.',
+  'TONE: "중립적 위트" — dry, warm, expat-in-Thailand pace. Wit sharpens the point; no try-hard meme spam, no cruelty on victims, no fake stakes. Never read like a bland press release.',
   '',
-  '=== KOREAN (title_kr, content_kr, ko_*) ===',
-  '- title_kr: For accident/crime/incident/urgent local news, write a MUST-OPEN headline: concrete, emotional stakes, strong verbs — but ONLY from supplied facts. No fake victims, no invented outcomes, no clickbait lies. If the source is thin, still make it interesting with honest curiosity ("무슨 일이?" "지금 현지는?") and hedging.',
-  '- content_kr MUST follow this structure (plain text, newlines allowed; UI is not Markdown-rendered, so the label string is read as-is):',
-  '  1) Line 1 EXACTLY: **[🔥 핵심 한 줄 요약]**',
-  '  2) Line 2: one killer one-sentence summary of the whole story (3-second understanding).',
-  '  3) Blank line.',
-  '  4) SSul/커뮤니티 썰 style + bullet points: use lines starting with "- " or "• " for the core facts, context, and "what it means for 우리" when relevant. Keep it scannable.',
-  '  5) Blank line, then 1~2 lines of situation-appropriate "뼈 때리는 위트" or 촌철살인 — no forced dad jokes, no cringe. Self-aware, expat-in-Thailand energy.',
-  '- ko_blurb: one savage-short feed card hook (feels like a group chat preview). No false claims.',
-  '- ko_editor_note: 1~3 short sentences. Optional extra punch or a second wit line. Do NOT repeat facts already in content_kr. No "구독/알림/클릭" begging.',
+  '=== title_kr / title_th (한 줄 기사) ===',
+  '- One line each. Not a dry fact label: a punchy "한 줄 기사" that hooks curiosity while staying 100% inside supplied facts.',
+  '- Example SHAPE only (do not copy words unless facts match): dull "방콕 교통 체증 심화" → brighter "오늘 방콕 도로는 거대한 주차장 — 차 안에서 태국어 복습 각?"',
+  '- Accident/crime/incident: still witty but never mock victims; use honest stakes + hedging when facts are thin.',
   '',
-  '=== THAI (title_th, content_th, th_*) ===',
-  '- title_th / content_th: same energy in natural ภาษาไทย — not a word-for-word translation. Mirror the Korean structure: start content_th with line 1 EXACTLY **[🔥 สรุปเด็ดหนึ่งบรรทัด]**, line 2 = one-line hook, then bullets, then optional witty closer.',
-  '- th_blurb / th_editor_note: same roles as Korean.',
+  '=== content_kr / content_th (본문 레이아웃) ===',
+  '- Plain text, newlines OK; UI is not Markdown — label lines are literal.',
+  '- Line 1 EXACTLY: **[🔥 핵심 한 줄 요약]** (Korean) / **[🔥 สรุปเด็ดหนึ่งบรรทัด]** (Thai).',
+  '- Line 2: one killer sentence (3-second read). Blank line. Then bullets "- " or "• " for facts + "what it means for 우리/ชาวต่างชาติที่อยู่ไทย". Blank line. 1~2 lines neutral wit closer.',
   '',
-  '=== SAFETY (non-negotiable) ===',
-  '- Use ONLY supplied title/body/source_url. No hallucinated names, numbers, charges, or verdicts.',
-  '- Uncertain or developing stories: hedge ("보도에 따르면", "현지 매체는 … 전했다", Thai equivalents).',
-  '- No hate, harassment, 명예훼손 단정, political rallying, or sensationalism beyond what the facts allow.',
+  '=== ko_insight_impact / th_insight_impact ===',
+  '- 2~4 sentences: how this story affects people living or traveling in Thailand (교민·거주·단기 체류). No new facts; inference from the supplied article only. Hedge when uncertain.',
+  '',
+  '=== ko_countermeasure / th_countermeasure ===',
+  '- 3~6 short imperative lines OR one short paragraph with numbered steps: what the reader should do today/this week (apps, routes, documents, who to check with).',
+  '- Practical only — no invented hotlines. If unsure, say "공식·대사관에서 확인" / Thai equivalent.',
+  '',
+  '=== incident_attention (string enum) ===',
+  '- Exactly one of: none | elevated | high.',
+  '- high: imminent safety risk to many residents (severe weather, major transport shutdown, violent unrest, mass casualty).',
+  '- elevated: notable disruption or elevated caution (traffic chaos, scams wave, health advisory).',
+  '- none: default for soft news.',
+  '',
+  '=== feed_warning_ko / feed_warning_th ===',
+  '- One short line each (max ~42 chars). Empty string "" if incident_attention is none.',
+  '- If elevated/high: urgent but calm micro-warning (e.g. "🚨 출근 전 우회로·MRT 확인"). No ALL-CAPS panic.',
+  '',
+  '=== ko_blurb, ko_editor_note, th_blurb, th_editor_note ===',
+  '- ko_blurb / th_blurb: feed-card hook (group-chat preview). No false claims.',
+  '- *_editor_note: 1~3 sentences; extra wit or angle. Do NOT repeat facts from content_* or insight/countermeasure blocks.',
   '',
   '=== seo_keywords ===',
-  '- One string: exactly five comma-separated search phrases (no numbering, no quotes inside the phrases) mixing Korean/Thai as appropriate — high-intent Google queries for this story.',
+  '- One string: exactly five comma-separated phrases (no numbering, no inner quotes).',
   '',
-  'Ban robotic openers: "결론적으로", "이 글에서는", "กล่าวโดยสรุป", "บทความนี้" etc. Output one JSON object only.',
+  '=== SAFETY ===',
+  '- ONLY supplied title/body/source_url. No hallucinated names, numbers, charges, verdicts.',
+  '- No hate, harassment, political rallying, or sensationalism beyond facts.',
+  '',
+  'Output valid JSON only. Exactly these 16 keys (all strings except values noted):',
+  'title_kr, content_kr, ko_blurb, ko_editor_note, ko_insight_impact, ko_countermeasure, feed_warning_ko,',
+  'title_th, content_th, th_blurb, th_editor_note, th_insight_impact, th_countermeasure, feed_warning_th,',
+  'incident_attention (none|elevated|high), seo_keywords.',
 ].join('\n');
 
 function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: string): string {
@@ -322,17 +382,52 @@ function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: 
     '편집 각인: 태국 최고의 이슈 메이커처럼 쓸 것. 미친 가독성 + 한 줄 핵심이 먼저다. 사건·사고는 억지 웃음 말고 선 넘나드는 촌철살인 위트로 무릎 탁.',
     '제목은 클릭 안 하면 손해일 정도로 자극적으로(팩트 안에서). 예시 톤만 참고: 「방콕 시내 한복판에서 벌어진 충격적 사건, 알고보니…」',
     '딱딱한 AP체 요약이 아니라, “우리 동네 커뮤니티에서 돌아다니는 썰 + 사실” 톤으로 가공하세요.',
-    '원문 언어와 관계없이 아래 아홉 필드를 모두 채우세요. title_kr/title_th에는 "메타데이터" 같은 내부 용어를 넣지 마세요.',
+    '원문 언어와 관계없이 시스템이 요구한 16개 키를 모두 채우세요. title_kr/title_th에는 "메타데이터" 같은 내부 용어를 넣지 마세요.',
     '반드시 아래 키만 가진 JSON 객체 한 개만 출력하세요 (다른 텍스트 금지):',
-    '{"title_kr":"","content_kr":"","ko_blurb":"","ko_editor_note":"","title_th":"","content_th":"","th_blurb":"","th_editor_note":"","seo_keywords":""}',
-    '- title_kr: 사건·사고·논란 기사는 “안 열 수가 없는” 수준의 클릭을 유도하는 제목(팩트 범위 내, 거짓·선정·단정 금지). 지루한 제목 금지.',
-    '- content_kr: 첫 줄은 반드시 단독 한 줄로 정확히 **[🔥 핵심 한 줄 요약]** (앞뒤 별표 포함, 마크다운 굵게 표기) → 둘째 줄에 핵심 한 문장 → 빈 줄 → 불릿(• / -)로 썰+정리 → 빈 줄 → 뼈 때리는 위트 1~2줄. 미확인 사실은 “보도에 따르면/알려진 바”로.',
-    '- ko_blurb: 피드 뷰용 초짧은 훅(채팅방 첫 줄 느낌). 40~100자 권장.',
-    '- ko_editor_note: content_kr에 이미 쓴 팩트를 복붙하지 말 것. 여분의 한 방이나 댓글 유도 한 줄(냉소+동료애).',
-    '- title_th, content_th: 태국어. content_th 첫 줄은 단독 한 줄로 정확히 **[🔥 สรุปเด็ดหนึ่งบรรทัด]** (별표 포함) 후 동일 구조.',
-    '- th_blurb, th_editor_note: 한국어 필드와 역할 대응. 요약 복붙 금지.',
-    '- seo_keywords: 이 기사로 사람들이 구글에 칠만한 키워드 5개 — **쉼표로만** 구분한 한 줄(따옴표·번호 없이).',
+    '{"title_kr":"","content_kr":"","ko_blurb":"","ko_editor_note":"","ko_insight_impact":"","ko_countermeasure":"","feed_warning_ko":"","title_th":"","content_th":"","th_blurb":"","th_editor_note":"","th_insight_impact":"","th_countermeasure":"","feed_warning_th":"","incident_attention":"none","seo_keywords":""}',
+    '- title_kr / title_th: 사실 안에서 도는 ‘한 줄 기사’ 톤. 지루한 헤드라인 금지.',
+    '- ko_insight_impact / th_insight_impact: 우리 독자에게 어떤 영향인지.',
+    '- ko_countermeasure / th_countermeasure: 오늘 할 일·우회·확인처 등 실행 지침.',
+    '- incident_attention + feed_warning_*: 사건·재난·대혼잡 등이면 elevated/high 와 짧은 경고 문구, 아니면 none + 빈 문자열.',
+    '- seo_keywords: 키워드 5개, 쉼표로만 구분.',
   ].join('\n');
+}
+
+function buildPersistedCleanBodyJson(sanitized: LlmBilingualPayload, url: string): string {
+  const ai_signals: Record<string, string> = {
+    incident_attention: sanitized.incident_attention,
+  };
+  if (sanitized.feed_warning_ko.trim()) ai_signals.feed_warning_ko = sanitized.feed_warning_ko.trim();
+  if (sanitized.feed_warning_th.trim()) ai_signals.feed_warning_th = sanitized.feed_warning_th.trim();
+
+  return JSON.stringify({
+    ko: {
+      title: sanitized.title_kr,
+      summary: sanitized.content_kr,
+      blurb: sanitized.ko_blurb,
+      ...(sanitized.ko_editor_note ? { editor_note: sanitized.ko_editor_note } : {}),
+      ...(sanitized.ko_insight_impact.trim()
+        ? { insight_impact: sanitized.ko_insight_impact.trim() }
+        : {}),
+      ...(sanitized.ko_countermeasure.trim()
+        ? { countermeasure: sanitized.ko_countermeasure.trim() }
+        : {}),
+    },
+    th: {
+      title: sanitized.title_th,
+      summary: sanitized.content_th,
+      blurb: sanitized.th_blurb,
+      ...(sanitized.th_editor_note ? { editor_note: sanitized.th_editor_note } : {}),
+      ...(sanitized.th_insight_impact.trim()
+        ? { insight_impact: sanitized.th_insight_impact.trim() }
+        : {}),
+      ...(sanitized.th_countermeasure.trim()
+        ? { countermeasure: sanitized.th_countermeasure.trim() }
+        : {}),
+    },
+    source_url: url,
+    ai_signals,
+  });
 }
 
 function chatCompletionsUrlFromBase(baseUrl: string): string {
@@ -514,7 +609,9 @@ function parseBilingualPayloadFromContent(content: string, label: string): LlmBi
     const parsed = JSON.parse(raw) as unknown;
     const payload = parseLlmPayload(parsed);
     if (!payload) {
-      throw new Error(`${label} JSON 스키마 불일치 (ko_/th_ 제목·요약·블러브 필수, editor_note·seo_keywords는 선택)`);
+      throw new Error(
+        `${label} JSON 스키마 불일치 (title/content/blurb 필수 + 인사이트·대비책·incident_attention·seo_keywords 등 16키)`,
+      );
     }
     return payload;
   } catch {
@@ -552,7 +649,9 @@ function parseBilingualPayloadFromContent(content: string, label: string): LlmBi
 
     const payload = parseLlmPayload(parsed);
     if (!payload) {
-      throw new Error(`${label} JSON 스키마 불일치 (ko_/th_ 제목·요약·블러브 필수, editor_note·seo_keywords는 선택)`);
+      throw new Error(
+        `${label} JSON 스키마 불일치 (title/content/blurb 필수 + 인사이트·대비책·incident_attention·seo_keywords 등 16키)`,
+      );
     }
     return payload;
   }
@@ -781,22 +880,26 @@ async function callBilingualSummary(
     { role: 'system', content: BILINGUAL_SYSTEM_PROMPT },
     { role: 'user', content: userBlock },
   ];
-  return runNewsSummaryProviders(messages, parseBilingualPayloadFromContent, 3100);
+  return runNewsSummaryProviders(messages, parseBilingualPayloadFromContent, 3800);
 }
 
 /** 관리자 한국어 전용 가공 — 크론 이중언어 파이프라인과 별도 */
 const KOREAN_ONLY_SYSTEM_PROMPT = [
   'You are the lead editor for "Thai Ja World" (태국에, 살자) Korean news desk.',
-  'The source may be Thai, English, or any language. Output MUST be 100% Korean Hangul only in title_kr, content_kr, ko_blurb, ko_editor_note.',
-  'Do not output Thai script, English sentences, romanized quotes, or mixed-language lines in those fields. If a proper noun must stay in Latin (e.g. BTS, UNESCO), keep it short.',
-  'Output valid JSON only with exactly these keys: title_kr, content_kr, ko_blurb, ko_editor_note, seo_keywords.',
+  'The source may be Thai, English, or any language. Output MUST be 100% Korean Hangul only in every Korean-payload field below (no Thai script, no English sentences in Korean fields).',
+  'If a proper noun must stay in Latin (e.g. BTS, UNESCO), keep it short.',
+  'Output valid JSON only with exactly these keys: title_kr, content_kr, ko_blurb, ko_editor_note, ko_insight_impact, ko_countermeasure, feed_warning_ko, incident_attention, seo_keywords.',
   '',
   '=== Structure (plain text, newlines allowed) ===',
-  '- title_kr: one line, punchy Korean headline from facts only (no lies, no invented victims).',
-  '- content_kr: Line 1 = the same headline text as title_kr (repeat once). Line 2 = blank line. From line 3 = Korean article body (bullets with "- " or "• ", short sections). No foreign-language paragraphs.',
-  '- ko_blurb: ultra-short feed hook in Korean (40~100 chars).',
-  '- ko_editor_note: 1~3 short Korean sentences; optional wit. Do NOT repeat facts from content_kr.',
-  '- seo_keywords: one string — exactly five comma-separated Korean search phrases (no numbering, no quotes inside phrases).',
+  '- title_kr: one line, punchy "한 줄 기사" headline from facts only.',
+  '- content_kr: Line 1 = **[🔥 핵심 한 줄 요약]** then line 2 = one killer sentence, blank line, bullets, blank line, short neutral wit.',
+  '- ko_blurb: ultra-short feed hook (40~100 chars).',
+  '- ko_editor_note: 1~3 sentences; wit. Do NOT repeat facts from content_kr.',
+  '- ko_insight_impact: how this affects people in Thailand (2~4 sentences, Korean only).',
+  '- ko_countermeasure: concrete action steps for readers (Korean only).',
+  '- feed_warning_ko: one very short warning line, or "" if incident_attention is none.',
+  '- incident_attention: exactly one of none | elevated | high.',
+  '- seo_keywords: one string — five comma-separated Korean phrases.',
   '',
   '=== Safety ===',
   '- Use ONLY supplied title/body/source_url. Hedge when uncertain.',
@@ -831,6 +934,12 @@ function parseKoreanOnlyLlmPayload(raw: unknown): LlmBilingualPayload | null {
   const seo = seo_keywords.length > 0 ? seo_keywords : stubSeoKeywordsFromTitle(titleKr);
   const ko_blurb = clamp(String(o.ko_blurb), 160);
   const thEd = koEd || ko_blurb;
+  const koInsight = isNonEmptyString(o.ko_insight_impact) ? String(o.ko_insight_impact).trim() : '';
+  const koCm = isNonEmptyString(o.ko_countermeasure) ? String(o.ko_countermeasure).trim() : '';
+  const fwKo = typeof o.feed_warning_ko === 'string' ? o.feed_warning_ko.trim() : '';
+  const incident_attention = normalizeIncidentAttention(
+    typeof o.incident_attention === 'string' ? o.incident_attention : 'none',
+  );
   return {
     title_kr: titleKr,
     content_kr: contentKr,
@@ -841,6 +950,13 @@ function parseKoreanOnlyLlmPayload(raw: unknown): LlmBilingualPayload | null {
     th_blurb: ko_blurb,
     th_editor_note: thEd,
     seo_keywords: seo,
+    ko_insight_impact: koInsight,
+    ko_countermeasure: koCm,
+    th_insight_impact: koInsight,
+    th_countermeasure: koCm,
+    incident_attention,
+    feed_warning_ko: fwKo,
+    feed_warning_th: fwKo,
   };
 }
 
@@ -899,7 +1015,7 @@ async function callKoreanOnlySummary(
     { role: 'system', content: KOREAN_ONLY_SYSTEM_PROMPT },
     { role: 'user', content: userBlock },
   ];
-  return runNewsSummaryProviders(messages, parseKoreanOnlyPayloadFromContent, 3100);
+  return runNewsSummaryProviders(messages, parseKoreanOnlyPayloadFromContent, 3600);
 }
 
 const EDITOR_NOTES_ONLY_SYSTEM_PROMPT = [
@@ -1171,21 +1287,7 @@ async function persistBilingualProcessedNews(
 ): Promise<SummarizeRowResult> {
   const url = row.external_url ?? '';
   const sanitized = sanitizeNewsPayloadTone(llm);
-  const cleanBody = JSON.stringify({
-    ko: {
-      title: sanitized.title_kr,
-      summary: sanitized.content_kr,
-      blurb: sanitized.ko_blurb,
-      ...(sanitized.ko_editor_note ? { editor_note: sanitized.ko_editor_note } : {}),
-    },
-    th: {
-      title: sanitized.title_th,
-      summary: sanitized.content_th,
-      blurb: sanitized.th_blurb,
-      ...(sanitized.th_editor_note ? { editor_note: sanitized.th_editor_note } : {}),
-    },
-    source_url: url,
-  });
+  const cleanBody = buildPersistedCleanBodyJson(sanitized, url);
 
   const publishedFlag =
     publishedOverride !== undefined ? publishedOverride : newsInsertAsPublished();
@@ -1257,6 +1359,15 @@ async function persistBilingualProcessedNews(
   return { raw_news_id: row.id, ok: true };
 }
 
+export type UpdateBilingualProcessedNewsOptions = {
+  /** 넣으면 `published` 를 함께 갱신 (관리자 한국어 재가공 시 false 로 승인 대기 고정) */
+  publishedPatch?: boolean;
+  /**
+   * true: `tips_articles` 동기화 생략 — 인사이트 엔진 일괄 재가공 시 기존 꿀팁 초안/게시 상태를 덮어쓰지 않음.
+   */
+  skipTipsArticles?: boolean;
+};
+
 /**
  * 기존 `processed_news` 행에 이중 요약을 다시 써 넣습니다(id·발행 상태 유지).
  */
@@ -1265,26 +1376,13 @@ async function updateBilingualProcessedNews(
   processedNewsId: string,
   row: RawNewsTodoRow,
   llm: LlmBilingualPayload,
-  /** 넣으면 `published` 를 함께 갱신 (관리자 한국어 재가공 시 false 로 승인 대기 고정) */
-  publishedPatch?: boolean,
+  options?: UpdateBilingualProcessedNewsOptions,
 ): Promise<SummarizeRowResult> {
   const url = row.external_url ?? '';
   const sanitized = sanitizeNewsPayloadTone(llm);
-  const cleanBody = JSON.stringify({
-    ko: {
-      title: sanitized.title_kr,
-      summary: sanitized.content_kr,
-      blurb: sanitized.ko_blurb,
-      ...(sanitized.ko_editor_note ? { editor_note: sanitized.ko_editor_note } : {}),
-    },
-    th: {
-      title: sanitized.title_th,
-      summary: sanitized.content_th,
-      blurb: sanitized.th_blurb,
-      ...(sanitized.th_editor_note ? { editor_note: sanitized.th_editor_note } : {}),
-    },
-    source_url: url,
-  });
+  const cleanBody = buildPersistedCleanBodyJson(sanitized, url);
+  const publishedPatch = options?.publishedPatch;
+  const skipTipsArticles = options?.skipTipsArticles === true;
 
   const { error: upErr } = await client
     .from('processed_news')
@@ -1330,25 +1428,151 @@ async function updateBilingualProcessedNews(
     return { raw_news_id: row.id, ok: false, error: sTh.message };
   }
 
-  const { error: tipUpsertError } = await client.from('tips_articles').upsert(
-    {
-      source_url: url || null,
-      title: sanitized.title_kr,
-      excerpt: sanitized.ko_blurb,
-      body_preview: sanitized.content_kr.slice(0, 900),
-      title_kr: sanitized.title_kr,
-      content_kr: sanitized.content_kr,
-      title_th: sanitized.title_th,
-      content_th: sanitized.content_th,
-      status: 'draft',
-    },
-    { onConflict: 'source_url' },
-  );
-  if (tipUpsertError) {
-    return { raw_news_id: row.id, ok: false, error: tipUpsertError.message };
+  if (!skipTipsArticles) {
+    const { error: tipUpsertError } = await client.from('tips_articles').upsert(
+      {
+        source_url: url || null,
+        title: sanitized.title_kr,
+        excerpt: sanitized.ko_blurb,
+        body_preview: sanitized.content_kr.slice(0, 900),
+        title_kr: sanitized.title_kr,
+        content_kr: sanitized.content_kr,
+        title_th: sanitized.title_th,
+        content_th: sanitized.content_th,
+        status: 'draft',
+      },
+      { onConflict: 'source_url' },
+    );
+    if (tipUpsertError) {
+      return { raw_news_id: row.id, ok: false, error: tipUpsertError.message };
+    }
   }
 
   return { raw_news_id: row.id, ok: true };
+}
+
+/** 인사이트 엔진(16키·ko/th insight·ai_signals) 기준으로 재가공이 필요한지 */
+export function needsInsightEngineRetrofit(cleanBody: string | null | undefined): boolean {
+  if (!cleanBody?.trim()) return true;
+  try {
+    const o = JSON.parse(cleanBody) as {
+      ko?: { insight_impact?: string; countermeasure?: string };
+      th?: { insight_impact?: string; countermeasure?: string };
+      ai_signals?: { incident_attention?: string };
+    };
+    const minKo = 6;
+    const minTh = 4;
+    const koI = o.ko?.insight_impact?.trim() ?? '';
+    const koC = o.ko?.countermeasure?.trim() ?? '';
+    const thI = o.th?.insight_impact?.trim() ?? '';
+    const thC = o.th?.countermeasure?.trim() ?? '';
+    const att = (o.ai_signals?.incident_attention ?? '').trim().toLowerCase();
+    if (koI.length < minKo || koC.length < minKo || thI.length < minTh || thC.length < minTh) return true;
+    if (att !== 'none' && att !== 'elevated' && att !== 'high') return true;
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+export type RetrofitInsightEngineBatchResult = {
+  llmConfigured: boolean;
+  scanned: number;
+  eligible: number;
+  ok: number;
+  failed: { id: string; error: string }[];
+};
+
+/**
+ * DB에 쌓인 `processed_news`를 `raw_news` 원문으로 다시 이중언어 LLM 가공(인사이트·대비책·ai_signals 포함).
+ * - 행 단위: LLM 성공 시에만 DB 갱신 → 실패 시 기존 clean_body 유지.
+ * - `skipTipsArticles`: 기본 true — `tips_articles` 게시/초안 상태를 뉴스 재가공으로 덮어쓰지 않음.
+ */
+export async function retrofitInsightEngineProcessedNewsBatch(params: {
+  limit: number;
+  onlyMissing: boolean;
+  skipTipsArticles?: boolean;
+}): Promise<RetrofitInsightEngineBatchResult> {
+  if (!isNewsSummaryLlmConfigured()) {
+    return { llmConfigured: false, scanned: 0, eligible: 0, ok: 0, failed: [] };
+  }
+  const limit = Math.min(Math.max(Math.floor(params.limit), 1), 25);
+  const onlyMissing = params.onlyMissing !== false;
+  const skipTipsArticles = params.skipTipsArticles !== false;
+
+  const client = getServerSupabaseClient();
+  const { data: rows, error } = await client
+    .from('processed_news')
+    .select('id, clean_body, language, raw_news_id, summaries(summary_text, model)')
+    .order('created_at', { ascending: false })
+    .limit(1200);
+
+  if (error) {
+    return {
+      llmConfigured: true,
+      scanned: 0,
+      eligible: 0,
+      ok: 0,
+      failed: [{ id: '-', error: error.message }],
+    };
+  }
+
+  const scanned = rows?.length ?? 0;
+  const candidates = (rows ?? []).filter((r) => {
+    const sums = r.summaries as { summary_text: string; model: string | null }[] | null;
+    if (
+      !passesKoPublicGate(
+        r.language as string | null,
+        (r.clean_body as string | null) ?? null,
+        sums,
+      )
+    ) {
+      return false;
+    }
+    if (onlyMissing && !needsInsightEngineRetrofit(r.clean_body as string | null)) return false;
+    return Boolean(r.raw_news_id);
+  });
+
+  const slice = candidates.slice(0, limit);
+  const eligible = slice.length;
+  const failed: { id: string; error: string }[] = [];
+  let ok = 0;
+
+  for (const pn of slice) {
+    const pid = String(pn.id);
+    const rawNewsId = String(pn.raw_news_id);
+    const { data: raw, error: rawErr } = await client
+      .from('raw_news')
+      .select('id, title, raw_body, external_url')
+      .eq('id', rawNewsId)
+      .maybeSingle();
+    if (rawErr || !raw) {
+      failed.push({ id: pid, error: rawErr?.message ?? 'raw_news 없음' });
+      continue;
+    }
+    const rowTodo = raw as RawNewsTodoRow;
+    let llm: LlmBilingualPayload;
+    try {
+      llm = await callBilingualSummary(
+        rowTodo.title?.trim() || '(제목 없음)',
+        rowTodo.raw_body,
+        rowTodo.external_url ?? '',
+      );
+    } catch (e) {
+      failed.push({
+        id: pid,
+        error: e instanceof Error ? e.message.slice(0, 500) : String(e),
+      });
+      continue;
+    }
+    const ur = await updateBilingualProcessedNews(client, pid, rowTodo, llm, {
+      skipTipsArticles,
+    });
+    if (ur.ok) ok += 1;
+    else failed.push({ id: pid, error: ur.error ?? '갱신 실패' });
+  }
+
+  return { llmConfigured: true, scanned, eligible, ok, failed };
 }
 
 /**
@@ -1489,7 +1713,7 @@ export async function adminReprocessProcessedNewsKoreanOnly(
     return { ok: false, error: e instanceof Error ? e.message.slice(0, 800) : String(e) };
   }
 
-  const ur = await updateBilingualProcessedNews(client, id, rowTodo, llm, false);
+  const ur = await updateBilingualProcessedNews(client, id, rowTodo, llm, { publishedPatch: false });
   if (!ur.ok) {
     return { ok: false, error: ur.error ?? 'DB 갱신 실패' };
   }

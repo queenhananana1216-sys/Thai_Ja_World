@@ -34,9 +34,11 @@ function shouldUseGracefulFallback(parts: {
   summary: string | null;
   blurb: string | null;
   editorNote: string | null;
+  insightImpact: string | null;
+  countermeasure: string | null;
 }): boolean {
-  return [parts.title, parts.summary, parts.blurb, parts.editorNote].some((v) =>
-    hasAiPipelineErrorText(v),
+  return [parts.title, parts.summary, parts.blurb, parts.editorNote, parts.insightImpact, parts.countermeasure].some(
+    (v) => hasAiPipelineErrorText(v),
   );
 }
 
@@ -374,6 +376,34 @@ export default async function NewsStoryPage({ params }: PageProps) {
             <p className="text-base leading-[1.85] text-slate-100 whitespace-pre-wrap wrap-break-word">
               {detail.editorNote}
             </p>
+          </div>
+        ) : null}
+
+        {user && !useGracefulFallback && (detail.insightImpact?.trim() || detail.countermeasure?.trim()) ? (
+          <div className={`${portalStyles.glassBlue} mt-8 p-4 sm:p-6`}>
+            <p className="mb-4 text-xs font-black uppercase tracking-[0.14em] text-sky-200">
+              {h.newsDetailInsightCardTitle}
+            </p>
+            {detail.insightImpact?.trim() ? (
+              <div className="mb-5">
+                <p className="mb-2 text-[0.7rem] font-bold uppercase tracking-wide text-slate-400">
+                  {h.newsDetailImpactLabel}
+                </p>
+                <p className="text-base leading-[1.85] text-slate-100 whitespace-pre-wrap wrap-break-word">
+                  {detail.insightImpact.trim()}
+                </p>
+              </div>
+            ) : null}
+            {detail.countermeasure?.trim() ? (
+              <div>
+                <p className="mb-2 text-[0.7rem] font-bold uppercase tracking-wide text-slate-400">
+                  {h.newsDetailCounterLabel}
+                </p>
+                <p className="text-base leading-[1.85] text-slate-100 whitespace-pre-wrap wrap-break-word">
+                  {detail.countermeasure.trim()}
+                </p>
+              </div>
+            ) : null}
           </div>
         ) : null}
 

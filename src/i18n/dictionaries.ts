@@ -139,6 +139,10 @@ export type Dictionary = {
     newsDetailSummaryLabel: string;
     /** 요약 아래 편집실 한마디 블록 */
     newsDetailEditorLabel: string;
+    /** 인사이트·대비책 카드 제목 */
+    newsDetailInsightCardTitle: string;
+    newsDetailImpactLabel: string;
+    newsDetailCounterLabel: string;
     newsDetailExternalCta: string;
     newsDetailExternalHint: string;
     newsDetailMissing: string;
@@ -790,6 +794,9 @@ const ko: Dictionary = {
     newsDetailWitLabel: '한 줄 코멘트',
     newsDetailSummaryLabel: '정리',
     newsDetailEditorLabel: '편집실 한마디',
+    newsDetailInsightCardTitle: "AI의 한마디 — 이렇게 대비하세요",
+    newsDetailImpactLabel: '상황과 영향',
+    newsDetailCounterLabel: '행동 지침',
     newsDetailExternalCta: '원문 기사 열기',
     newsDetailExternalHint: '출처 언론·매체 사이트로 이동해요.',
     newsDetailMissing: '찾으시는 소식이 없거나 기간이 지났어요. 홈으로 돌아가 주세요.',
@@ -1483,6 +1490,9 @@ const th: Dictionary = {
     newsDetailWitLabel: 'ทีเด็ด Thai Ja',
     newsDetailSummaryLabel: 'สรุป',
     newsDetailEditorLabel: 'จากโต๊ะบรรณาธิการ',
+    newsDetailInsightCardTitle: 'คำแนะจาก AI — รับมือแบบนี้',
+    newsDetailImpactLabel: 'สถานการณ์และผลกระทบ',
+    newsDetailCounterLabel: 'แนวทางปฏิบัติ',
     newsDetailExternalCta: 'เปิดบทความต้นทาง',
     newsDetailExternalHint: 'จะไปเว็บสื่อต้นทาง',
     newsDetailMissing: 'หาเรื่องนี้ไม่เจอหรือหมดอายุแล้ว กลับหน้าแรกได้เลย',

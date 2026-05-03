@@ -12,6 +12,7 @@ import type { NewsItem, LocalBusiness } from '@/types/taeworld';
 import {
   listTitleSummaryFromProcessedNoRaw,
   newsDetailFromProcessed,
+  newsFeedSignalsFromCleanBody,
   passesKoPublicGate,
   titleAndSummaryFromProcessed,
 } from '@/lib/news/processedNewsDisplay';
@@ -93,6 +94,7 @@ async function fetchNewsBrowser(): Promise<NewsItem[]> {
           'ko',
           { allowRawTitleFallback: false },
         );
+        const sig = newsFeedSignalsFromCleanBody((pn.clean_body as string | null) ?? null, 'ko');
         const localeSource = {
           clean_body: (pn.clean_body as string | null) ?? null,
           raw_title: null as string | null,
@@ -109,6 +111,9 @@ async function fetchNewsBrowser(): Promise<NewsItem[]> {
           published_at: pn.created_at != null ? String(pn.created_at) : null,
           summary_text: (parsedKo.summary_text ?? '').trim(),
           internalNewsId: String(pn.id),
+          newsAiBadge: sig.hasCountermeasure ? ('countermeasure' as const) : ('analyzed' as const),
+          newsIncidentAttention: sig.incidentAttention,
+          newsFeedWarning: sig.feedWarning,
           localeSource,
         };
       })
@@ -160,8 +165,29 @@ function NewsCardCompact({ item }: { item: NewsItem }) {
     </a>
   );
   const dek = item.summary_text?.trim();
+  const showIncident =
+    (item.newsIncidentAttention === 'elevated' || item.newsIncidentAttention === 'high') &&
+    Boolean(item.newsFeedWarning?.trim());
   return (
     <article className="news-card">
+      {item.internalNewsId && (item.newsAiBadge || showIncident) ? (
+        <div className="mb-1.5 flex flex-wrap gap-1">
+          {item.newsAiBadge === 'countermeasure' ? (
+            <span className="inline-flex rounded border border-emerald-500/40 bg-emerald-950/50 px-1.5 py-0.5 text-[0.65rem] font-bold text-emerald-100">
+              대비책 포함
+            </span>
+          ) : item.newsAiBadge === 'analyzed' ? (
+            <span className="inline-flex rounded border border-sky-500/35 bg-slate-900/80 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-100">
+              AI 분석 완료
+            </span>
+          ) : null}
+          {showIncident ? (
+            <span className="inline-flex max-w-full rounded border border-rose-500/40 bg-rose-950/45 px-1.5 py-0.5 text-[0.65rem] font-bold text-rose-100">
+              🚨 {item.newsFeedWarning}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       {titleNode}
       {dek ? <p className="news-card__summary">{dek}</p> : null}
       <div className="news-card__meta">

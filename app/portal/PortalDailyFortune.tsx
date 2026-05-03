@@ -86,8 +86,28 @@ export default function PortalDailyFortune({
         return;
       }
 
-      if (!norm) {
+      if (!res.ok) {
+        const failReason =
+          norm && norm.ok === false && typeof norm.reason === 'string' ? norm.reason : '';
+        if (
+          failReason === 'RPC_ERROR' ||
+          failReason === 'EMPTY_RESPONSE' ||
+          failReason === 'PARSE_ERROR' ||
+          failReason === 'EMPTY_OR_SHAPE'
+        ) {
+          toast.error(copy.fortuneErrorServer, { position: 'top-center' });
+          return;
+        }
+        if (!text.trim() || parsed === null) {
+          toast.error(copy.fortuneErrorNetwork, { position: 'top-center' });
+          return;
+        }
         toast.error(copy.fortuneErrorGeneric, { position: 'top-center' });
+        return;
+      }
+
+      if (!norm) {
+        toast.error(copy.fortuneErrorServer, { position: 'top-center' });
         return;
       }
 
@@ -97,6 +117,10 @@ export default function PortalDailyFortune({
         const amt = typeof norm.amount === 'number' && Number.isFinite(norm.amount) ? norm.amount : 0;
         const sid =
           typeof tipRaw?.sourcePostId === 'string' ? tipRaw.sourcePostId.trim() : '';
+        if (!body && !sid) {
+          toast.error(copy.fortuneErrorServer, { position: 'top-center' });
+          return;
+        }
         setTipBody(body || copy.fortuneTipFallback);
         setRewardAmount(amt);
         setTipHref(sid ? `/tips/${encodeURIComponent(sid)}` : null);

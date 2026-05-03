@@ -10,12 +10,26 @@ export type LangBlock = {
   blurb?: string;
   /** 편집실 한마디(요약 아래 표시). 구 기사에는 없을 수 있음 */
   editor_note?: string;
+  /** 교민·거주자에게 미치는 영향(인사이트) — 신규 파이프라인 */
+  insight_impact?: string;
+  /** 구체적 행동 지침 — 신규 파이프라인 */
+  countermeasure?: string;
+};
+
+export type NewsIncidentAttention = 'none' | 'elevated' | 'high';
+
+export type ParsedCleanBodyAiSignals = {
+  incident_attention?: NewsIncidentAttention;
+  feed_warning_ko?: string;
+  feed_warning_th?: string;
 };
 
 export type ParsedCleanBody = {
   ko?: LangBlock;
   th?: LangBlock;
   source_url?: string;
+  /** 목록 뱃지·경고 문구 — 신규 파이프라인 */
+  ai_signals?: ParsedCleanBodyAiSignals;
 };
 
 function parseCleanBodyFull(cleanBody: string | null | undefined): ParsedCleanBody {
@@ -216,7 +230,18 @@ export type NewsDetailParts = {
   /** 요약 뒤에 붙는 편집실 톤(선택) */
   editorNote: string | null;
   sourceUrl: string | null;
+  /** 이용자 영향 분석(로케일 우선) */
+  insightImpact: string | null;
+  /** 행동 지침(로케일 우선) */
+  countermeasure: string | null;
+  incidentAttention: NewsIncidentAttention;
 };
+
+function parseIncidentAttention(raw: unknown): NewsIncidentAttention {
+  const s = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+  if (s === 'high' || s === 'elevated' || s === 'none') return s;
+  return 'none';
+}
 
 export function newsDetailFromProcessed(
   cleanBody: string | null | undefined,
@@ -260,11 +285,62 @@ export function newsDetailFromProcessed(
     rawExternalUrl?.trim() ||
     null;
 
+  const insightRaw =
+    nonEmpty(primary?.insight_impact) ||
+    nonEmpty(fallback?.insight_impact) ||
+    null;
+  const counterRaw =
+    nonEmpty(primary?.countermeasure) ||
+    nonEmpty(fallback?.countermeasure) ||
+    null;
+  const incidentAttention = parseIncidentAttention(parsed.ai_signals?.incident_attention);
+
   return {
     title: base.title,
     summary: base.summary_text,
     blurb,
     editorNote: editorRaw,
     sourceUrl,
+    insightImpact: insightRaw,
+    countermeasure: counterRaw,
+    incidentAttention,
+  };
+}
+
+/** 포털·홈 뉴스 줄 — `clean_body`에서 배지·경고용 신호만 추출 */
+export function newsFeedSignalsFromCleanBody(
+  cleanBody: string | null | undefined,
+  locale: Locale,
+): {
+  hasCountermeasure: boolean;
+  incidentAttention: NewsIncidentAttention;
+  feedWarning: string | null;
+} {
+  const parsed = parseCleanBodyFull(cleanBody);
+  const ko = parsed.ko;
+  const th = parsed.th;
+  const primary = locale === 'th' ? th : ko;
+  const fallback = locale === 'th' ? ko : th;
+  const counter =
+    nonEmpty(primary?.countermeasure) ||
+    nonEmpty(fallback?.countermeasure) ||
+    null;
+  const incidentAttention = parseIncidentAttention(parsed.ai_signals?.incident_attention);
+  const fwKo =
+    typeof parsed.ai_signals?.feed_warning_ko === 'string'
+      ? parsed.ai_signals.feed_warning_ko.trim()
+      : '';
+  const fwTh =
+    typeof parsed.ai_signals?.feed_warning_th === 'string'
+      ? parsed.ai_signals.feed_warning_th.trim()
+      : '';
+  const feedWarning =
+    locale === 'th'
+      ? fwTh || fwKo || null
+      : fwKo || fwTh || null;
+  return {
+    hasCountermeasure: Boolean(counter?.trim()),
+    incidentAttention,
+    feedWarning: feedWarning || null,
   };
 }

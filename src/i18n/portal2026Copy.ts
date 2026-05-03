@@ -91,6 +91,13 @@ export type Portal2026Copy = {
   fortuneClose: string;
   /** site_settings 일일 스파크 — 포춘 버튼 위 테마 카드 제목 */
   fortuneSparkThemeTitle: string;
+  /** 포털 뉴스·꿀팁 줄 — AI 가공 뱃지 */
+  feedBadgeAiAnalyzed: string;
+  feedBadgeCountermeasure: string;
+  feedBadgeTipsHoney: string;
+  /** 포춘 API/네트워크 실패 구분 */
+  fortuneErrorNetwork: string;
+  fortuneErrorServer: string;
   /** 개인화·공동 미션 허브 */
   missionHubPersonalTitle: string;
   missionHubPersonalLoginHint: string;
@@ -182,6 +189,11 @@ const ko: Portal2026Copy = {
   fortuneReadMore: '꿀팁 허브에서 자세히 보기 →',
   fortuneClose: '닫기',
   fortuneSparkThemeTitle: '오늘의 운세 테마',
+  feedBadgeAiAnalyzed: 'AI 분석 완료',
+  feedBadgeCountermeasure: '대비책 포함',
+  feedBadgeTipsHoney: '실전 꿀팁',
+  fortuneErrorNetwork: '네트워크가 불안정해요. 잠시 후 다시 시도해 주세요.',
+  fortuneErrorServer: '서버 응답이 지연됐어요. 잠시 후 다시 시도해 주세요.',
   missionHubPersonalTitle: '오늘 나만의 미션',
   missionHubPersonalLoginHint: '로그인하면 활동 기반 맞춤 미션이 매일 표시됩니다.',
   missionHubPersonalEmpty: '오늘 미션을 준비하는 중이에요. 잠시 후 새로고침해 보세요.',
@@ -271,6 +283,11 @@ const th: Portal2026Copy = {
   fortuneReadMore: 'อ่านเพิ่มในฮับเคล็ดลับ →',
   fortuneClose: 'ปิด',
   fortuneSparkThemeTitle: 'ธีมดวงวันนี้ (ภาษาเกาหลี)',
+  feedBadgeAiAnalyzed: 'วิเคราะห์ AI แล้ว',
+  feedBadgeCountermeasure: 'มีแนวรับมือ',
+  feedBadgeTipsHoney: 'เคล็ดลับใช้จริง',
+  fortuneErrorNetwork: 'เน็ตเวิร์กไม่เสถียร ลองใหม่ในอีกสักครู่',
+  fortuneErrorServer: 'เซิร์ฟเวอร์ตอบช้า ลองใหม่ในอีกสักครู่',
   missionHubPersonalTitle: 'ภารกิจวันนี้ของคุณ',
   missionHubPersonalLoginHint: 'ล็อกอินเพื่อรับภารกิจรายวันตามพฤติกรรม',
   missionHubPersonalEmpty: 'กำลังเตรียมภารกิจ — ลองรีเฟรชอีกครั้ง',

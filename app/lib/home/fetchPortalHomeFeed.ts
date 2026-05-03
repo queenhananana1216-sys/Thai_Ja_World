@@ -48,6 +48,13 @@ export type PortalFeedLine = {
   liveViewCount?: number;
   liveCreatedAt?: string | null;
   liveHighlight?: boolean;
+  /** 뉴스 AI 가공 — 대비책 블록이 있으면 countermeasure */
+  newsAiBadge?: 'countermeasure' | 'analyzed';
+  /** 뉴스 사건 강도 — elevated/high 이면 🚨 경고 */
+  newsIncidentAttention?: 'none' | 'elevated' | 'high';
+  newsFeedWarning?: string | null;
+  /** 꿀팁 열 — 클릭 유도용 소프트 배지 */
+  tipsHoneyBadge?: boolean;
 };
 
 export type PortalWeeklyThaiRankRow = {
@@ -414,6 +421,7 @@ async function fetchPortalHomeFeedCore(portalLocale: Locale): Promise<PortalHome
             title,
             href: `/tips/${encodeURIComponent(id)}`,
             subtitle,
+            tipsHoneyBadge: true,
           };
         }),
       );
@@ -536,12 +544,25 @@ async function fetchPortalHomeFeedCore(portalLocale: Locale): Promise<PortalHome
         if (!id || !title) return null;
         const summaryOne =
           typeof r.summary === 'string' && r.summary.trim() ? r.summary.trim().slice(0, 96) : '';
+        const hasCm = Boolean(r.hasAiCountermeasure);
+        const att = r.newsIncidentAttention;
+        const incident =
+          att === 'elevated' || att === 'high' || att === 'none' ? att : ('none' as const);
+        const newsAiBadge: PortalFeedLine['newsAiBadge'] = hasCm
+          ? 'countermeasure'
+          : 'analyzed';
         return {
           id,
           title,
           href: `/news/${encodeURIComponent(id)}`,
           subtitle: summaryOne ? summaryOne : null,
           publishedAt: r.created_at?.trim() ? String(r.created_at) : null,
+          newsAiBadge,
+          newsIncidentAttention: incident,
+          newsFeedWarning:
+            typeof r.newsFeedWarning === 'string' && r.newsFeedWarning.trim()
+              ? r.newsFeedWarning.trim().slice(0, 72)
+              : null,
         };
       }),
     );

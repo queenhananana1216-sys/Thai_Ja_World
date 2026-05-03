@@ -17,7 +17,7 @@ import type { PortalDailySparkPayload } from '@/lib/portal/portalDailySpark';
 import type { SiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { siteUiDefaults } from '@/lib/site-settings/siteUiSettings';
 import { getDictionary } from '@/i18n/dictionaries';
-import { getPortal2026Copy } from '@/i18n/portal2026Copy';
+import { getPortal2026Copy, type Portal2026Copy } from '@/i18n/portal2026Copy';
 import { localizeQuestFeedText, stripQuestFeedWeatherClutter } from '@/lib/quests/questFeedLocale';
 import { isQuestMissionNoiseTitle } from '../lib/home/portalLiveFeedTitle';
 import PortalLocalDemoWingRolling from './PortalLocalDemoWingRolling';
@@ -257,6 +257,22 @@ function normalizeLines(lines: PortalFeedLine[] | null | undefined): PortalFeedL
     if (src.liveHighlight === true) {
       base.liveHighlight = true;
     }
+    if (src.newsAiBadge === 'countermeasure' || src.newsAiBadge === 'analyzed') {
+      base.newsAiBadge = src.newsAiBadge;
+    }
+    if (
+      src.newsIncidentAttention === 'elevated' ||
+      src.newsIncidentAttention === 'high' ||
+      src.newsIncidentAttention === 'none'
+    ) {
+      base.newsIncidentAttention = src.newsIncidentAttention;
+    }
+    if (src.newsFeedWarning != null && String(src.newsFeedWarning).trim()) {
+      base.newsFeedWarning = String(src.newsFeedWarning).trim().slice(0, 72);
+    }
+    if (src.tipsHoneyBadge === true) {
+      base.tipsHoneyBadge = true;
+    }
     out.push(base);
   }
   return out;
@@ -302,10 +318,12 @@ function NewsDenseRowLink({
   item,
   locale,
   isLoggedIn,
+  badgeCopy,
 }: {
   item: PortalFeedLine;
   locale: Locale;
   isLoggedIn: boolean;
+  badgeCopy: Pick<Portal2026Copy, 'feedBadgeAiAnalyzed' | 'feedBadgeCountermeasure'>;
 }) {
   const href = item.href?.trim() ? item.href : '/news';
   const d = getDictionary(locale);
@@ -313,18 +331,46 @@ function NewsDenseRowLink({
   const title = localizeQuestFeedText(item.title ?? '', locale, map);
   const summary = localizeQuestFeedText(item.subtitle?.trim() ?? '', locale, map);
   const age = formatPortalNewsAge(item.publishedAt ?? null, locale);
+  const showIncident =
+    (item.newsIncidentAttention === 'elevated' || item.newsIncidentAttention === 'high') &&
+    Boolean(item.newsFeedWarning?.trim());
+  const pillBase =
+    'inline-flex max-w-full shrink-0 items-center rounded-md border border-white/10 px-1.5 py-0.5 text-[0.62rem] font-bold leading-none max-[768px]:max-w-full md:max-w-[min(100%,14rem)] md:text-[0.7rem]';
   return (
     <li className="border-b border-slate-800/70 py-0.5 last:border-b-0 md:py-1">
+      <div className="mb-0.5 flex min-w-0 flex-wrap content-start items-start gap-x-1 gap-y-1 max-[768px]:flex-col max-[768px]:items-stretch">
+        {item.newsAiBadge === 'countermeasure' ? (
+          <span className={`${pillBase} border-emerald-500/35 bg-emerald-950/55 text-emerald-100`}>
+            {badgeCopy.feedBadgeCountermeasure}
+          </span>
+        ) : item.newsAiBadge === 'analyzed' ? (
+          <span className={`${pillBase} border-sky-500/30 bg-slate-900/80 text-sky-100`}>
+            {badgeCopy.feedBadgeAiAnalyzed}
+          </span>
+        ) : null}
+        {showIncident ? (
+          <span
+            className={`${pillBase} border-rose-500/40 bg-rose-950/50 text-rose-100`}
+            title={item.newsFeedWarning ?? undefined}
+          >
+            🚨 {item.newsFeedWarning}
+          </span>
+        ) : null}
+      </div>
       <GuestGateLink
         href={href}
         isLoggedIn={isLoggedIn}
-        className="flex min-h-9 min-w-0 flex-nowrap items-center gap-x-1.5 text-sm leading-snug text-gray-100 hover:text-amber-200 md:min-h-11 md:text-base"
+        className="flex min-h-9 min-w-0 flex-col gap-y-0.5 text-sm leading-snug text-gray-100 hover:text-amber-200 max-[768px]:items-start md:min-h-11 md:flex-row md:flex-nowrap md:items-center md:gap-x-1.5 md:text-base"
       >
-        <span className="min-w-0 max-w-[46%] shrink truncate break-words font-semibold text-white">{title}</span>
-        <span className="shrink-0 text-gray-300">·</span>
-        <span className="min-w-0 flex-1 truncate break-words text-gray-200">{summary || '—'}</span>
+        <span className="flex min-w-0 w-full flex-wrap items-baseline gap-x-1.5 gap-y-0.5 md:w-auto md:flex-nowrap md:truncate">
+          <span className="min-w-0 max-w-full shrink truncate font-semibold text-white md:max-w-[46%]">{title}</span>
+          <span className="hidden shrink-0 text-gray-300 md:inline">·</span>
+          <span className="min-w-0 flex-1 truncate text-gray-200 max-[768px]:w-full max-[768px]:text-[0.8125rem] md:max-w-none">
+            {summary || '—'}
+          </span>
+        </span>
         {age ? (
-          <span className="shrink-0 whitespace-nowrap text-xs text-gray-200 tabular-nums max-[768px]:text-[0.7rem] md:text-sm">
+          <span className="shrink-0 self-end whitespace-nowrap text-xs text-gray-200 tabular-nums max-[768px]:text-[0.7rem] md:self-auto md:text-sm">
             🕒 {age}
           </span>
         ) : null}
@@ -339,6 +385,8 @@ function FeedLineList({
   emptyMode = 'default',
   omitEmptyPlaceholder,
   lineLayout = 'default',
+  feedColumn = 'default',
+  badgeCopy,
   locale,
   newsHubMore,
   isLoggedIn,
@@ -350,6 +398,8 @@ function FeedLineList({
   omitEmptyPlaceholder?: boolean;
   /** processed_news 한 줄(제목·요약·시간) */
   lineLayout?: 'default' | 'news-dense';
+  feedColumn?: 'default' | 'news' | 'visaTips';
+  badgeCopy?: Pick<Portal2026Copy, 'feedBadgeAiAnalyzed' | 'feedBadgeCountermeasure' | 'feedBadgeTipsHoney'>;
   locale: Locale;
   newsHubMore: string;
   isLoggedIn: boolean;
@@ -370,6 +420,11 @@ function FeedLineList({
     return <EmptyState message={emptyMessage} />;
   }
   if (lineLayout === 'news-dense') {
+    const bc = badgeCopy ?? {
+      feedBadgeAiAnalyzed: 'AI',
+      feedBadgeCountermeasure: 'Tips',
+      feedBadgeTipsHoney: '',
+    };
     return (
       <ul className="max-h-[min(22rem,48vh)] min-h-0 overflow-y-auto overscroll-contain px-0.5 py-0.5 md:max-h-[min(11rem,36vh)] md:px-1">
         {safe.map((item, idx) => (
@@ -378,6 +433,7 @@ function FeedLineList({
             item={item}
             locale={locale}
             isLoggedIn={isLoggedIn}
+            badgeCopy={bc}
           />
         ))}
       </ul>
@@ -395,6 +451,11 @@ function FeedLineList({
             isLoggedIn={isLoggedIn}
             className="flex min-h-9 min-w-0 flex-col justify-center overflow-hidden py-0.5 hover:text-amber-200 md:min-h-11"
           >
+            {feedColumn === 'visaTips' && item.tipsHoneyBadge && badgeCopy ? (
+              <span className="mb-1 inline-flex w-fit max-w-full rounded-md border border-amber-500/35 bg-amber-950/40 px-1.5 py-0.5 text-[0.62rem] font-bold leading-none text-amber-100 md:text-[0.7rem]">
+                {badgeCopy.feedBadgeTipsHoney}
+              </span>
+            ) : null}
             <span className="line-clamp-2 break-words font-medium text-white">
               {localizeQuestFeedText(item?.title ?? '', locale, phraseMap)}
             </span>
@@ -688,6 +749,8 @@ export default function Portal2026View({
                     emptyMode={emptyMode}
                     omitEmptyPlaceholder={Boolean(showQuestBadge && questCat)}
                     lineLayout={board.key === 'news' ? 'news-dense' : 'default'}
+                    feedColumn={board.key === 'news' ? 'news' : board.key === 'visaTips' ? 'visaTips' : 'default'}
+                    badgeCopy={copy}
                     locale={locale}
                     newsHubMore={copy.newsHubMore}
                     isLoggedIn={isLoggedIn}
@@ -781,6 +844,7 @@ export default function Portal2026View({
                       item={n}
                       locale={locale}
                       isLoggedIn={isLoggedIn}
+                      badgeCopy={copy}
                     />
                   ))}
                 </ul>

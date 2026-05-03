@@ -17,6 +17,10 @@ export interface NewsItem {
   summary_text: string | null;
   /** processed_news id — 있으면 /news/[id] 내부 상세 */
   internalNewsId: string | null;
+  /** 홈 뉴스 카드 — AI 인사이트 파이프라인 뱃지(선택) */
+  newsAiBadge?: 'countermeasure' | 'analyzed';
+  newsIncidentAttention?: 'none' | 'elevated' | 'high';
+  newsFeedWarning?: string | null;
   /** 쿠키 로케일 변경 시 제목·요약 재계산 (있을 때만) */
   localeSource?: {
     clean_body: string | null;

@@ -10,6 +10,7 @@ import { unstable_cache } from 'next/cache';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import {
   listTitleSummaryFromProcessedNoRaw,
+  newsFeedSignalsFromCleanBody,
   passesKoPublicGate,
 } from '@/lib/news/processedNewsDisplay';
 import { getLocale } from '@/i18n/get-locale';
@@ -84,6 +85,12 @@ export type HomeNewsRow = {
   href: string;
   /** processed_news.created_at — 포털 한 줄 뉴스의 🕒 상대 시간 */
   created_at: string;
+  /** AI 인사이트 가공 — 대비책 블록 존재 */
+  hasAiCountermeasure?: boolean;
+  /** none | elevated | high — 목록 경고·뱃지 */
+  newsIncidentAttention?: 'none' | 'elevated' | 'high';
+  /** 짧은 경고 한 줄(로케일별) */
+  newsFeedWarning?: string | null;
 };
 
 export type HomeRecommendedRow = {
@@ -415,12 +422,16 @@ export async function fetchHomeNewsDigest(
     if (!parsed) continue;
     const t = parsed.title.trim();
     if (!t) continue;
+    const sig = newsFeedSignalsFromCleanBody((pn.clean_body as string | null) ?? null, loc);
     rows.push({
       id,
       title: t,
       summary: (parsed.summary_text ?? '').trim(),
       href: `/news/${encodeURIComponent(id)}`,
       created_at: pn.created_at != null ? String(pn.created_at) : '',
+      hasAiCountermeasure: sig.hasCountermeasure,
+      newsIncidentAttention: sig.incidentAttention,
+      newsFeedWarning: sig.feedWarning,
     });
     if (rows.length >= limit) break;
   }

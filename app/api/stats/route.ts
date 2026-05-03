@@ -1,11 +1,30 @@
 import { NextResponse } from 'next/server';
-import { createServiceRoleClient } from '@/lib/supabase/admin';
+import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 // 10분 캐시 — 매 요청마다 DB 쿼리하지 않도록
 export const revalidate = 600;
 
+const DEGRADED_STATS = {
+  memberCount: 0,
+  postCount: 0,
+  spotCount: 0,
+  newsCount: 0,
+  lastUpdatedAt: null as string | null,
+  degraded: true,
+};
+
 export async function GET() {
+  /** 빌드 타임·시크릿 미주입 시 throw 하지 않고 조용히 degraded (docker build 로그 스팸 방지). */
+  if (!isServiceRoleConfigured()) {
+    return NextResponse.json(DEGRADED_STATS, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+      },
+    });
+  }
+
   try {
     const admin = createServiceRoleClient();
 

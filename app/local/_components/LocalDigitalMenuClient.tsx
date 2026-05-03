@@ -15,6 +15,8 @@ import { createBrowserClient } from '@/lib/supabase/client';
 import { prefetchPublicWeatherLocale } from '@/lib/hooks/usePublicWeatherSwr';
 import type { Locale } from '@/i18n/types';
 import { normalizeLocalMenuListSection, type LocalMenuListSection } from './localMenuListSection';
+import LocalYoutubeBgmPlayer from './LocalYoutubeBgmPlayer';
+import { extractYoutubeVideoId } from '@/lib/youtube/extractYoutubeVideoId';
 
 export type MenuLang = 'ko' | 'th' | 'en' | 'zh';
 
@@ -57,8 +59,8 @@ function bgmAutoplaySrc(raw: string | null | undefined): string | null {
   const u = raw?.trim();
   if (!u) return null;
   try {
-    const url = new URL(u);
-    if (url.hostname.includes('youtube.com')) {
+    const url = new URL(u, typeof window !== 'undefined' ? window.location.origin : 'https://local.invalid');
+    if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
       url.searchParams.set('autoplay', '1');
       url.searchParams.set('mute', '1');
       url.searchParams.set('playsinline', '1');
@@ -67,6 +69,12 @@ function bgmAutoplaySrc(raw: string | null | undefined): string | null {
   } catch {
     return u;
   }
+}
+
+function legacyAudioBgmSrc(raw: string): boolean {
+  const s = raw.trim();
+  if (s.startsWith('/audio/')) return true;
+  return /\.(mp3|ogg|wav|m4a|aac)(\?|#|$)/i.test(s);
 }
 
 function themeRecord(raw: unknown): Record<string, unknown> {
@@ -333,6 +341,45 @@ function menuCardShell(extra = '') {
   return `overflow-hidden rounded-2xl border border-white/[0.12] bg-white/[0.07] shadow-[0_20px_56px_rgba(0,0,0,0.5)] backdrop-blur-2xl backdrop-saturate-150 ring-1 ring-white/[0.06] transition hover:ring-white/12 ${extra}`;
 }
 
+function LocalMinihomeLegacyAudioBgm({ src }: { src: string }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [needsTap, setNeedsTap] = useState(false);
+
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    el.volume = 0.35;
+    void el.play().catch(() => setNeedsTap(true));
+  }, [src]);
+
+  return (
+    <div className="fixed bottom-24 left-4 z-[35] flex flex-col gap-1">
+      <audio ref={audioRef} src={src} loop preload="metadata" className="hidden" />
+      <div
+        className="flex items-center gap-1 rounded-full border border-teal-600/35 bg-[#132028]/95 px-2 py-1 text-[10px] font-bold tracking-wide text-teal-100 shadow-md backdrop-blur-sm"
+        style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }}
+      >
+        <span className="select-none text-[11px]" aria-hidden>
+          📼
+        </span>
+        {needsTap ? (
+          <button
+            type="button"
+            onClick={() => {
+              void audioRef.current?.play().then(() => setNeedsTap(false));
+            }}
+            className="rounded-full bg-teal-800/55 px-2 py-0.5 text-[9px] text-teal-50 hover:bg-teal-700/55"
+          >
+            탭하여 재생
+          </button>
+        ) : (
+          <span className="text-[9px] text-teal-200/80">BGM</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function LocalDigitalMenuClient(props: {
   spot: SpotLite;
   menus: LocalMenuRow[];
@@ -385,7 +432,12 @@ export default function LocalDigitalMenuClient(props: {
 
   const sb = useMemo(() => createBrowserClient(), []);
 
-  const bgmSrc = useMemo(() => bgmAutoplaySrc(spot.minihome_bgm_url ?? null), [spot.minihome_bgm_url]);
+  const bgmRaw = spot.minihome_bgm_url?.trim() ?? '';
+  const bgmYoutubeId = useMemo(() => extractYoutubeVideoId(bgmRaw || null), [bgmRaw]);
+  const bgmOtherSrc = useMemo(() => {
+    if (!bgmRaw || bgmYoutubeId) return null;
+    return bgmAutoplaySrc(bgmRaw);
+  }, [bgmRaw, bgmYoutubeId]);
 
   const [expandedMenuId, setExpandedMenuId] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
@@ -945,13 +997,19 @@ export default function LocalDigitalMenuClient(props: {
         onChange={(e) => void onNewMenuImageSelected(e.target.files)}
       />
 
-      {bgmSrc ? (
-        <iframe
-          title="매장 BGM"
-          src={bgmSrc}
-          className="pointer-events-none fixed bottom-24 left-4 z-[35] h-[72px] w-[128px] rounded-lg opacity-35 shadow-lg ring-1 ring-white/15"
-          allow="autoplay; encrypted-media; fullscreen"
-        />
+      {bgmYoutubeId ? (
+        <LocalYoutubeBgmPlayer videoId={bgmYoutubeId} />
+      ) : bgmOtherSrc ? (
+        legacyAudioBgmSrc(bgmOtherSrc) ? (
+          <LocalMinihomeLegacyAudioBgm src={bgmOtherSrc} />
+        ) : (
+          <iframe
+            title="매장 BGM"
+            src={bgmOtherSrc}
+            className="pointer-events-none fixed bottom-24 left-4 z-[35] h-[72px] w-[128px] rounded-lg opacity-35 shadow-lg ring-1 ring-white/15"
+            allow="autoplay; encrypted-media; fullscreen"
+          />
+        )
       ) : null}
       <header className={`sticky top-0 z-20 ${glassPanel('border-b border-white/10 px-4 py-4')}`}>
         <div className="mx-auto flex max-w-lg flex-col gap-3">

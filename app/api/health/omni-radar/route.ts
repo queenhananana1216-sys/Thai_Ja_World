@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import {
   checkBoardPostsReadProbe,
+  checkChaosHttpImmuneTraining,
   checkChaosMonkeyRadar,
   checkShadowQaRadar,
   checkUiIncidentRadar,
@@ -153,7 +154,7 @@ function checkRuntimeResources(): CheckRuntime {
 }
 
 export async function GET(): Promise<NextResponse> {
-  const [database, weather, runtime, cron_radar, shadow_qa, chaos_monkey, ui_surface, board_posts_read] =
+  const [database, weather, runtime, cron_radar, shadow_qa, chaos_base, immune_train, ui_surface, board_posts_read] =
     await Promise.all([
       checkLiveSqlPing(),
       checkWeatherPipeline(),
@@ -161,9 +162,16 @@ export async function GET(): Promise<NextResponse> {
       checkCronRadar(),
       checkShadowQaRadar(),
       checkChaosMonkeyRadar(),
+      checkChaosHttpImmuneTraining(),
       checkUiIncidentRadar(),
       checkBoardPostsReadProbe(),
     ]);
+
+  const chaos_monkey = {
+    ...chaos_base,
+    immune_training_active: immune_train.active,
+    immune_training_since: immune_train.since,
+  };
 
   const chaosOk = chaos_monkey.ok || chaos_monkey.skipped === true;
   const shadow_write_ok = shadow_qa.skipped === true || shadow_qa.ok;

@@ -9,19 +9,20 @@ import { useEffect, useState, type FormEvent } from 'react';
 import AuthPageShell from '../_components/AuthPageShell';
 import AuthPasswordInput from '../_components/AuthPasswordInput';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
+import { mapSupabasePasswordPolicyError } from '@/lib/auth/mapSupabasePasswordPolicyError';
 import { checkPasswordStrength, type PasswordPolicyMessages } from '@/lib/auth/passwordPolicy';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 function passwordMsgs(auth: {
   passwordTooShort: string;
   passwordTooLong: string;
-  passwordNeedMix: string;
+  passwordNeedLetterDigitSymbol: string;
   passwordBanned: string;
 }): PasswordPolicyMessages {
   return {
     tooShort: auth.passwordTooShort,
     tooLong: auth.passwordTooLong,
-    needLetterDigit: auth.passwordNeedMix,
+    needLetterDigitSymbol: auth.passwordNeedLetterDigitSymbol,
     banned: auth.passwordBanned,
   };
 }
@@ -55,7 +56,7 @@ export default function ResetPasswordPage() {
     const { error: err } = await sb.auth.updateUser({ password });
     setLoading(false);
     if (err) {
-      setError(err.message);
+      setError(mapSupabasePasswordPolicyError(err.message, a.passwordNeedLetterDigitSymbol));
       return;
     }
     router.push('/auth/login');

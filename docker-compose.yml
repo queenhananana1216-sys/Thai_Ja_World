@@ -1,0 +1,121 @@
+# 태자월드 — 웹 + Chaos Watchdog (로그 감시 / 셀프힐링용 AI 프롬프트 생성)
+#
+# 사용 전:
+#   1) F:\02_Master_Keys\API_JSON\.env.docker 가 존재하고 빌드에 필요한 값이 채워져 있어야 합니다.
+#   2) 프로젝트 루트에서: docker compose up --build
+#
+# Slack/Discord 알림(선택): 호스트 환경변수 또는 프로젝트 루트 `.env`(Compose 치환용, 커밋 금지)에
+#   SLACK_WEBHOOK_URL / DISCORD_WEBHOOK_URL 을 넣으면 Watchdog 컨테이너로 전달됩니다.
+#   Watchdog에는 앱용 `.env.docker`를 넣지 않습니다(불필요 시크릿 노출 방지).
+#
+# ai-watchdog 은 Docker 소켓을 마운트합니다(로컬 개발용). 프로덕션에서는 로그 드라이버·관측 스택으로 대체하세요.
+#
+# chaos-http-monkey: Node — `scripts/chaos_monkey.js` 가 방콕 03:00 에 HTTP 프로브 + chaos-http-wave 로그(레이더 주황/초록).
+# cron-ticker: Vercel Cron 대체 — 4시간마다 내부 네트워크로 /api/cron/auto-content 호출(Bearer CRON_SECRET 은 .env.docker 와 동일 파일).
+#
+# 환경 파일 경로를 바꾸려면 호스트에 THAIJA_ENV_DOCKER_FILE 을 설정하거나, 아래 default 경로를 수정하세요.
+
+name: thaija-world
+
+networks:
+  thaija_net:
+    driver: bridge
+
+secrets:
+  dockerenv:
+    file: ${THAIJA_ENV_DOCKER_FILE:-F:/02_Master_Keys/API_JSON/.env.docker}
+
+volumes:
+  watchdog_alerts:
+
+services:
+  thaija-web:
+    # 런타임: 호스트의 `.env.docker` 를 컨테이너 환경변수로 주입 (아래 env_file).
+    # 빌드: 동일 파일을 BuildKit secret `dockerenv` 로 넘겨 `next build` 시 NEXT_PUBLIC_* 등 주입.
+    # 두 경로 모두 기본값 `THAIJA_ENV_DOCKER_FILE` 과 secrets.dockerenv 가 같은 파일을 가리키도록 맞춤.
+    build:
+      context: .
+      dockerfile: Dockerfile
+      secrets:
+        - dockerenv
+    env_file:
+      - ${THAIJA_ENV_DOCKER_FILE:-F:/02_Master_Keys/API_JSON/.env.docker}
+    ports:
+      - "3000:3000"
+    networks:
+      - thaija_net
+    restart: always
+
+  ai-watchdog:
+    build:
+      context: ./watchdog
+      dockerfile: Dockerfile
+    environment:
+      COMPOSE_PROJECT_NAME: thaija-world
+      WATCH_SERVICE: thaija-web
+      WATCHDOG_DEBOUNCE_SEC: ${WATCHDOG_DEBOUNCE_SEC:-90}
+      WATCHDOG_CONTEXT_LINES: ${WATCHDOG_CONTEXT_LINES:-28}
+      ALERT_LOG_PATH: /var/log/watchdog/alerts.log
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+      WATCHDOG_EXTRA_REGEX: ${WATCHDOG_EXTRA_REGEX:-}
+      # 웹 내부 ingest — 동일 Bearer 시크릿은 env_file(.env.docker)에서 로드
+      SANDBOX_PROPOSAL_INGEST_URL: http://thaija-web:3000/api/internal/sandbox-proposals
+      # 호스트 프로젝트 루트 바인드 → WATCHDOG_FIX_PROMPT.txt 생성
+      WATCHDOG_PROMPT_OUT_DIR: /workspace
+    # 웹과 달리 Watchdog는 앱 시크릿이 필요 없습니다. 웹훅만 호스트/compose 변수로 넣으세요.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - watchdog_alerts:/var/log/watchdog
+      - .:/workspace:rw
+    networks:
+      - thaija_net
+    depends_on:
+      - thaija-web
+    restart: always
+
+  # HTTP 카오스 몽키 — 방콕 매일 03:00 에 비정상 페이로드 프로브 (레이더 주황 → 완료 후 초록).
+  # `.env.docker` 에 CHAOS_HTTP_WAVE_SECRET(또는 SANDBOX_PROPOSAL_INGEST_SECRET) 가 웹과 동일해야 함.
+  chaos-http-monkey:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - .:/app:ro
+    env_file:
+      - ${THAIJA_ENV_DOCKER_FILE:-F:/02_Master_Keys/API_JSON/.env.docker}
+    environment:
+      CHAOS_BASE_URL: http://thaija-web:3000
+    networks:
+      - thaija_net
+    depends_on:
+      - thaija-web
+    restart: always
+    command: ["node", "scripts/chaos_monkey.js"]
+
+  cron-ticker:
+    image: alpine:3.20
+    env_file:
+      - ${THAIJA_ENV_DOCKER_FILE:-F:/02_Master_Keys/API_JSON/.env.docker}
+    networks:
+      - thaija_net
+    depends_on:
+      - thaija-web
+    restart: always
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        apk add --no-cache curl >/dev/null
+        URL=http://thaija-web:3000/api/cron/auto-content
+        while true; do
+          echo "[cron-ticker] $$(date -u +%Y-%m-%dT%H:%M:%SZ) GET $$URL"
+          if [ -n "$$CRON_SECRET" ]; then
+            curl -fsS -m 600 -H "Authorization: Bearer $$CRON_SECRET" "$$URL" \
+              || echo "[cron-ticker] curl failed ($$?)"
+          else
+            curl -fsS -m 600 "$$URL" \
+              || echo "[cron-ticker] curl failed ($$?)"
+          fi
+          sleep 14400
+        done

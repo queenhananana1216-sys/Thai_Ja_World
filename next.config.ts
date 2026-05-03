@@ -4,6 +4,8 @@ import type { NextConfig } from 'next';
 // CACHE_BUSTER: 2026-05-01-FORCE-DEPLOY — Vercel 이전 빌드 산출물 재사용 회피(설정 해시 변경)
 
 const nextConfig: NextConfig = {
+  /** Docker / self-hosted: minimal Node bundle via `.next/standalone` */
+  output: 'standalone',
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [

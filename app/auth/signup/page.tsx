@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useRef, useState, type FormEvent } from 'react';
+import { Suspense, useMemo, useRef, useState, type FormEvent } from 'react';
+import { z } from 'zod';
 import AuthPageShell from '../_components/AuthPageShell';
 import AuthPasswordInput from '../_components/AuthPasswordInput';
 import DailyNewsPushOptIn from '../_components/DailyNewsPushOptIn';
 import SocialAuthButtons from '../_components/SocialAuthButtons';
 import TurnstileField from '../_components/TurnstileField';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
+import { mapSupabasePasswordPolicyError } from '@/lib/auth/mapSupabasePasswordPolicyError';
 import { checkPasswordStrength, type PasswordPolicyMessages } from '@/lib/auth/passwordPolicy';
 import { PENDING_VERIFICATION_EMAIL_KEY } from '@/lib/auth/pendingVerification';
 import { supabaseAuthCaptchaOptions, verifyTurnstileOnSubmit } from '@/lib/auth/verifyTurnstileClient';
@@ -30,13 +32,13 @@ function AuthSuspenseFallback() {
 function passwordMsgs(auth: {
   passwordTooShort: string;
   passwordTooLong: string;
-  passwordNeedMix: string;
+  passwordNeedLetterDigitSymbol: string;
   passwordBanned: string;
 }): PasswordPolicyMessages {
   return {
     tooShort: auth.passwordTooShort,
     tooLong: auth.passwordTooLong,
-    needLetterDigit: auth.passwordNeedMix,
+    needLetterDigitSymbol: auth.passwordNeedLetterDigitSymbol,
     banned: auth.passwordBanned,
   };
 }
@@ -59,6 +61,23 @@ function SignupForm() {
   const turnstileTokenRef = useRef<string | null>(null);
   const authInFlightRef = useRef(false);
 
+  const signupSchema = useMemo(
+    () =>
+      z
+        .object({
+          email: z.string().trim().min(1, { message: a.emailRequired }).email({ message: a.emailInvalid }),
+          displayName: z.string().max(40, { message: a.nickTooLong }),
+          password: z.string(),
+        })
+        .superRefine((data, ctx) => {
+          const pw = checkPasswordStrength(data.password, passwordMsgs(a));
+          if (!pw.ok) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: pw.message, path: ['password'] });
+          }
+        }),
+    [a],
+  );
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (authInFlightRef.current) return;
@@ -69,9 +88,16 @@ function SignupForm() {
       return;
     }
 
-    const pw = checkPasswordStrength(password, passwordMsgs(a));
-    if (!pw.ok) {
-      setError(pw.message);
+    const parsed = signupSchema.safeParse({ email, password, displayName });
+    if (!parsed.success) {
+      const first = parsed.error.flatten().fieldErrors;
+      const msg =
+        first.email?.[0] ??
+        first.displayName?.[0] ??
+        first.password?.[0] ??
+        parsed.error.issues[0]?.message ??
+        a.emailInvalid;
+      setError(msg);
       return;
     }
 
@@ -87,6 +113,8 @@ function SignupForm() {
       return;
     }
 
+    const { email: em, password: pw, displayName: nick } = parsed.data;
+
     authInFlightRef.current = true;
     setLoading(true);
     try {
@@ -94,10 +122,10 @@ function SignupForm() {
       const origin = getAuthSiteOrigin();
       const captchaOpts = supabaseAuthCaptchaOptions(HAS_TURNSTILE_UI, turnstileTokenRef.current);
       const { data, error: err } = await sb.auth.signUp({
-        email: email.trim(),
-        password,
+        email: em,
+        password: pw,
         options: {
-          data: { display_name: displayName.trim() || email.split('@')[0] },
+          data: { display_name: nick.trim() || em.split('@')[0] },
           emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
           ...captchaOpts,
         },
@@ -108,7 +136,8 @@ function SignupForm() {
           turnstileTokenRef.current = null;
           setTurnstileKey((k) => k + 1);
         }
-        setError(message);
+        const friendly = mapSupabasePasswordPolicyError(message, a.passwordNeedLetterDigitSymbol);
+        setError(friendly);
         return;
       }
       if (data.session) {
@@ -122,7 +151,7 @@ function SignupForm() {
         return;
       }
       try {
-        sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, email.trim());
+        sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, em);
       } catch {
         /* ignore */
       }

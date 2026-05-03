@@ -117,5 +117,10 @@ export async function GET(req: Request) {
     }
   }
 
+  if (url?.trim() && key?.trim()) {
+    const sbLog = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    void Promise.resolve(sbLog.rpc('portal_log_site_search', { p_query: q })).catch(() => {});
+  }
+
   return NextResponse.json({ pages, news });
 }

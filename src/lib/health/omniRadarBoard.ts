@@ -7,6 +7,9 @@ const SHADOW_SUCCESS_MAX_AGE_MS = 45 * 60 * 1000;
 const UI_INCIDENT_WINDOW_MS = 30 * 60 * 1000;
 
 const CHAOS_MONKEY_PIPELINE = 'cron/chaos-monkey';
+const CHAOS_HTTP_WAVE_PIPELINE = 'cron/chaos-http-wave';
+/** HTTP 웨이브 시작 후 complete 미기록 시 주황 유지 상한 */
+const CHAOS_IMMUNE_TRAINING_MAX_MS = 30 * 60 * 1000;
 /** 일일 크론 간격 고려 */
 const CHAOS_SUCCESS_MAX_AGE_MS = 52 * 60 * 60 * 1000;
 const CHAOS_STATS_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -51,6 +54,9 @@ export type ChaosMonkeyRadar = {
   last_self_heal_at?: string | null;
   /** 최근 자가 복구(셀프힐) 이벤트가 있으면 날씨 위젯 방패 펄스 */
   shield_pulse?: boolean;
+  /** HTTP 카오스 웨이브 진행 중 — 레이더 주황(자가 면역 훈련) */
+  immune_training_active?: boolean;
+  immune_training_since?: string | null;
 };
 
 export async function checkShadowQaRadar(): Promise<ShadowQaRadar> {
@@ -128,6 +134,59 @@ function metaRecord(row: { meta?: unknown }): Record<string, unknown> | null {
   const m = row.meta;
   if (m && typeof m === 'object' && !Array.isArray(m)) return m as Record<string, unknown>;
   return null;
+}
+
+/** 도커 chaos_monkey.js 웨이브 — started 기록이 completed 보다 최신이면 면역 훈련 중(주황). */
+export async function checkChaosHttpImmuneTraining(): Promise<{
+  active: boolean;
+  since: string | null;
+}> {
+  const admin = createServiceRoleClient();
+  const { data, error } = await admin
+    .from('publish_logs')
+    .select('published_at, meta')
+    .eq('channel', 'cron_pipeline')
+    .eq('target_type', 'cron_pipeline')
+    .eq('target_id', CHAOS_HTTP_WAVE_PIPELINE)
+    .order('published_at', { ascending: false })
+    .limit(120);
+
+  if (error) {
+    return { active: false, since: null };
+  }
+
+  let maxStart = 0;
+  let maxComplete = 0;
+  let sinceIso: string | null = null;
+
+  for (const row of data ?? []) {
+    const m = metaRecord(row);
+    if (m?.event !== 'chaos_http_wave') continue;
+    const phase = String(m.training_phase ?? '');
+    const t = Date.parse(row.published_at);
+    if (!Number.isFinite(t)) continue;
+    if (phase === 'started' && t > maxStart) {
+      maxStart = t;
+      sinceIso = row.published_at;
+    }
+    if (phase === 'completed' && t > maxComplete) {
+      maxComplete = t;
+    }
+  }
+
+  if (maxStart === 0) {
+    return { active: false, since: null };
+  }
+
+  if (maxComplete >= maxStart) {
+    return { active: false, since: null };
+  }
+
+  if (Date.now() - maxStart > CHAOS_IMMUNE_TRAINING_MAX_MS) {
+    return { active: false, since: null };
+  }
+
+  return { active: true, since: sinceIso };
 }
 
 export async function checkChaosMonkeyRadar(): Promise<ChaosMonkeyRadar> {

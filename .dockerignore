@@ -1,0 +1,34 @@
+# dependencies
+node_modules
+npm-debug.log*
+yarn-error.log*
+
+# build / cache
+.next
+out
+dist
+.turbo
+
+# git / IDE
+.git
+.gitignore
+.cursor
+.vscode
+
+# env (secrets come from host — see Dockerfile comment / --secret)
+.env
+.env.*
+!.env.example
+
+# misc
+README.md
+*.md
+.DS_Store
+Thumbs.db
+.vercel
+.tmp
+cookbook
+
+# tests / tooling (adjust if you need them in image)
+coverage
+.nyc_output

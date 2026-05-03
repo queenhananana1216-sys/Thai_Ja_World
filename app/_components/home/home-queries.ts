@@ -1117,3 +1117,61 @@ export async function fetchHomeUxSnapshot(): Promise<{
     error: null,
   };
 }
+
+/** 포털 급상승 검색어 — `portal_trending_search_queries` (마이그레이션 146) */
+export type PortalTrendingKeywordRow = {
+  rank: number;
+  query: string;
+  count: number;
+};
+
+export async function fetchPortalTrendingKeywords(limit = 10): Promise<PortalTrendingKeywordRow[]> {
+  const sb = tryCreateCached() ?? tryCreate();
+  if (!sb) return [];
+  const lim = Math.min(Math.max(Math.floor(limit), 1), 50);
+  const { data, error } = await sb.rpc('portal_trending_search_queries', {
+    p_hours: 48,
+    p_limit: lim,
+  });
+  if (error || !Array.isArray(data)) return [];
+  const out: PortalTrendingKeywordRow[] = [];
+  for (const raw of data as Record<string, unknown>[]) {
+    const query = String(raw.query ?? '').trim();
+    if (!query) continue;
+    out.push({
+      rank: Number(raw.rank ?? out.length + 1),
+      query,
+      count: Number(raw.cnt ?? raw.count ?? 0),
+    });
+  }
+  return out;
+}
+
+/** 포털 「지금 태국은?」 이미지 스트립 — `portal_recent_photo_strip` */
+export type PortalThailandPhotoStripItem = {
+  href: string;
+  thumbUrl: string;
+  title: string;
+};
+
+export async function fetchPortalThailandPhotoStrip(limit = 10): Promise<PortalThailandPhotoStripItem[]> {
+  const sb = tryCreateCached() ?? tryCreate();
+  if (!sb) return [];
+  const lim = Math.min(Math.max(Math.floor(limit), 1), 30);
+  const { data, error } = await sb.rpc('portal_recent_photo_strip', { p_limit: lim });
+  if (error || !Array.isArray(data)) return [];
+  const out: PortalThailandPhotoStripItem[] = [];
+  for (const raw of data as Record<string, unknown>[]) {
+    const source = String(raw.source ?? '').trim();
+    const id = String(raw.post_id ?? '').trim();
+    const thumbUrl = String(raw.thumb_url ?? '').trim();
+    const title = String(raw.title ?? '').trim();
+    if (!id || !thumbUrl) continue;
+    const href =
+      source === 'board'
+        ? `/boards/${encodeURIComponent(id)}`
+        : `/community/boards/${encodeURIComponent(id)}`;
+    out.push({ href, thumbUrl, title: title || 'photo' });
+  }
+  return out;
+}

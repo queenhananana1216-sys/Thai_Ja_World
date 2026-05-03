@@ -1,6 +1,8 @@
 import 'server-only';
 
 import Stripe from 'stripe';
+import type { PremiumPlanId } from '@/lib/payments/premiumPlans';
+import { PREMIUM_PLANS } from '@/lib/payments/premiumPlans';
 
 let stripeClient: Stripe | null = null;
 
@@ -47,6 +49,57 @@ export async function createStripeCheckoutSession(input: {
 }
 
 export type LocalSpotSubscriptionStatus = 'none' | 'trialing' | 'active' | 'canceled';
+
+/** 소비자 프리미엄 구독이 유료 혜택으로 간주되는 Stripe 상태 */
+export function premiumSubscriptionIsPaying(status: Stripe.Subscription.Status): boolean {
+  return status === 'active' || status === 'trialing' || status === 'past_due';
+}
+
+export async function createPremiumSubscriptionCheckoutSession(input: {
+  profileId: string;
+  planId: PremiumPlanId;
+  successUrl: string;
+  cancelUrl: string;
+  customerEmail?: string;
+  idempotencyKey?: string;
+}) {
+  const plan = PREMIUM_PLANS[input.planId];
+  const stripe = getStripeClient();
+  const metadata = {
+    tjw_premium: '1',
+    profileId: input.profileId,
+    premiumPlan: input.planId,
+  } as const;
+
+  return stripe.checkout.sessions.create(
+    {
+      mode: 'subscription',
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'krw',
+            unit_amount: plan.amountKrw,
+            recurring: { interval: 'month' },
+            product_data: {
+              name: `태자월드 프리미엄 · ${plan.label}`,
+              description: '월 구독 — 스폰서 배너·광고 없는 미니홈 등 혜택',
+            },
+          },
+        },
+      ],
+      success_url: input.successUrl,
+      cancel_url: input.cancelUrl,
+      client_reference_id: input.profileId,
+      metadata: { ...metadata },
+      subscription_data: {
+        metadata: { ...metadata },
+      },
+      customer_email: input.customerEmail?.trim() || undefined,
+    },
+    input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined,
+  );
+}
 
 export function mapStripeSubscriptionToLocalStatus(
   status: Stripe.Subscription.Status,

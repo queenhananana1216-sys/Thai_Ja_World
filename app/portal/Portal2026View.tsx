@@ -24,6 +24,10 @@ import PortalWeatherWidget from './PortalWeatherWidget';
 import PortalLiveFeedMultiTab from './PortalLiveFeedMultiTab';
 import PortalBalancePoll from './PortalBalancePoll';
 import PortalDotoriHallOfFame from './PortalDotoriHallOfFame';
+import PortalThailandPhotoStrip from './PortalThailandPhotoStrip';
+import PortalTrendingTicker from './PortalTrendingTicker';
+import PortalDailyFortune from './PortalDailyFortune';
+import { ThbKrwQuickMenuTile } from '@app/_components/ThbKrwBottomSheet';
 import styles from './portal-2026.module.css';
 
 /** 통합 피드 id 접두(`post-uuid` 등)·순수 UUID 기본 상세 경로 — href 누락 시 허브(`/boards`)로 잘못 가는 것 방지 */
@@ -96,6 +100,8 @@ function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
       siteTotals: null,
       weeklyDotoriRanking: [],
       featuredPoll: null,
+      trendingKeywords: [],
+      thailandPhotos: [],
     };
   }
   const rk = Array.isArray(input.weeklyDotoriRanking) ? input.weeklyDotoriRanking : [];
@@ -160,6 +166,40 @@ function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
         optionB: fp.optionB.trim(),
       };
     })(),
+    trendingKeywords: Array.isArray(input.trendingKeywords)
+      ? input.trendingKeywords
+          .filter(
+            (t): t is { rank: number; query: string; count: number } =>
+              t != null &&
+              typeof t === 'object' &&
+              typeof (t as { query?: unknown }).query === 'string' &&
+              String((t as { query: string }).query).trim().length > 0,
+          )
+          .map((t) => ({
+            rank: typeof t.rank === 'number' && Number.isFinite(t.rank) ? t.rank : 0,
+            query: String(t.query).trim(),
+            count: typeof t.count === 'number' && Number.isFinite(t.count) ? t.count : 0,
+          }))
+          .slice(0, 10)
+      : [],
+    thailandPhotos: Array.isArray(input.thailandPhotos)
+      ? input.thailandPhotos
+          .filter(
+            (p): p is { href: string; thumbUrl: string; title: string } =>
+              p != null &&
+              typeof p === 'object' &&
+              typeof (p as { href?: unknown }).href === 'string' &&
+              typeof (p as { thumbUrl?: unknown }).thumbUrl === 'string' &&
+              Boolean(String((p as { href: string }).href).trim()) &&
+              Boolean(String((p as { thumbUrl: string }).thumbUrl).trim()),
+          )
+          .map((p) => ({
+            href: String(p.href).trim(),
+            thumbUrl: String(p.thumbUrl).trim(),
+            title: String(p.title ?? '').trim() || 'photo',
+          }))
+          .slice(0, 10)
+      : [],
   };
 }
 
@@ -404,6 +444,47 @@ export default function Portal2026View({
   const localWing = [...(localBiz ?? [])].slice(0, 5);
 
   const numLocale = locale === 'th' ? 'th-TH' : 'ko-KR';
+  const trendingList = raw.trendingKeywords ?? [];
+  const fxQuickLabel = locale === 'th' ? 'เรทบาท' : '바트 환율';
+
+  const weeklyRankAside = (
+    <section className={`${styles.glassGold} overflow-hidden p-2 md:p-2.5`}>
+      <p className="text-base font-black text-amber-200 md:text-lg">{copy.rankTitle}</p>
+      <p className="mt-0.5 line-clamp-2 break-words text-[10px] font-semibold uppercase tracking-wide text-amber-100 md:text-xs">
+        {copy.rankSub}
+      </p>
+      {(weeklyRankSorted?.length ?? 0) === 0 ? (
+        <p className="mt-1 text-sm leading-snug text-gray-200 md:text-base">{copy.emptyRank}</p>
+      ) : (
+        <div className="mt-1.5 space-y-0.5 md:mt-2 md:space-y-1">
+          {weeklyRankSorted.map((row) => {
+            const top = row.rank === 1;
+            return (
+              <div
+                key={row.profileId}
+                className={top ? styles.wingRankFirst : styles.wingRankRow}
+                title={`${row.rank} · ${row.dotoriEarned} ${copy.dotoriSuffix}`}
+              >
+                <span className={`${styles.wingRankIdx} ${top ? styles.wingRankIdxGold : ''}`} aria-hidden>
+                  {top ? '👑' : row.rank}
+                </span>
+                <div
+                  className={`${styles.wingRankMeta} flex min-w-0 flex-wrap items-baseline justify-between gap-x-1.5 gap-y-0.5`}
+                >
+                  <span className={`min-w-0 truncate ${top ? styles.wingRankFirstName : styles.wingRankName}`}>
+                    {row.displayName}
+                  </span>
+                  <span className={`shrink-0 whitespace-nowrap ${top ? styles.wingRankFirstDotori : styles.wingRankDotori}`}>
+                    +{row.dotoriEarned.toLocaleString(numLocale)} {copy.dotoriSuffix}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
 
   return (
     <div
@@ -413,13 +494,17 @@ export default function Portal2026View({
       role="main"
       aria-label={copy.rootAria}
     >
-      <div className={styles.grid}>
+      <div className={styles.bentoWrap}>
+        <PortalTrendingTicker
+          items={trendingList}
+          title={copy.trendingTickerTitle}
+          emptyLabel={copy.trendingEmpty}
+          locale={locale}
+        />
+        <div className={styles.grid}>
         <aside className="hidden min-h-0 min-w-0 min-[769px]:flex min-[769px]:flex-col min-[769px]:gap-2">
           <div className="flex min-w-0 flex-col gap-2">
-            {siteUi.weatherWidgetEnabled ? (
-              <PortalWeatherWidget locale={locale} isAdmin={isAdmin} />
-            ) : null}
-            <section className={`${styles.glassBlue} overflow-hidden p-2.5`}>
+            <section className={`${styles.glassBlue} overflow-hidden p-2 md:p-2.5`}>
               <p className="text-lg font-black uppercase tracking-wide text-blue-200">{copy.sponsorTitle}</p>
               {(wingBanners?.length ?? 0) === 0 ? (
                 <EmptyState message={copy.emptyWing} />
@@ -494,49 +579,10 @@ export default function Portal2026View({
                 </li>
               </ul>
             </section>
-            <section className={`${styles.glassGold} overflow-hidden p-2.5`}>
-              <p className="text-lg font-black text-amber-200">{copy.rankTitle}</p>
-              <p className="mt-0.5 line-clamp-2 break-words text-xs font-semibold uppercase tracking-wide text-amber-100">
-                {copy.rankSub}
-              </p>
-              {(weeklyRankSorted?.length ?? 0) === 0 ? (
-                <p className="mt-1 text-base leading-snug text-gray-200">{copy.emptyRank}</p>
-              ) : (
-                <div className="mt-2 space-y-1">
-                  {weeklyRankSorted.map((row) => {
-                    const top = row.rank === 1;
-                    return (
-                      <div
-                        key={row.profileId}
-                        className={top ? styles.wingRankFirst : styles.wingRankRow}
-                        title={`${row.rank} · ${row.dotoriEarned} ${copy.dotoriSuffix}`}
-                      >
-                        <span
-                          className={`${styles.wingRankIdx} ${top ? styles.wingRankIdxGold : ''}`}
-                          aria-hidden
-                        >
-                          {top ? '👑' : row.rank}
-                        </span>
-                        <div
-                          className={`${styles.wingRankMeta} flex min-w-0 flex-wrap items-baseline justify-between gap-x-1.5 gap-y-0.5`}
-                        >
-                          <span className={`min-w-0 truncate ${top ? styles.wingRankFirstName : styles.wingRankName}`}>
-                            {row.displayName}
-                          </span>
-                          <span className={`shrink-0 whitespace-nowrap ${top ? styles.wingRankFirstDotori : styles.wingRankDotori}`}>
-                            +{row.dotoriEarned.toLocaleString(numLocale)} {copy.dotoriSuffix}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
           </div>
         </aside>
 
-        <section className="min-h-0 min-w-0 space-y-1.5">
+        <section className="min-h-0 min-w-0 space-y-1 max-[768px]:space-y-1 md:space-y-1.5">
           <GuestGateLink
             href="/boards/new?category=greetings"
             isLoggedIn={isLoggedIn}
@@ -545,6 +591,7 @@ export default function Portal2026View({
           >
             <span className="line-clamp-3 break-words">{copy.openGreetingBannerLine}</span>
           </GuestGateLink>
+          <PortalDailyFortune locale={locale} isLoggedIn={isLoggedIn} copy={copy} />
           <PortalQuickMenu locale={locale} isLoggedIn={isLoggedIn} />
           <div className="block min-[769px]:hidden">
             <PortalDotoriHallOfFame
@@ -556,8 +603,24 @@ export default function Portal2026View({
               locale={locale}
             />
           </div>
-          <div className="hidden min-[769px]:block">
-            <div className={styles.boardGrid}>
+          {trendingList.length > 0 ? (
+            <div className="block min-[769px]:hidden">
+              <section className={`${styles.glassGold} overflow-hidden px-2 py-1.5`}>
+                <p className="m-0 text-sm font-black text-amber-100">{copy.trendingAsideTitle}</p>
+                <ol className="mt-1 space-y-0.5 pl-4 text-sm text-amber-50/95">
+                  {trendingList.slice(0, 5).map((t) => (
+                    <li key={`${t.rank}-${t.query}`} className="marker:font-bold">
+                      <span className="font-extrabold text-amber-200">{t.rank}.</span> {t.query}{' '}
+                      <span className="tabular-nums text-xs text-amber-100/75">
+                        ({t.count.toLocaleString(numLocale)})
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            </div>
+          ) : null}
+          <div className={styles.boardGrid}>
             {copy.boardColumns
               .filter((board) => board.key !== 'fxRate')
               .map((board) => {
@@ -570,8 +633,8 @@ export default function Portal2026View({
 
               return (
                 <article key={board.key} className={styles.boardColumn}>
-                  <header className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-slate-700/50 px-1.5 py-1.5">
-                    <h2 className="min-w-0 flex-1 truncate text-lg font-bold tracking-tight text-white">{board.title}</h2>
+                  <header className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-slate-700/50 px-1 py-1 max-[768px]:py-0.5 md:px-1.5 md:py-1.5">
+                    <h2 className="min-w-0 flex-1 truncate text-base font-bold tracking-tight text-white md:text-lg">{board.title}</h2>
                     <div className="ml-auto flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-1.5">
                       {showQuestBadge && questCat ? (
                         <PortalQuestWriteCta category={questCat} variant="badge" isLoggedIn={isLoggedIn} />
@@ -598,12 +661,18 @@ export default function Portal2026View({
                 </article>
               );
             })}
-            </div>
           </div>
 
           {raw.featuredPoll ? (
             <PortalBalancePoll poll={raw.featuredPoll} locale={locale} isLoggedIn={isLoggedIn} />
           ) : null}
+
+          <PortalThailandPhotoStrip
+            photos={raw.thailandPhotos ?? []}
+            title={copy.thailandPhotosTitle}
+            locale={locale}
+            isLoggedIn={isLoggedIn}
+          />
 
           <section className={`${styles.glassBlue} overflow-hidden`}>
             <header className="border-b border-slate-700/70 px-3 py-3 text-lg font-black text-blue-200 max-[768px]:text-xl">
@@ -633,6 +702,37 @@ export default function Portal2026View({
               isLoggedIn={isLoggedIn}
               locale={locale}
             />
+            <section className={`${styles.glassGold} overflow-hidden p-2 md:p-2.5`}>
+              <p className="text-base font-black text-amber-100 md:text-lg">{copy.trendingAsideTitle}</p>
+              {trendingList.length === 0 ? (
+                <p className="mt-1 text-xs leading-snug text-amber-50/85 md:text-sm">{copy.trendingEmpty}</p>
+              ) : (
+                <ol className="mt-1.5 space-y-1 pl-4 text-sm text-amber-50 md:text-[0.92rem]">
+                  {trendingList.map((t) => (
+                    <li key={`aside-${t.rank}-${t.query}`} className="marker:font-black">
+                      <span className="font-extrabold text-amber-200">{t.rank}.</span> {t.query}{' '}
+                      <span className="tabular-nums text-xs text-amber-100/75">
+                        ({t.count.toLocaleString(numLocale)})
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+            {siteUi.weatherWidgetEnabled ? (
+              <div className="min-w-0 overflow-hidden rounded-xl border border-slate-700/40 bg-slate-950/20">
+                <PortalWeatherWidget locale={locale} isAdmin={isAdmin} />
+              </div>
+            ) : null}
+            <section
+              className={`${styles.glassBlue} overflow-hidden p-2 md:p-2.5`}
+              aria-label={fxQuickLabel}
+            >
+              <ul className="m-0 flex list-none justify-center p-0">
+                <ThbKrwQuickMenuTile locale={locale} label={fxQuickLabel} />
+              </ul>
+            </section>
+            {weeklyRankAside}
             <section className={`${styles.glassBlue} overflow-hidden p-2.5`}>
               <p className="line-clamp-2 text-lg font-black text-blue-200 break-words">{copy.newsAsideTitle}</p>
               {(newsWing?.length ?? 0) === 0 ? (
@@ -683,6 +783,7 @@ export default function Portal2026View({
             </section>
           </div>
         </aside>
+      </div>
       </div>
     </div>
   );

@@ -9,13 +9,264 @@
   --tj-portal-sticky-top: 5.5rem;
 
   min-height: 100vh;
-  padding: 0.5rem 0.375rem 1rem;
+  padding: 0.35rem 0.25rem 0.65rem;
   background-color: #0b0f19;
   background-image:
     radial-gradient(ellipse 130% 90% at 50% -15%, var(--tj-portal-glass-blue), transparent 55%),
     radial-gradient(ellipse 80% 70% at 100% 18%, var(--tj-portal-glass-gold), transparent 50%),
     radial-gradient(ellipse 70% 55% at 0% 85%, rgba(59, 130, 246, 0.07), transparent 48%);
   color: #f1f5f9;
+}
+
+@media (min-width: 769px) {
+  .root {
+    padding: 0.5rem 0.375rem 1rem;
+  }
+}
+
+/** 벤토 최대폭 래퍼 — 전광판 + 3열 그리드 정렬 */
+.bentoWrap {
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  width: 100%;
+  max-width: 1600px;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+@media (min-width: 769px) {
+  .bentoWrap {
+    gap: 0.5rem;
+  }
+}
+
+/** 실시간 급상승 전광판 */
+.tickerBar {
+  border-radius: 0.65rem;
+  border: 1px solid rgba(251, 113, 133, 0.38);
+  background: linear-gradient(100deg, rgba(127, 29, 29, 0.55), rgba(15, 23, 42, 0.82), rgba(190, 24, 93, 0.28));
+  box-shadow:
+    0 4px 22px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.tickerInner {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.45rem;
+  min-height: 2.35rem;
+}
+
+@media (min-width: 769px) {
+  .tickerInner {
+    padding: 0.45rem 0.65rem;
+    min-height: 2.55rem;
+  }
+}
+
+.tickerBadge {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tickerTitle {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgba(254, 226, 226, 0.92);
+}
+
+@media (min-width: 769px) {
+  .tickerTitle {
+    font-size: 0.78rem;
+  }
+}
+
+.tickerViewport {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.tickerLineEnter {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  animation: tj-ticker-enter 0.55s ease-out;
+}
+
+.tickerLineStatic {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+}
+
+@keyframes tj-ticker-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tickerLineEnter {
+    animation: none;
+  }
+}
+
+.tickerRank {
+  flex-shrink: 0;
+  font-weight: 900;
+  font-size: 0.95rem;
+  color: #fde68a;
+  font-variant-numeric: tabular-nums;
+}
+
+.tickerQuery {
+  flex: 1;
+  min-width: 0;
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tickerCount {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(254, 215, 170, 0.95);
+  font-variant-numeric: tabular-nums;
+}
+
+.tickerMuted {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(254, 226, 226, 0.78);
+  line-height: 1.35;
+}
+
+/** 인스타 스토리 스타일 가로 스크롤 */
+.photoStripSection {
+  padding-bottom: 0.35rem;
+}
+
+.photoStripHead {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.5rem 0.25rem;
+}
+
+@media (min-width: 769px) {
+  .photoStripHead {
+    padding: 0.55rem 0.65rem 0.3rem;
+  }
+}
+
+.photoStripScroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  padding: 0 0.35rem 0.4rem;
+  scrollbar-width: thin;
+}
+
+.photoStripList {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.15rem 0 0;
+  list-style: none;
+}
+
+.photoStripItem {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+
+.photoStoryLink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 4.35rem;
+  text-decoration: none;
+  color: rgba(254, 243, 199, 0.95);
+}
+
+@media (min-width: 769px) {
+  .photoStoryLink {
+    width: 4.65rem;
+  }
+}
+
+.photoStoryRing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.65rem;
+  height: 3.65rem;
+  border-radius: 9999px;
+  padding: 2px;
+  background: linear-gradient(145deg, #fbbf24, #ec4899, #38bdf8);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.photoStoryImg {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  object-fit: cover;
+  border: 2px solid rgba(15, 23, 42, 0.96);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.photoStoryCaption {
+  width: 100%;
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.photoStoryMore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.65rem;
+  height: 3.65rem;
+  border-radius: 9999px;
+  border: 1px dashed rgba(251, 191, 36, 0.55);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: rgba(253, 230, 138, 0.95);
+  text-decoration: none;
+  margin-top: 0.15rem;
 }
 
 .grid {
@@ -34,7 +285,7 @@
 @media (min-width: 769px) {
   .grid {
     grid-template-columns: minmax(11rem, 13rem) minmax(0, 1fr) minmax(11rem, 14rem);
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
 }
 
@@ -121,6 +372,12 @@
   border-radius: 0.375rem;
   border-bottom: 1px solid rgba(51, 65, 85, 0.55);
   background: rgba(15, 23, 42, 0.28);
+}
+
+@media (max-width: 768px) {
+  .boardColumn {
+    border-radius: 0.3rem;
+  }
 }
 
 .emptyState {
@@ -316,6 +573,11 @@
   animation: tj-omni-pulse-green 2.2s ease-in-out infinite;
 }
 
+.omniLedOrange {
+  background: rgb(249 115 22);
+  animation: tj-omni-pulse-orange 1.4s ease-in-out infinite;
+}
+
 .omniLedRed {
   background: rgb(239 68 68);
   animation: tj-omni-pulse-red 1.6s ease-in-out infinite;
@@ -366,6 +628,22 @@
     box-shadow:
       0 0 0 5px rgba(34, 197, 94, 0),
       0 0 12px rgba(34, 197, 94, 0.55);
+  }
+}
+
+@keyframes tj-omni-pulse-orange {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 0 rgba(249, 115, 22, 0.55),
+      0 0 6px rgba(249, 115, 22, 0.35);
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow:
+      0 0 0 5px rgba(249, 115, 22, 0),
+      0 0 12px rgba(249, 115, 22, 0.55);
   }
 }
 
@@ -484,4 +762,176 @@
   font-size: 0.75rem;
   font-weight: 800;
   color: #a5f3fc;
+}
+
+/** 일일 태국 포춘 */
+.fortuneBtn {
+  display: flex;
+  width: 100%;
+  min-height: 2.85rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  background: linear-gradient(110deg, rgba(120, 53, 15, 0.65), rgba(30, 27, 75, 0.85), rgba(190, 24, 93, 0.35));
+  padding: 0.45rem 0.65rem;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 900;
+  line-height: 1.35;
+  color: #fffbeb;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.12s ease;
+}
+
+.fortuneBtn:hover {
+  filter: brightness(1.06);
+}
+
+.fortuneBtn:active {
+  transform: scale(0.99);
+}
+
+.fortuneBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.fortuneModal {
+  width: 100%;
+  max-width: 22rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(251, 191, 36, 0.42);
+  background: linear-gradient(165deg, rgba(15, 23, 42, 0.96), rgba(49, 46, 129, 0.55));
+  padding: 1.1rem 1rem 0.85rem;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.fortuneModalTitle {
+  margin: 0 0 0.65rem;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #fef3c7;
+  text-align: center;
+}
+
+.fortuneMuted {
+  margin: 0.25rem 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: rgba(226, 232, 240, 0.88);
+}
+
+.fortuneAlready {
+  margin: 0.35rem 0 0.5rem;
+  text-align: center;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: rgba(254, 243, 199, 0.92);
+}
+
+.fortuneCookie {
+  margin-top: 0.25rem;
+  border-radius: 0.65rem;
+  border: 1px dashed rgba(251, 191, 36, 0.35);
+  background: rgba(2, 6, 23, 0.45);
+  padding: 0.65rem 0.55rem;
+}
+
+.fortuneTipLabel {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(253, 230, 138, 0.85);
+}
+
+.fortuneTipBody {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #f8fafc;
+}
+
+.fortuneReadMore {
+  display: block;
+  margin-top: 0.55rem;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #fde68a;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.fortuneReward {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #fde68a;
+  text-shadow: 0 0 18px rgba(251, 191, 36, 0.55);
+  opacity: 0;
+  transform: scale(0.88) translateY(6px);
+}
+
+.fortuneRewardPop {
+  animation: tj-fortune-reward 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes tj-fortune-reward {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(10px);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.08) translateY(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fortuneRewardPop {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fortuneCloseBtn {
+  margin-top: 0.85rem;
+  width: 100%;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.65);
+  padding: 0.5rem 0.65rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.fortuneCloseBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }

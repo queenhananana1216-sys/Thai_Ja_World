@@ -331,8 +331,12 @@ export type Dictionary = {
     passwordHint: string;
     passwordTooShort: string;
     passwordTooLong: string;
-    passwordNeedMix: string;
+    /** 영문·숫자·특수문자 — 클라이언트 검증·Supabase 정책 에러 치환 공통 */
+    passwordNeedLetterDigitSymbol: string;
     passwordBanned: string;
+    emailRequired: string;
+    emailInvalid: string;
+    nickTooLong: string;
     /** Supabase Phone OTP (/auth/phone) */
     phoneAuthTitle: string;
     phoneAuthSubtitle: string;
@@ -971,11 +975,15 @@ const ko: Dictionary = {
     turnstileLoading: '보안 확인 로딩 중…',
     passwordShow: '비밀번호 표시',
     passwordHide: '비밀번호 숨기기',
-    passwordHint: '8자 이상, 글자·숫자를 함께 사용해 주세요.',
+    passwordHint: '8자 이상, 영문·숫자·특수문자를 함께 사용해 주세요.',
     passwordTooShort: '비밀번호는 {min}자 이상이어야 해요.',
     passwordTooLong: '비밀번호는 {max}자 이하여야 해요.',
-    passwordNeedMix: '비밀번호에 글자와 숫자를 각각 한 글자 이상 넣어 주세요.',
+    passwordNeedLetterDigitSymbol:
+      '⚠️ 비밀번호는 8자 이상이며, 영문/숫자/특수문자를 조합해주세요.',
     passwordBanned: '너무 흔한 비밀번호예요. 다른 조합을 써 주세요.',
+    emailRequired: '이메일을 입력해 주세요.',
+    emailInvalid: '이메일 형식을 확인해 주세요.',
+    nickTooLong: '표시 이름은 40자 이하여야 해요.',
     phoneAuthTitle: '휴대폰 문자로 가입·로그인',
     phoneAuthSubtitle:
       '문자로 받은 인증번호만 입력하시면 돼요. 통신사 본인 확인과는 다른 방식이에요. 지금 사이트 설정에 따라 문자 인증이 제공되지 않을 수 있어요.',
@@ -1654,11 +1662,15 @@ const th: Dictionary = {
     turnstileLoading: 'กำลังโหลดการยืนยันความปลอดภัย…',
     passwordShow: 'แสดงรหัสผ่าน',
     passwordHide: 'ซ่อนรหัสผ่าน',
-    passwordHint: 'อย่างน้อย 8 ตัว มีทั้งตัวอักษรและตัวเลข',
+    passwordHint: 'อย่างน้อย 8 ตัว — ตัวอักษรอังกฤษ ตัวเลข และอักขระพิเศษ',
     passwordTooShort: 'รหัสผ่านต้องมีอย่างน้อย {min} ตัว',
     passwordTooLong: 'รหัสผ่านต้องไม่เกิน {max} ตัว',
-    passwordNeedMix: 'ใส่ทั้งตัวอักษรและตัวเลขอย่างน้อยอย่างละหนึ่งตัว',
+    passwordNeedLetterDigitSymbol:
+      '⚠️ รหัสผ่านต้องมีอย่างน้อย 8 ตัว และผสมตัวอักษรภาษาอังกฤษ ตัวเลข และอักขระพิเศษ',
     passwordBanned: 'รหัสนี้ค่อนข้างธรรมดา — ลองชุดอื่น',
+    emailRequired: 'กรุณากรอกอีเมล',
+    emailInvalid: 'รูปแบบอีเมลไม่ถูกต้อง',
+    nickTooLong: 'ชื่อที่แสดงต้องไม่เกิน 40 ตัวอักษร',
     phoneAuthTitle: 'สมัคร/เข้าสู่ระบบด้วย SMS',
     phoneAuthSubtitle:
       'ใส่รหัสจาก SMS เท่านั้น (ไม่ใช่การยืนยันตัวตนกับค่ายมือถือ) ฟีเจอร์นี้อาจยังไม่เปิดตามการตั้งค่าเว็บ',

@@ -28,6 +28,7 @@ const adminSections = [
       { href: '/admin/ops-center', label: '운영 통합센터', icon: '◉' },
       { href: '/admin/bot-actions', label: '봇 실행 기록', icon: '◎' },
       { href: '/admin/publish', label: '최종 승인 허브', icon: '✦' },
+      { href: '/admin/sandbox', label: 'AI 스크립트 샌드박스', icon: '🧬' },
     ],
   },
   {

@@ -19,6 +19,10 @@ import {
   fetchHomeFeaturedPoll,
   fetchHomeTipsPublic,
   fetchAutoCuratedBoardPostsForPortalLive,
+  fetchPortalTrendingKeywords,
+  fetchPortalThailandPhotoStrip,
+  type PortalTrendingKeywordRow,
+  type PortalThailandPhotoStripItem,
 } from '../../_components/home/home-queries';
 import type { HomeUnifiedFeedItem } from '../../_components/home/home-feed-types';
 import { categoryLabel } from '@/lib/community/postCategories';
@@ -88,6 +92,10 @@ export type PortalHomeFeed = {
   siteTotals: { profileCount: number; communityItemCount: number } | null;
   weeklyDotoriRanking: PortalWeeklyDotoriRankRow[];
   featuredPoll: PortalFeaturedPoll | null;
+  /** search_logs 집계 — 포털 급상승 키워드 */
+  trendingKeywords: PortalTrendingKeywordRow[];
+  /** 이미지 있는 최근 게시글 썸네일 스트립 */
+  thailandPhotos: PortalThailandPhotoStripItem[];
 };
 
 /** DB·네트워크 실패·타임아웃 시 — 빈 배열만(플레이스홀더 글·샘플 제목 없음) */
@@ -105,6 +113,8 @@ export const HONEST_EMPTY_PORTAL_HOME_FEED: PortalHomeFeed = {
   siteTotals: null,
   weeklyDotoriRanking: [],
   featuredPoll: null,
+  trendingKeywords: [],
+  thailandPhotos: [],
 };
 
 const HOME_FETCH_TIMEOUT_MS = 8000;
@@ -298,6 +308,8 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
     siteTotals: null,
     weeklyDotoriRanking: [],
     featuredPoll: null,
+    trendingKeywords: [],
+    thailandPhotos: [],
   };
 
   try {
@@ -597,6 +609,18 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
     }
   } catch {
     out.featuredPoll = null;
+  }
+
+  try {
+    const [tr, ph] = await Promise.all([
+      withTimeout(fetchPortalTrendingKeywords(10), [], HOME_FETCH_TIMEOUT_MS),
+      withTimeout(fetchPortalThailandPhotoStrip(10), [], HOME_FETCH_TIMEOUT_MS),
+    ]);
+    out.trendingKeywords = Array.isArray(tr) ? tr : [];
+    out.thailandPhotos = Array.isArray(ph) ? ph : [];
+  } catch {
+    out.trendingKeywords = [];
+    out.thailandPhotos = [];
   }
 
   return out;

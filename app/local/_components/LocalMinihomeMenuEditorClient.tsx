@@ -11,6 +11,8 @@ import {
 } from './localMenuListSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { saveLocalMinihomeBgm } from '../_actions/saveLocalMinihomeBgm';
+import { extractYoutubeVideoId } from '@/lib/youtube/extractYoutubeVideoId';
 
 type SpotLite = {
   id: string;
@@ -22,16 +24,24 @@ export default function LocalMinihomeMenuEditorClient({
   spot,
   initialMenus,
   minihomeUrl,
+  initialMinihomeBgmUrl,
+  initialDotoriBalance,
 }: {
   spot: SpotLite;
   initialMenus: LocalMenuRow[];
   minihomeUrl: string;
+  initialMinihomeBgmUrl: string | null;
+  initialDotoriBalance: number;
 }) {
   const sb = useMemo(() => createBrowserClient(), []);
   const [menus, setMenus] = useState<LocalMenuRow[]>(initialMenus);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [tab, setTab] = useState<LocalMenuListSection>('menu');
+  const [bgmDraft, setBgmDraft] = useState(initialMinihomeBgmUrl ?? '');
+  const [savedBgmUrl, setSavedBgmUrl] = useState(initialMinihomeBgmUrl ?? '');
+  const [dotoriBalance, setDotoriBalance] = useState(initialDotoriBalance);
+  const [bgmBusy, setBgmBusy] = useState(false);
 
   const notify = useCallback((t: string) => {
     setToast(t);
@@ -133,6 +143,51 @@ export default function LocalMinihomeMenuEditorClient({
 
   const spotTitle = spot.name?.trim() || spot.slug;
 
+  const bgmWillCharge =
+    Boolean(extractYoutubeVideoId(bgmDraft)) &&
+    extractYoutubeVideoId(bgmDraft) !== extractYoutubeVideoId(savedBgmUrl || null);
+
+  async function saveBgm() {
+    const raw = bgmDraft.trim();
+    if (raw && !extractYoutubeVideoId(raw)) {
+      notify('YouTube 동영상 주소만 저장할 수 있습니다. (watch · youtu.be · shorts 등)');
+      return;
+    }
+    setBgmBusy(true);
+    const res = await saveLocalMinihomeBgm(spot.id, raw);
+    setBgmBusy(false);
+    if (!res.ok) {
+      if (res.reason === 'INSUFFICIENT_DOTORI') {
+        notify(`도토리가 부족합니다. (필요 ${res.need ?? 100} · 보유 ${res.have ?? 0})`);
+      } else if (res.reason === 'INVALID_YOUTUBE_URL') {
+        notify('인식할 수 없는 YouTube 링크입니다.');
+      } else {
+        notify(res.reason === 'NOT_AUTHENTICATED' ? '로그인이 필요합니다.' : `저장 실패: ${res.reason}`);
+      }
+      return;
+    }
+    setSavedBgmUrl(res.bgmUrl ?? '');
+    setBgmDraft(res.bgmUrl ?? '');
+    setDotoriBalance(res.dotoriBalance);
+    notify(res.charged ? 'BGM을 저장했습니다. 도토리 100이 차감되었습니다.' : 'BGM 설정을 저장했습니다.');
+  }
+
+  async function clearBgm() {
+    if (!window.confirm('BGM을 제거할까요? (도토리 차감 없음)')) return;
+    setBgmDraft('');
+    setBgmBusy(true);
+    const res = await saveLocalMinihomeBgm(spot.id, '');
+    setBgmBusy(false);
+    if (!res.ok) {
+      notify(res.reason === 'NOT_AUTHENTICATED' ? '로그인이 필요합니다.' : `삭제 실패: ${res.reason}`);
+      setBgmDraft(savedBgmUrl);
+      return;
+    }
+    setSavedBgmUrl('');
+    setDotoriBalance(res.dotoriBalance);
+    notify('BGM을 제거했습니다.');
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 pb-16 text-slate-100">
       <header className="border-b border-white/10 bg-slate-900/80 backdrop-blur-md">
@@ -164,6 +219,55 @@ export default function LocalMinihomeMenuEditorClient({
           </Link>
           )에 반영됩니다.
         </p>
+
+        <section className="mb-8 rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-950/40 to-slate-900/80 p-4 shadow-inner shadow-black/30">
+          <h2 className="flex items-center gap-2 text-sm font-black text-amber-100">
+            <span aria-hidden>🎵</span> BGM 설정
+          </h2>
+          <p className="mt-2 text-xs leading-relaxed text-amber-100/75">
+            손님용 디지털 메뉴판에 재생될 배경음입니다. 저작권 정책상{' '}
+            <strong className="text-amber-50">YouTube 동영상 링크만</strong> 등록할 수 있습니다 (Iframe 재생).
+          </p>
+          <p className="mt-2 rounded-lg border border-rose-500/35 bg-rose-950/40 px-3 py-2 text-xs font-semibold text-rose-100">
+            BGM을 <strong>다른 영상으로 바꿀 때마다</strong> 도토리 <strong>100</strong>이 차감됩니다. (같은 영상 재저장·단순
+            수정은 무료 · BGM 삭제는 무료)
+          </p>
+          <p className="mt-2 text-[11px] text-slate-400">
+            보유 도토리: <span className="font-bold text-emerald-300">{dotoriBalance.toLocaleString()}</span>
+          </p>
+          <label className="mt-3 block text-xs font-medium text-slate-300">
+            YouTube URL
+            <input
+              value={bgmDraft}
+              disabled={bgmBusy}
+              onChange={(e) => setBgmDraft(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+              placeholder="https://www.youtube.com/watch?v=… 또는 https://youtu.be/…"
+            />
+          </label>
+          {bgmWillCharge ? (
+            <p className="mt-2 text-[11px] font-medium text-amber-200/90">이번 저장에서 도토리 100이 차감됩니다.</p>
+          ) : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              disabled={bgmBusy}
+              className="bg-amber-600 text-white hover:bg-amber-500"
+              onClick={() => void saveBgm()}
+            >
+              BGM 저장
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={bgmBusy || !savedBgmUrl}
+              className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+              onClick={() => void clearBgm()}
+            >
+              BGM 제거
+            </Button>
+          </div>
+        </section>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as LocalMenuListSection)} className="w-full">
           <TabsList className="grid h-auto w-full grid-cols-3 gap-1 bg-slate-900/90 p-1">

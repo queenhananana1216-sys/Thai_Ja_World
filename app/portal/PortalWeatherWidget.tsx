@@ -34,6 +34,9 @@ type OmniChaosMonkey = {
   shield_pulse?: boolean;
   defense_success_rate?: number;
   skipped?: boolean;
+  /** HTTP 카오스 웨이브 진행 중 — 레이더 주황 */
+  immune_training_active?: boolean;
+  immune_training_since?: string | null;
 };
 
 type OmniMotherbrain = {
@@ -84,9 +87,15 @@ function omniLedTooltip(
   isAdmin: boolean,
   errors: string[],
   locale: Locale,
+  immuneTraining: boolean,
 ): string {
   if (phase === 'neutral') {
     return locale === 'th' ? 'กำลังตรวจสอบระบบ…' : '시스템 상태 확인 중…';
+  }
+  if (phase === 'ok' && immuneTraining) {
+    return locale === 'th'
+      ? '🟠 ฝึกภูมิคุ้มกันตนเอง — Chaos HTTP wave กำลังทำงาน (เสร็จแล้ว LED กลับเป็นสีเขียว)'
+      : '🟠 자가 면역 훈련 중 — HTTP 카오스 웨이브가 진행 중입니다. 완료되면 초록으로 복귀합니다.';
   }
   if (phase === 'ok') {
     return locale === 'th'
@@ -178,21 +187,28 @@ export default function PortalWeatherWidget({
   const icon = iconForWmo(bangkok?.weather_code ?? null);
   const cond = bangkok?.condition?.trim() || '';
 
+  const immuneTraining =
+    omniPhase === 'ok' && chaosRadar?.immune_training_active === true;
+
   const ledClass =
     omniPhase === 'ok'
-      ? styles.omniLedGreen
+      ? immuneTraining
+        ? styles.omniLedOrange
+        : styles.omniLedGreen
       : omniPhase === 'error'
         ? styles.omniLedRed
         : styles.omniLedNeutral;
 
   const ledTitle = useMemo(
-    () => omniLedTooltip(omniPhase, isAdmin, omniErrors, locale),
-    [omniPhase, isAdmin, omniErrors, locale],
+    () => omniLedTooltip(omniPhase, isAdmin, omniErrors, locale, immuneTraining),
+    [omniPhase, isAdmin, omniErrors, locale, immuneTraining],
   );
 
   const ledAria =
     omniPhase === 'ok'
-      ? '시스템 정상'
+      ? immuneTraining
+        ? '자가 면역 훈련 중'
+        : '시스템 정상'
       : omniPhase === 'error'
         ? '시스템 경고'
         : '시스템 상태 확인 중';

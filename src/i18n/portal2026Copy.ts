@@ -65,6 +65,25 @@ export type Portal2026Copy = {
   /** 전면 오픈 기념 — 가입 인사 미션 배너(링크는 `/boards/new?category=greetings`) */
   openGreetingBannerLine: string;
   openGreetingBannerAria: string;
+  /** 실시간 급상승 검색어 — 상단 전광판·우측 패널 */
+  trendingTickerTitle: string;
+  trendingAsideTitle: string;
+  trendingEmpty: string;
+  /** 지금 태국은? 사진 스트립 */
+  thailandPhotosTitle: string;
+  /** 일일 태국 포춘 — 리텐션 */
+  fortuneButton: string;
+  fortuneModalTitle: string;
+  fortuneLoading: string;
+  fortuneAlreadyClaimed: string;
+  fortuneNoTips: string;
+  fortuneConfigError: string;
+  fortuneErrorGeneric: string;
+  fortuneLoginToast: string;
+  fortuneTipLead: string;
+  fortuneTipFallback: string;
+  fortuneReadMore: string;
+  fortuneClose: string;
 };
 
 const ko: Portal2026Copy = {
@@ -127,6 +146,22 @@ const ko: Portal2026Copy = {
   openGreetingBannerLine:
     '🎉 [오픈 기념 한정] 가입 인사만 남겨도 500 도토리(포인트) 즉시 100% 지급!',
   openGreetingBannerAria: '가입 인사 글쓰기로 오픈 기념 도토리 미션 참여',
+  trendingTickerTitle: '실시간 급상승 키워드',
+  trendingAsideTitle: '🔥 급상승 검색 TOP',
+  trendingEmpty: '검색이 쌓이면 실시간 순위가 올라와요. 상단 검색창을 써 보세요!',
+  thailandPhotosTitle: '지금 태국은? 실시간 현지 사진',
+  fortuneButton: '🥠 오늘의 태국 생활 운세 & 꿀팁 열어보기',
+  fortuneModalTitle: '오늘의 태국 포춘',
+  fortuneLoading: '포춘 쿠키를 여는 중…',
+  fortuneAlreadyClaimed: '오늘은 이미 출석했어요. 내일 Bangkok 자정 이후에 다시 열어보세요!',
+  fortuneNoTips: '표시할 꿀팁이 아직 없습니다. 잠시 후 다시 시도해 주세요.',
+  fortuneConfigError: '보상 설정을 불러오지 못했습니다. 관리자에게 문의해 주세요.',
+  fortuneErrorGeneric: '처리 중 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.',
+  fortuneLoginToast: '로그인 후 이용할 수 있는 기능입니다.',
+  fortuneTipLead: '오늘의 한 줄 꿀팁',
+  fortuneTipFallback: '태국 생활, 오늘도 안전하게!',
+  fortuneReadMore: '꿀팁 허브에서 자세히 보기 →',
+  fortuneClose: '닫기',
 };
 
 const th: Portal2026Copy = {
@@ -189,6 +224,22 @@ const th: Portal2026Copy = {
   openGreetingBannerLine:
     '🎉 [เปิดใช้จำกัด] ทักทายสมาชิกใหม่รับ 500 ดอกท้อทันที — จ่ายครบ 100%!',
   openGreetingBannerAria: 'ไปหน้าเขียนโพสต์ทักทายเพื่อรับดอกท้อกิจกรรมเปิดตัว',
+  trendingTickerTitle: 'คียร์เวิร์ดพุ่งแรงแบบเรียลไทม์',
+  trendingAsideTitle: '🔥 ค้นหายอดนิยม',
+  trendingEmpty: 'พิมพ์ค้นหาในช่องด้านบน แล้วเทรนด์จะโผล่ที่นี่!',
+  thailandPhotosTitle: 'ตอนนี้ที่ไทย? ภาพสดจากชุมชน',
+  fortuneButton: '🥠 เปิดดวงชีวิตไทยวันนี้ · เคล็ดลับสั้นๆ',
+  fortuneModalTitle: 'ดวงชีวิตไทยวันนี้',
+  fortuneLoading: 'กำลังเปิดคุกกี้ดวง…',
+  fortuneAlreadyClaimed: 'วันนี้เช็คอินแล้ว พรุ่งนี้หลังเที่ยงคืน (เวลาไทย) ค่อยมาใหม่นะ!',
+  fortuneNoTips: 'ยังไม่มีเคล็ดลับในตอนนี้ ลองใหม่ภายหลัง',
+  fortuneConfigError: 'โหลดการตั้งค่ารางวัลไม่ได้ ติดต่อผู้ดูแล',
+  fortuneErrorGeneric: 'เกิดข้อผิดพลาด ลองใหม่ภายหลัง',
+  fortuneLoginToast: 'เข้าสู่ระบบก่อนใช้งาน',
+  fortuneTipLead: 'เคล็ดลับหนึ่งบรรทัดวันนี้',
+  fortuneTipFallback: 'ชีวิตในไทยวันนี้ ขอให้ปลอดภัย!',
+  fortuneReadMore: 'อ่านเพิ่มในฮับเคล็ดลับ →',
+  fortuneClose: 'ปิด',
 };
 
 export function getPortal2026Copy(locale: Locale): Portal2026Copy {

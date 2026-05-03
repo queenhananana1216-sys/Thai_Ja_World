@@ -1,6 +1,8 @@
+import { randomUUID } from 'crypto';
 import { NextResponse } from 'next/server';
 import { createCoinbaseCharge } from '@/lib/payments/crypto';
-import { createStripeCheckoutSession } from '@/lib/payments/stripe';
+import { isPremiumPlanId } from '@/lib/payments/premiumPlans';
+import { createPremiumSubscriptionCheckoutSession, createStripeCheckoutSession } from '@/lib/payments/stripe';
 import { featureFlags } from '@/lib/flags';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
@@ -8,6 +10,8 @@ export const runtime = 'nodejs';
 
 type CheckoutBody = {
   orderId?: string;
+  /** 소비자 프리미엄 월 구독 — 지정 시 orderId와 함께 보내면 안 됨 */
+  premiumPlan?: string;
   method?: 'card' | 'crypto';
   successUrl?: string;
   cancelUrl?: string;
@@ -27,9 +31,6 @@ function resolveCheckoutUrl(input: string | undefined, fallback: string, baseOri
 }
 
 export async function POST(request: Request) {
-  if (!featureFlags.paymentsV1) {
-    return NextResponse.json({ error: 'payments_feature_disabled' }, { status: 503 });
-  }
   let body: CheckoutBody;
   try {
     body = (await request.json()) as CheckoutBody;
@@ -38,6 +39,60 @@ export async function POST(request: Request) {
   }
 
   const orderId = typeof body.orderId === 'string' ? body.orderId.trim() : '';
+  const premiumRaw = typeof body.premiumPlan === 'string' ? body.premiumPlan.trim().toLowerCase() : '';
+
+  if (premiumRaw && orderId) {
+    return NextResponse.json({ error: 'premium_and_order_mutually_exclusive' }, { status: 400 });
+  }
+
+  if (premiumRaw) {
+    if (!featureFlags.premiumSubscriptionsV1) {
+      return NextResponse.json({ error: 'premium_subscriptions_disabled' }, { status: 503 });
+    }
+    if (!isPremiumPlanId(premiumRaw)) {
+      return NextResponse.json({ error: 'invalid_premium_plan' }, { status: 400 });
+    }
+
+    const supabasePremium = await createServerSupabaseAuthClient();
+    const {
+      data: { user: premiumUser },
+    } = await supabasePremium.auth.getUser();
+    if (!premiumUser) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
+    const base = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'http://127.0.0.1:3000';
+    const successFallback = `${base}/premium?checkout=success`;
+    const cancelFallback = `${base}/premium?checkout=cancel`;
+    const successUrl = resolveCheckoutUrl(body.successUrl, successFallback, base);
+    const cancelUrl = resolveCheckoutUrl(body.cancelUrl, cancelFallback, base);
+
+    try {
+      const session = await createPremiumSubscriptionCheckoutSession({
+        profileId: premiumUser.id,
+        planId: premiumRaw,
+        successUrl,
+        cancelUrl,
+        customerEmail: premiumUser.email ?? undefined,
+        idempotencyKey: `premium:${premiumUser.id}:${premiumRaw}:${randomUUID()}`,
+      });
+      return NextResponse.json({
+        ok: true,
+        provider: 'stripe',
+        kind: 'premium_subscription',
+        checkoutUrl: session.url,
+        sessionId: session.id,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'stripe_premium_checkout_failed';
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  }
+
+  if (!featureFlags.paymentsV1) {
+    return NextResponse.json({ error: 'payments_feature_disabled' }, { status: 503 });
+  }
+
   if (!orderId) return NextResponse.json({ error: 'orderId_required' }, { status: 400 });
 
   const method = body.method === 'crypto' ? 'crypto' : 'card';

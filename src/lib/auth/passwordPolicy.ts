@@ -10,7 +10,8 @@ export type PasswordCheckResult = { ok: true } | { ok: false; message: string };
 export type PasswordPolicyMessages = {
   tooShort: string;
   tooLong: string;
-  needLetterDigit: string;
+  /** 영문·숫자·특수문자 조합 (Supabase 강화 정책과 맞춤) */
+  needLetterDigitSymbol: string;
   banned: string;
 };
 
@@ -30,10 +31,11 @@ export function checkPasswordStrength(
   if (p.length > MAX_LEN) {
     return { ok: false, message: fillMinMax(msg.tooLong) };
   }
-  const hasLetter = /\p{L}/u.test(p);
-  const hasDigit = /\p{N}/u.test(p);
-  if (!hasLetter || !hasDigit) {
-    return { ok: false, message: msg.needLetterDigit };
+  const hasLatinLetter = /[a-zA-Z]/.test(p);
+  const hasDigit = /[0-9]/.test(p);
+  const hasSpecial = /[^A-Za-z0-9]/.test(p);
+  if (!hasLatinLetter || !hasDigit || !hasSpecial) {
+    return { ok: false, message: msg.needLetterDigitSymbol };
   }
   const lower = p.toLowerCase();
   const banned = ['password', '12345678', '11111111', 'qwerty123', 'thailand1'];

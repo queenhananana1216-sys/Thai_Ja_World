@@ -62,15 +62,25 @@ export default async function LocalMinihomeEditPage({ params }: PageProps) {
   }
 
   const sb = createServerClient();
-  const { data: menus } = await sb
-    .from('local_menus')
-    .select('*')
-    .eq('local_spot_id', spot.id)
-    .order('list_section', { ascending: true })
-    .order('sort_order', { ascending: true });
+  const [{ data: menus }, { data: spotBgm }, { data: profileWallet }] = await Promise.all([
+    sb
+      .from('local_menus')
+      .select('*')
+      .eq('local_spot_id', spot.id)
+      .order('list_section', { ascending: true })
+      .order('sort_order', { ascending: true }),
+    sb.from('local_spots').select('minihome_bgm_url').eq('id', spot.id).maybeSingle(),
+    sb.from('profiles').select('dotori_balance').eq('id', user.id).maybeSingle(),
+  ]);
 
   const pathSlug = String(spot.slug ?? '').trim() || String(spot.minihome_public_slug ?? trimmed).trim();
   const minihomeUrl = absoluteUrl(`/local/${encodeURIComponent(pathSlug)}/minihome`);
+
+  const initialMinihomeBgmUrl =
+    spotBgm && typeof (spotBgm as { minihome_bgm_url?: unknown }).minihome_bgm_url === 'string'
+      ? (spotBgm as { minihome_bgm_url: string }).minihome_bgm_url
+      : null;
+  const initialDotoriBalance = Number((profileWallet as { dotori_balance?: number } | null)?.dotori_balance ?? 0);
 
   return (
     <LocalMinihomeMenuEditorClient
@@ -81,6 +91,8 @@ export default async function LocalMinihomeEditPage({ params }: PageProps) {
       }}
       initialMenus={(menus ?? []) as LocalMenuRow[]}
       minihomeUrl={minihomeUrl}
+      initialMinihomeBgmUrl={initialMinihomeBgmUrl}
+      initialDotoriBalance={initialDotoriBalance}
     />
   );
 }

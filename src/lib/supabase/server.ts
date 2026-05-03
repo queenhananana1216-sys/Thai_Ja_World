@@ -25,9 +25,12 @@ export function createServerClient() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    console.warn(
-      '[ServerClient] NEXT_PUBLIC_SUPABASE_URL 또는 NEXT_PUBLIC_SUPABASE_ANON_KEY 미설정 — dummy client 반환',
-    );
+    /** Dockerfile `next build` 단계에서만 스팸 방지 — 런타임은 그대로 경고 */
+    if (process.env.NEXT_SUPPRESS_DUMMY_SUPABASE_WARN !== '1') {
+      console.warn(
+        '[ServerClient] NEXT_PUBLIC_SUPABASE_URL 또는 NEXT_PUBLIC_SUPABASE_ANON_KEY 미설정 — dummy client 반환',
+      );
+    }
     return createDummySupabaseClient('server');
   }
 

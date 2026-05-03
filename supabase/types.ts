@@ -2809,10 +2809,15 @@ export type Database = {
           display_name: string | null
           dotori_balance: number
           id: string
+          is_premium: boolean
           is_staff: boolean
           last_seen_at: string | null
+          /** Asia/Bangkok 달력 기준 일일 포춘 출석일 (`YYYY-MM-DD`) */
+          last_fortune_date: string | null
           locale: string
           moderation_strikes: number
+          premium_plan: string | null
+          premium_stripe_subscription_id: string | null
           quest_last_reward_at: string | null
           quest_risk_level: number
           signup_greeting_done: boolean
@@ -2830,10 +2835,14 @@ export type Database = {
           display_name?: string | null
           dotori_balance?: number
           id: string
+          is_premium?: boolean
           is_staff?: boolean
           last_seen_at?: string | null
+          last_fortune_date?: string | null
           locale?: string
           moderation_strikes?: number
+          premium_plan?: string | null
+          premium_stripe_subscription_id?: string | null
           quest_last_reward_at?: string | null
           quest_risk_level?: number
           signup_greeting_done?: boolean
@@ -2851,10 +2860,14 @@ export type Database = {
           display_name?: string | null
           dotori_balance?: number
           id?: string
+          is_premium?: boolean
           is_staff?: boolean
           last_seen_at?: string | null
+          last_fortune_date?: string | null
           locale?: string
           moderation_strikes?: number
+          premium_plan?: string | null
+          premium_stripe_subscription_id?: string | null
           quest_last_reward_at?: string | null
           quest_risk_level?: number
           signup_greeting_done?: boolean
@@ -3515,6 +3528,110 @@ export type Database = {
             referencedColumns: ["profile_id"]
           },
         ]
+      }
+      active_scripts: {
+        Row: {
+          code_text: string
+          created_at: string
+          enabled: boolean
+          hook_target: string
+          id: string
+          language: string
+          last_run_at: string | null
+          last_run_error: string | null
+          last_run_ok: boolean | null
+          metadata: Json
+          proposal_id: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          code_text: string
+          created_at?: string
+          enabled?: boolean
+          hook_target?: string
+          id?: string
+          language?: string
+          last_run_at?: string | null
+          last_run_error?: string | null
+          last_run_ok?: boolean | null
+          metadata?: Json
+          proposal_id?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          code_text?: string
+          created_at?: string
+          enabled?: boolean
+          hook_target?: string
+          id?: string
+          language?: string
+          last_run_at?: string | null
+          last_run_error?: string | null
+          last_run_ok?: boolean | null
+          metadata?: Json
+          proposal_id?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'active_scripts_proposal_id_fkey'
+            columns: ['proposal_id']
+            isOneToOne: false
+            referencedRelation: 'sandbox_script_proposals'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      sandbox_script_proposals: {
+        Row: {
+          code_text: string
+          created_at: string
+          description: string | null
+          external_ref: string | null
+          id: string
+          language: string
+          pipeline_kind: string | null
+          source: string
+          status: string
+          title: string
+          trigger_context: Json
+          updated_at: string
+        }
+        Insert: {
+          code_text: string
+          created_at?: string
+          description?: string | null
+          external_ref?: string | null
+          id?: string
+          language?: string
+          pipeline_kind?: string | null
+          source?: string
+          status?: string
+          title: string
+          trigger_context?: Json
+          updated_at?: string
+        }
+        Update: {
+          code_text?: string
+          created_at?: string
+          description?: string | null
+          external_ref?: string | null
+          id?: string
+          language?: string
+          pipeline_kind?: string | null
+          source?: string
+          status?: string
+          title?: string
+          trigger_context?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       shop_announcements: {
         Row: {
@@ -4562,6 +4679,10 @@ export type Database = {
           created_at: string
           id: string
         }[]
+      }
+      local_spot_save_minihome_bgm_with_dotori: {
+        Args: { p_bgm_url?: string | null; p_local_spot_id: string }
+        Returns: Json
       }
       get_local_businesses_public: {
         Args: { limit_n?: number }

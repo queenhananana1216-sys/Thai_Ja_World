@@ -62,7 +62,7 @@ export type Portal2026Copy = {
   balanceResultAria: string;
   balanceTapHint: string;
   balanceYourPick: string;
-  /** 전면 오픈 기념 — 가입 인사 미션 배너(링크는 `/boards/new?category=greetings`) */
+  /** 오픈 기념 — 가입 인사 미션 배너(링크는 `/boards/new?category=greetings`) */
   openGreetingBannerLine: string;
   openGreetingBannerAria: string;
   /** 실시간 급상승 검색어 — 상단 전광판·우측 패널 */
@@ -144,7 +144,7 @@ const ko: Portal2026Copy = {
   balanceTapHint: '버튼을 누르면 득표율 바가 살아 움직여요',
   balanceYourPick: '내 선택',
   openGreetingBannerLine:
-    '🎉 [오픈 기념 한정] 가입 인사만 남겨도 500 도토리(포인트) 즉시 100% 지급!',
+    '🎉 [오픈 기념] 가입 인사만 남겨도 500 도토리(포인트) 즉시 100% 지급!',
   openGreetingBannerAria: '가입 인사 글쓰기로 오픈 기념 도토리 미션 참여',
   trendingTickerTitle: '실시간 급상승 키워드',
   trendingAsideTitle: '🔥 급상승 검색 TOP',
@@ -222,7 +222,7 @@ const th: Portal2026Copy = {
   balanceTapHint: 'แตะแล้วแถบเปอร์เซ็นต์จะขยับทันที',
   balanceYourPick: 'คุณเลือก',
   openGreetingBannerLine:
-    '🎉 [เปิดใช้จำกัด] ทักทายสมาชิกใหม่รับ 500 ดอกท้อทันที — จ่ายครบ 100%!',
+    '🎉 [เปิดตัว] ทักทายสมาชิกใหม่รับ 500 ดอกท้อทันที — จ่ายครบ 100%!',
   openGreetingBannerAria: 'ไปหน้าเขียนโพสต์ทักทายเพื่อรับดอกท้อกิจกรรมเปิดตัว',
   trendingTickerTitle: 'คียร์เวิร์ดพุ่งแรงแบบเรียลไทม์',
   trendingAsideTitle: '🔥 ค้นหายอดนิยม',

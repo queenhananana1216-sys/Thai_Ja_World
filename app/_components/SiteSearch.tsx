@@ -370,10 +370,10 @@ export default function SiteSearch({ variant = 'header', omitIntro = false }: Si
           {showEmpty && <p className="global-header__search-empty">{s.noResults}</p>}
 
           <div className="global-header__search-footer">
-            <Link href="/auth/login" className="global-header__search-footer-link" onClick={close}>
+            <Link prefetch={true} href="/auth/login" className="global-header__search-footer-link" onClick={close}>
               {locale === 'th' ? 'เข้าสู่ระบบเพื่ออ่านและแสดงความคิดเห็น' : '로그인하고 글·댓글 열기'}
             </Link>
-            <Link href="/community/boards" className="global-header__search-footer-link" onClick={close}>
+            <Link prefetch={true} href="/community/boards" className="global-header__search-footer-link" onClick={close}>
               {locale === 'th' ? 'ดูบอร์ดทั้งหมด' : '광장 전체 보기'}
             </Link>
           </div>

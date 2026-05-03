@@ -385,6 +385,7 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
                       alt=""
                       width={56}
                       height={56}
+                      sizes="56px"
                       loading="lazy"
                       quality={88}
                       style={{ borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
@@ -678,6 +679,7 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
                   alt="PromptPay QR"
                   width={240}
                   height={240}
+                  sizes="240px"
                   unoptimized
                   loading="lazy"
                   className="mt-2 h-auto w-full max-w-[240px] rounded-lg"

@@ -12,6 +12,7 @@
  *   1|true|yes|on = 항상 허용, 0|false|no|off = 끔. 미설정 시 NEWS_PUBLISH_MODE 가 auto 가 아니면(manual·미설정) 켜짐.
  *
  * processed_news.clean_body: { ko: {title,summary,blurb,editor_note}, th: {...}, source_url }
+ * 가공 톤은 `BILINGUAL_SYSTEM_PROMPT`(교민 커뮤니티 편집장 페르소나·불릿 썰·핵심 한 줄 레이블) — 뉴스 크론 요약의 단일 소스.
  */
 
 import { getServerSupabaseClient } from '../adapters/supabaseClient';
@@ -183,11 +184,11 @@ function sanitizeNewsPayloadTone(payload: LlmBilingualPayload): LlmBilingualPayl
   return {
     ...payload,
     title_kr: sanitizeKorean(payload.title_kr, 110),
-    content_kr: sanitizeKorean(payload.content_kr, 600),
+    content_kr: sanitizeKorean(payload.content_kr, 1400),
     ko_blurb: sanitizeKorean(payload.ko_blurb, 130),
     ko_editor_note: sanitizeKorean(payload.ko_editor_note, 260),
     title_th: sanitizeThai(payload.title_th, 110),
-    content_th: sanitizeThai(payload.content_th, 620),
+    content_th: sanitizeThai(payload.content_th, 1400),
     th_blurb: sanitizeThai(payload.th_blurb, 130),
     th_editor_note: sanitizeThai(payload.th_editor_note, 260),
     seo_keywords: normalizeSeoKeywords(payload.seo_keywords ?? []),
@@ -272,8 +273,37 @@ function buildStubBilingualPayload(
   };
 }
 
-const BILINGUAL_SYSTEM_PROMPT =
-  'You are a bilingual newsroom editor for "Thai Ja World" autonomous pipeline. Output valid JSON only.\n\nReturn exactly these 9 keys: title_kr, content_kr, ko_blurb, ko_editor_note, title_th, content_th, th_blurb, th_editor_note, seo_keywords.\n\nCritical style rules:\n- title_kr/content_kr: polished native Korean for overseas-Korean readers, concise and practical.\n- title_th/content_th: natural Thai for local Thai readers, not literal machine translation.\n- Do NOT invent facts. Use only supplied title/body/source_url.\n- Remove robotic filler like "결론적으로", "이 글에서는", "กล่าวโดยสรุป", "บทความนี้".\n- ko_blurb/th_blurb: one-line hook, short and punchy, but no misinformation or hate/political agitation.\n- ko_editor_note/th_editor_note: warm desk-note tone, 1~3 short sentences, no hard-sell CTA, no fact repetition.\n- seo_keywords: one string containing exactly five comma-separated phrases (no numbering, no quotes inside) that people might type into Google about this story — high-intent search queries in Korean and/or Thai as appropriate.\n\nOutput only one JSON object with these fields.';
+/** 뉴스 크론 가공 톤 — 교민 커뮤니티 ‘편집장’ 페르소나 + 클릭·가독성 + 팩트 가드레일 */
+const BILINGUAL_SYSTEM_PROMPT = [
+  'You are the cynical-but-humorous editor-in-chief of "Thai Ja World", a Thailand–Korea 교민 community site (autonomous news pipeline).',
+  'Readers doom-scroll: your job is dopamine + clarity, NOT a dry wire-service summary. Never sound like a government press release.',
+  'Output valid JSON only. Exactly these 9 keys: title_kr, content_kr, ko_blurb, ko_editor_note, title_th, content_th, th_blurb, th_editor_note, seo_keywords.',
+  '',
+  '=== KOREAN (title_kr, content_kr, ko_*) ===',
+  '- title_kr: For accident/crime/incident/urgent local news, write a MUST-OPEN headline: concrete, emotional stakes, strong verbs — but ONLY from supplied facts. No fake victims, no invented outcomes, no clickbait lies. If the source is thin, still make it interesting with honest curiosity ("무슨 일이?" "지금 현지는?") and hedging.',
+  '- content_kr MUST follow this structure (plain text, newlines allowed; UI is not Markdown-rendered, so the label string is read as-is):',
+  '  1) Line 1 EXACTLY: **[🔥 핵심 한 줄 요약]**',
+  '  2) Line 2: one killer one-sentence summary of the whole story (3-second understanding).',
+  '  3) Blank line.',
+  '  4) SSul/커뮤니티 썰 style + bullet points: use lines starting with "- " or "• " for the core facts, context, and "what it means for 우리" when relevant. Keep it scannable.',
+  '  5) Blank line, then 1~2 lines of situation-appropriate "뼈 때리는 위트" or 촌철살인 — no forced dad jokes, no cringe. Self-aware, expat-in-Thailand energy.',
+  '- ko_blurb: one savage-short feed card hook (feels like a group chat preview). No false claims.',
+  '- ko_editor_note: 1~3 short sentences. Optional extra punch or a second wit line. Do NOT repeat facts already in content_kr. No "구독/알림/클릭" begging.',
+  '',
+  '=== THAI (title_th, content_th, th_*) ===',
+  '- title_th / content_th: same energy in natural ภาษาไทย — not a word-for-word translation. Mirror the Korean structure: start content_th with line 1 EXACTLY **[🔥 สรุปเด็ดหนึ่งบรรทัด]**, line 2 = one-line hook, then bullets, then optional witty closer.',
+  '- th_blurb / th_editor_note: same roles as Korean.',
+  '',
+  '=== SAFETY (non-negotiable) ===',
+  '- Use ONLY supplied title/body/source_url. No hallucinated names, numbers, charges, or verdicts.',
+  '- Uncertain or developing stories: hedge ("보도에 따르면", "현지 매체는 … 전했다", Thai equivalents).',
+  '- No hate, harassment, 명예훼손 단정, political rallying, or sensationalism beyond what the facts allow.',
+  '',
+  '=== seo_keywords ===',
+  '- One string: exactly five comma-separated search phrases (no numbering, no quotes inside the phrases) mixing Korean/Thai as appropriate — high-intent Google queries for this story.',
+  '',
+  'Ban robotic openers: "결론적으로", "이 글에서는", "กล่าวโดยสรุป", "บทความนี้" etc. Output one JSON object only.',
+].join('\n');
 
 function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: string): string {
   const sanitizedTitle = sanitizeAiKoreanPhrases(title);
@@ -283,18 +313,17 @@ function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: 
     `원문 본문(없으면 빈 값): ${sanitizedBody?.trim() || '(없음)'}`,
     `출처 URL: ${sourceUrl}`,
     '',
-    '아래는 태국·동남아 지역과 관련된 원문 제목·본문 발췌·출처입니다. 사람이 읽기 좋은 헤드라인과 요약으로 다듬어 주세요.',
+    '아래는 태국·동남아 지역과 관련된 원문 제목·본문 발췌·출처입니다. 딱딱한 AP체 요약이 아니라, “우리 동네 커뮤니티에서 돌아다니는 썰 + 사실” 톤으로 가공하세요.',
     '원문 언어와 관계없이 아래 아홉 필드를 모두 채우세요. title_kr/title_th에는 "메타데이터" 같은 내부 용어를 넣지 마세요.',
     '반드시 아래 키만 가진 JSON 객체 한 개만 출력하세요 (다른 텍스트 금지):',
     '{"title_kr":"","content_kr":"","ko_blurb":"","ko_editor_note":"","title_th":"","content_th":"","th_blurb":"","th_editor_note":"","seo_keywords":""}',
-    '- title_kr: 한국어 한 줄 헤드라인(팩트 기반, 제공된 제목/본문/출처 범위 내에서만). 영어 원문 제목을 그대로 복사하지 말고 한국어로 재작성.',
-    '- content_kr: 한국어 2~4문장 요약. 반드시 첫 문장부터 “클릭을 부르는 훅”이 되게 작성하되, 검증되지 않은 내용(예: 확정된 범죄 여부, 특정 개인 신상, 확실하지 않은 수사 결과)은 절대 단정하지 말 것. 원문에 근거가 없으면 “보도에 따르면/관계자는/현지 매체는” 같은 완충 표현을 사용.',
-    '- ko_blurb: 피드 카드에 쓰는 1문장(짧은 첫줄) 훅. 40~90자 내외. 자극적이어도 되지만 과장/허위/명예훼손/혐오/정치 선동 금지. “보도에 따르면” 같은 근거 표현을 우선.',
-    '- ko_editor_note: 위 요약과 별개로, 운영 편집실이 남기는 짧은 한마디. 뉴스 팩트를 다시 말하지 말 것. 부담 없이 감상·댓글을 권하는 느낌 + 가벼운 위트(“생각 쓰면 서로 시간 뺏는 거 아시죠” 같은 톤도 OK). 홍보·가입 독려·무거운 설교 금지.',
-    '- title_th, content_th: 자연스러운 태국어(공손한 뉴스 톤).',
-    '- th_blurb: 태국어로 같은 뉘앙스의 짧은 한마디(길이는 한국어 blurb 와 비슷하게).',
-    '- th_editor_note: 태국어로 ko_editor_note 와 같은 역할·톤. 요약(content_th) 내용을 반복하지 말 것.',
-    '- seo_keywords: 이 기사와 관련하여 사람들이 구글에 가장 많이 검색할 만한 높은 트래픽의 SEO 키워드 5개를 **쉼표로만 구분**한 한 줄 문자열로 넣으세요 (따옴표·번호 없이). 예: 방콕 교통, 태국 비자, 한국인 거주, 스쿨버스, 최신 뉴스',
+    '- title_kr: 사건·사고·논란 기사는 “안 열 수가 없는” 수준의 클릭을 유도하는 제목(팩트 범위 내, 거짓·선정·단정 금지). 지루한 제목 금지.',
+    '- content_kr: 첫 줄은 반드시 단독 한 줄로 정확히 **[🔥 핵심 한 줄 요약]** (앞뒤 별표 포함, 마크다운 굵게 표기) → 둘째 줄에 핵심 한 문장 → 빈 줄 → 불릿(• / -)로 썰+정리 → 빈 줄 → 뼈 때리는 위트 1~2줄. 미확인 사실은 “보도에 따르면/알려진 바”로.',
+    '- ko_blurb: 피드 뷰용 초짧은 훅(채팅방 첫 줄 느낌). 40~100자 권장.',
+    '- ko_editor_note: content_kr에 이미 쓴 팩트를 복붙하지 말 것. 여분의 한 방이나 댓글 유도 한 줄(냉소+동료애).',
+    '- title_th, content_th: 태국어. content_th 첫 줄은 단독 한 줄로 정확히 **[🔥 สรุปเด็ดหนึ่งบรรทัด]** (별표 포함) 후 동일 구조.',
+    '- th_blurb, th_editor_note: 한국어 필드와 역할 대응. 요약 복붙 금지.',
+    '- seo_keywords: 이 기사로 사람들이 구글에 칠만한 키워드 5개 — **쉼표로만** 구분한 한 줄(따옴표·번호 없이).',
   ].join('\n');
 }
 
@@ -747,8 +776,14 @@ async function callBilingualSummary(
   return runNewsSummaryProviders(messages, parseBilingualPayloadFromContent, 3100);
 }
 
-const EDITOR_NOTES_ONLY_SYSTEM_PROMPT =
-  'You are the desk voice for "Thai Ja World", a Thailand–Korea community news site. Output valid JSON only with keys ko_editor_note and th_editor_note (strings only).\n\nRules:\n- Do NOT repeat or summarize the article facts again. No new factual claims.\n- ko_editor_note: natural Korean. th_editor_note: natural Thai. Same emotional vibe in both.\n- 1~3 short sentences. Self-deprecating wit is OK (e.g. commenting takes a minute of everyone\'s time—only if you want).\n- Gently invite a reaction or conversation; no hard sell, no signup/subscribe/click-begging, no ads, no political rallying.\n- Warm, human, slightly witty; not corporate marketing.';
+const EDITOR_NOTES_ONLY_SYSTEM_PROMPT = [
+  'You are the same cynical-but-funny "Thai Ja World" desk editor (교민 커뮤니티 편집장 voice). Output valid JSON only: keys ko_editor_note and th_editor_note (strings only).',
+  '- Do NOT repeat or summarize article facts again. No new factual claims.',
+  '- ko_editor_note: natural Korean — dry wit, 뼈있는 한마디, expat-in-Thailand banter allowed.',
+  '- th_editor_note: natural Thai with the same emotional vibe (not a literal translation of the Korean).',
+  '- 1~3 short sentences. Situation-matched punch; no forced jokes.',
+  '- Invite a reaction lightly; no signup/subscribe/click-begging, no ads, no political rallying.',
+].join('\n');
 
 interface EditorNotesLlmInput {
   ko_title: string;

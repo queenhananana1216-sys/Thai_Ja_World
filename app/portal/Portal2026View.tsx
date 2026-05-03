@@ -257,7 +257,9 @@ function EmptyState({ message }: { message: string }) {
   const text = message?.trim() ? message : '—';
   return (
     <div className={styles.emptyState}>
-      <p className="m-0 text-base font-medium leading-relaxed text-gray-200">{text}</p>
+      <p className="m-0 text-sm font-medium leading-snug text-gray-200 max-[768px]:text-[0.8125rem] max-[768px]:leading-snug md:text-base md:leading-relaxed">
+        {text}
+      </p>
     </div>
   );
 }
@@ -265,7 +267,7 @@ function EmptyState({ message }: { message: string }) {
 function NewsLinesSkeleton({ rows = 7, newsHubMore }: { rows?: number; newsHubMore: string }) {
   const widthClass = ['w-[94%]', 'w-[88%]', 'w-[91%]', 'w-[72%]', 'w-[85%]', 'w-[79%]', 'w-[66%]'];
   return (
-    <ul className="space-y-1.5 px-1.5 py-0.5" aria-hidden>
+    <ul className="space-y-1 px-1 py-0.5" aria-hidden>
       {Array.from({ length: rows }).map((_, i) => (
         <li
           key={i}
@@ -303,17 +305,19 @@ function NewsDenseRowLink({
   const summary = localizeQuestFeedText(item.subtitle?.trim() ?? '', locale, map);
   const age = formatPortalNewsAge(item.publishedAt ?? null, locale);
   return (
-    <li className="border-b border-slate-800/70 py-1 last:border-b-0">
+    <li className="border-b border-slate-800/70 py-0.5 last:border-b-0 md:py-1">
       <GuestGateLink
         href={href}
         isLoggedIn={isLoggedIn}
-        className="flex min-h-11 min-w-0 flex-nowrap items-center gap-x-1.5 text-base leading-snug text-gray-100 hover:text-amber-200"
+        className="flex min-h-9 min-w-0 flex-nowrap items-center gap-x-1.5 text-sm leading-snug text-gray-100 hover:text-amber-200 md:min-h-11 md:text-base"
       >
         <span className="min-w-0 max-w-[46%] shrink truncate break-words font-semibold text-white">{title}</span>
         <span className="shrink-0 text-gray-300">·</span>
         <span className="min-w-0 flex-1 truncate break-words text-gray-200">{summary || '—'}</span>
         {age ? (
-          <span className="shrink-0 whitespace-nowrap text-sm text-gray-200 tabular-nums">🕒 {age}</span>
+          <span className="shrink-0 whitespace-nowrap text-xs text-gray-200 tabular-nums max-[768px]:text-[0.7rem] md:text-sm">
+            🕒 {age}
+          </span>
         ) : null}
       </GuestGateLink>
     </li>
@@ -358,7 +362,7 @@ function FeedLineList({
   }
   if (lineLayout === 'news-dense') {
     return (
-      <ul className="max-h-[min(22rem,48vh)] min-h-0 overflow-y-auto overscroll-contain px-1 py-0.5 md:max-h-[min(11rem,36vh)]">
+      <ul className="max-h-[min(22rem,48vh)] min-h-0 overflow-y-auto overscroll-contain px-0.5 py-0.5 md:max-h-[min(11rem,36vh)] md:px-1">
         {safe.map((item, idx) => (
           <NewsDenseRowLink
             key={item?.id ? String(item.id) : `nd-${idx}`}
@@ -371,22 +375,22 @@ function FeedLineList({
     );
   }
   return (
-    <ul className="max-h-[min(18rem,45vh)] min-h-0 overflow-y-auto overscroll-contain px-1.5 py-0.5 md:max-h-[min(9.5rem,32vh)]">
+    <ul className="max-h-[min(18rem,45vh)] min-h-0 overflow-y-auto overscroll-contain px-1 py-0.5 md:max-h-[min(9.5rem,32vh)] md:px-1.5">
       {safe.map((item, idx) => (
         <li
           key={item?.id ? String(item.id) : `feed-${idx}`}
-          className="border-b border-slate-800/80 py-1 text-base leading-snug text-gray-100 last:border-b-0"
+          className="border-b border-slate-800/80 py-0.5 text-sm leading-snug text-gray-100 last:border-b-0 max-[768px]:text-[0.8125rem] max-[768px]:leading-tight md:py-1 md:text-base"
         >
           <GuestGateLink
             href={item?.href?.trim() ? item.href : defaultHrefForPortalLine(item?.id ?? '')}
             isLoggedIn={isLoggedIn}
-            className="flex min-h-11 min-w-0 flex-col justify-center overflow-hidden py-0.5 hover:text-amber-200"
+            className="flex min-h-9 min-w-0 flex-col justify-center overflow-hidden py-0.5 hover:text-amber-200 md:min-h-11"
           >
             <span className="line-clamp-2 break-words font-medium text-white">
               {localizeQuestFeedText(item?.title ?? '', locale, phraseMap)}
             </span>
             {item?.subtitle ? (
-              <span className="mt-0.5 block line-clamp-2 break-words text-sm text-gray-200">
+              <span className="mt-0.5 block line-clamp-2 break-words text-xs text-gray-200 max-[768px]:text-[0.7rem] max-[768px]:leading-tight md:text-sm">
                 {localizeQuestFeedText(item.subtitle, locale, phraseMap)}
               </span>
             ) : null}
@@ -448,15 +452,17 @@ export default function Portal2026View({
   const fxQuickLabel = locale === 'th' ? 'เรทบาท' : '바트 환율';
 
   const weeklyRankAside = (
-    <section className={`${styles.glassGold} overflow-hidden p-2 md:p-2.5`}>
-      <p className="text-base font-black text-amber-200 md:text-lg">{copy.rankTitle}</p>
+    <section className={`${styles.glassGold} overflow-hidden p-1.5 md:p-2`}>
+      <p className="text-sm font-black text-amber-200 max-[768px]:text-[0.8125rem] md:text-lg">{copy.rankTitle}</p>
       <p className="mt-0.5 line-clamp-2 break-words text-[10px] font-semibold uppercase tracking-wide text-amber-100 md:text-xs">
         {copy.rankSub}
       </p>
       {(weeklyRankSorted?.length ?? 0) === 0 ? (
-        <p className="mt-1 text-sm leading-snug text-gray-200 md:text-base">{copy.emptyRank}</p>
+        <p className="mt-0.5 text-xs leading-snug text-gray-200 max-[768px]:text-[0.7rem] md:mt-1 md:text-sm">
+          {copy.emptyRank}
+        </p>
       ) : (
-        <div className="mt-1.5 space-y-0.5 md:mt-2 md:space-y-1">
+        <div className="mt-1 space-y-0.5 md:mt-1.5 md:space-y-1">
           {weeklyRankSorted.map((row) => {
             const top = row.rank === 1;
             return (
@@ -502,14 +508,14 @@ export default function Portal2026View({
           locale={locale}
         />
         <div className={styles.grid}>
-        <aside className="hidden min-h-0 min-w-0 min-[769px]:flex min-[769px]:flex-col min-[769px]:gap-2">
-          <div className="flex min-w-0 flex-col gap-2">
-            <section className={`${styles.glassBlue} overflow-hidden p-2 md:p-2.5`}>
-              <p className="text-lg font-black uppercase tracking-wide text-blue-200">{copy.sponsorTitle}</p>
+        <aside className="hidden min-h-0 min-w-0 min-[769px]:flex min-[769px]:flex-col min-[769px]:gap-1.5">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <section className={`${styles.glassBlue} overflow-hidden p-1.5 md:p-2`}>
+              <p className="text-base font-black uppercase tracking-wide text-blue-200 md:text-lg">{copy.sponsorTitle}</p>
               {(wingBanners?.length ?? 0) === 0 ? (
                 <EmptyState message={copy.emptyWing} />
               ) : (
-                <ul className="mt-2 space-y-2">
+                <ul className="mt-1.5 space-y-1.5 md:mt-2 md:space-y-2">
                   {(wingBanners ?? []).map((b, i) => {
                     const bid = b?.id != null ? String(b.id) : `wing-${i}`;
                     const title = b?.title != null ? String(b.title).trim() : '';
@@ -537,11 +543,11 @@ export default function Portal2026View({
             </section>
           </div>
           <QuickAppLauncher locale={locale} />
-          <div className="flex min-w-0 flex-col gap-2">
-            <section className={`${styles.glassCenter} overflow-hidden p-2 text-base text-gray-100`}>
-              <p className="text-lg font-semibold text-white">{copy.shortcutTitle}</p>
-              <ul className="mt-1.5 space-y-0">
-                <li className="pb-2">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <section className={`${styles.glassCenter} overflow-hidden p-1.5 text-sm text-gray-100 md:p-2 md:text-base`}>
+              <p className="text-base font-semibold text-white md:text-lg">{copy.shortcutTitle}</p>
+              <ul className="mt-1 space-y-0 md:mt-1.5">
+                <li className="pb-1.5 md:pb-2">
                   <Link
                     prefetch={true}
                     href="/korean-biz"
@@ -582,11 +588,11 @@ export default function Portal2026View({
           </div>
         </aside>
 
-        <section className="min-h-0 min-w-0 space-y-1 max-[768px]:space-y-1 md:space-y-1.5">
+        <section className="min-h-0 min-w-0 space-y-0.5 max-[768px]:space-y-0.5 md:space-y-1">
           <GuestGateLink
             href="/boards/new?category=greetings"
             isLoggedIn={isLoggedIn}
-            className="flex min-h-[3rem] w-full items-center justify-center rounded-2xl border border-white/20 bg-gradient-to-r from-orange-500 to-red-500 px-3 py-2.5 text-center text-base font-black leading-snug text-white shadow-[0_12px_36px_rgba(234,88,12,0.35)] no-underline transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"
+            className="flex min-h-[2.5rem] w-full items-center justify-center rounded-xl border border-violet-400/30 bg-gradient-to-r from-indigo-700 via-violet-600 to-purple-700 px-2.5 py-1.5 text-center text-sm font-black leading-tight text-white shadow-[0_10px_32px_rgba(91,33,182,0.38)] no-underline transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-200 max-[768px]:min-h-[2.35rem] max-[768px]:px-2 max-[768px]:py-1.5 max-[768px]:text-[0.8125rem] md:min-h-[2.85rem] md:rounded-2xl md:px-3 md:py-2 md:text-base md:leading-snug"
             title={copy.openGreetingBannerAria}
           >
             <span className="line-clamp-3 break-words">{copy.openGreetingBannerLine}</span>
@@ -605,9 +611,11 @@ export default function Portal2026View({
           </div>
           {trendingList.length > 0 ? (
             <div className="block min-[769px]:hidden">
-              <section className={`${styles.glassGold} overflow-hidden px-2 py-1.5`}>
-                <p className="m-0 text-sm font-black text-amber-100">{copy.trendingAsideTitle}</p>
-                <ol className="mt-1 space-y-0.5 pl-4 text-sm text-amber-50/95">
+              <section className={`${styles.glassGold} overflow-hidden px-1.5 py-1 md:px-2 md:py-1.5`}>
+                <p className="m-0 text-xs font-black text-amber-100 max-[768px]:text-[0.7rem] md:text-sm">
+                  {copy.trendingAsideTitle}
+                </p>
+                <ol className="mt-0.5 space-y-0 pl-4 text-xs text-amber-50/95 max-[768px]:text-[0.68rem] md:mt-1 md:space-y-0.5 md:text-sm">
                   {trendingList.slice(0, 5).map((t) => (
                     <li key={`${t.rank}-${t.query}`} className="marker:font-bold">
                       <span className="font-extrabold text-amber-200">{t.rank}.</span> {t.query}{' '}
@@ -633,8 +641,10 @@ export default function Portal2026View({
 
               return (
                 <article key={board.key} className={styles.boardColumn}>
-                  <header className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-slate-700/50 px-1 py-1 max-[768px]:py-0.5 md:px-1.5 md:py-1.5">
-                    <h2 className="min-w-0 flex-1 truncate text-base font-bold tracking-tight text-white md:text-lg">{board.title}</h2>
+                  <header className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 border-b border-slate-700/50 px-1 py-0.5 max-[768px]:py-0.5 md:gap-x-2 md:gap-y-1 md:px-1.5 md:py-1">
+                    <h2 className="min-w-0 flex-1 truncate text-[0.9375rem] font-bold leading-tight tracking-tight text-white max-[768px]:text-[0.8125rem] md:text-lg">
+                      {board.title}
+                    </h2>
                     <div className="ml-auto flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-1.5">
                       {showQuestBadge && questCat ? (
                         <PortalQuestWriteCta category={questCat} variant="badge" isLoggedIn={isLoggedIn} />
@@ -642,7 +652,7 @@ export default function Portal2026View({
                       <Link
                         prefetch={true}
                         href={board.moreHref ?? '/boards'}
-                        className="inline-flex min-h-11 max-w-full shrink-0 items-center truncate text-sm font-semibold text-amber-200 hover:underline"
+                        className="inline-flex min-h-9 max-w-full shrink-0 items-center truncate text-xs font-semibold text-amber-200 hover:underline max-[768px]:min-h-8 md:min-h-11 md:text-sm"
                       >
                         {moreLabel}
                       </Link>
@@ -675,7 +685,7 @@ export default function Portal2026View({
           />
 
           <section className={`${styles.glassBlue} overflow-hidden`}>
-            <header className="border-b border-slate-700/70 px-3 py-3 text-lg font-black text-blue-200 max-[768px]:text-xl">
+            <header className="border-b border-slate-700/70 px-2 py-1.5 text-base font-black text-blue-200 max-[768px]:text-[0.9375rem] md:px-3 md:py-2.5 md:text-lg">
               {copy.liveFeedTitle}
             </header>
             <PortalLiveFeedMultiTab
@@ -702,12 +712,14 @@ export default function Portal2026View({
               isLoggedIn={isLoggedIn}
               locale={locale}
             />
-            <section className={`${styles.glassGold} overflow-hidden p-2 md:p-2.5`}>
-              <p className="text-base font-black text-amber-100 md:text-lg">{copy.trendingAsideTitle}</p>
+            <section className={`${styles.glassGold} overflow-hidden p-1.5 md:p-2`}>
+              <p className="text-sm font-black text-amber-100 max-[768px]:text-[0.8125rem] md:text-lg">
+                {copy.trendingAsideTitle}
+              </p>
               {trendingList.length === 0 ? (
                 <p className="mt-1 text-xs leading-snug text-amber-50/85 md:text-sm">{copy.trendingEmpty}</p>
               ) : (
-                <ol className="mt-1.5 space-y-1 pl-4 text-sm text-amber-50 md:text-[0.92rem]">
+                <ol className="mt-1 space-y-0.5 pl-4 text-xs text-amber-50 max-[768px]:text-[0.68rem] md:mt-1.5 md:space-y-1 md:text-[0.92rem]">
                   {trendingList.map((t) => (
                     <li key={`aside-${t.rank}-${t.query}`} className="marker:font-black">
                       <span className="font-extrabold text-amber-200">{t.rank}.</span> {t.query}{' '}
@@ -725,7 +737,7 @@ export default function Portal2026View({
               </div>
             ) : null}
             <section
-              className={`${styles.glassBlue} overflow-hidden p-2 md:p-2.5`}
+              className={`${styles.glassBlue} overflow-hidden p-1.5 md:p-2`}
               aria-label={fxQuickLabel}
             >
               <ul className="m-0 flex list-none justify-center p-0">
@@ -733,12 +745,12 @@ export default function Portal2026View({
               </ul>
             </section>
             {weeklyRankAside}
-            <section className={`${styles.glassBlue} overflow-hidden p-2.5`}>
-              <p className="line-clamp-2 text-lg font-black text-blue-200 break-words">{copy.newsAsideTitle}</p>
+            <section className={`${styles.glassBlue} overflow-hidden p-1.5 md:p-2`}>
+              <p className="line-clamp-2 text-base font-black text-blue-200 break-words md:text-lg">{copy.newsAsideTitle}</p>
               {(newsWing?.length ?? 0) === 0 ? (
                 <KoreanNewsPipelineNotice className="mt-2" />
               ) : (
-                <ul className="mt-1.5 max-h-[min(14rem,42vh)] min-w-0 space-y-0 overflow-y-auto overscroll-contain px-0.5">
+                <ul className="mt-1 max-h-[min(14rem,42vh)] min-w-0 space-y-0 overflow-y-auto overscroll-contain px-0.5 md:mt-1.5">
                   {(newsWing ?? []).map((n, i) => (
                     <NewsDenseRowLink
                       key={n?.id != null ? String(n.id) : `nw-${i}`}
@@ -750,14 +762,14 @@ export default function Portal2026View({
                 </ul>
               )}
             </section>
-            <section className={`${styles.glassGold} overflow-hidden p-2.5`}>
-              <p className="line-clamp-2 text-lg font-black text-amber-200 break-words">{copy.localAsideTitle}</p>
+            <section className={`${styles.glassGold} overflow-hidden p-1.5 md:p-2`}>
+              <p className="line-clamp-2 text-base font-black text-amber-200 break-words md:text-lg">{copy.localAsideTitle}</p>
               {localBizFromDemoFallback && localDemoWingCards.length > 0 ? (
                 <div className="min-w-0 overflow-hidden">
                   <PortalLocalDemoWingRolling cards={localDemoWingCards} />
                 </div>
               ) : (localWing?.length ?? 0) > 0 ? (
-                <ul className="mt-2 min-w-0 space-y-1.5">
+                <ul className="mt-1.5 min-w-0 space-y-1 md:mt-2 md:space-y-1.5">
                   {(localWing ?? []).map((l, i) => (
                     <li key={l?.id != null ? String(l.id) : `rw-${i}`} className="min-w-0 overflow-hidden">
                       <GuestGateLink
@@ -777,9 +789,11 @@ export default function Portal2026View({
                 <EmptyState message={copy.emptyLocal} />
               )}
             </section>
-            <section className={`${styles.glassCenter} overflow-hidden p-2 text-base text-gray-100`}>
-              <p className="text-lg font-semibold text-white">{copy.contactTitle}</p>
-              <p className="mt-1.5 leading-relaxed break-words text-gray-200">{copy.contactBody}</p>
+            <section className={`${styles.glassCenter} overflow-hidden p-1.5 text-sm text-gray-100 md:p-2 md:text-base`}>
+              <p className="text-base font-semibold text-white md:text-lg">{copy.contactTitle}</p>
+              <p className="mt-1 leading-snug break-words text-gray-200 max-[768px]:text-xs md:mt-1.5 md:leading-relaxed">
+                {copy.contactBody}
+              </p>
             </section>
           </div>
         </aside>

@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
-// 10분 캐시 — 매 요청마다 DB 쿼리하지 않도록
-export const revalidate = 600;
+/** Route segment / Data Cache — `unstable_cache` 대체로 App Router가 30초 단위로 재검증 */
+export const revalidate = 30;
 
 const DEGRADED_STATS = {
   memberCount: 0,
@@ -73,7 +73,7 @@ export async function GET() {
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=300',
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
         },
       }
     );

@@ -62,12 +62,12 @@ export default function PortalQuickMenu({ locale, isLoggedIn }: PortalQuickMenuP
     locale === 'th' ? 'เมนูด่วนโพร์ทัล' : locale === 'ko' ? '포털 퀵 메뉴' : 'Portal quick menu';
 
   const reportIconClasses =
-    'flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-rose-400/55 bg-gradient-to-br from-rose-950/75 via-slate-800/95 to-slate-900/90 text-[1.35rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_0_1px_rgba(251,113,133,0.15),0_10px_28px_rgba(225,29,72,0.22)]';
+    'flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-rose-400/55 bg-gradient-to-br from-rose-950/75 via-slate-800/95 to-slate-900/90 text-[1.2rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_0_1px_rgba(251,113,133,0.15),0_10px_28px_rgba(225,29,72,0.22)] md:h-14 md:w-14 md:text-[1.35rem]';
 
   return (
-    <nav aria-label={aria} className="mb-3">
-      <div className={`${styles.glassBlue} px-3 py-3 md:py-3.5`}>
-        <ul className="grid grid-cols-4 gap-3 md:grid-cols-5">
+    <nav aria-label={aria} className="mb-2 md:mb-2.5">
+      <div className={`${styles.glassBlue} px-2.5 py-2 md:px-3 md:py-2.5`}>
+        <ul className="grid grid-cols-4 gap-2 md:grid-cols-5 md:gap-2.5">
           {orderedQuickColumns(copy).map((board) => {
             if (board.key === 'fxRate') {
               const label = quickMenuLabel(locale, board.key, board.title);
@@ -92,15 +92,15 @@ export default function PortalQuickMenu({ locale, isLoggedIn }: PortalQuickMenuP
                 <GuestGateLink
                   href={href}
                   isLoggedIn={isLoggedIn}
-                  className="flex touch-manipulation flex-col items-center gap-2 rounded-xl px-1 py-1 text-gray-100 active:opacity-90"
+                  className="flex touch-manipulation flex-col items-center gap-1.5 rounded-xl px-0.5 py-0.5 text-gray-100 active:opacity-90 md:gap-2 md:px-1 md:py-1"
                 >
                   <span
-                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-800/90 text-[1.35rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-800/90 text-[1.2rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] md:h-14 md:w-14 md:text-[1.35rem]"
                     aria-hidden
                   >
                     {icon}
                   </span>
-                  <span className="line-clamp-2 w-full text-center text-sm font-semibold leading-snug">
+                  <span className="line-clamp-2 w-full text-center text-xs font-semibold leading-tight max-[768px]:text-[0.68rem] md:text-sm md:leading-snug">
                     {label}
                   </span>
                 </GuestGateLink>

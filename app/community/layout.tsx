@@ -31,16 +31,16 @@ export default function CommunityLayout({ children }: { children: ReactNode }) {
                 참여 공간
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                <Link href="/community/boards" className="global-header__link">
+                <Link prefetch={true} href="/community/boards" className="global-header__link">
                   자유게시판
                 </Link>
-                <Link href="/community/boards?cat=info" className="global-header__link">
+                <Link prefetch={true} href="/community/boards?cat=info" className="global-header__link">
                   정보공유
                 </Link>
-                <Link href="/community/boards?cat=flea" className="global-header__link">
+                <Link prefetch={true} href="/community/boards?cat=flea" className="global-header__link">
                   번개장터
                 </Link>
-                <Link href="/community/boards?cat=job" className="global-header__link">
+                <Link prefetch={true} href="/community/boards?cat=job" className="global-header__link">
                   구인구직
                 </Link>
               </div>
@@ -50,10 +50,10 @@ export default function CommunityLayout({ children }: { children: ReactNode }) {
                 공식 정보
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                <Link href="/news" className="global-header__link">
+                <Link prefetch={true} href="/news" className="global-header__link">
                   태국 뉴스
                 </Link>
-                <Link href="/tips" className="global-header__link">
+                <Link prefetch={true} href="/tips" className="global-header__link">
                   비자·생활 꿀팁
                 </Link>
               </div>

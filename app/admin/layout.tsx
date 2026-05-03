@@ -65,7 +65,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <div className="admin-shell admin-shell--dashboard">
       <aside className="admin-shell__sidebar" aria-label="관리자 사이드바">
-        <Link href="/admin" className="admin-shell__brand">
+        <Link prefetch={true} href="/admin" className="admin-shell__brand">
           <span className="admin-shell__brand-mark">TW</span>
           <span>
             <strong>2026 Taeja World</strong>
@@ -78,7 +78,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             <ul>
               {section.items.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} className="admin-shell__menu-link">
+                  <Link prefetch={true} href={item.href} className="admin-shell__menu-link">
                     <span aria-hidden>{item.icon}</span>
                     <span>{item.label}</span>
                   </Link>

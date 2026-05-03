@@ -20,30 +20,35 @@ export default async function BoardsLayout({ children }: { children: ReactNode }
             </p>
             <div className="flex flex-wrap gap-2">
               <Link
+                prefetch={true}
                 href="/boards?tab=free"
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 no-underline backdrop-blur-md hover:border-amber-400/40 hover:text-amber-100"
               >
                 자유 게시판
               </Link>
               <Link
+                prefetch={true}
                 href="/boards?tab=info"
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 no-underline backdrop-blur-md hover:border-sky-400/40 hover:text-sky-100"
               >
                 정보 공유
               </Link>
               <Link
+                prefetch={true}
                 href="/boards?tab=reports"
                 className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-100 no-underline backdrop-blur-md hover:border-rose-400/40 hover:text-rose-100"
               >
                 검증 제보
               </Link>
               <Link
+                prefetch={true}
                 href="/boards/new?board_type=free"
                 className="rounded-full border border-emerald-400/25 bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-100 no-underline hover:bg-emerald-500/25"
               >
                 ✎ 자유 글쓰기
               </Link>
               <Link
+                prefetch={true}
                 href="/boards/new?board_type=info"
                 className="rounded-full border border-sky-400/25 bg-sky-500/15 px-3 py-1.5 text-xs font-bold text-sky-100 no-underline hover:bg-sky-500/25"
               >

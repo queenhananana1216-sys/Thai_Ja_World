@@ -1,6 +1,5 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Nunito } from 'next/font/google';
 import { cookies } from 'next/headers';
 import AnalyticsTracker from './_components/AnalyticsTracker';
 import GlobalToaster from './_components/GlobalToaster';
@@ -11,13 +10,6 @@ import { SiteFooterFallback } from './_components/SiteFooterFallback';
 import { isLocale, LOCALE_COOKIE } from '@/i18n/types';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { getSiteBaseUrl } from '@/lib/seo/site';
-
-const brandNunito = Nunito({
-  subsets: ['latin'],
-  weight: ['600', '700', '800'],
-  display: 'swap',
-  variable: '--tj-brand-nunito',
-});
 
 /** Vercel·CDN이 예전 HTML/헤더를 붙잡지 않도록 루트 세그먼트 전체 동적 렌더 */
 export const dynamic = 'force-dynamic';
@@ -69,7 +61,7 @@ export default async function RootLayout({ children }: { children: unknown }) {
   return (
     <html
       lang={htmlLang}
-      className={`overflow-x-hidden ${brandNunito.variable}`}
+      className="overflow-x-hidden"
       data-tj-text-scale={ui.textScale}
     >
       <body

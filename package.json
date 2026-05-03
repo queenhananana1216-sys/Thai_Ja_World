@@ -28,6 +28,7 @@
     "verify:vault": "node scripts/verify_master_keys_backup.js"
   },
   "dependencies": {
+    "@fontsource-variable/nunito": "^5.2.7",
     "@github/copilot-sdk": "^0.2.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@react-google-maps/api": "^2.20.8",

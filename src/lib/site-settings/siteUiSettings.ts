@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { unstable_cache } from 'next/cache';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 export type TextScale = 'compact' | 'normal' | 'large';
@@ -35,8 +36,7 @@ function parseBool(v: unknown, fallback: boolean): boolean {
   return typeof v === 'boolean' ? v : fallback;
 }
 
-/** RSC·레이아웃용 — 실패 시 DEFAULTS (마이그레이션 전·오프라인에도 앱이 죽지 않게) */
-export async function loadSiteUiSettings(): Promise<SiteUiSettings> {
+const loadSiteUiSettingsImpl = async (): Promise<SiteUiSettings> => {
   const sb = createReadonlyAnon();
   if (!sb) return { ...DEFAULTS };
   try {
@@ -58,6 +58,15 @@ export async function loadSiteUiSettings(): Promise<SiteUiSettings> {
   } catch {
     return { ...DEFAULTS };
   }
+};
+
+const getCachedSiteUiSettings = unstable_cache(loadSiteUiSettingsImpl, ['site-ui-settings-v1'], {
+  revalidate: 30,
+});
+
+/** RSC·레이아웃용 — 실패 시 DEFAULTS (마이그레이션 전·오프라인에도 앱이 죽지 않게) */
+export async function loadSiteUiSettings(): Promise<SiteUiSettings> {
+  return getCachedSiteUiSettings();
 }
 
 export function siteUiDefaults(): SiteUiSettings {

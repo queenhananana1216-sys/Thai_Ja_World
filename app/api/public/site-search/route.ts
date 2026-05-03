@@ -2,6 +2,7 @@
  * GET /api/public/site-search?q=&locale=ko|th
  * 고정 메뉴 + 공개 뉴스 제목 검색(비회원 검색창용). 본문 열람 정책은 페이지·미들웨어와 별개.
  */
+import { unstable_cache } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -45,6 +46,26 @@ export type SiteSearchApiNewsHit = {
   score: number;
 };
 
+/** 동일 120행을 30초간 재사용 — 쿼리별 필터는 메모리에서만 수행 */
+const getSiteSearchPublishedKoNewsBulk = unstable_cache(
+  async () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url?.trim() || !key?.trim()) return [];
+    const sb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data } = await sb
+      .from('processed_news')
+      .select('id, clean_body, language, summaries(summary_text, model)')
+      .eq('published', true)
+      .eq('language', 'ko')
+      .order('created_at', { ascending: false })
+      .limit(120);
+    return data ?? [];
+  },
+  ['public-site-search-ko-news-bulk-v1'],
+  { revalidate: 30 },
+);
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = sanitizeQ(searchParams.get('q'));
@@ -71,17 +92,9 @@ export async function GET(req: Request) {
   const news: SiteSearchApiNewsHit[] = [];
 
   if (url?.trim() && key?.trim()) {
-    const sb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data } = await sb
-      .from('processed_news')
-      .select('id, clean_body, language, summaries(summary_text, model)')
-      .eq('published', true)
-      .eq('language', 'ko')
-      .order('created_at', { ascending: false })
-      .limit(120);
-
+    const bulk = await getSiteSearchPublishedKoNewsBulk();
     const qLow = q.toLowerCase();
-    for (const row of data ?? []) {
+    for (const row of bulk) {
       const sums = row.summaries as { summary_text: string; model: string | null }[] | null;
       if (
         !passesKoPublicGate(

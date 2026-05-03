@@ -18,6 +18,7 @@ export default function AdminMobileTabBar() {
         const active = pathname === t.href || (t.href !== '/admin' && pathname.startsWith(t.href));
         return (
           <Link
+            prefetch={true}
             key={t.href}
             href={t.href}
             className={`admin-mtab__btn ${active ? 'admin-mtab__btn--active' : ''}`}

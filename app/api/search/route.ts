@@ -2,6 +2,7 @@
  * 통합 검색 (Omni-Search) — 한인 업소 · 뉴스 · 커뮤니티 게시글
  * 원문 부분 일치 + 한글 초성열 부분 일치 (예: ㅂㅋ → 방콕)
  */
+import { unstable_cache } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { matchesHangulOrChosung } from '@/lib/utils/hangul';
@@ -68,24 +69,9 @@ function truncateBody(s: string | null | undefined, max: number): string | null 
   return t.length <= max ? t : `${t.slice(0, max)}…`;
 }
 
-export async function GET(req: Request): Promise<NextResponse> {
-  const url = new URL(req.url);
-  const qRaw = url.searchParams.get('q')?.trim() ?? '';
-  const limit = clampLimit(url.searchParams.get('limit'), 20, 50);
-
-  if (!qRaw) {
-    return NextResponse.json(
-      { businesses: [], news: [], posts: [], meta: { query: '', limit } },
-      { status: 200 },
-    );
-  }
-
-  const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-  if (!sbUrl || !sbKey) {
-    return NextResponse.json({ error: 'Server misconfigured' }, { status: 503 });
-  }
-
+async function runOmniSearchQuery(qRaw: string, limit: number) {
+  const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.trim();
+  const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim();
   const sb = createClient(sbUrl, sbKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -207,7 +193,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     image_urls: Array.isArray(r.image_urls) ? r.image_urls.slice(0, 3) : [],
   }));
 
-  return NextResponse.json({
+  return {
     businesses,
     news,
     posts,
@@ -216,5 +202,29 @@ export async function GET(req: Request): Promise<NextResponse> {
       limit,
       ...(errors.length ? { warnings: errors } : {}),
     },
-  });
+  };
+}
+
+const runOmniSearchCached = unstable_cache(runOmniSearchQuery, ['api-omni-search-v1'], { revalidate: 30 });
+
+export async function GET(req: Request): Promise<NextResponse> {
+  const url = new URL(req.url);
+  const qRaw = url.searchParams.get('q')?.trim() ?? '';
+  const limit = clampLimit(url.searchParams.get('limit'), 20, 50);
+
+  if (!qRaw) {
+    return NextResponse.json(
+      { businesses: [], news: [], posts: [], meta: { query: '', limit } },
+      { status: 200 },
+    );
+  }
+
+  const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!sbUrl || !sbKey) {
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 503 });
+  }
+
+  const payload = await runOmniSearchCached(qRaw, limit);
+  return NextResponse.json(payload);
 }

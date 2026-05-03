@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Docker·오프라인 빌드: Google Fonts 네트워크 없이 Nunito 번들 (@fontsource-variable) */
+@import "@fontsource-variable/nunito/wght.css";
 
 /* app/globals.css — 태자 월드 전역 스타일
  * 톤: «전시장/갤러리» — 쨍한 포인트 컬러, 기하 격자·오프셋 그림자, 고대비 타이포
@@ -32,6 +34,8 @@
   /** 글로벌 헤더(툴바+로고+메인내비) 아래에 포털 좌·우 스티키 윙을 붙일 때 오프셋 */
   /* 홈에서도 통합 검색 노출 시 헤더 높이 증가 대비 */
   --tj-home-sticky-top: 14rem;
+  /* next/font/google 대체 — GlobalNav·푸터 등에서 var(--tj-brand-nunito) */
+  --tj-brand-nunito: "Nunito Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
 *,

@@ -2,6 +2,7 @@ import 'server-only';
 
 /** 홈 공개 피드 — DB 접근은 `home-queries.ts` 의 anon 전용 클라이언트만 사용(쿠키·SSR 없음). */
 
+import { unstable_cache } from 'next/cache';
 import {
   fetchHomeJobs,
   fetchHomeMarket,
@@ -291,9 +292,7 @@ function portalLocalMinihomeHref(slug: string, miniHome: unknown): string {
  * 로컬 업체 열이 비면 마지막에 `korean_businesses` → 한인 생활망 링크로 폴백.
  * 타임아웃·에러·빈 결과는 빈 배열; 샘플 글이나 임의 기사 제목을 넣지 않음.
  */
-async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
-  const portalLocale = await getLocale().catch(() => 'ko' as Locale);
-
+async function fetchPortalHomeFeedCore(portalLocale: Locale): Promise<PortalHomeFeed> {
   const out: PortalHomeFeed = {
     jobs: [],
     market: [],
@@ -626,10 +625,17 @@ async function fetchPortalHomeFeedCore(): Promise<PortalHomeFeed> {
   return out;
 }
 
+const getCachedPortalHomeFeed = unstable_cache(
+  async (locale: Locale) => fetchPortalHomeFeedCore(locale),
+  ['portal-home-feed-v1'],
+  { revalidate: 30 },
+);
+
 /** 어떤 예외도 홈 SSR을 죽이지 않음 — 전체 실패 시 빈 피드로 2026 포털만 렌더 */
 export async function fetchPortalHomeFeed(): Promise<PortalHomeFeed> {
   try {
-    return await fetchPortalHomeFeedCore();
+    const locale = await getLocale().catch(() => 'ko' as Locale);
+    return await getCachedPortalHomeFeed(locale);
   } catch (err) {
     console.warn('[fetchPortalHomeFeed] 치명적 오류 — HONEST_EMPTY_PORTAL_HOME_FEED 반환', err);
     return { ...HONEST_EMPTY_PORTAL_HOME_FEED };

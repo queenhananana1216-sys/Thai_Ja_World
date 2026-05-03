@@ -4,6 +4,7 @@ import type { Locale } from '@/i18n/types';
 import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 
 type QuickAppDef = {
   id: string;
@@ -148,8 +149,31 @@ const QUICK_APPS: QuickAppDef[] = [
   },
 ];
 
+/** 외부 퀵 앱은 Next `Link` 프리패치 대상이 아님 — 노출 시 DNS만 선해석 */
+const dnsPrefetchedOrigins = new Set<string>();
+function prefetchQuickAppOrigins(hrefs: readonly string[]) {
+  if (typeof document === 'undefined') return;
+  for (const raw of hrefs) {
+    try {
+      const origin = new URL(raw).origin;
+      if (dnsPrefetchedOrigins.has(origin)) continue;
+      dnsPrefetchedOrigins.add(origin);
+      const el = document.createElement('link');
+      el.rel = 'dns-prefetch';
+      el.href = origin;
+      document.head.appendChild(el);
+    } catch {
+      /* ignore invalid href */
+    }
+  }
+}
+
 export default function QuickAppLauncher({ locale }: { locale: Locale }) {
   const copy = getPortal2026Copy(locale);
+
+  useEffect(() => {
+    prefetchQuickAppOrigins(QUICK_APPS.map((a) => a.href));
+  }, []);
 
   return (
     <div className="sticky top-24 z-30 w-full min-w-0 self-start">

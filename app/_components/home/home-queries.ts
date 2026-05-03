@@ -6,6 +6,7 @@
  */
 import 'server-only';
 
+import { unstable_cache } from 'next/cache';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import {
   listTitleSummaryFromProcessedNoRaw,
@@ -28,11 +29,11 @@ function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise
   return fetch(input, { ...init, signal: ctrl.signal }).finally(() => clearTimeout(tid));
 }
 
-/** 홈 꿀팁·실시간 통합 피드 — Next Data Cache 60초 ISR */
+/** 홈 꿀팁·실시간 통합 피드 — Next Data Cache 30초 ISR */
 function fetchWithTimeoutRevalidated(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), PUBLIC_FETCH_TIMEOUT_MS);
-  return fetch(input, { ...init, signal: ctrl.signal, next: { revalidate: 60 } }).finally(() =>
+  return fetch(input, { ...init, signal: ctrl.signal, next: { revalidate: 30 } }).finally(() =>
     clearTimeout(tid),
   );
 }
@@ -612,13 +613,12 @@ export type HomeDotoriBalanceRankRow = {
   dotoriBalance: number;
 };
 
-export async function fetchHomeDotoriBalanceRanking(
-  limit = 5,
+async function fetchHomeDotoriBalanceRankingImpl(
+  safeLimit: number,
 ): Promise<{ rows: HomeDotoriBalanceRankRow[]; error: string | null }> {
   const sb = tryCreate();
   if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
 
-  const safeLimit = Math.max(1, Math.min(20, Math.floor(limit)));
   const { data, error } = await sb
     .from('profiles')
     .select('id, display_name, dotori_balance')
@@ -639,6 +639,19 @@ export async function fetchHomeDotoriBalanceRanking(
   });
 
   return { rows, error: null };
+}
+
+const getCachedDotoriBalanceRanking = unstable_cache(
+  async (safeLimit: number) => fetchHomeDotoriBalanceRankingImpl(safeLimit),
+  ['home-dotori-balance-ranking-v1'],
+  { revalidate: 30 },
+);
+
+export async function fetchHomeDotoriBalanceRanking(
+  limit = 5,
+): Promise<{ rows: HomeDotoriBalanceRankRow[]; error: string | null }> {
+  const safeLimit = Math.max(1, Math.min(20, Math.floor(limit)));
+  return getCachedDotoriBalanceRanking(safeLimit);
 }
 
 export type HomeFeaturedPollRow = {

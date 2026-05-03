@@ -1202,6 +1202,7 @@ export default function LocalDigitalMenuClient(props: {
                       alt=""
                       width={48}
                       height={48}
+                      sizes="48px"
                       loading="lazy"
                       quality={88}
                       className="h-12 w-12 rounded-lg object-cover ring-1 ring-white/15"
@@ -1444,6 +1445,7 @@ export default function LocalDigitalMenuClient(props: {
                           alt=""
                           width={56}
                           height={56}
+                          sizes="56px"
                           loading="lazy"
                           quality={88}
                           className="h-14 w-14 shrink-0 rounded-xl object-cover ring-1 ring-white/12"
@@ -1674,6 +1676,7 @@ export default function LocalDigitalMenuClient(props: {
                   alt="PromptPay"
                   width={240}
                   height={240}
+                  sizes="(max-width: 480px) 85vw, 240px"
                   unoptimized
                   loading="lazy"
                   className="mx-auto mt-3 h-auto w-full max-w-[240px] rounded-lg ring-1 ring-white/15"

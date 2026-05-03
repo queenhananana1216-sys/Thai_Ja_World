@@ -37,8 +37,12 @@ export async function GET(req: Request) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const cacheHeaders = {
+    'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+  } as const;
+
   if (!url?.trim() || !key?.trim()) {
-    return NextResponse.json({ banners: [], degraded: true });
+    return NextResponse.json({ banners: [], degraded: true }, { headers: cacheHeaders });
   }
 
   try {
@@ -57,14 +61,20 @@ export async function GET(req: Request) {
       .order('sort_order', { ascending: true });
 
     if (error) {
-      return NextResponse.json({ error: error.message, banners: [], degraded: true });
+      return NextResponse.json(
+        { error: error.message, banners: [], degraded: true },
+        { headers: cacheHeaders },
+      );
     }
-    return NextResponse.json({ banners: data ?? [] });
+    return NextResponse.json({ banners: data ?? [] }, { headers: cacheHeaders });
   } catch (err) {
-    return NextResponse.json({
-      error: err instanceof Error ? err.message : String(err),
-      banners: [],
-      degraded: true,
-    });
+    return NextResponse.json(
+      {
+        error: err instanceof Error ? err.message : String(err),
+        banners: [],
+        degraded: true,
+      },
+      { headers: cacheHeaders },
+    );
   }
 }

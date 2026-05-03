@@ -30,9 +30,13 @@ export default function PortalThailandPhotoStrip({
         <span className="text-lg font-black tracking-tight text-amber-100" aria-hidden>
           📷
         </span>
-        <h2 className="m-0 min-w-0 flex-1 text-base font-black leading-tight text-amber-50 md:text-lg">{title}</h2>
+        <h2 className="m-0 min-w-0 flex-1 text-sm font-black leading-tight text-amber-50 max-[768px]:text-[0.8125rem] md:text-lg">
+          {title}
+        </h2>
       </header>
-      <p className={`m-0 px-2 pb-1 text-xs font-medium text-amber-100/80 max-[768px]:px-1.5 md:text-sm`}>{snapLabel}</p>
+      <p className="m-0 px-1.5 pb-0.5 text-[0.65rem] font-medium leading-tight text-amber-100/80 max-[768px]:px-1 md:px-2 md:pb-1 md:text-sm md:leading-normal">
+        {snapLabel}
+      </p>
       <div className={styles.photoStripScroll} tabIndex={0}>
         <ul className={styles.photoStripList}>
           {safe.map((p, i) => (

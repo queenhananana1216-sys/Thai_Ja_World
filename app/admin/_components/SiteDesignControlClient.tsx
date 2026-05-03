@@ -14,6 +14,7 @@ export default function SiteDesignControlClient() {
   const [textScale, setTextScale] = useState<TextScale>('normal');
   const [hideAi, setHideAi] = useState(false);
   const [weather, setWeather] = useState(true);
+  const [siteDisplayName, setSiteDisplayName] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
 
   const load = useCallback(async () => {
@@ -32,6 +33,10 @@ export default function SiteDesignControlClient() {
         if (x.key === 'ui.text_scale') setTextScale((x.value as TextScale) || 'normal');
         if (x.key === 'ui.hide_ai_chrome') setHideAi(Boolean(x.value));
         if (x.key === 'ui.weather_widget_enabled') setWeather(Boolean(x.value));
+        if (x.key === 'brand.site_display_name') {
+          const v = x.value;
+          setSiteDisplayName(typeof v === 'string' ? v : '');
+        }
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : '오류');
@@ -74,6 +79,35 @@ export default function SiteDesignControlClient() {
   return (
     <div className="admin-design">
       {err ? <div className="admin-dash__alert">{err}</div> : null}
+
+      <section className="admin-design__card">
+        <h2>사이트 표시 이름</h2>
+        <p className="admin-design__hint">
+          헤더·푸터·메타·미션 등에 쓰이는 브랜드 문구입니다. <code>NEXT_PUBLIC_SITE_NAME</code> 미설정 시 DB 값이
+          우선합니다.
+        </p>
+        <div className="admin-design__row" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          <input
+            type="text"
+            className="admin-design__input"
+            style={{ flex: '1 1 240px', minWidth: 180, maxWidth: 480 }}
+            maxLength={120}
+            value={siteDisplayName}
+            disabled={saving}
+            onChange={(e) => setSiteDisplayName(e.target.value)}
+            placeholder="예: 태국에, 살자"
+            aria-label="사이트 표시 이름"
+          />
+          <button
+            type="button"
+            className="admin-design__seg-btn"
+            disabled={saving || !siteDisplayName.trim()}
+            onClick={() => void save([{ key: 'brand.site_display_name', value: siteDisplayName.trim() }])}
+          >
+            이름 저장
+          </button>
+        </div>
+      </section>
 
       <section className="admin-design__card">
         <h2>텍스트 크기 (전역)</h2>

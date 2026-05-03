@@ -1,5 +1,5 @@
 /**
- * runLoop.ts — 태자 월드 봇 실행 오케스트레이터
+ * runLoop.ts — 「태국에, 살자」봇 실행 오케스트레이터
  *
  * 실행 흐름:
  *   1. run_id 생성 (crypto.randomUUID — Node 내장, 외부 의존 없음)

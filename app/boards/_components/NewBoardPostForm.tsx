@@ -10,6 +10,7 @@ import {
   shouldMaskRawDbError,
 } from '@/lib/db/dbErrorDefense';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { requestThaiBalanceRefetch } from '@/lib/thaiBalanceBroadcast';
 import { LocationPicker, type LocationValue } from './LocationPicker';
 import type { BoardPostRow } from './types';
 
@@ -192,13 +193,15 @@ export function NewBoardPostForm({
       }
 
       if (boardType === 'info') {
-        toast.success('[미션 달성! 정보 공유로 🎁 24 도토리 획득]', {
+        toast.success('[미션 달성! 정보 공유로 ฿ 24 타이(THAI) 획득]', {
           position: 'top-center',
           duration: 4500,
         });
       } else {
         toast.success('글이 등록되었습니다.', { position: 'top-center' });
       }
+
+      requestThaiBalanceRefetch();
 
       router.push(`/boards/${json.id}`);
       router.refresh();

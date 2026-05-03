@@ -65,7 +65,7 @@ async function fetchOnePatrolRoute(url: string): Promise<{
       redirect: 'follow',
       headers: {
         Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
-        'User-Agent': 'TaejaShadowQA/2.1 (+UI crawl)',
+        'User-Agent': 'LivingInThai-ShadowQA/2.1 (+UI crawl)',
       },
       signal: AbortSignal.timeout(SHADOW_QA_FETCH_TIMEOUT_MS),
     });

@@ -2,6 +2,10 @@
  * 사이트 내 고정 경로 검색 인덱스 (DB 없음).
  * koBlob / thBlob 에 동의어·말머리·초성으로 찾기 쉬운 단어를 넣습니다.
  */
+import { getClientSiteDisplayName } from '@/lib/site-brand/resolveSiteDisplayName';
+
+const SITE_BRAND = getClientSiteDisplayName();
+
 export type SiteSearchEntryDef = {
   href: string;
   koTitle: string;
@@ -21,7 +25,7 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thTitle: 'หน้าแรก',
     koHint: '/',
     thHint: '/',
-    koBlob: '홈 메인 대시보드 피드 태국에 살자 thailand community',
+    koBlob: `홈 메인 대시보드 피드 ${SITE_BRAND} thailand community`,
     thBlob: 'หน้าแรก โฮม ฟีด แดชบอร์ด ไทยจา',
   },
   {
@@ -165,13 +169,22 @@ export const SITE_SEARCH_ENTRIES: SiteSearchEntryDef[] = [
     thBlob: 'ทิปส์ ไทย ชีวิต ข้อมูล ล็อกอิน',
   },
   {
+    href: '/shop',
+    koTitle: '살자 프리미엄 상점',
+    thTitle: 'Salja Premium Shop',
+    koHint: '/shop',
+    thHint: '/shop',
+    koBlob: `살자 프리미엄 부티크 명품 스킨 미니미 레어 BGM 영구제 ${SITE_BRAND}`,
+    thBlob: 'Salja premium boutique สกินหรู มินิมีแรร์ BGM ถาวร',
+  },
+  {
     href: '/minihome/shop',
-    koTitle: '미니홈 스타일 상점',
-    thTitle: 'ร้านสไตล์มินิโฮม',
+    koTitle: '살자 프리미엄 상점 · 결제 데스크',
+    thTitle: 'Salja Premium · เคาน์เตอร์ชำระเงิน',
     koHint: '/minihome/shop',
     thHint: '/minihome/shop',
-    koBlob: '스타일 점수 미니미 스킨 코스메틱 상점 꾸미기',
-    thBlob: 'สไตล์พอยต์ มินิมี สกิน ร้านค้า แต่งมินิโฮม',
+    koBlob: `스타일 점수 타이 THAI 미니미 스킨 BGM 장착 ${SITE_BRAND}`,
+    thBlob: 'สไตล์พอยต์ ดอกท้อ มินิมี สกิน BGM สวมใส่',
   },
   {
     href: '/ilchon',

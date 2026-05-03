@@ -1426,7 +1426,9 @@
 }
 
 .feedRow {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
   padding: 0.34rem 0.5rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   text-decoration: none;
@@ -1440,11 +1442,22 @@
 }
 
 .thumb {
-  display: none;
+  display: block;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .thumbPh {
-  display: none;
+  display: block;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
 .pill {

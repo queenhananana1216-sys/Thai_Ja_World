@@ -19,8 +19,8 @@ export async function createCoinbaseCharge(input: {
       'X-CC-Version': '2018-03-22',
     },
     body: JSON.stringify({
-      name: `ThaiJaWorld Order ${input.orderId}`,
-      description: 'ThaiJaWorld checkout',
+      name: `LivingInThai Order ${input.orderId}`,
+      description: 'Living in Thai checkout',
       pricing_type: 'fixed_price',
       local_price: {
         amount: input.amountThb.toFixed(2),

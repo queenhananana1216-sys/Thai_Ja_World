@@ -136,7 +136,7 @@ export async function POST(req: Request) {
       .eq('profile_id', user.id)
       .maybeSingle();
     if (walletErr || !wallet || wallet.balance_minor < totalMinor) {
-      return NextResponse.json({ error: 'dotori_balance_insufficient' }, { status: 400 });
+      return NextResponse.json({ error: 'thai_balance_insufficient' }, { status: 400 });
     }
     const nextBalance = wallet.balance_minor - totalMinor;
     const { error: walletUpdateErr } = await admin
@@ -170,7 +170,7 @@ export async function POST(req: Request) {
   if (bridgeOption === 'line_direct') {
     const lineUrl = txt(extra.line_direct_url, 500) || spot.line_url || 'https://line.me/R/ti/p/@';
     const copyText = [
-      `[태자월드 주문서] ${spot.name}`,
+      `[태국에, 살자 주문서] ${spot.name}`,
       `주문번호: ${orderNo}`,
       ...items.map((item) => `- ${item.name} x${item.quantity} (${item.unitPriceThb} THB)`),
       `합계: ${totalThb.toFixed(2)} THB`,

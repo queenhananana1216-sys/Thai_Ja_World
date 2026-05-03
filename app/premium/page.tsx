@@ -6,10 +6,12 @@ import PremiumLoungeClient from './PremiumLoungeClient';
 
 export const metadata: Metadata = {
   title: '프리미엄 라운지',
-  description: trimForMetaDescription('태자월드 프리미엄 구독 — 스폰서 배너, 광고 없는 미니홈 등 Stripe 월 구독'),
+  description: trimForMetaDescription(
+    '태국에, 살자(Living in Thai) 프리미엄 — 스폰서 배너, 광고 없는 미니홈 등 Stripe 월 구독',
+  ),
   alternates: { canonical: absoluteUrl('/premium') },
   openGraph: {
-    title: '태자월드 프리미엄 라운지',
+    title: '태국에, 살자 프리미엄 라운지',
     description: trimForMetaDescription('프리미엄 플랜으로 수익·브랜딩 레버를 확장하세요.'),
     url: absoluteUrl('/premium'),
     type: 'website',

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
+import { useSiteDisplayName } from '@/contexts/SiteBrandContext';
 
 const FOOTER_LINKS = {
   explore: [
@@ -24,6 +25,7 @@ const FOOTER_LINKS = {
 
 export function SiteFooter() {
   const { locale, d } = useClientLocaleDictionary();
+  const siteName = useSiteDisplayName();
   const label = (item: { labelKo: string; labelTh: string }) =>
     locale === 'th' ? item.labelTh : item.labelKo;
   const fn = d.footerNav;
@@ -41,7 +43,7 @@ export function SiteFooter() {
               className="bg-gradient-to-r from-amber-100 via-amber-300 to-yellow-200 bg-clip-text text-transparent"
               style={{ fontFamily: 'var(--tj-brand-nunito), system-ui, sans-serif' }}
             >
-              {locale === 'th' ? 'อยู่ไทยกัน' : '태국에, 살자'}
+              {siteName}
             </span>
           </span>
           <p className="text-sm leading-relaxed text-zinc-300">
@@ -131,8 +133,7 @@ export function SiteFooter() {
           </nav>
           <div className="flex flex-wrap items-center gap-4">
             <p className="text-xs text-zinc-300">
-              &copy; {new Date().getFullYear()}{' '}
-              {locale === 'th' ? 'อยู่ไทยกัน' : '태국에, 살자'}. All rights reserved.
+              &copy; {new Date().getFullYear()} {siteName}. All rights reserved.
             </p>
             <a
               href="https://www.thaijaworld.com"

@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const desc = trimForMetaDescription(
       typeof spot.description === 'string' && spot.description.trim()
         ? spot.description
-        : `${name} 디지털 메뉴판 · 태자월드`,
+        : `${name} 디지털 메뉴판 · 태국에, 살자`,
     );
     const pathSlug = String(spot.slug ?? '').trim() || String(spot.minihome_public_slug ?? slug).trim();
     const url = absoluteUrl(`/local/${encodeURIComponent(pathSlug)}/minihome`);

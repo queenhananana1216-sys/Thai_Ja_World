@@ -142,7 +142,7 @@ export default async function MinihomeByUsernamePage({ params }: PageProps) {
           diaryTitlePlaceholder: '제목',
           diaryBodyPlaceholder: '오늘의 기록을 남겨 보세요.',
           galleryTitlePlaceholder: '사진첩 제목',
-          shellIntroFallback: '환영합니다! 이 공간은 태자월드 미니홈입니다.',
+          shellIntroFallback: '환영합니다! 이 공간은 「태국에, 살자」미니홈입니다.',
         }}
         profile={{
           displayName: profile?.display_name ?? homeRow.public_slug,

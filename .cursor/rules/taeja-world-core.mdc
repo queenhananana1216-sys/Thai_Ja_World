@@ -1,12 +1,12 @@
 ---
-description: taeja-world(Next+Supabase) 전용 — app·src·supabase 등 이 레포 코드를 건드릴 때만 적용.
+description: living-in-thai(Next+Supabase) 전용 — app·src·supabase 등 이 레포 코드를 건드릴 때만 적용.
 globs: package.json,middleware.ts,app/**,src/**,supabase/**,scripts/**
 alwaysApply: false
 ---
 
-# taeja-world 핵심 맥락
+# living-in-thai 핵심 맥락
 
-(`package.json`에 `"name": "taeja-world"`인 이 워크스페이스에서 위 glob 파일을 열었을 때)
+(`package.json`에 `"name": "living-in-thai"`인 이 워크스페이스에서 위 glob 파일을 열었을 때)
 
 ## 스택
 

@@ -1,15 +1,18 @@
 import Link from 'next/link';
 import GuestGateLink from '@app/_components/GuestGateLink';
 import KoreanNewsPipelineNotice from '../_components/news/KoreanNewsPipelineNotice';
-import type { HomeDotoriBalanceRankRow } from '../_components/home/home-queries';
+import type { HomeTodayThaiEarnRankRow } from '../_components/home/home-queries';
+import type { ViewerTodayThaiHall } from '@/lib/home/viewerThaiRank';
 import type {
   PortalFeaturedPoll,
   PortalFeedLine,
   PortalHomeFeed,
   PortalLocalDemoWingCard,
-  PortalWeeklyDotoriRankRow,
+  PortalWeeklyThaiRankRow,
 } from '../lib/home/fetchPortalHomeFeed';
 import type { Locale } from '@/i18n/types';
+import type { PersonalMissionBrief } from '@/lib/missions/ensurePersonalMissionToday';
+import type { CollaborativeMissionRow } from '../_components/home/home-queries';
 import type { SiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { siteUiDefaults } from '@/lib/site-settings/siteUiSettings';
 import { getDictionary } from '@/i18n/dictionaries';
@@ -17,13 +20,14 @@ import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import { localizeQuestFeedText, stripQuestFeedWeatherClutter } from '@/lib/quests/questFeedLocale';
 import { isQuestMissionNoiseTitle } from '../lib/home/portalLiveFeedTitle';
 import PortalLocalDemoWingRolling from './PortalLocalDemoWingRolling';
+import PortalMissionHub from './PortalMissionHub';
 import PortalQuickMenu from './PortalQuickMenu';
 import PortalQuestWriteCta from './PortalQuestWriteCta';
 import QuickAppLauncher from './QuickAppLauncher';
 import PortalWeatherWidget from './PortalWeatherWidget';
 import PortalLiveFeedMultiTab from './PortalLiveFeedMultiTab';
 import PortalBalancePoll from './PortalBalancePoll';
-import PortalDotoriHallOfFame from './PortalDotoriHallOfFame';
+import PortalThaiHallOfFame from './PortalThaiHallOfFame';
 import PortalThailandPhotoStrip from './PortalThailandPhotoStrip';
 import PortalTrendingTicker from './PortalTrendingTicker';
 import PortalDailyFortune from './PortalDailyFortune';
@@ -78,10 +82,12 @@ export type Portal2026ViewProps = {
   isLoggedIn: boolean;
   /** 날씨 위젯 옴니 레이더 툴팁(경고 상세) 노출 — 서버에서 `resolveAdminForUser`로 결정 */
   isAdmin?: boolean;
-  /** 보유 도토리 상위 N — `profiles.dotori_balance` */
-  dotoriBalanceRanking?: HomeDotoriBalanceRankRow[];
-  viewerDotori?: { rank: number; balance: number } | null;
+  /** 서울 당일 경제 로그 양수 합산 TOP N */
+  todayThaiEarnRanking?: HomeTodayThaiEarnRankRow[];
+  viewerThaiHall?: ViewerTodayThaiHall | null;
   viewerProfileId?: string | null;
+  personalMission?: PersonalMissionBrief | null;
+  collaborativeMissions?: CollaborativeMissionRow[];
 };
 
 function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
@@ -98,13 +104,13 @@ function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
       wingBanners: [],
       liveFeed: [],
       siteTotals: null,
-      weeklyDotoriRanking: [],
+      weeklyThaiRanking: [],
       featuredPoll: null,
       trendingKeywords: [],
       thailandPhotos: [],
     };
   }
-  const rk = Array.isArray(input.weeklyDotoriRanking) ? input.weeklyDotoriRanking : [];
+  const rk = Array.isArray(input.weeklyThaiRanking) ? input.weeklyThaiRanking : [];
   const demoCardsRaw = Array.isArray(input.localDemoWingCards) ? input.localDemoWingCards : [];
   return {
     jobs: Array.isArray(input.jobs) ? input.jobs : [],
@@ -134,15 +140,15 @@ function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
             communityItemCount: input.siteTotals.communityItemCount,
           }
         : null,
-    weeklyDotoriRanking: rk
+    weeklyThaiRanking: rk
       .filter(
-        (r): r is PortalWeeklyDotoriRankRow =>
+        (r): r is PortalWeeklyThaiRankRow =>
           r != null &&
           typeof r === 'object' &&
-          typeof (r as PortalWeeklyDotoriRankRow).rank === 'number' &&
-          typeof (r as PortalWeeklyDotoriRankRow).profileId === 'string' &&
-          typeof (r as PortalWeeklyDotoriRankRow).displayName === 'string' &&
-          typeof (r as PortalWeeklyDotoriRankRow).dotoriEarned === 'number',
+          typeof (r as PortalWeeklyThaiRankRow).rank === 'number' &&
+          typeof (r as PortalWeeklyThaiRankRow).profileId === 'string' &&
+          typeof (r as PortalWeeklyThaiRankRow).displayName === 'string' &&
+          typeof (r as PortalWeeklyThaiRankRow).thaiEarned === 'number',
       )
       .slice(0, 10),
     featuredPoll: ((): PortalFeaturedPoll | null => {
@@ -410,12 +416,14 @@ export default function Portal2026View({
   siteUi: siteUiProp,
   isLoggedIn,
   isAdmin = false,
-  dotoriBalanceRanking = [],
-  viewerDotori = null,
+  todayThaiEarnRanking = [],
+  viewerThaiHall = null,
   viewerProfileId = null,
+  personalMission = null,
+  collaborativeMissions = [],
 }: Portal2026ViewProps) {
   const siteUi = siteUiProp ?? siteUiDefaults();
-  const copy = getPortal2026Copy(locale);
+  const copy = getPortal2026Copy(locale, siteUi.siteDisplayName);
   const raw = safeFeed(feed);
 
   const moreLabel = copy.more;
@@ -430,7 +438,7 @@ export default function Portal2026View({
   const liveFeed = normalizeLines(raw?.liveFeed ?? []);
   const localBizFromDemoFallback = raw.localBizFromDemoFallback;
   const localDemoWingCards = raw.localDemoWingCards ?? [];
-  const weeklyRankSorted = [...(raw.weeklyDotoriRanking ?? [])]
+  const weeklyRankSorted = [...(raw.weeklyThaiRanking ?? [])]
     .filter((r) => r && typeof r.rank === 'number')
     .sort((a, b) => a.rank - b.rank)
     .slice(0, 5);
@@ -452,9 +460,9 @@ export default function Portal2026View({
   const fxQuickLabel = locale === 'th' ? 'เรทบาท' : '바트 환율';
 
   const weeklyRankAside = (
-    <section className={`${styles.glassGold} overflow-hidden p-1.5 md:p-2`}>
-      <p className="text-sm font-black text-amber-200 max-[768px]:text-[0.8125rem] md:text-lg">{copy.rankTitle}</p>
-      <p className="mt-0.5 line-clamp-2 break-words text-[10px] font-semibold uppercase tracking-wide text-amber-100 md:text-xs">
+    <section className={`${styles.glassBlue} overflow-hidden p-1.5 md:p-2`}>
+      <p className="text-sm font-black text-cyan-200 max-[768px]:text-[0.8125rem] md:text-lg">{copy.rankTitle}</p>
+      <p className="mt-0.5 line-clamp-2 break-words text-[10px] font-semibold uppercase tracking-wide text-slate-200/90 md:text-xs">
         {copy.rankSub}
       </p>
       {(weeklyRankSorted?.length ?? 0) === 0 ? (
@@ -469,7 +477,7 @@ export default function Portal2026View({
               <div
                 key={row.profileId}
                 className={top ? styles.wingRankFirst : styles.wingRankRow}
-                title={`${row.rank} · ${row.dotoriEarned} ${copy.dotoriSuffix}`}
+                title={`${row.rank} · ${row.thaiEarned} ${copy.thaiSuffix}`}
               >
                 <span className={`${styles.wingRankIdx} ${top ? styles.wingRankIdxGold : ''}`} aria-hidden>
                   {top ? '👑' : row.rank}
@@ -480,8 +488,8 @@ export default function Portal2026View({
                   <span className={`min-w-0 truncate ${top ? styles.wingRankFirstName : styles.wingRankName}`}>
                     {row.displayName}
                   </span>
-                  <span className={`shrink-0 whitespace-nowrap ${top ? styles.wingRankFirstDotori : styles.wingRankDotori}`}>
-                    +{row.dotoriEarned.toLocaleString(numLocale)} {copy.dotoriSuffix}
+                  <span className={`shrink-0 whitespace-nowrap ${top ? styles.wingRankFirstThai : styles.wingRankThai}`}>
+                    +{row.thaiEarned.toLocaleString(numLocale)} {copy.thaiSuffix}
                   </span>
                 </div>
               </div>
@@ -598,12 +606,23 @@ export default function Portal2026View({
             <span className="line-clamp-3 break-words">{copy.openGreetingBannerLine}</span>
           </GuestGateLink>
           <PortalDailyFortune locale={locale} isLoggedIn={isLoggedIn} copy={copy} />
-          <PortalQuickMenu locale={locale} isLoggedIn={isLoggedIn} />
+          <PortalQuickMenu
+            locale={locale}
+            isLoggedIn={isLoggedIn}
+            thaiBalance={viewerThaiHall?.balance ?? null}
+          />
+          <PortalMissionHub
+            locale={locale}
+            copy={copy}
+            personal={personalMission}
+            collaborative={collaborativeMissions}
+            isLoggedIn={isLoggedIn}
+          />
           <div className="block min-[769px]:hidden">
-            <PortalDotoriHallOfFame
+            <PortalThaiHallOfFame
               instanceId="mobile"
-              rows={dotoriBalanceRanking}
-              viewer={viewerDotori}
+              rows={todayThaiEarnRanking}
+              viewer={viewerThaiHall}
               viewerProfileId={viewerProfileId}
               isLoggedIn={isLoggedIn}
               locale={locale}
@@ -612,14 +631,14 @@ export default function Portal2026View({
           {trendingList.length > 0 ? (
             <div className="block min-[769px]:hidden">
               <section className={`${styles.glassGold} overflow-hidden px-1.5 py-1 md:px-2 md:py-1.5`}>
-                <p className="m-0 text-xs font-black text-amber-100 max-[768px]:text-[0.7rem] md:text-sm">
+                <p className="m-0 text-xs font-black text-cyan-100 max-[768px]:text-[0.7rem] md:text-sm">
                   {copy.trendingAsideTitle}
                 </p>
-                <ol className="mt-0.5 space-y-0 pl-4 text-xs text-amber-50/95 max-[768px]:text-[0.68rem] md:mt-1 md:space-y-0.5 md:text-sm">
+                <ol className="mt-0.5 space-y-0 pl-4 text-xs text-slate-200/95 max-[768px]:text-[0.68rem] md:mt-1 md:space-y-0.5 md:text-sm">
                   {trendingList.slice(0, 5).map((t) => (
                     <li key={`${t.rank}-${t.query}`} className="marker:font-bold">
-                      <span className="font-extrabold text-amber-200">{t.rank}.</span> {t.query}{' '}
-                      <span className="tabular-nums text-xs text-amber-100/75">
+                      <span className="font-extrabold text-cyan-200">{t.rank}.</span> {t.query}{' '}
+                      <span className="tabular-nums text-xs text-slate-300/85">
                         ({t.count.toLocaleString(numLocale)})
                       </span>
                     </li>
@@ -704,26 +723,26 @@ export default function Portal2026View({
 
         <aside className="hidden min-h-0 min-w-0 min-[769px]:block">
           <div className={styles.stickyWing}>
-            <PortalDotoriHallOfFame
+            <PortalThaiHallOfFame
               instanceId="aside"
-              rows={dotoriBalanceRanking}
-              viewer={viewerDotori}
+              rows={todayThaiEarnRanking}
+              viewer={viewerThaiHall}
               viewerProfileId={viewerProfileId}
               isLoggedIn={isLoggedIn}
               locale={locale}
             />
             <section className={`${styles.glassGold} overflow-hidden p-1.5 md:p-2`}>
-              <p className="text-sm font-black text-amber-100 max-[768px]:text-[0.8125rem] md:text-lg">
+              <p className="text-sm font-black text-cyan-100 max-[768px]:text-[0.8125rem] md:text-lg">
                 {copy.trendingAsideTitle}
               </p>
               {trendingList.length === 0 ? (
-                <p className="mt-1 text-xs leading-snug text-amber-50/85 md:text-sm">{copy.trendingEmpty}</p>
+                <p className="mt-1 text-xs leading-snug text-slate-300/90 md:text-sm">{copy.trendingEmpty}</p>
               ) : (
-                <ol className="mt-1 space-y-0.5 pl-4 text-xs text-amber-50 max-[768px]:text-[0.68rem] md:mt-1.5 md:space-y-1 md:text-[0.92rem]">
+                <ol className="mt-1 space-y-0.5 pl-4 text-xs text-slate-200 max-[768px]:text-[0.68rem] md:mt-1.5 md:space-y-1 md:text-[0.92rem]">
                   {trendingList.map((t) => (
                     <li key={`aside-${t.rank}-${t.query}`} className="marker:font-black">
-                      <span className="font-extrabold text-amber-200">{t.rank}.</span> {t.query}{' '}
-                      <span className="tabular-nums text-xs text-amber-100/75">
+                      <span className="font-extrabold text-cyan-200">{t.rank}.</span> {t.query}{' '}
+                      <span className="tabular-nums text-xs text-slate-300/85">
                         ({t.count.toLocaleString(numLocale)})
                       </span>
                     </li>

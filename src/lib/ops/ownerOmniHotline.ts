@@ -51,7 +51,7 @@ async function sendSlack(text: string): Promise<void> {
     await fetch(webhook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: `*[TaejaWorld Omni]*\n${text.slice(0, 3500)}` }),
+      body: JSON.stringify({ text: `*[Living in Thai Omni]*\n${text.slice(0, 3500)}` }),
     });
   } catch (e) {
     console.warn('[ownerOmniHotline] slack failed:', e);

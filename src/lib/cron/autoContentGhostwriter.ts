@@ -2,6 +2,8 @@
  * 고스트라이터(cron/auto-content) — 제목 템플릿만 코드에 두고 본문은 API에서 조합합니다.
  * board_type: tips = 운영 큐레이션, reports = 제보 톤(크론이 서비스 롤로만 작성).
  */
+import { getClientSiteDisplayName } from '@/lib/site-brand/resolveSiteDisplayName';
+
 export type AutoContentBoardKind = 'tips' | 'reports';
 
 export type AutoContentTemplate = {
@@ -102,9 +104,20 @@ export const AUTO_CONTENT_GHOSTWRITER_TEMPLATES: readonly AutoContentTemplate[] 
   },
 ];
 
+export function pickRandomAutoContentTemplate(): AutoContentTemplate {
+  const list = AUTO_CONTENT_GHOSTWRITER_TEMPLATES;
+  const raw = list[Math.floor(Math.random() * list.length)]!;
+  const staff = `${getClientSiteDisplayName()} 운영진`;
+  return {
+    ...raw,
+    authorLabel: raw.authorLabel === '익명 제보자' ? raw.authorLabel : staff,
+  };
+}
+
 export function buildAutoContentBody(opts: { boardType: AutoContentBoardKind; title: string }): string {
+  const brand = getClientSiteDisplayName();
   const commonFooter =
-    '\n\n— 태자월드 에디토리얼 시스템이 초안 카드를 생성했습니다. 규정·요금은 변동될 수 있으니 출발 전 공식 공지를 함께 확인해 주세요.';
+    `\n\n— ${brand} 에디토리얼 시스템이 초안 카드를 생성했습니다. 규정·요금은 변동될 수 있으니 출발 전 공식 공지를 함께 확인해 주세요.`;
   if (opts.boardType === 'reports') {
     return (
       `[제보·생활 주의 안내]\n\n` +

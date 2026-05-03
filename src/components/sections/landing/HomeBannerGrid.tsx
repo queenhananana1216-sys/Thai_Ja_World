@@ -25,7 +25,7 @@ export async function HomeBannerGrid({ locale, variant = 'dark' }: Props) {
   const items = byPlacement.home_strip;
   if (!items.length) return null;
 
-  const title = locale === 'th' ? 'พาร์ทเนอร์และสปอนเซอร์' : '태자월드 파트너 · 스폰서';
+  const title = locale === 'th' ? 'พาร์ทเนอร์และสปอนเซอร์' : '태국에, 살자 파트너 · 스폰서';
   const sub =
     locale === 'th'
       ? 'ป้ายโฆษณาที่ดูแลโดยทีมแอดมิน — แตะเพื่อเปิดเว็บไซต์ผู้สนับสนุน'

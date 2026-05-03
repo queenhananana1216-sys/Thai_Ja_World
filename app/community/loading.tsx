@@ -1,10 +1,10 @@
-import { TAEJA_ROUTE_LOADING_PULSE } from '../_components/taejaRouteLoadingPulse';
+import { SITE_ROUTE_LOADING_PULSE } from '../_components/siteRouteLoadingPulse';
 
 /**
  * /community/* 네비게이션 직후 — 광장·보드형 목록 체감에 맞춘 중앙 피드 스켈레톤.
  */
 export default function CommunityLoading() {
-  const b = TAEJA_ROUTE_LOADING_PULSE;
+  const b = SITE_ROUTE_LOADING_PULSE;
   return (
     <div className="site-container min-h-[min(68vh,680px)] px-4 py-5" role="status" aria-live="polite">
       <p className="sr-only">커뮤니티 콘텐츠를 불러오는 중입니다.</p>

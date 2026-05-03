@@ -2,12 +2,15 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import AnalyticsTracker from './_components/AnalyticsTracker';
+import { IntentRoutePrefetch } from './_components/IntentRoutePrefetch';
 import GlobalToaster from './_components/GlobalToaster';
 import GlobalNav from './_components/GlobalNav';
 import MobileBottomNav from './_components/MobileBottomNav';
 import PortalActivityTicker from './_components/PortalActivityTicker';
+import ActivityBeaconClient from './_components/ActivityBeaconClient';
 import { SiteFooterFallback } from './_components/SiteFooterFallback';
 import { isLocale, LOCALE_COOKIE } from '@/i18n/types';
+import { SiteBrandProvider } from '@/contexts/SiteBrandContext';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { getSiteBaseUrl } from '@/lib/seo/site';
 
@@ -17,16 +20,30 @@ export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
   const base = getSiteBaseUrl();
-  const title = '태국에, 살자';
-  const description = '태국에 사는 이웃과 함께 — 뉴스·로컬·광장 한곳에 모았어요.';
+  const ui = await loadSiteUiSettings();
+  const title = ui.siteDisplayName;
+  const description =
+    '태국에, 살자(Living in Thai) — 태국 거주·체류 한인·교민 커뮤니티. 비자·뉴스·로컬 가게·광장을 한곳에서. 공식 생활 정보·참여형 포털.';
   return {
     metadataBase: new URL(base),
     title: {
       default: title,
-      template: '%s | 태국에, 살자',
+      template: `%s | ${title}`,
     },
     description,
-    keywords: ['태국에 살자', '태국', '방콕', '교민', '커뮤니티', '한인', '뉴스', 'Thailand'],
+    keywords: [
+      title,
+      '태국에, 살자',
+      'Living in Thai',
+      '태국 교민',
+      '태국 한인',
+      '방콕',
+      '비자',
+      '커뮤니티',
+      '뉴스',
+      'Thailand',
+      'Korean in Thailand',
+    ],
     alternates: { canonical: '/' },
     openGraph: {
       type: 'website',
@@ -84,7 +101,8 @@ export default async function RootLayout({ children }: { children: unknown }) {
             opacity: 0.95,
           }}
         />
-        <GlobalNav />
+        <SiteBrandProvider initialDisplayName={ui.siteDisplayName}>
+          <GlobalNav />
         {ui.healthSafeMode ? (
           <div
             role="status"
@@ -94,13 +112,16 @@ export default async function RootLayout({ children }: { children: unknown }) {
           </div>
         ) : null}
         <AnalyticsTracker />
+        <IntentRoutePrefetch />
         <GlobalToaster />
-        <main className="relative z-0 min-h-[45vh] w-full flex-1 overflow-x-hidden pb-[calc(6.75rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+        <main className="relative z-0 min-h-[45vh] w-full flex-1 overflow-x-hidden pb-[calc(8.75rem+env(safe-area-inset-bottom,0px))] md:pb-0">
           {children as import('react').ReactNode}
         </main>
-        <SiteFooterFallback />
+        <SiteFooterFallback siteDisplayName={ui.siteDisplayName} />
         <PortalActivityTicker locale={htmlLang === 'th' ? 'th' : 'ko'} />
         <MobileBottomNav />
+        <ActivityBeaconClient />
+        </SiteBrandProvider>
       </body>
     </html>
   );

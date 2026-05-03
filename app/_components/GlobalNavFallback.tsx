@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { getClientSiteDisplayName } from '@/lib/site-brand/resolveSiteDisplayName';
 
 /** GlobalNav 예외 시에도 동일한 정적 껍데기 (`GlobalNav` 로고와 일치) */
 export function GlobalNavFallback() {
+  const brand = getClientSiteDisplayName();
   return (
     <div className="sticky top-0 z-50 w-full shrink-0 border-b border-white/10 bg-[#0B0F19]">
       <div className="site-container flex flex-wrap items-center justify-between gap-2 py-2">
@@ -9,7 +11,7 @@ export function GlobalNavFallback() {
           prefetch={true}
           href="/"
           className="inline-flex max-w-[min(100%,22rem)] items-center gap-2.5 no-underline md:gap-3"
-          aria-label="태국에, 살자 홈"
+          aria-label={`${brand} 홈`}
         >
           <span className="select-none text-[2.35rem] leading-none drop-shadow-[0_2px_14px_rgba(251,191,36,0.45)] md:text-[2.85rem]" aria-hidden>
             🐘
@@ -19,7 +21,7 @@ export function GlobalNavFallback() {
               className="block bg-gradient-to-r from-amber-50 via-amber-300 to-yellow-200 bg-clip-text text-[1.05rem] font-extrabold tracking-tight text-transparent md:text-[1.15rem]"
               style={{ fontFamily: 'var(--tj-brand-nunito), var(--font-noto-kr), system-ui, sans-serif' }}
             >
-              태국에, 살자
+              {brand}
             </span>
           </span>
         </Link>

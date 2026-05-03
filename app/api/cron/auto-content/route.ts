@@ -3,15 +3,12 @@
  * 주제 배열·킬러 피드 제목: `src/lib/cron/autoContentGhostwriter.ts` 의 `AUTO_CONTENT_GHOSTWRITER_TEMPLATES`.
  * Vercel Cron: `vercel.json` → `/api/cron/auto-content` (4시간마다), Authorization: Bearer CRON_SECRET
  *
- * 작성자: `GHOSTWRITER_SYSTEM_USER_ID` (마이그레이션 138 — bot@taeja.world / profiles 동기화)
+ * 작성자: `GHOSTWRITER_SYSTEM_USER_ID` (마이그레이션 138 — 시스템 봇 프로필 / profiles 동기화)
  * 선택 env로 다른 UUID 덮어쓰기: AUTO_CONTENT_BOARD_USER_ID, SHADOW_QA_BOT_USER_ID
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
-import {
-  AUTO_CONTENT_GHOSTWRITER_TEMPLATES,
-  buildAutoContentBody,
-} from '@/lib/cron/autoContentGhostwriter';
+import { buildAutoContentBody, pickRandomAutoContentTemplate } from '@/lib/cron/autoContentGhostwriter';
 import { isCronAuthorized } from '@/lib/cronAuth';
 import { findActivePause, logCronEvent, pausedResponse } from '@/lib/cron/omniLogger';
 import { ensureDailyBalancePoll } from '@/lib/cron/ensureDailyBalancePoll';
@@ -34,12 +31,6 @@ function resolveActorUserId(): string {
   const b = process.env.SHADOW_QA_BOT_USER_ID?.trim();
   if (b && UUID_RE.test(b)) return b;
   return GHOSTWRITER_SYSTEM_USER_ID;
-}
-
-function pickTemplate() {
-  const list = AUTO_CONTENT_GHOSTWRITER_TEMPLATES;
-  const i = Math.floor(Math.random() * list.length);
-  return list[i]!;
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -66,7 +57,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const actorId = resolveActorUserId();
 
-  const picked = pickTemplate();
+  const picked = pickRandomAutoContentTemplate();
   const content = buildAutoContentBody({ boardType: picked.boardType, title: picked.title });
 
   const admin = createServiceRoleClient();

@@ -451,6 +451,10 @@ export type Dictionary = {
     greetThanks: string;
     styleShopTitle: string;
     styleShopLead: string;
+    /** /shop 프리미엄 부티크 안내 링크 라벨 */
+    styleShopPremiumBoutiqueLink: string;
+    /** 짧은 네비 라벨 */
+    styleShopBoutiqueNav: string;
     styleShopBalance: string;
     styleShopCatSkin: string;
     styleShopCatMinimi: string;
@@ -472,7 +476,7 @@ export type Dictionary = {
     styleShopPermTag: string;
     styleShopCheckin: string;
     styleShopCheckedIn: string;
-    dotoriLabel: string;
+    thaiLabel: string;
     styleRpcNotAuth: string;
     styleRpcGreetingDone: string;
     styleRpcGreetingShort: string;
@@ -753,7 +757,7 @@ const ko: Dictionary = {
       slotEmpty: '빈 슬롯',
       slotSoon: '추가 버튼 자리 (예: 바로가기)',
       styleHint:
-        '💡 나중에는 모은 옥수수로 리모컨과 버튼 꾸미기를 켤 예정이에요. 예전 미니홈 감성, 그대로.',
+        '💡 나중에는 모은 타이(THAI)로 리모컨과 버튼 꾸미기를 켤 예정이에요. 예전 미니홈 감성, 그대로.',
       thb: 'THB',
       krw: 'KRW',
       usd: 'USD',
@@ -783,7 +787,7 @@ const ko: Dictionary = {
     newsEmpty: '아직 이야기가 없어요. 잠시 후에 다시 들러 주세요.',
     newsEmptyLink: '광장 보러 가기 →',
     newsDetailBack: '← 홈으로',
-    newsDetailWitLabel: '태자 한 줄',
+    newsDetailWitLabel: '한 줄 코멘트',
     newsDetailSummaryLabel: '정리',
     newsDetailEditorLabel: '편집실 한마디',
     newsDetailExternalCta: '원문 기사 열기',
@@ -1082,22 +1086,25 @@ const ko: Dictionary = {
     cyIntroEmpty: '메인룸 소개 글이 아직 없어요.',
     previewPanelsHint:
       '미리보기·공개 페이지에서 왼쪽 메뉴로 일촌평·방명록·사진첩 창을 열고 닫을 수 있어요. (싸이 스타일 플로팅 창)',
-    styleScoreLabel: '옥수수',
-    styleShopNav: '스타일 상점',
+    styleScoreLabel: '타이',
+    styleShopNav: '스타일 데스크 (전체 카탈로그)',
     greetCardTitle: '가입 인사 한 줄',
     greetCardLead:
-      '내 미니홈 방명록에 첫 인사를 남기면 옥수수를 드려요. 받은 옥수수로 스킨·미니미를 살 수 있어요.',
+      '내 미니홈 방명록에 첫 인사를 남기면 타이(THAI)를 드려요. 받은 타이로 스킨·미니미를 살 수 있어요.',
     greetPlaceholder: '예: 태국에서 잘 지낼게요. 반가워요!',
-    greetSubmit: '인사 남기고 옥수수 받기',
+    greetSubmit: '인사 남기고 타이 받기',
     greetSubmitting: '처리 중…',
     greetDone: '가입 인사를 완료했어요.',
-    greetThanks: '옥수수가 지급됐어요. 아래 상점에서 꾸밈 아이템을 사 보세요.',
-    styleShopTitle: '미니홈 스타일 상점',
-    styleShopLead: '옥수수로 방 분위기(포인트 색)와 미니미를 살 수 있어요. 구매 즉시 내 미니홈에 적용돼요.',
-    styleShopBalance: '보유 옥수수',
-    styleShopCatSkin: '룸 스킨',
-    styleShopCatMinimi: '미니미',
-    styleShopCatBgm: 'BGM',
+    greetThanks: '타이(THAI)가 지급됐어요. 아래 상점에서 꾸밈 아이템을 사 보세요.',
+    styleShopTitle: '살자 프리미엄 상점 · 스타일 데스크',
+    styleShopLead:
+      '영구제와 90일 이상 패스 위주로 타이(THAI) 가치를 보존합니다. 전체 카탈로그·결제·장착은 이 화면에서, 큐레이션 부티크는 링크로 이동하세요.',
+    styleShopPremiumBoutiqueLink: '살자 프리미엄 부티크 (/shop) — 명품 스킨 · 레어 미니미 · 프리미엄 BGM',
+    styleShopBoutiqueNav: '프리미엄 부티크',
+    styleShopBalance: '보유 타이(THAI)',
+    styleShopCatSkin: '미니홈 명품 스킨',
+    styleShopCatMinimi: '미니미 레어 의상',
+    styleShopCatBgm: '프리미엄 BGM',
     styleShopCatWallpaper: '배경',
     styleShopCatFrame: '프레임',
     styleShopBuy: '구매',
@@ -1105,7 +1112,7 @@ const ko: Dictionary = {
     styleShopBuyPerm: '영구 구매',
     styleShopEquip: '장착',
     styleShopOwned: '보유 중',
-    styleShopNeedPoints: '옥수수가 부족해요.',
+    styleShopNeedPoints: '타이(THAI)가 부족해요.',
     styleShopPurchased: '구매했어요. 미니홈에서 확인해 보세요.',
     styleShopEquipped: '장착했어요.',
     styleShopLoadError: '상점 목록을 불러오지 못했어요.',
@@ -1115,14 +1122,14 @@ const ko: Dictionary = {
     styleShopPermTag: '영구',
     styleShopCheckin: '출석 체크',
     styleShopCheckedIn: '오늘 출석 완료!',
-    dotoriLabel: '옥수수',
+    thaiLabel: '타이',
     styleRpcNotAuth: '로그인이 필요해요.',
     styleRpcGreetingDone: '이미 가입 인사 보상을 받았어요.',
     styleRpcGreetingShort: '인사말을 조금만 더 길게 써 주세요.',
     styleRpcGreetingLong: '인사말이 너무 길어요.',
     styleRpcNoItem: '없는 상품이에요.',
     styleRpcOwned: '이미 구매한 아이템이에요.',
-    styleRpcPoor: '옥수수가 부족해요.',
+    styleRpcPoor: '타이(THAI)가 부족해요.',
     styleRpcRentalUnavailable: '이 아이템은 대여를 지원하지 않아요.',
     styleRpcTierDays: '가입 기간이 부족해 아직 구매할 수 없어요.',
     styleRpcTierGrade: '활동 등급이 부족해 아직 구매할 수 없어요.',
@@ -1298,8 +1305,8 @@ const ko: Dictionary = {
       { en: 'quest complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
       { en: 'Mission complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
       { en: 'mission complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
-      { en: 'Dotori', ko: '도토리', th: 'ดอกท้อ' },
-      { en: 'dotori', ko: '도토리', th: 'ดอกท้อ' },
+      { en: 'THAI', ko: '타이', th: 'THAI' },
+      { en: 'thai', ko: '타이', th: 'thai' },
       { en: 'Cheer a post', ko: '게시글 응원', th: 'เชียร์โพสต์' },
       { en: 'cheer a post', ko: '게시글 응원', th: 'เชียร์โพสต์' },
       { en: 'Share to feed', ko: '피드에 공유', th: 'แชร์ลงฟีด' },
@@ -1769,22 +1776,25 @@ const th: Dictionary = {
     cyIntroEmpty: 'ยังไม่มีข้อความแนะนำในห้องหลัก',
     previewPanelsHint:
       'ตัวอย่าง/หน้าสาธารณะ — เปิด-ปิด ทักทาย·สมุดเยี่ยม·อัลบั้ม จากเมนูซ้าย (สไตล์หน้าต่างลอยแบบไซเวิลด์)',
-    styleScoreLabel: 'ข้าวโพด',
-    styleShopNav: 'ร้านสไตล์',
+    styleScoreLabel: 'THAI',
+    styleShopNav: 'เดสก์สไตล์ (แคตตาล็อกทั้งหมด)',
     greetCardTitle: 'ทักทายครั้งแรก',
     greetCardLead:
-      'ทิ้งข้อความทักทายในสมุดเยี่ยมมินิโฮมของคุณ รับข้าวโพด — ใช้ซื้อสกินห้องหรือมินิมีได้',
+      'ทิ้งข้อความทักทายในสมุดเยี่ยมมินิโฮมของคุณ รับ THAI — ใช้ซื้อสกินห้องหรือมินิมีได้',
     greetPlaceholder: 'เช่น สวัสดีค่ะ/ครับ ยินดีที่ได้รู้จัก',
-    greetSubmit: 'ส่งทักทายและรับข้าวโพด',
+    greetSubmit: 'ส่งทักทายและรับ THAI',
     greetSubmitting: 'กำลังดำเนินการ…',
     greetDone: 'ทักทายต้อนรับเสร็จแล้ว',
-    greetThanks: 'ได้รับข้าวโพดแล้ว ลองซื้อไอเท็มแต่งมินิโฮมได้ด้านล่าง',
-    styleShopTitle: 'ร้านสไตล์มินิโฮม',
-    styleShopLead: 'ใช้ข้าวโพดซื้อโทนสีห้องและมินิมี — ซื้อแล้วใช้กับมินิโฮมทันที',
-    styleShopBalance: 'ข้าวโพดคงเหลือ',
-    styleShopCatSkin: 'สกินห้อง',
-    styleShopCatMinimi: 'มินิมี',
-    styleShopCatBgm: 'BGM',
+    greetThanks: 'ได้รับ THAI แล้ว ลองซื้อไอเท็มแต่งมินิโฮมได้ด้านล่าง',
+    styleShopTitle: 'Salja Premium · เดสก์สไตล์',
+    styleShopLead:
+      'เน้นถาวรและพาส 90 วันขึ้นไป — รักษามูลค่า THAI ซื้อ/สวมใส่ที่หน้านี้ บูตีกคัดสรรไปที่ลิงก์',
+    styleShopPremiumBoutiqueLink: 'บูตีก Salja Premium (/shop) — สกินหรู · มินิมีแรร์ · BGM พรีเมียม',
+    styleShopBoutiqueNav: 'บูตีกพรีเมียม',
+    styleShopBalance: 'THAI คงเหลือ',
+    styleShopCatSkin: 'สกินห้องหรู',
+    styleShopCatMinimi: 'มินิมีแรร์',
+    styleShopCatBgm: 'BGM พรีเมียม',
     styleShopCatWallpaper: 'วอลเปเปอร์',
     styleShopCatFrame: 'เฟรม',
     styleShopBuy: 'ซื้อ',
@@ -1792,7 +1802,7 @@ const th: Dictionary = {
     styleShopBuyPerm: 'ซื้อถาวร',
     styleShopEquip: 'สวมใส่',
     styleShopOwned: 'มีแล้ว',
-    styleShopNeedPoints: 'ข้าวโพดไม่พอ',
+    styleShopNeedPoints: 'THAI ไม่พอ',
     styleShopPurchased: 'ซื้อแล้ว — ดูที่มินิโฮมได้เลย',
     styleShopEquipped: 'สวมใส่แล้ว',
     styleShopLoadError: 'โหลดร้านไม่สำเร็จ',
@@ -1802,14 +1812,14 @@ const th: Dictionary = {
     styleShopPermTag: 'ถาวร',
     styleShopCheckin: 'เช็คอิน',
     styleShopCheckedIn: 'เช็คอินวันนี้แล้ว!',
-    dotoriLabel: 'ข้าวโพด',
+    thaiLabel: 'THAI',
     styleRpcNotAuth: 'ต้องล็อกอินก่อน',
     styleRpcGreetingDone: 'รับรางวัลทักทายไปแล้ว',
     styleRpcGreetingShort: 'พิมพ์ข้อความให้ยาวขึ้นอีกนิด',
     styleRpcGreetingLong: 'ข้อความยาวเกินไป',
     styleRpcNoItem: 'ไม่มีสินค้านี้',
     styleRpcOwned: 'ซื้อไปแล้ว',
-    styleRpcPoor: 'ข้าวโพดไม่พอ',
+    styleRpcPoor: 'THAI ไม่พอ',
     styleRpcRentalUnavailable: 'ไอเท็มนี้ไม่รองรับการเช่า',
     styleRpcTierDays: 'ระยะเวลาบัญชียังไม่ถึงเกณฑ์สำหรับซื้อไอเท็มนี้',
     styleRpcTierGrade: 'ระดับกิจกรรมยังไม่ถึงเกณฑ์สำหรับซื้อไอเท็มนี้',
@@ -1985,8 +1995,8 @@ const th: Dictionary = {
       { en: 'quest complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
       { en: 'Mission complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
       { en: 'mission complete', ko: '미션 완료', th: 'ภารกิจสำเร็จ' },
-      { en: 'Dotori', ko: '도토리', th: 'ดอกท้อ' },
-      { en: 'dotori', ko: '도토리', th: 'ดอกท้อ' },
+      { en: 'THAI', ko: '타이', th: 'THAI' },
+      { en: 'thai', ko: '타이', th: 'thai' },
       { en: 'Cheer a post', ko: '게시글 응원', th: 'เชียร์โพสต์' },
       { en: 'cheer a post', ko: '게시글 응원', th: 'เชียร์โพสต์' },
       { en: 'Share to feed', ko: '피드에 공유', th: 'แชร์ลงฟีด' },

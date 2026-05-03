@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { createBrowserClient } from '@/lib/supabase/client';
@@ -42,6 +43,7 @@ const CATEGORIES = [
 export default function MinihomeStyleShopClient() {
   const { locale, d } = useClientLocaleDictionary();
   const m = d.minihome;
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<ShopRow[] | null>(null);
   const [owned, setOwned] = useState<Map<string, OwnedRow>>(new Map());
   const [balance, setBalance] = useState<number | null>(null);
@@ -111,6 +113,13 @@ export default function MinihomeStyleShopClient() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const c = searchParams.get('cat');
+    if (c && CATEGORIES.some((x) => x.key === c)) {
+      setActiveCat(c);
+    }
+  }, [searchParams]);
+
   const filteredItems = useMemo(
     () => (items ?? []).filter((r) => r.category === activeCat),
     [items, activeCat],
@@ -168,7 +177,7 @@ export default function MinihomeStyleShopClient() {
         p_dedupe_key: `daily_checkin:${today}`,
         p_metadata: { source: 'minihome_shop' },
       });
-      setToast(`🌰 +${res.amount} ${m.dotoriLabel}`);
+      setToast(`฿ +${res.amount} ${m.thaiLabel}`);
       setCheckedIn(true);
       await load();
     } else {
@@ -189,21 +198,28 @@ export default function MinihomeStyleShopClient() {
         </Link>
       </div>
 
-      <p className="dotori-shop-lead">{m.styleShopLead}</p>
+      <p className="thai-shop-lead">{m.styleShopLead}</p>
+      <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem' }}>
+        <Link href="/shop" style={{ color: 'var(--tj-link, #7c3aed)', fontWeight: 700 }}>
+          {m.styleShopPremiumBoutiqueLink}
+        </Link>
+      </p>
 
       {/* Balance + Grade + Checkin */}
-      <div className="dotori-balance-bar">
-        <div className="dotori-balance-bar__left">
-          <span className="dotori-balance-bar__icon">🌰</span>
-          <strong className="dotori-balance-bar__label">{m.styleShopBalance}</strong>
-          <span className="dotori-balance-bar__amount">{balance ?? '—'}</span>
-          <span className="dotori-grade" title={`활동 등급 ${activityGrade}`}>
+      <div className="thai-balance-bar">
+        <div className="thai-balance-bar__left">
+          <span className="thai-balance-bar__icon" aria-hidden>
+            ฿
+          </span>
+          <strong className="thai-balance-bar__label">{m.styleShopBalance}</strong>
+          <span className="thai-balance-bar__amount">{balance ?? '—'}</span>
+          <span className="thai-grade" title={`활동 등급 ${activityGrade}`}>
             {'★'.repeat(activityGrade)}{'☆'.repeat(5 - activityGrade)}
           </span>
         </div>
         <button
           type="button"
-          className="dotori-checkin-btn"
+          className="thai-checkin-btn"
           disabled={checkedIn}
           onClick={() => void checkin()}
         >
@@ -215,12 +231,12 @@ export default function MinihomeStyleShopClient() {
       {toast ? <p className="auth-field-hint">{toast}</p> : null}
 
       {/* Category Tabs */}
-      <nav className="dotori-cat-tabs" aria-label="shop categories">
+      <nav className="thai-cat-tabs" aria-label="shop categories">
         {CATEGORIES.map((c) => (
           <button
             key={c.key}
             type="button"
-            className={`dotori-cat-tab${activeCat === c.key ? ' dotori-cat-tab--active' : ''}`}
+            className={`thai-cat-tab${activeCat === c.key ? ' thai-cat-tab--active' : ''}`}
             onClick={() => setActiveCat(c.key)}
           >
             {(m as Record<string, string>)[c.i18n] ?? c.key}
@@ -234,7 +250,7 @@ export default function MinihomeStyleShopClient() {
       ) : filteredItems.length === 0 ? (
         <p className="auth-field-hint">{m.styleShopEmpty}</p>
       ) : (
-        <ul className="dotori-grid">
+        <ul className="thai-grid">
           {filteredItems.map((row) => {
             const o = owned.get(row.item_key);
             const has = !!o;
@@ -244,36 +260,36 @@ export default function MinihomeStyleShopClient() {
             const meetsDay = daysSinceJoin >= row.min_days_since_join;
             const meetsGrade = activityGrade >= row.min_activity_grade;
             const locked = !meetsDay || !meetsGrade;
-            const tierCls = row.tier === 'legend' ? ' dotori-item--legend' : row.tier === 'premium' ? ' dotori-item--premium' : '';
+            const tierCls = row.tier === 'legend' ? ' thai-item--legend' : row.tier === 'premium' ? ' thai-item--premium' : '';
 
             return (
-              <li key={row.item_key} className={`dotori-item${tierCls}`}>
-                <div className="dotori-item__head">
-                  <span className="dotori-item__name">{labelFor(row)}</span>
-                  <div className="dotori-item__tags">
+              <li key={row.item_key} className={`thai-item${tierCls}`}>
+                <div className="thai-item__head">
+                  <span className="thai-item__name">{labelFor(row)}</span>
+                  <div className="thai-item__tags">
                     {row.tier !== 'normal' && (
-                      <span className={`dotori-tier-badge dotori-tier-badge--${row.tier}`}>
+                      <span className={`thai-tier-badge thai-tier-badge--${row.tier}`}>
                         {row.tier === 'legend' ? 'LEGEND' : 'PREMIUM'}
                       </span>
                     )}
                     {row.source_type === 'local_sponsor' && (
-                      <span className="dotori-item__tag" title={row.sponsor_name ?? undefined}>
+                      <span className="thai-item__tag" title={row.sponsor_name ?? undefined}>
                         {row.sponsor_region ? `LOCAL · ${row.sponsor_region}` : 'LOCAL SPONSOR'}
                       </span>
                     )}
                     {row.rental_days ? (
-                      <span className="dotori-item__tag dotori-item__tag--rental">
+                      <span className="thai-item__tag thai-item__tag--rental">
                         {m.styleShopRentalTag.replace('{days}', String(row.rental_days))}
                       </span>
                     ) : (
-                      <span className="dotori-item__tag dotori-item__tag--perm">{m.styleShopPermTag}</span>
+                      <span className="thai-item__tag thai-item__tag--perm">{m.styleShopPermTag}</span>
                     )}
                   </div>
                 </div>
 
                 {/* Lock message */}
                 {locked && !has && (
-                  <div className="dotori-item__lock">
+                  <div className="thai-item__lock">
                     {!meetsDay && (
                       <p>가입 후 {row.min_days_since_join}일 필요 (D-{row.min_days_since_join - daysSinceJoin})</p>
                     )}
@@ -285,34 +301,34 @@ export default function MinihomeStyleShopClient() {
 
                 {/* Price row */}
                 {!locked && (
-                  <div className="dotori-item__prices">
+                  <div className="thai-item__prices">
                     {row.rental_days && row.rental_price !== null && (
-                      <span className="dotori-item__price">
-                        🌰 {row.rental_price} <small>/ {row.rental_days}일</small>
+                      <span className="thai-item__price">
+                        ฿ {row.rental_price} <small>/ {row.rental_days}일</small>
                       </span>
                     )}
-                    <span className="dotori-item__price dotori-item__price--perm">
-                      🌰 {row.price_points} <small>(영구)</small>
+                    <span className="thai-item__price thai-item__price--perm">
+                      ฿ {row.price_points} <small>(영구)</small>
                     </span>
                   </div>
                 )}
 
                 {/* Owned / Remaining days */}
                 {has && o.days_remaining !== null && (
-                  <p className="dotori-item__expire">
+                  <p className="thai-item__expire">
                     {m.styleShopDaysLeft.replace('{n}', String(o.days_remaining))}
                   </p>
                 )}
                 {has && o.expires_at === null && (
-                  <p className="dotori-item__perm-owned">{m.styleShopOwned} ({m.styleShopPermTag})</p>
+                  <p className="thai-item__perm-owned">{m.styleShopOwned} ({m.styleShopPermTag})</p>
                 )}
 
                 {/* Actions */}
-                <div className="dotori-item__actions">
+                <div className="thai-item__actions">
                   {has ? (
                     <button
                       type="button"
-                      className="dotori-btn dotori-btn--equip"
+                      className="thai-btn thai-btn--equip"
                       disabled={loading}
                       onClick={() => void equip(row.item_key)}
                     >
@@ -323,7 +339,7 @@ export default function MinihomeStyleShopClient() {
                       {row.rental_days && row.rental_price !== null && (
                         <button
                           type="button"
-                          className="dotori-btn dotori-btn--rent"
+                          className="thai-btn thai-btn--rent"
                           disabled={loading || !canBuyRent}
                           onClick={() => void buy(row.item_key, true)}
                         >
@@ -332,7 +348,7 @@ export default function MinihomeStyleShopClient() {
                       )}
                       <button
                         type="button"
-                        className="dotori-btn dotori-btn--buy"
+                        className="thai-btn thai-btn--buy"
                         disabled={loading || !canBuyPerm}
                         title={!canBuyPerm ? m.styleShopNeedPoints : undefined}
                         onClick={() => void buy(row.item_key, false)}

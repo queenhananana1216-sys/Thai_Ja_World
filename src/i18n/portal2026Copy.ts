@@ -44,12 +44,15 @@ export type Portal2026Copy = {
   weatherLoading: string;
   weatherUnavailable: string;
   rootAria: string;
-  dotoriSuffix: string;
-  /** 우측·모바일 — 보유 도토리 명예의 전당 */
+  thaiSuffix: string;
+  /** 우측·모바일 — 당일 타이(THAI) 획득 랭킹 */
   balanceHallTitle: string;
   balanceHallSub: string;
   balanceHallEmpty: string;
-  balanceHallYourRank: string;
+  /** 푸터 — 오늘 획득 라벨 */
+  balanceHallYouToday: string;
+  /** 푸터 — 당일 순위 접두(뒤에 #n) */
+  balanceHallTodayRankPrefix: string;
   balanceHallLoginHint: string;
   balanceHallWriteCta: string;
   /** 홈 밸런스 게임 투표 */
@@ -84,6 +87,14 @@ export type Portal2026Copy = {
   fortuneTipFallback: string;
   fortuneReadMore: string;
   fortuneClose: string;
+  /** 개인화·공동 미션 허브 */
+  missionHubPersonalTitle: string;
+  missionHubPersonalLoginHint: string;
+  missionHubPersonalEmpty: string;
+  missionHubPersonalCta: string;
+  missionHubCollabTitle: string;
+  missionHubCollabEmpty: string;
+  missionHubCollabFootnote: string;
 };
 
 const ko: Portal2026Copy = {
@@ -106,11 +117,11 @@ const ko: Portal2026Copy = {
   quickAppsSub: '탭하면 새 창에서 열려요',
   quickAppsAria: '태국 생활 필수 앱 바로가기',
   shortcutTitle: '바로가기',
-  rankTitle: '주간 도토리 획득 TOP 5',
+  rankTitle: '주간 타이(THAI) 획득 TOP 5',
   rankSub: '이번 주 서울 주간 미션 집계',
   liveFeedTitle: '실시간 통합 피드',
   liveFeedTabAll: '🌐 전체 흐름',
-  liveFeedTabHot: '🔥 실시간 인기',
+  liveFeedTabHot: '실시간 인기',
   liveFeedTabQa: '💬 생활 Q&A',
   liveFeedTabFlea: '🛍️ 벼룩시장',
   emptyLiveFeedTab: '이 탭에 맞는 글이 아직 없어요. 다른 탭을 눌러 보세요.',
@@ -128,14 +139,15 @@ const ko: Portal2026Copy = {
   weatherWidgetAria: '방콕 현재 날씨',
   weatherLoading: '날씨 불러오는 중…',
   weatherUnavailable: '날씨를 불러오지 못했습니다.',
-  rootAria: '태국에, 살자 포털',
-  dotoriSuffix: '도토리',
-  balanceHallTitle: '🏆 도토리 부자 명예의 전당 TOP 5',
-  balanceHallSub: '보유 도토리 · 실시간',
+  rootAria: '포털 홈',
+  thaiSuffix: '타이',
+  balanceHallTitle: '오늘 타이(THAI) 획득 랭킹 TOP 5',
+  balanceHallSub: '서울 당일 · 적립 합산 · 실시간',
   balanceHallEmpty: '아직 랭킹을 표시할 데이터가 없습니다.',
-  balanceHallYourRank: '내 순위',
-  balanceHallLoginHint: '로그인하면 내 순위와 보유량이 보여요.',
-  balanceHallWriteCta: '글 쓰고 도토리 모으기 →',
+  balanceHallYouToday: '오늘 획득',
+  balanceHallTodayRankPrefix: '오늘 순위',
+  balanceHallLoginHint: '로그인하면 보유량·오늘 획득·순위가 보여요.',
+  balanceHallWriteCta: '글 쓰고 타이 모으기 →',
   balanceGameTitle: '🤔 오늘의 태국 밸런스 게임',
   balanceGameSub: 'LIVE · 한 번만 투표 · 실시간 득표',
   balanceVs: 'VS',
@@ -144,10 +156,10 @@ const ko: Portal2026Copy = {
   balanceTapHint: '버튼을 누르면 득표율 바가 살아 움직여요',
   balanceYourPick: '내 선택',
   openGreetingBannerLine:
-    '🎉 [오픈 기념] 가입 인사만 남겨도 500 도토리(포인트) 즉시 100% 지급!',
-  openGreetingBannerAria: '가입 인사 글쓰기로 오픈 기념 도토리 미션 참여',
+    '[오픈 기념] 가입 인사만 남겨도 500 타이(THAI) 즉시 100% 지급',
+  openGreetingBannerAria: '가입 인사 글쓰기로 오픈 기념 타이(THAI) 미션 참여',
   trendingTickerTitle: '실시간 급상승 키워드',
-  trendingAsideTitle: '🔥 급상승 검색 TOP',
+  trendingAsideTitle: '급상승 검색 TOP',
   trendingEmpty: '검색이 쌓이면 실시간 순위가 올라와요. 상단 검색창을 써 보세요!',
   thailandPhotosTitle: '지금 태국은? 실시간 현지 사진',
   fortuneButton: '🥠 오늘의 태국 생활 운세 & 꿀팁 열어보기',
@@ -162,6 +174,13 @@ const ko: Portal2026Copy = {
   fortuneTipFallback: '태국 생활, 오늘도 안전하게!',
   fortuneReadMore: '꿀팁 허브에서 자세히 보기 →',
   fortuneClose: '닫기',
+  missionHubPersonalTitle: '오늘 나만의 미션',
+  missionHubPersonalLoginHint: '로그인하면 활동 기반 맞춤 미션이 매일 표시됩니다.',
+  missionHubPersonalEmpty: '오늘 미션을 준비하는 중이에요. 잠시 후 새로고침해 보세요.',
+  missionHubPersonalCta: '미션 하러 가기',
+  missionHubCollabTitle: '함께하는 목표',
+  missionHubCollabEmpty: '진행 중인 공동 미션이 없습니다.',
+  missionHubCollabFootnote: '진행률은 운영 집계·이벤트로 반영됩니다.',
 };
 
 const th: Portal2026Copy = {
@@ -184,11 +203,11 @@ const th: Portal2026Copy = {
   quickAppsSub: 'แตะแล้วเปิดหน้าต่างใหม่',
   quickAppsAria: 'ทางลัดแอปสำหรับชีวิตในไทย',
   shortcutTitle: 'ทางลัด',
-  rankTitle: 'อันดับดอกท้อยอดเยี่ยม 5 อันดับ',
+  rankTitle: 'อันดับ THAI รายสัปดาห์ TOP 5',
   rankSub: 'สรุปภารกิจรายสัปดาห์ (โซล)',
   liveFeedTitle: 'ฟีดรวมแบบเรียลไทม์',
   liveFeedTabAll: '🌐 ทั้งหมด',
-  liveFeedTabHot: '🔥 ยอดนิยม',
+  liveFeedTabHot: 'ยอดนิยม',
   liveFeedTabQa: '💬 ถาม-ตอบ',
   liveFeedTabFlea: '🛍️ ตลาดมือสอง',
   emptyLiveFeedTab: 'ยังไม่มีโพสต์ในแท็บนี้ ลองแท็บอื่น',
@@ -206,14 +225,15 @@ const th: Portal2026Copy = {
   weatherWidgetAria: 'สภาพอากาศกรุงเทพฯ',
   weatherLoading: 'กำลังโหลดสภาพอากาศ…',
   weatherUnavailable: 'โหลดสภาพอากาศไม่ได้',
-  rootAria: 'พอร์ทัล อยู่ไทยกัน',
-  dotoriSuffix: 'ดอกท้อ',
-  balanceHallTitle: '🏆 อันดับเศรษฐีดอกท้อ TOP 5',
-  balanceHallSub: 'ยอดคงเหลือ · เรียลไทม์',
+  rootAria: 'พอร์ทัลหน้าแรก',
+  thaiSuffix: 'THAI',
+  balanceHallTitle: 'อันดับ THAI ที่ได้วันนี้ TOP 5',
+  balanceHallSub: 'ตามวันที่โซล · รวมยอด THAI · เรียลไทม์',
   balanceHallEmpty: 'ยังไม่มีข้อมูลจัดอันดับ',
-  balanceHallYourRank: 'อันดับของคุณ',
-  balanceHallLoginHint: 'ล็อกอินเพื่อดูอันดับและยอดคงเหลือ',
-  balanceHallWriteCta: 'โพสต์เพื่อสะสมดอกท้อ →',
+  balanceHallYouToday: 'วันนี้ได้รับ',
+  balanceHallTodayRankPrefix: 'อันดับวันนี้',
+  balanceHallLoginHint: 'ล็อกอินเพื่อดูยอดคงเหลือ·ที่ได้วันนี้·อันดับ',
+  balanceHallWriteCta: 'โพสต์เพื่อสะสม THAI →',
   balanceGameTitle: '🤔 เกมทายใจไทยวันนี้',
   balanceGameSub: 'LIVE · โหวตได้ครั้งเดียว · เรียลไทม์',
   balanceVs: 'VS',
@@ -222,10 +242,10 @@ const th: Portal2026Copy = {
   balanceTapHint: 'แตะแล้วแถบเปอร์เซ็นต์จะขยับทันที',
   balanceYourPick: 'คุณเลือก',
   openGreetingBannerLine:
-    '🎉 [เปิดตัว] ทักทายสมาชิกใหม่รับ 500 ดอกท้อทันที — จ่ายครบ 100%!',
-  openGreetingBannerAria: 'ไปหน้าเขียนโพสต์ทักทายเพื่อรับดอกท้อกิจกรรมเปิดตัว',
+    '[เปิดตัว] ทักทายสมาชิกใหม่รับ 500 THAI ทันที — จ่ายครบ 100%',
+  openGreetingBannerAria: 'ไปหน้าเขียนโพสต์ทักทายเพื่อรับ THAI กิจกรรมเปิดตัว',
   trendingTickerTitle: 'คียร์เวิร์ดพุ่งแรงแบบเรียลไทม์',
-  trendingAsideTitle: '🔥 ค้นหายอดนิยม',
+  trendingAsideTitle: 'ค้นหายอดนิยม',
   trendingEmpty: 'พิมพ์ค้นหาในช่องด้านบน แล้วเทรนด์จะโผล่ที่นี่!',
   thailandPhotosTitle: 'ตอนนี้ที่ไทย? ภาพสดจากชุมชน',
   fortuneButton: '🥠 เปิดดวงชีวิตไทยวันนี้ · เคล็ดลับสั้นๆ',
@@ -240,8 +260,20 @@ const th: Portal2026Copy = {
   fortuneTipFallback: 'ชีวิตในไทยวันนี้ ขอให้ปลอดภัย!',
   fortuneReadMore: 'อ่านเพิ่มในฮับเคล็ดลับ →',
   fortuneClose: 'ปิด',
+  missionHubPersonalTitle: 'ภารกิจวันนี้ของคุณ',
+  missionHubPersonalLoginHint: 'ล็อกอินเพื่อรับภารกิจรายวันตามพฤติกรรม',
+  missionHubPersonalEmpty: 'กำลังเตรียมภารกิจ — ลองรีเฟรชอีกครั้ง',
+  missionHubPersonalCta: 'ไปทำภารกิจ',
+  missionHubCollabTitle: 'เป้าร่วมชุมชน',
+  missionHubCollabEmpty: 'ยังไม่มีภารกิจร่วมในช่วงนี้',
+  missionHubCollabFootnote: 'ความคืบหน้าอัปเดตจากระบบ/กิจกรรม',
 };
 
-export function getPortal2026Copy(locale: Locale): Portal2026Copy {
-  return locale === 'th' ? th : ko;
+export function getPortal2026Copy(locale: Locale, siteDisplayName?: string | null): Portal2026Copy {
+  const base: Portal2026Copy = structuredClone(locale === 'th' ? th : ko);
+  const name = (siteDisplayName ?? '').trim();
+  if (name) {
+    base.rootAria = locale === 'th' ? `พอร์ทัล ${name}` : `${name} 포털`;
+  }
+  return base;
 }

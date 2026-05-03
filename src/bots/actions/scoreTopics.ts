@@ -1,5 +1,5 @@
 /**
- * scoreTopics.ts — 토픽별 참여도 스코어링 피드백 루프 (태자 월드)
+ * scoreTopics.ts — 토픽별 참여도 스코어링 피드백 루프 (「태국에, 살자」)
  *
  * 순수 함수 scoreTopicsFromEngagement 와
  * bot_actions 로그를 남기는 래퍼 scoreTopicsFromEngagementAndLog 를 제공합니다.

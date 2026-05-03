@@ -12,7 +12,7 @@ import AdminMobileTabBar from './_components/AdminMobileTabBar';
 import './admin-shell.css';
 
 export const metadata = {
-  title: '태자 월드 — 관리자',
+  title: '태국에, 살자 — 관리자',
 };
 
 // 관리자 트리 전체는 동적 렌더 — Supabase service role 클라이언트가 빌드 시점에
@@ -68,7 +68,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         <Link prefetch={true} href="/admin" className="admin-shell__brand">
           <span className="admin-shell__brand-mark">TW</span>
           <span>
-            <strong>2026 Taeja World</strong>
+            <strong>2026 Living in Thai</strong>
             <small>Owner Dashboard</small>
           </span>
         </Link>

@@ -2442,6 +2442,9 @@ export type Database = {
           image_urls: string[]
           is_anonymous: boolean
           is_knowledge_tip: boolean
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
           moderation_status: string
           owner_edit_password_set: boolean
           plaza_id: string | null
@@ -2462,6 +2465,9 @@ export type Database = {
           image_urls?: string[]
           is_anonymous?: boolean
           is_knowledge_tip?: boolean
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
           moderation_status?: string
           owner_edit_password_set?: boolean
           plaza_id?: string | null
@@ -2482,6 +2488,9 @@ export type Database = {
           image_urls?: string[]
           is_anonymous?: boolean
           is_knowledge_tip?: boolean
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
           moderation_status?: string
           owner_edit_password_set?: boolean
           plaza_id?: string | null
@@ -2807,7 +2816,7 @@ export type Database = {
           banned_until: string | null
           created_at: string
           display_name: string | null
-          dotori_balance: number
+          thai_balance: number
           id: string
           is_premium: boolean
           is_staff: boolean
@@ -2833,7 +2842,7 @@ export type Database = {
           banned_until?: string | null
           created_at?: string
           display_name?: string | null
-          dotori_balance?: number
+          thai_balance?: number
           id: string
           is_premium?: boolean
           is_staff?: boolean
@@ -2858,7 +2867,7 @@ export type Database = {
           banned_until?: string | null
           created_at?: string
           display_name?: string | null
-          dotori_balance?: number
+          thai_balance?: number
           id?: string
           is_premium?: boolean
           is_staff?: boolean
@@ -4860,6 +4869,23 @@ export type Database = {
           display_name: string
           dotori_earned: number
         }[]
+      }
+      get_public_today_dotori_earnings_ranking: {
+        Args: { p_limit?: number }
+        Returns: {
+          rank: number
+          profile_id: string
+          display_name: string
+          dotori_earned_today: number
+        }[]
+      }
+      get_viewer_today_dotori_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      schema_radar_public_table_columns: {
+        Args: { p_table: string }
+        Returns: string[]
       }
       style_complete_signup_greeting: {
         Args: { p_body: string }

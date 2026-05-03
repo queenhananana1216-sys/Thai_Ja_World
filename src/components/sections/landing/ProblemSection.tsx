@@ -62,7 +62,7 @@ export function ProblemSection() {
           ))}
         </motion.div>
         <p className="mt-8 text-sm leading-relaxed text-slate-300" style={{ margin: '14px 0 0', fontSize: 14, lineHeight: 1.6, color: '#cbd5e1' }}>
-          태자월드는 겪은 사람이 정리하고, 다음 사람이 꺼내 쓰는 구조로 이 반복 문제를 줄이기 위해 만들어졌습니다.
+          「태국에, 살자」는 겪은 사람이 정리하고, 다음 사람이 꺼내 쓰는 구조로 이 반복 문제를 줄이기 위해 만들어졌습니다.
         </p>
       </div>
     </section>

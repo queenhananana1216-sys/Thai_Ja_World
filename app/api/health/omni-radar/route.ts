@@ -10,6 +10,7 @@ import {
   checkShadowQaRadar,
   checkUiIncidentRadar,
 } from '@/lib/health/omniRadarBoard';
+import { checkPostsSchemaLayerRadar } from '@/lib/health/schemaLayerRadar';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -123,7 +124,7 @@ async function checkWeatherPipeline(): Promise<CheckWeather> {
       method: 'GET',
       cache: 'no-store',
       signal: ctrl.signal,
-      headers: { 'User-Agent': 'TaejaOmniRadar/1' },
+      headers: { 'User-Agent': 'LivingInThai-OmniRadar/1' },
     });
     clearTimeout(t);
 
@@ -154,18 +155,29 @@ function checkRuntimeResources(): CheckRuntime {
 }
 
 export async function GET(): Promise<NextResponse> {
-  const [database, weather, runtime, cron_radar, shadow_qa, chaos_base, immune_train, ui_surface, board_posts_read] =
-    await Promise.all([
-      checkLiveSqlPing(),
-      checkWeatherPipeline(),
-      Promise.resolve(checkRuntimeResources()),
-      checkCronRadar(),
-      checkShadowQaRadar(),
-      checkChaosMonkeyRadar(),
-      checkChaosHttpImmuneTraining(),
-      checkUiIncidentRadar(),
-      checkBoardPostsReadProbe(),
-    ]);
+  const [
+    database,
+    weather,
+    runtime,
+    cron_radar,
+    shadow_qa,
+    chaos_base,
+    immune_train,
+    ui_surface,
+    board_posts_read,
+    schema_layer,
+  ] = await Promise.all([
+    checkLiveSqlPing(),
+    checkWeatherPipeline(),
+    Promise.resolve(checkRuntimeResources()),
+    checkCronRadar(),
+    checkShadowQaRadar(),
+    checkChaosMonkeyRadar(),
+    checkChaosHttpImmuneTraining(),
+    checkUiIncidentRadar(),
+    checkBoardPostsReadProbe(),
+    checkPostsSchemaLayerRadar(),
+  ]);
 
   const chaos_monkey = {
     ...chaos_base,
@@ -200,6 +212,7 @@ export async function GET(): Promise<NextResponse> {
     chaos_monkey,
     ui_surface,
     board_posts_read,
+    schema_layer,
     motherbrain: {
       shield_pulse,
       all_green: healthy,

@@ -61,6 +61,7 @@ services:
       WATCHDOG_EXTRA_REGEX: ${WATCHDOG_EXTRA_REGEX:-}
       # 웹 내부 ingest — 동일 Bearer 시크릿은 env_file(.env.docker)에서 로드
       SANDBOX_PROPOSAL_INGEST_URL: http://thaija-web:3000/api/internal/sandbox-proposals
+      SHOP_ITEM_PROPOSAL_INGEST_URL: http://thaija-web:3000/api/internal/shop-item-proposals
       # 호스트 프로젝트 루트 바인드 → WATCHDOG_FIX_PROMPT.txt 생성
       WATCHDOG_PROMPT_OUT_DIR: /workspace
     # 웹과 달리 Watchdog는 앱 시크릿이 필요 없습니다. 웹훅만 호스트/compose 변수로 넣으세요.

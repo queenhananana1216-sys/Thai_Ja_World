@@ -4,7 +4,7 @@
  * Phase 1: 모의(Mock) 메트릭을 반환합니다.
  * Phase 2 교체 포인트:
  *   - getServerSupabaseClient() 로 실제 집계 쿼리 실행
- *   - 외부 분석 API (e.g. 태자 월드 애널리틱스 서버) 호출
+ *   - 외부 분석 API (e.g. Living in Thai 애널리틱스 서버) 호출
  *
  * 입력 `input` 에서 지원되는 선택 필드:
  *   - `targetDate` (string ISO 8601) — 특정 날짜 분석 (기본: 오늘)

@@ -30,6 +30,7 @@ type Row = {
 type ProfileRow = {
   style_score_total: number;
   signup_greeting_done: boolean;
+  thai_balance: number;
 };
 
 export default function MinihomeMe() {
@@ -97,13 +98,14 @@ export default function MinihomeMe() {
     if (!user) return null;
     const { data, error } = await sb
       .from('profiles')
-      .select('style_score_total, signup_greeting_done')
+      .select('style_score_total, signup_greeting_done, thai_balance')
       .eq('id', user.id)
       .maybeSingle();
     if (error || !data) return null;
     return {
       style_score_total: typeof data.style_score_total === 'number' ? data.style_score_total : 0,
       signup_greeting_done: Boolean(data.signup_greeting_done),
+      thai_balance: typeof data.thai_balance === 'number' ? Math.max(0, data.thai_balance) : 0,
     };
   }, []);
 
@@ -257,6 +259,7 @@ export default function MinihomeMe() {
   }
 
   const score = prof?.style_score_total ?? null;
+  const thaiWallet = prof?.thai_balance ?? 0;
   const showGreet = prof && !prof.signup_greeting_done;
   const isTh = locale === 'th';
   const quickLead = isTh
@@ -347,6 +350,9 @@ export default function MinihomeMe() {
                 {labels.styleScoreLabel} {score}
               </span>
             ) : null}
+            <Link href="/shop" className="rounded-xl border border-amber-400/45 bg-amber-950/50 px-3 py-2 text-xs font-semibold text-amber-50 no-underline">
+              {labels.styleShopBoutiqueNav}
+            </Link>
             <Link href="/minihome/shop" className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white no-underline">
               {labels.styleShopNav}
             </Link>
@@ -373,6 +379,30 @@ export default function MinihomeMe() {
                 {publicPageLabel}
               </button>
             )}
+          </div>
+        </div>
+
+        <div
+          className="mt-5 overflow-hidden rounded-2xl border border-cyan-400/25 bg-gradient-to-br from-indigo-950/90 via-slate-950/95 to-slate-900/90 p-[0.5px] shadow-[0_20px_50px_rgba(34,211,238,0.12)]"
+          aria-label={isTh ? 'ยอด THAI' : '타이(THAI) 재무 요약'}
+        >
+          <div className="rounded-[0.9rem] bg-slate-950/80 px-4 py-4 sm:px-5 sm:py-5">
+            <p className="m-0 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-cyan-200/80">
+              {isTh ? 'กระเป๋า THAI' : '타이(THAI) 지갑'}
+            </p>
+            <p className="mt-1 flex flex-wrap items-baseline gap-2">
+              <span className="text-3xl font-black tabular-nums tracking-tight text-cyan-50 sm:text-4xl">
+                ฿ {thaiWallet.toLocaleString(isTh ? 'th-TH' : 'ko-KR')}
+              </span>
+              <span className="text-sm font-semibold text-violet-100/90">
+                {isTh ? 'THAI คงเหลือ' : '보유 타이(THAI)'}
+              </span>
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-300/95">
+              {isTh
+                ? 'ใช้ตกแต่งมินิโฮม·ร้านค้า และกิจกรรมชุมชน — ยอดนี้อัปเดตตามกิจกรรมล่าสุด'
+                : '미니홈 꾸미기·스타일 샵·커뮤니티 활동에 쓰이는 포인트입니다. 최근 활동 반영 후 갱신돼요.'}
+            </p>
           </div>
         </div>
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { BlurThumbImage } from '@/components/media/BlurThumbImage';
 import { createBrowserClient } from '@/lib/supabase/client';
 
 export type MinihomeVisibility = 'public' | 'friends' | 'private';
@@ -338,8 +339,14 @@ export default function MinihomeUserSpaceClient(props: {
             <div className="flex flex-col items-center text-center">
               <div className="relative mb-3 h-28 w-28 overflow-hidden rounded-full ring-2 ring-white/15 ring-offset-2 ring-offset-[#0b0f19]">
                 {profile.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+                  <BlurThumbImage
+                    src={profile.avatarUrl}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="112px"
+                    priority
+                  />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600/40 to-sky-600/30 text-3xl font-bold text-white/90">
                     {profile.displayName.slice(0, 1).toUpperCase()}
@@ -358,7 +365,7 @@ export default function MinihomeUserSpaceClient(props: {
             </div>
           </div>
         </div>
-        <p className="text-center text-[11px] text-white/35">태자월드 · CYWORLD 2026</p>
+        <p className="text-center text-[11px] text-white/35">태국에, 살자 · CYWORLD 2026</p>
       </aside>
 
       <section className="min-w-0 flex-1 space-y-4">

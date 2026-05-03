@@ -5,7 +5,7 @@
   --tj-portal-glass-blue: rgba(59, 130, 246, 0.14);
   --tj-portal-glass-gold: rgba(245, 158, 11, 0.12);
   --tj-portal-border-blue: rgba(147, 197, 253, 0.35);
-  --tj-portal-border-gold: rgba(251, 191, 36, 0.32);
+  --tj-portal-border-gold: rgba(34, 211, 238, 0.28);
   --tj-portal-sticky-top: 5.5rem;
 
   min-height: 100vh;
@@ -292,25 +292,25 @@
 /** 패널 공통 — 글라스 + 블루 림 */
 .glassBlue {
   border-radius: 0.75rem;
-  border: 1px solid var(--tj-portal-border-blue);
+  border: 0.5px solid var(--tj-portal-border-blue);
   background: linear-gradient(145deg, rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.42));
   box-shadow:
     0 4px 28px rgba(0, 0, 0, 0.38),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(18px) saturate(1.12);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
 }
 
-/** 골드 액센트 패널 */
+/** Midnight Bangkok — 인디고·시안 림 글라스 패널 */
 .glassGold {
   border-radius: 0.75rem;
-  border: 1px solid var(--tj-portal-border-gold);
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.76), rgba(30, 27, 20, 0.38));
+  border: 0.5px solid var(--tj-portal-border-gold);
+  background: linear-gradient(150deg, rgba(15, 23, 42, 0.82), rgba(49, 46, 129, 0.28));
   box-shadow:
     0 4px 28px rgba(0, 0, 0, 0.36),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
 }
 
 /** 중앙 컬럼 카드 — 중립 슬레이트 + 미세 블루 */
@@ -449,17 +449,17 @@
   }
 }
 
-/** 좌측 스티키 — 주간 도토리 랭킹 (RPC `get_public_weekly_dotori_ranking`) */
+/** 좌측 스티키 — 주간 타이 랭킹 (RPC `get_public_weekly_dotori_ranking`) */
 .wingRankFirst {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.35rem;
   border-radius: 0.5rem;
-  border: 1px solid rgba(251, 191, 36, 0.58);
-  background: linear-gradient(135deg, rgba(120, 53, 15, 0.55), rgba(15, 23, 42, 0.92));
+  border: 0.5px solid rgba(99, 102, 241, 0.45);
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.72), rgba(15, 23, 42, 0.92));
   box-shadow:
-    0 0 24px rgba(245, 158, 11, 0.35),
+    0 0 24px rgba(34, 211, 238, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.09);
   padding: 0.45rem 0.45rem;
 }
@@ -468,18 +468,18 @@
   font-size: 0.875rem;
   font-weight: 900;
   letter-spacing: -0.02em;
-  background-image: linear-gradient(92deg, #fffbeb, #fbbf24 55%, #f59e0b);
+  background-image: linear-gradient(92deg, #e0e7ff, #22d3ee 52%, #a5b4fc);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-.wingRankFirstDotori {
+.wingRankFirstThai {
   font-size: 0.8125rem;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
-  color: rgb(254 243 199);
-  text-shadow: 0 0 12px rgba(251, 191, 36, 0.55);
+  color: rgb(207 250 254);
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.35);
 }
 
 .wingRankRow {
@@ -488,7 +488,7 @@
   gap: 0.35rem;
   padding: 0.32rem 0.38rem;
   border-radius: 0.35rem;
-  border: 1px solid rgba(51, 65, 85, 0.65);
+  border: 0.5px solid rgba(51, 65, 85, 0.65);
   background: rgba(2, 6, 23, 0.35);
 }
 
@@ -518,12 +518,12 @@
   color: #f8fafc;
 }
 
-.wingRankDotori {
+.wingRankThai {
   margin-left: 0.25rem;
   font-size: 0.75rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: rgb(251 191 36 / 0.95);
+  color: rgb(165 243 252 / 0.95);
 }
 
 /** 디자인 제어: 과장 이펙트 절제 */

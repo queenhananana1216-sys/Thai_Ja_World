@@ -9,7 +9,7 @@ export function FooterSection() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6" style={{ maxWidth: 1180, margin: '0 auto', padding: '0 16px' }}>
         <h3 className="text-lg font-bold text-white" style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#fff' }}>광고주 QR 제휴 안내</h3>
         <p className="mt-3 text-sm leading-relaxed text-slate-300" style={{ margin: '12px 0 0', fontSize: 14, lineHeight: 1.65, color: '#cbd5e1' }}>
-          카운터 앞에 태자월드 QR 명함을 배치하면 첫 1개월 광고비를 무료로 제공합니다. 오프라인 방문객이 QR을 스캔하면
+          카운터 앞에 「태국에, 살자」QR 명함을 배치하면 첫 1개월 광고비를 무료로 제공합니다. 오프라인 방문객이 QR을 스캔하면
           랜딩 → 로컬 탭 → 매장 미니홈으로 연결되어 메뉴, 공지, 예약 채널까지 자연스럽게 이동합니다.
         </p>
         <ul

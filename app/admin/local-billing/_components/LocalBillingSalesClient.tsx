@@ -100,7 +100,7 @@ export default function LocalBillingSalesClient({ spots }: { spots: BillingSpotR
   const salesMessage = useMemo(() => {
     if (!checkoutUrl) return '';
     return (
-      `[태자월드 / ThaiJa World]\n` +
+      `[태국에, 살자 / Living in Thai]\n` +
       `안녕하세요! 테이블 다국어 주문기 1개월 무료 체험 등록 링크입니다.\n` +
       `카드만 등록해 주시면 첫 달은 결제 없이 이용 가능합니다.\n\n` +
       checkoutUrl

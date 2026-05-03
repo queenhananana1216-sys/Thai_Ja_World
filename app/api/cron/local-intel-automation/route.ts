@@ -44,7 +44,7 @@ async function fetchJson(url: string): Promise<unknown> {
     cache: 'no-store',
     headers: {
       Accept: 'application/json, */*',
-      'User-Agent': 'TaejaWorld-LocalIntel/2026',
+      'User-Agent': 'LivingInThai-LocalIntel/2026',
     },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -123,7 +123,7 @@ async function verifyLocalIntelWithLlm(item: IntelItem): Promise<VerifiedIntel> 
             { baseUrl: geminiBase, model: geminiModel, key: geminiKey },
           ];
 
-  const system = `You verify Thailand local survival intel for 2026 Taeja World.
+  const system = `You verify Thailand local survival intel for 2026 "Living in Thai" (태국에, 살자) community standards.
 Return JSON only:
 {"ok":boolean,"normalized_name":"string","normalized_summary":"string","category":"hospital|pharmacy|mart|info|real-estate|job","region":"string","slug":"string","confidence":"high|medium|low","reason":"string"}
 Rules:

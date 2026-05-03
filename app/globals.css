@@ -7,11 +7,15 @@
  */
 
 :root {
-  --tj-museum-coral: #e63946;
-  --tj-museum-saffron: #ffb703;
-  --tj-museum-cobalt: #3a0ca3;
-  --tj-museum-blue: #4361ee;
-  --tj-museum-teal: #06d6a0;
+  /* Midnight Bangkok — 딥 네온 포인트(과포화 레드 지양) */
+  --tj-midnight-navy: #0a0f1f;
+  --tj-neon-mint: #34d399;
+  --tj-neon-violet: #a78bfa;
+  --tj-museum-coral: #6366f1;
+  --tj-museum-saffron: #22d3ee;
+  --tj-museum-cobalt: #312e81;
+  --tj-museum-blue: #6366f1;
+  --tj-museum-teal: #2dd4bf;
   --tj-museum-ink: #0d0d0f;
 
   --tj-bg: #ebe6db;
@@ -21,7 +25,7 @@
   --tj-line: #1a1a1e;
   --tj-lilac: #7209b7;
   --tj-lilac-soft: #e8d4f5;
-  --tj-rose: #e63946;
+  --tj-rose: #7c3aed;
   --tj-peach: #ffb703;
   --tj-landing-canvas: #070812;
   --tj-hero-panel: #090a1c;
@@ -4727,5 +4731,254 @@ a.ilchon-btn {
   .shop-cy-menu__btn {
     flex: 1 1 calc(25% - 6px);
     min-width: 70px;
+  }
+}
+
+/* 미니홈 스타일 샵 — THAI 경제 · 글라스 카드 */
+.thai-shop-lead {
+  margin: 0.35rem 0 0;
+  color: #cbd5e1;
+  line-height: 1.55;
+}
+
+.thai-balance-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin: 1rem 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.75rem;
+  border: 0.5px solid rgba(99, 102, 241, 0.35);
+  background: linear-gradient(120deg, rgba(15, 23, 42, 0.88), rgba(30, 27, 75, 0.45));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px) saturate(1.12);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
+}
+
+.thai-balance-bar__left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.thai-balance-bar__icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.thai-balance-bar__label {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.thai-balance-bar__amount {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #5eead4;
+}
+
+.thai-grade {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: #c4b5fd;
+}
+
+.thai-checkin-btn {
+  border-radius: 0.5rem;
+  border: 0.5px solid rgba(45, 212, 191, 0.45);
+  padding: 0.45rem 0.85rem;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #ecfdf5;
+  background: linear-gradient(95deg, rgba(6, 78, 59, 0.55), rgba(15, 23, 42, 0.75));
+  cursor: pointer;
+}
+
+.thai-checkin-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.thai-cat-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.thai-cat-tab {
+  border-radius: 999px;
+  border: 0.5px solid rgba(148, 163, 184, 0.35);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.45);
+  cursor: pointer;
+}
+
+.thai-cat-tab--active {
+  border-color: rgba(34, 211, 238, 0.55);
+  color: #ecfeff;
+  background: linear-gradient(95deg, rgba(30, 27, 75, 0.75), rgba(15, 23, 42, 0.9));
+}
+
+.thai-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.thai-item {
+  border-radius: 0.65rem;
+  border: 0.5px solid rgba(51, 65, 85, 0.65);
+  padding: 0.75rem;
+  background: linear-gradient(155deg, rgba(15, 23, 42, 0.92), rgba(30, 27, 75, 0.35));
+  backdrop-filter: blur(16px) saturate(1.08);
+  -webkit-backdrop-filter: blur(16px) saturate(1.08);
+}
+
+.thai-item--premium {
+  border-color: rgba(167, 139, 250, 0.45);
+}
+
+.thai-item--legend {
+  border-color: rgba(45, 212, 191, 0.5);
+  box-shadow: 0 0 24px rgba(45, 212, 191, 0.12);
+}
+
+.thai-item__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.thai-item__name {
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.thai-item__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.thai-tier-badge {
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  border: 0.5px solid rgba(148, 163, 184, 0.4);
+}
+
+.thai-tier-badge--legend {
+  border-color: rgba(45, 212, 191, 0.55);
+  color: #99f6e4;
+}
+
+.thai-tier-badge--premium {
+  border-color: rgba(167, 139, 250, 0.55);
+  color: #ddd6fe;
+}
+
+.thai-item__tag {
+  font-size: 0.65rem;
+  padding: 0.12rem 0.4rem;
+  border-radius: 0.25rem;
+  border: 0.5px solid rgba(100, 116, 139, 0.5);
+  color: #cbd5e1;
+}
+
+.thai-item__tag--rental {
+  border-color: rgba(34, 211, 238, 0.4);
+  color: #cffafe;
+}
+
+.thai-item__tag--perm {
+  border-color: rgba(129, 140, 248, 0.45);
+  color: #e0e7ff;
+}
+
+.thai-item__lock {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: #fca5a5;
+}
+
+.thai-item__prices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #5eead4;
+}
+
+.thai-item__price small {
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.thai-item__expire,
+.thai-item__perm-owned {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: #cbd5e1;
+}
+
+.thai-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+}
+
+.thai-btn {
+  border-radius: 0.45rem;
+  border: 0.5px solid rgba(148, 163, 184, 0.45);
+  padding: 0.4rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #f1f5f9;
+  background: rgba(15, 23, 42, 0.65);
+  cursor: pointer;
+}
+
+.thai-btn--buy {
+  border-color: rgba(45, 212, 191, 0.5);
+  color: #ecfdf5;
+}
+
+.thai-btn--rent {
+  border-color: rgba(129, 140, 248, 0.5);
+}
+
+.thai-btn--equip {
+  border-color: rgba(34, 211, 238, 0.45);
+}
+
+/* 모바일: 정보 밀도·터치 피드백 (짧은 transition ≈ 50ms) */
+@media (max-width: 640px) {
+  .site-container {
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+
+  main :where(a[href], button:not([disabled]), [role='button'], summary):active {
+    transform: scale(0.97);
+    transition: transform 0.05s ease-out;
+  }
+
+  main :where(a[href], button, [role='button'], summary) {
+    transition: transform 0.05s ease-out;
   }
 }

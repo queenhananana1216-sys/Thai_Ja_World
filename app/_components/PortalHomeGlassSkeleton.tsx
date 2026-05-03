@@ -15,7 +15,7 @@ export default function PortalHomeGlassSkeleton() {
 
   return (
     <div className={styles.root} data-tj-root="portal-2026-skeleton" role="status" aria-live="polite">
-      <p className="sr-only">태국에, 살자 포털 레이아웃을 준비하는 중입니다.</p>
+      <p className="sr-only">포털 레이아웃을 준비하는 중입니다.</p>
       <div className={styles.grid}>
         <aside className="hidden min-h-0 min-w-0 min-[1181px]:block">
           <div className={styles.stickyWing}>

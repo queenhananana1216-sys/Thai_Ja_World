@@ -34,6 +34,11 @@ FIX_PROMPT_FILENAME = os.environ.get(
 SANDBOX_INGEST_URL = os.environ.get("SANDBOX_PROPOSAL_INGEST_URL", "").strip()
 SANDBOX_INGEST_SECRET = os.environ.get("SANDBOX_PROPOSAL_INGEST_SECRET", "").strip()
 
+SHOP_ITEM_PROPOSAL_INGEST_URL = os.environ.get("SHOP_ITEM_PROPOSAL_INGEST_URL", "").strip()
+SHOP_ITEM_PROPOSAL_INGEST_SECRET = (
+    os.environ.get("SHOP_ITEM_PROPOSAL_INGEST_SECRET", "").strip() or SANDBOX_INGEST_SECRET
+)
+
 EXTRA_RAW = os.environ.get("WATCHDOG_EXTRA_REGEX", "").strip()
 EXTRA_PATTERNS: List[Tuple[Pattern[str], str]] = []
 if EXTRA_RAW:
@@ -200,6 +205,24 @@ def _post_json(url: str, payload: dict, timeout: float = 12.0) -> None:
         resp.read()
 
 
+def _post_shop_item_proposal(payload: dict, timeout: float = 14.0) -> None:
+    """프리미엄 상점 아이템 제안 — POST /api/internal/shop-item-proposals (Bearer 동일 시크릿 가능)."""
+    if not SHOP_ITEM_PROPOSAL_INGEST_URL or not SHOP_ITEM_PROPOSAL_INGEST_SECRET:
+        return
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        SHOP_ITEM_PROPOSAL_INGEST_URL,
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {SHOP_ITEM_PROPOSAL_INGEST_SECRET}",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        resp.read()
+
+
 def _post_sandbox_ingest(payload: dict, timeout: float = 14.0) -> None:
     if not SANDBOX_INGEST_URL or not SANDBOX_INGEST_SECRET:
         return
@@ -315,6 +338,7 @@ def main() -> None:
         f"[watchdog] Chaos Watchdog starting — debounce={DEBOUNCE_SEC}s context={CONTEXT_LINES} "
         f"slack={'on' if SLACK_WEBHOOK_URL else 'off'} discord={'on' if DISCORD_WEBHOOK_URL else 'off'} "
         f"sandbox_ingest={'on' if SANDBOX_INGEST_URL else 'off'} "
+        f"shop_item_ingest={'on' if SHOP_ITEM_PROPOSAL_INGEST_URL else 'off'} "
         f"alert_log={ALERT_LOG_PATH} prompt_out={PROMPT_OUT_DIR or '(disabled)'}"
     )
 

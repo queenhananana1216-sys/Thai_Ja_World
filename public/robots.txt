@@ -1,0 +1,13 @@
+# https://www.thaijaworld.com — crawler hints (keep in sync with app/robots.ts)
+User-agent: Googlebot
+Allow: /
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /community/boards/new
+
+Sitemap: https://www.thaijaworld.com/sitemap.xml
+Host: www.thaijaworld.com

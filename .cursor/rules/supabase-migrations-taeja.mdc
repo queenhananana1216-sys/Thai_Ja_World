@@ -1,10 +1,10 @@
 ---
-description: taeja-world 전용 SQL 마이그레이션 히스토리·네이밍. 공통 RLS 원칙은 SSD 루트 supabase-sql-generic 참고.
+description: living-in-thai 전용 SQL 마이그레이션 히스토리·네이밍. 공통 RLS 원칙은 SSD 루트 supabase-sql-generic 참고.
 globs: supabase/migrations/**/*.sql
 alwaysApply: false
 ---
 
-# Supabase 마이그레이션 (taeja-world만)
+# Supabase 마이그레이션 (living-in-thai만)
 
 - 공통 원칙(배포된 파일 수정 금지, RLS, `SECURITY DEFINER`+`search_path`)은 **드라이브 루트** `.cursor/rules/supabase-sql-generic.mdc`와 동일하게 따른다.
 - 이 레포: 파일명 **순번 접두**(`054_...sql`) 유지. `019_*`, `032_*` 스타일로 definer·주석 패턴 맞추기.

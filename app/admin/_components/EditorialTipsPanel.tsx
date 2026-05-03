@@ -42,12 +42,12 @@ function Section({
 }
 
 /**
- * 태자월드 편집 기준 — 관리자가 보는 초안과 이용자 화면을 맞출 때 참고
+ * 「태국에, 살자」편집 기준 — 관리자가 보는 초안과 이용자 화면을 맞출 때 참고
  */
-export default function TaejaEditorialTips() {
+export default function EditorialTipsPanel() {
   return (
     <div style={{ marginBottom: 24 }}>
-      <h2 style={{ fontSize: 16, margin: '0 0 12px', fontWeight: 800, color: '#0f172a' }}>태자 편집 팁</h2>
+      <h2 style={{ fontSize: 16, margin: '0 0 12px', fontWeight: 800, color: '#0f172a' }}>편집 가이드</h2>
       <p style={{ margin: '0 0 14px', fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
         <strong>원칙:</strong> 관리자 큐에서 최종 승인한 글은 <strong>홈·뉴스·광장·/tips</strong>에 그대로 반영됩니다. 편집은 «우리가 직접 쓴
         안내」라고 생각하고 다듬어 주세요.
@@ -75,7 +75,8 @@ export default function TaejaEditorialTips() {
             과장은 금지입니다.
           </li>
           <li>
-            원문이 비어 LLM이 스텁만 넣은 경우에는 반드시 <strong>「태자 편집팀·이용자 안내」</strong>에 25자 이상 풀어 쓴 뒤 승인합니다.
+            원문이 비어 LLM이 스텁만 넣은 경우에는 반드시 <strong>「태국에, 살자 편집팀·이용자 안내」</strong>에 25자 이상 풀어 쓴 뒤
+            승인합니다.
           </li>
           <li>비자·법률·금전 관련은 불확실하면 «공식 확인 권장»을 분명히 적고, 체크리스트·주의사항을 비워 두지 않습니다.</li>
           <li>

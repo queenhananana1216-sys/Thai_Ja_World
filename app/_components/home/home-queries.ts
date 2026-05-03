@@ -563,17 +563,17 @@ export async function fetchHomeKoreanBizPortalLines(
   return { rows, error: null };
 }
 
-export type HomeWeeklyDotoriRankRow = {
+export type HomeWeeklyThaiRankRow = {
   rank: number;
   profileId: string;
   displayName: string;
-  dotoriEarned: number;
+  thaiEarned: number;
 };
 
-/** 이번 주(서울 기준) 완료된 주간 미션 보상 도토리 합산 TOP N */
-export async function fetchHomeWeeklyDotoriRanking(
+/** 이번 주(서울 기준) 완료된 주간 미션 보상 타이(THAI) 합산 TOP N */
+export async function fetchHomeWeeklyThaiRanking(
   limit = 5,
-): Promise<{ rows: HomeWeeklyDotoriRankRow[]; error: string | null }> {
+): Promise<{ rows: HomeWeeklyThaiRankRow[]; error: string | null }> {
   const sb = tryCreate();
   if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
 
@@ -595,63 +595,69 @@ export async function fetchHomeWeeklyDotoriRanking(
     dotori_earned?: unknown;
   }[];
 
-  const rows: HomeWeeklyDotoriRankRow[] = raw.map((r) => ({
+  const rows: HomeWeeklyThaiRankRow[] = raw.map((r) => ({
     rank: Number(r.rank ?? 0),
     profileId: String(r.profile_id ?? ''),
     displayName: String(r.display_name ?? '익명'),
-    dotoriEarned: Number(r.dotori_earned ?? 0),
+    thaiEarned: Number(r.dotori_earned ?? 0),
   }));
 
   return { rows, error: null };
 }
 
-/** 프로필 `dotori_balance` 보유량 기준 공개 랭킹 TOP N (anon RLS) */
-export type HomeDotoriBalanceRankRow = {
+/** 서울 당일 `dotori_logs` 양수 합산 기준 공개 랭킹 TOP N — RPC `get_public_today_dotori_earnings_ranking` */
+export type HomeTodayThaiEarnRankRow = {
   rank: number;
   profileId: string;
   displayName: string;
-  dotoriBalance: number;
+  thaiEarnedToday: number;
 };
 
-async function fetchHomeDotoriBalanceRankingImpl(
+async function fetchHomeTodayThaiEarnRankingImpl(
   safeLimit: number,
-): Promise<{ rows: HomeDotoriBalanceRankRow[]; error: string | null }> {
+): Promise<{ rows: HomeTodayThaiEarnRankRow[]; error: string | null }> {
   const sb = tryCreate();
   if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
 
-  const { data, error } = await sb
-    .from('profiles')
-    .select('id, display_name, dotori_balance')
-    .order('dotori_balance', { ascending: false })
-    .limit(safeLimit);
-
-  if (error) return { rows: [], error: error.message };
-
-  const rows: HomeDotoriBalanceRankRow[] = (data ?? []).map((r, i) => {
-    const row = r as { id?: unknown; display_name?: unknown; dotori_balance?: unknown };
-    const name = String(row.display_name ?? '').trim() || '익명';
-    return {
-      rank: i + 1,
-      profileId: String(row.id ?? ''),
-      displayName: name,
-      dotoriBalance: Number(row.dotori_balance ?? 0),
-    };
+  const { data, error } = await sb.rpc('get_public_today_dotori_earnings_ranking', {
+    p_limit: safeLimit,
   });
+
+  if (error) {
+    if (error.message.includes('function') && error.message.includes('does not exist')) {
+      return { rows: [], error: null };
+    }
+    return { rows: [], error: error.message };
+  }
+
+  const raw = (data ?? []) as {
+    rank?: unknown;
+    profile_id?: unknown;
+    display_name?: unknown;
+    dotori_earned_today?: unknown;
+  }[];
+
+  const rows: HomeTodayThaiEarnRankRow[] = raw.map((r) => ({
+    rank: Number(r.rank ?? 0),
+    profileId: String(r.profile_id ?? ''),
+    displayName: String(r.display_name ?? '익명').trim() || '익명',
+    thaiEarnedToday: Number(r.dotori_earned_today ?? 0),
+  }));
 
   return { rows, error: null };
 }
 
-const getCachedDotoriBalanceRanking = unstable_cache(
-  async (safeLimit: number) => fetchHomeDotoriBalanceRankingImpl(safeLimit),
-  ['home-dotori-balance-ranking-v1'],
-  { revalidate: 30 },
+const getCachedTodayThaiEarnRanking = unstable_cache(
+  async (safeLimit: number) => fetchHomeTodayThaiEarnRankingImpl(safeLimit),
+  ['home-today-thai-earnings-ranking-v1'],
+  { revalidate: 20 },
 );
 
-export async function fetchHomeDotoriBalanceRanking(
+export async function fetchHomeTodayThaiEarnRanking(
   limit = 5,
-): Promise<{ rows: HomeDotoriBalanceRankRow[]; error: string | null }> {
+): Promise<{ rows: HomeTodayThaiEarnRankRow[]; error: string | null }> {
   const safeLimit = Math.max(1, Math.min(20, Math.floor(limit)));
-  return getCachedDotoriBalanceRanking(safeLimit);
+  return getCachedTodayThaiEarnRanking(safeLimit);
 }
 
 export type HomeFeaturedPollRow = {
@@ -1187,4 +1193,52 @@ export async function fetchPortalThailandPhotoStrip(limit = 10): Promise<PortalT
     out.push({ href, thumbUrl, title: title || 'photo' });
   }
   return out;
+}
+
+export type CollaborativeMissionRow = {
+  id: string;
+  scope: string;
+  title: string;
+  body: string;
+  goalTarget: number;
+  goalCurrent: number;
+  rewardThai: number;
+};
+
+/** 서울 달력 기준 활성 창에 걸린 공동 미션 */
+export async function fetchCollaborativeMissionsActive(): Promise<{
+  rows: CollaborativeMissionRow[];
+  error: string | null;
+}> {
+  const sb = tryCreate();
+  if (!sb) return { rows: [], error: null };
+  const day = todaySeoulIsoDate();
+  const { data, error } = await sb
+    .from('collaborative_missions')
+    .select('id, scope, title, body, goal_target, goal_current, reward_dotori, starts_on, ends_on')
+    .lte('starts_on', day)
+    .gte('ends_on', day)
+    .order('scope', { ascending: true });
+
+  if (error) {
+    if (error.message.includes('does not exist') || error.message.includes('schema cache')) {
+      return { rows: [], error: null };
+    }
+    return { rows: [], error: error.message };
+  }
+
+  const rows: CollaborativeMissionRow[] = (data ?? []).map((r) => {
+    const x = r as Record<string, unknown>;
+    return {
+      id: String(x.id ?? ''),
+      scope: String(x.scope ?? ''),
+      title: String(x.title ?? ''),
+      body: String(x.body ?? ''),
+      goalTarget: Number(x.goal_target ?? 0),
+      goalCurrent: Number(x.goal_current ?? 0),
+      rewardThai: Number(x.reward_dotori ?? 0),
+    };
+  });
+
+  return { rows, error: null };
 }

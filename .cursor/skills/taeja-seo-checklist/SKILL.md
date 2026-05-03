@@ -1,9 +1,9 @@
 ---
 name: taeja-seo-checklist
-description: Applies taeja-world Next.js SEO checklist: metadata, sitemap, robots, OG, canonical, JsonLd. Use when adding public routes, marketing pages, community or news surfaces, or the user says SEO, 색인, 구글, 네이버, 사이트맵, 메타태그.
+description: Applies living-in-thai Next.js SEO checklist: metadata, sitemap, robots, OG, canonical, JsonLd. Use when adding public routes, marketing pages, community or news surfaces, or the user says SEO, 색인, 구글, 네이버, 사이트맵, 메타태그.
 ---
 
-# 태자월드 SEO 체크리스트
+# 「태국에, 살자」SEO 체크리스트
 
 ## 새 공개 라우트·페이지를 만들 때
 

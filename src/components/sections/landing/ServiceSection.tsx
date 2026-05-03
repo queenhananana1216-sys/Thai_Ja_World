@@ -12,7 +12,9 @@ export function ServiceSection() {
     >
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 16px' }}>
         <div style={{ marginBottom: 18, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0, fontSize: 'clamp(24px,4.4vw,36px)', lineHeight: 1.2, fontWeight: 800 }}>태자월드에서 바로 쓸 수 있는 것들</h2>
+          <h2 style={{ margin: 0, fontSize: 'clamp(24px,4.4vw,36px)', lineHeight: 1.2, fontWeight: 800 }}>
+            태국에, 살자에서 바로 쓸 수 있는 것들
+          </h2>
           <p style={{ margin: 0, borderRadius: 999, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.06)', padding: '6px 10px', fontSize: 12, color: '#cbd5e1' }}>
             새 기능은 배열에 항목을 추가하면 섹션이 자동 확장됩니다.
           </p>

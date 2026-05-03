@@ -60,7 +60,7 @@ async function notifySlack(summary: string, details: string) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        text: `*[TaejaWorld post-deploy smoke]* ${summary}\n\`\`\`${details}\`\`\``,
+        text: `*[LivingInThai post-deploy smoke]* ${summary}\n\`\`\`${details}\`\`\``,
       }),
     });
   } catch (err) {

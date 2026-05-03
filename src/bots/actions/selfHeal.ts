@@ -1,5 +1,5 @@
 /**
- * selfHeal.ts — 봇 셀프힐링 정책 핸들러 (태자 월드)
+ * selfHeal.ts — 봇 셀프힐링 정책 핸들러 (「태국에, 살자」)
  *
  * 동작 흐름:
  *   1. BOT_POLICY_MODE 환경 변수 읽기 (기본: 'manual')
@@ -153,7 +153,7 @@ export async function handleIncident(
     }
 
     await sendSlackAlert(
-      `🚨 *태자월드 봇* — 인시던트 감지 (자동 복구 연습 모드)\n` +
+      `🚨 *「태국에, 살자」봇* — 인시던트 감지 (자동 복구 연습 모드)\n` +
         `${formatIncidentSlackLines(signal, run_id)}\n` +
         `• 안내: 아직 실제 조치는 하지 않고 기록만 합니다. 이후 단계에서 자동 복구를 연결할 예정입니다.`,
     );
@@ -185,7 +185,7 @@ export async function handleIncident(
   }
 
   await sendSlackAlert(
-    `⚠️ *태자월드 봇* — 인시던트 수동 검토 필요\n` +
+    `⚠️ *「태국에, 살자」봇* — 인시던트 수동 검토 필요\n` +
       `${formatIncidentSlackLines(signal, run_id)}\n` +
       `• 자동 복구: 꺼짐 (환경 변수 \`BOT_POLICY_MODE=manual\`)\n` +
       `• 대시보드·로그에서 원인 확인 후 조치해 주세요.`,

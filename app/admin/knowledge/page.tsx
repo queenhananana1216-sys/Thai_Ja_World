@@ -145,7 +145,7 @@ export default async function AdminKnowledgeQueuePage() {
       <h1 style={{ fontSize: 18, margin: '0 0 8px', fontWeight: 700 }}>지식 초안 큐</h1>
       <p style={{ margin: '0 0 12px', fontSize: 12 }}>
         <Link href="/admin/publish" style={{ color: '#2563eb', fontWeight: 600 }}>
-          최종 승인·태자 편집 팁(한 페이지 요약) →
+          최종 승인·편집 가이드(한 페이지 요약) →
         </Link>
       </p>
       <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.55 }}>
@@ -154,7 +154,7 @@ export default async function AdminKnowledgeQueuePage() {
         <br />
         <br />
         <strong>보드에 게시</strong>는 <strong>최종 승인</strong>이에요. LLM 요약이 스텁(원문 비음)이면{' '}
-        <strong>「태자 편집팀·이용자 안내」</strong>에 25자 이상만 적어도 승인할 수 있어요. 즉시 광장 정보 말머리에 올라가고, 비회원용{' '}
+        <strong>「태국에, 살자 편집팀·이용자 안내」</strong>에 25자 이상만 적어도 승인할 수 있어요. 즉시 광장 정보 말머리에 올라가고, 비회원용{' '}
         <Link href="/tips" style={{ color: '#2563eb' }}>
           /tips
         </Link>{' '}

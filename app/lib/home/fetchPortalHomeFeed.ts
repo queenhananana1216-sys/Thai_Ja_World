@@ -16,7 +16,7 @@ import {
   fetchHomeLeftRailBanners,
   fetchHomeUnifiedFeed,
   fetchHomeSiteTotals,
-  fetchHomeWeeklyDotoriRanking,
+  fetchHomeWeeklyThaiRanking,
   fetchHomeFeaturedPoll,
   fetchHomeTipsPublic,
   fetchAutoCuratedBoardPostsForPortalLive,
@@ -47,11 +47,11 @@ export type PortalFeedLine = {
   liveHighlight?: boolean;
 };
 
-export type PortalWeeklyDotoriRankRow = {
+export type PortalWeeklyThaiRankRow = {
   rank: number;
   profileId: string;
   displayName: string;
-  dotoriEarned: number;
+  thaiEarned: number;
 };
 
 /** 홈 밸런스 게임(양자택일) — `polls` + `get_public_poll_totals` */
@@ -91,7 +91,7 @@ export type PortalHomeFeed = {
   /** 통합 피드(RPC 또는 posts 폴백) — 하단 실시간 스트립 */
   liveFeed: PortalFeedLine[];
   siteTotals: { profileCount: number; communityItemCount: number } | null;
-  weeklyDotoriRanking: PortalWeeklyDotoriRankRow[];
+  weeklyThaiRanking: PortalWeeklyThaiRankRow[];
   featuredPoll: PortalFeaturedPoll | null;
   /** search_logs 집계 — 포털 급상승 키워드 */
   trendingKeywords: PortalTrendingKeywordRow[];
@@ -112,7 +112,7 @@ export const HONEST_EMPTY_PORTAL_HOME_FEED: PortalHomeFeed = {
   wingBanners: [],
   liveFeed: [],
   siteTotals: null,
-  weeklyDotoriRanking: [],
+  weeklyThaiRanking: [],
   featuredPoll: null,
   trendingKeywords: [],
   thailandPhotos: [],
@@ -305,7 +305,7 @@ async function fetchPortalHomeFeedCore(portalLocale: Locale): Promise<PortalHome
     wingBanners: [],
     liveFeed: [],
     siteTotals: null,
-    weeklyDotoriRanking: [],
+    weeklyThaiRanking: [],
     featuredPoll: null,
     trendingKeywords: [],
     thailandPhotos: [],
@@ -588,12 +588,12 @@ async function fetchPortalHomeFeedCore(portalLocale: Locale): Promise<PortalHome
   }
 
   try {
-    const rk = await withTimeout(fetchHomeWeeklyDotoriRanking(5), { rows: [], error: null });
+    const rk = await withTimeout(fetchHomeWeeklyThaiRanking(5), { rows: [], error: null });
     if (!rk.error && (rk.rows?.length ?? 0) > 0) {
-      out.weeklyDotoriRanking = (rk.rows ?? []).filter((r) => r.profileId && r.displayName);
+      out.weeklyThaiRanking = (rk.rows ?? []).filter((r) => r.profileId && r.displayName);
     }
   } catch {
-    out.weeklyDotoriRanking = [];
+    out.weeklyThaiRanking = [];
   }
 
   try {
@@ -628,7 +628,8 @@ async function fetchPortalHomeFeedCore(portalLocale: Locale): Promise<PortalHome
 const getCachedPortalHomeFeed = unstable_cache(
   async (locale: Locale) => fetchPortalHomeFeedCore(locale),
   ['portal-home-feed-v2'],
-  { revalidate: 0 },
+  /** Next 15.5+: `revalidate: 0`은 `unstable_cache`에 허용되지 않음 — 짧은 TTL로 포털 신선도 유지 */
+  { revalidate: 30 },
 );
 
 /** 어떤 예외도 홈 SSR을 죽이지 않음 — 전체 실패 시 빈 피드로 2026 포털만 렌더 */

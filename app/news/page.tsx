@@ -117,7 +117,9 @@ export default async function NewsHubPage() {
         </p>
 
         {procErr ? (
-          <p className="rounded-xl border border-red-400/40 bg-red-950/40 px-4 py-3 text-sm text-red-100">{procErr.message}</p>
+          <p className="rounded-xl border border-cyan-500/30 bg-gradient-to-r from-indigo-950/70 to-slate-950/80 px-4 py-3 text-sm text-cyan-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
+            {procErr.message}
+          </p>
         ) : null}
 
         {!procErr && rows.length === 0 ? (

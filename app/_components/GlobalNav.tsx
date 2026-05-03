@@ -8,6 +8,8 @@ import SpotlightNavSearch from './SpotlightNavSearch';
 import { getLocale } from '@/i18n/get-locale';
 import { getDictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/types';
+import { mergeDictionarySiteBrand } from '@/lib/site-brand/mergeDictionaryBrand';
+import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { resolveAdminForUser } from '@/lib/admin/resolveAdminAccess';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
@@ -61,13 +63,15 @@ function headerExtraLabels(locale: Locale) {
 
 export default async function GlobalNav() {
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const siteUi = await loadSiteUiSettings();
+  const d = mergeDictionarySiteBrand(getDictionary(locale), siteUi.siteDisplayName);
   const x = headerExtraLabels(locale);
 
   /** 비로그인이면 null — 버튼 미렌더. 로그인만 동일 Supabase(쿠키 JWT)로 슬러그 조회 (anon 분리 조회 금지). */
   let myMinihomeHref: string | null = null;
   let authUser: { id: string; email: string | null } | null = null;
   let profileDisplayName: string | null = null;
+  let profileThaiBalance: number | null = null;
   let showMasterAdmin = false;
 
   try {
@@ -80,6 +84,7 @@ export default async function GlobalNav() {
       myMinihomeHref = null;
       authUser = null;
       profileDisplayName = null;
+      profileThaiBalance = null;
     } else {
       authUser = { id: user.id, email: user.email ?? null };
       const emailLower = user.email?.trim().toLowerCase() ?? '';
@@ -87,13 +92,17 @@ export default async function GlobalNav() {
       showMasterAdmin = adminRes !== false;
       const { data: prof } = await authSb
         .from('profiles')
-        .select('display_name')
+        .select('display_name, thai_balance')
         .eq('id', user.id)
         .maybeSingle();
       profileDisplayName =
         typeof prof?.display_name === 'string' && prof.display_name.trim()
           ? prof.display_name.trim()
           : null;
+      profileThaiBalance =
+        typeof (prof as { thai_balance?: unknown } | null)?.thai_balance === 'number'
+          ? Math.max(0, Math.floor((prof as { thai_balance: number }).thai_balance))
+          : 0;
 
       const { data: hm, error: hmErr } = await authSb
         .from('user_minihomes')
@@ -111,6 +120,7 @@ export default async function GlobalNav() {
     myMinihomeHref = null;
     authUser = null;
     profileDisplayName = null;
+    profileThaiBalance = null;
     showMasterAdmin = false;
   }
 
@@ -225,6 +235,8 @@ export default async function GlobalNav() {
           <AuthBarClient
             initialUser={authUser}
             initialDisplayName={profileDisplayName}
+            initialThaiBalance={profileThaiBalance}
+            numberLocale={locale === 'th' ? 'th-TH' : 'ko-KR'}
             labels={authLabels}
             profileHref={myMinihomeHref}
             myMinihomeLabel={x.myMinihome}
@@ -248,6 +260,8 @@ export default async function GlobalNav() {
                 variant="mobile"
                 initialUser={authUser}
                 initialDisplayName={profileDisplayName}
+                initialThaiBalance={profileThaiBalance}
+                numberLocale={locale === 'th' ? 'th-TH' : 'ko-KR'}
                 labels={authLabels}
                 profileHref={myMinihomeHref}
                 myMinihomeLabel={x.myMinihome}

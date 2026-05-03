@@ -84,25 +84,25 @@ function replaceQuestMissionPrefixes(text: string, loc: 'ko' | 'th'): string {
 function localizeRewardEnglish(text: string, loc: 'ko' | 'th'): string {
   let out = text;
 
-  const dotoriKo = (n: string) => `🎁 ${n} 도토리 획득`;
-  const dotoriTh = (n: string) => `🎁 ${n} ดอกท้อ รับแล้ว`;
-  const cornKo = (n: string) => `🌽 ${n} 옥수수 획득`;
-  const cornTh = (n: string) => `🌽 ${n} ข้าวโพด รับแล้ว`;
+  const thaiKo = (n: string) => `฿ ${n} 타이(THAI) 획득`;
+  const thaiTh = (n: string) => `฿ ${n} THAI รับแล้ว`;
+  const legacyKo = (n: string) => `฿ ${n} 타이(THAI) 획득`;
+  const legacyTh = (n: string) => `฿ ${n} THAI รับแล้ว`;
 
-  const dotoriRepl = loc === 'th' ? dotoriTh : dotoriKo;
-  const cornRepl = loc === 'th' ? cornTh : cornKo;
+  const thaiRepl = loc === 'th' ? thaiTh : thaiKo;
+  const legacyRepl = loc === 'th' ? legacyTh : legacyKo;
 
-  out = out.replace(/\brewards?\s*[:\-–—]\s*(\d{1,7})\s*(?:dotori|acorns?)\b/gi, (_, n: string) =>
-    dotoriRepl(n),
+  out = out.replace(/\brewards?\s*[:\-–—]\s*(\d{1,7})\s*(?:dotori|acorns?|thai)\b/gi, (_, n: string) =>
+    thaiRepl(n),
   );
-  out = out.replace(/\brewards?\s+(\d{1,7})\s*(?:dotori|acorns?)\b/gi, (_, n: string) => dotoriRepl(n));
-  out = out.replace(/\b(\d{1,7})\s*(?:dotori|acorns?)\s+rewards?\b/gi, (_, n: string) => dotoriRepl(n));
-  out = out.replace(/\bgains?\s+(\d{1,7})\s*(?:dotori|acorns?)\b/gi, (_, n: string) => dotoriRepl(n));
-  out = out.replace(/\bearns?\s+(\d{1,7})\s*(?:dotori|acorns?)\b/gi, (_, n: string) => dotoriRepl(n));
+  out = out.replace(/\brewards?\s+(\d{1,7})\s*(?:dotori|acorns?|thai)\b/gi, (_, n: string) => thaiRepl(n));
+  out = out.replace(/\b(\d{1,7})\s*(?:dotori|acorns?|thai)\s+rewards?\b/gi, (_, n: string) => thaiRepl(n));
+  out = out.replace(/\bgains?\s+(\d{1,7})\s*(?:dotori|acorns?|thai)\b/gi, (_, n: string) => thaiRepl(n));
+  out = out.replace(/\bearns?\s+(\d{1,7})\s*(?:dotori|acorns?|thai)\b/gi, (_, n: string) => thaiRepl(n));
 
-  out = out.replace(/\brewards?\s*[:\-–—]\s*(\d{1,7})\s*corn\b/gi, (_, n: string) => cornRepl(n));
-  out = out.replace(/\brewards?\s+(\d{1,7})\s*corn\b/gi, (_, n: string) => cornRepl(n));
-  out = out.replace(/\b(\d{1,7})\s*corn\s+rewards?\b/gi, (_, n: string) => cornRepl(n));
+  out = out.replace(/\brewards?\s*[:\-–—]\s*(\d{1,7})\s*corn\b/gi, (_, n: string) => legacyRepl(n));
+  out = out.replace(/\brewards?\s+(\d{1,7})\s*corn\b/gi, (_, n: string) => legacyRepl(n));
+  out = out.replace(/\b(\d{1,7})\s*corn\s+rewards?\b/gi, (_, n: string) => legacyRepl(n));
 
   return out;
 }

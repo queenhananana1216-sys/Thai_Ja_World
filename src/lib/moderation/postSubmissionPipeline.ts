@@ -12,6 +12,7 @@ import {
 } from '@/lib/moderation/promoAndSpam';
 import { hashPostOwnerPassword } from '@/lib/community/postOwnerPassword';
 import { logSupabaseWriteFailure, shouldMaskRawDbError } from '@/lib/db/dbErrorDefense';
+import { normalizePostGeoPayload } from '@/lib/schema-autoform/postGeoFieldGroup';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
@@ -73,6 +74,10 @@ export async function createModeratedPost(
     image_urls: string[];
     /** 선택: 글 비밀번호(4~128자). 설정 시 삭제·수정·비공개 전환 시 필요 */
     owner_password?: string;
+    /** 선택: 지도 첨부 — DB CHECK 상 위·경도는 쌍으로만 저장 */
+    latitude?: number | null;
+    longitude?: number | null;
+    location_name?: string | null;
   },
 ): Promise<PostPipelineResult> {
   const token = accessToken.trim();
@@ -218,6 +223,22 @@ export async function createModeratedPost(
   const excerpt =
     excerptPlain.length > 400 ? `${excerptPlain.slice(0, 397)}…` : excerptPlain || null;
 
+  const geo = normalizePostGeoPayload({
+    latitude: body.latitude != null && Number.isFinite(Number(body.latitude)) ? String(body.latitude) : '',
+    longitude: body.longitude != null && Number.isFinite(Number(body.longitude)) ? String(body.longitude) : '',
+    location_name: typeof body.location_name === 'string' ? body.location_name : '',
+  });
+  if (!geo.ok) {
+    return { ok: false, status: 400, code: 'invalid', message: geo.error };
+  }
+  const g = geo.value;
+  const geoRow =
+    g.latitude != null && g.longitude != null
+      ? { latitude: g.latitude, longitude: g.longitude, location_name: g.location_name }
+      : g.location_name != null
+        ? { latitude: null, longitude: null, location_name: g.location_name }
+        : {};
+
   const { data: inserted, error: insErr } = await admin
     .from('posts')
     .insert({
@@ -234,6 +255,7 @@ export async function createModeratedPost(
       excerpt,
       is_knowledge_tip: false,
       owner_edit_password_set: false,
+      ...geoRow,
     })
     .select('id')
     .single();

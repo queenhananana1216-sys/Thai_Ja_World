@@ -7,7 +7,7 @@ const MAX_TEXT = 38_000;
 const MAX_SUMMARY_PER_ITEM = 1_800;
 
 function formatDigest(items: NewsSlackDigestItem[]): string {
-  const header = `태자월드 뉴스 요약 (${items.length}건)\n`;
+  const header = `「태국에, 살자」뉴스 요약 (${items.length}건)\n`;
   const blocks = items.map((it, i) => {
     const title = it.ko_title.trim();
     let body = it.ko_summary.trim();

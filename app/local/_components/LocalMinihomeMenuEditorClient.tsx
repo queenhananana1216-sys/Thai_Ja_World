@@ -25,13 +25,13 @@ export default function LocalMinihomeMenuEditorClient({
   initialMenus,
   minihomeUrl,
   initialMinihomeBgmUrl,
-  initialDotoriBalance,
+  initialThaiBalance,
 }: {
   spot: SpotLite;
   initialMenus: LocalMenuRow[];
   minihomeUrl: string;
   initialMinihomeBgmUrl: string | null;
-  initialDotoriBalance: number;
+  initialThaiBalance: number;
 }) {
   const sb = useMemo(() => createBrowserClient(), []);
   const [menus, setMenus] = useState<LocalMenuRow[]>(initialMenus);
@@ -40,7 +40,7 @@ export default function LocalMinihomeMenuEditorClient({
   const [tab, setTab] = useState<LocalMenuListSection>('menu');
   const [bgmDraft, setBgmDraft] = useState(initialMinihomeBgmUrl ?? '');
   const [savedBgmUrl, setSavedBgmUrl] = useState(initialMinihomeBgmUrl ?? '');
-  const [dotoriBalance, setDotoriBalance] = useState(initialDotoriBalance);
+  const [thaiBalance, setThaiBalance] = useState(initialThaiBalance);
   const [bgmBusy, setBgmBusy] = useState(false);
 
   const notify = useCallback((t: string) => {
@@ -157,8 +157,8 @@ export default function LocalMinihomeMenuEditorClient({
     const res = await saveLocalMinihomeBgm(spot.id, raw);
     setBgmBusy(false);
     if (!res.ok) {
-      if (res.reason === 'INSUFFICIENT_DOTORI') {
-        notify(`도토리가 부족합니다. (필요 ${res.need ?? 100} · 보유 ${res.have ?? 0})`);
+      if (res.reason === 'INSUFFICIENT_THAI' || res.reason === 'INSUFFICIENT_DOTORI') {
+        notify(`타이(THAI)가 부족합니다. (필요 ${res.need ?? 100} · 보유 ${res.have ?? 0})`);
       } else if (res.reason === 'INVALID_YOUTUBE_URL') {
         notify('인식할 수 없는 YouTube 링크입니다.');
       } else {
@@ -168,12 +168,12 @@ export default function LocalMinihomeMenuEditorClient({
     }
     setSavedBgmUrl(res.bgmUrl ?? '');
     setBgmDraft(res.bgmUrl ?? '');
-    setDotoriBalance(res.dotoriBalance);
-    notify(res.charged ? 'BGM을 저장했습니다. 도토리 100이 차감되었습니다.' : 'BGM 설정을 저장했습니다.');
+    setThaiBalance(res.thaiBalance);
+    notify(res.charged ? 'BGM을 저장했습니다. 타이(THAI) 100이 차감되었습니다.' : 'BGM 설정을 저장했습니다.');
   }
 
   async function clearBgm() {
-    if (!window.confirm('BGM을 제거할까요? (도토리 차감 없음)')) return;
+    if (!window.confirm('BGM을 제거할까요? (타이 차감 없음)')) return;
     setBgmDraft('');
     setBgmBusy(true);
     const res = await saveLocalMinihomeBgm(spot.id, '');
@@ -184,7 +184,7 @@ export default function LocalMinihomeMenuEditorClient({
       return;
     }
     setSavedBgmUrl('');
-    setDotoriBalance(res.dotoriBalance);
+    setThaiBalance(res.thaiBalance);
     notify('BGM을 제거했습니다.');
   }
 
@@ -228,12 +228,12 @@ export default function LocalMinihomeMenuEditorClient({
             손님용 디지털 메뉴판에 재생될 배경음입니다. 저작권 정책상{' '}
             <strong className="text-amber-50">YouTube 동영상 링크만</strong> 등록할 수 있습니다 (Iframe 재생).
           </p>
-          <p className="mt-2 rounded-lg border border-rose-500/35 bg-rose-950/40 px-3 py-2 text-xs font-semibold text-rose-100">
-            BGM을 <strong>다른 영상으로 바꿀 때마다</strong> 도토리 <strong>100</strong>이 차감됩니다. (같은 영상 재저장·단순
+          <p className="mt-2 rounded-lg border-[0.5px] border-cyan-500/30 bg-gradient-to-r from-indigo-950/50 to-slate-950/70 px-3 py-2 text-xs font-semibold text-cyan-50 backdrop-blur-md">
+            BGM을 <strong>다른 영상으로 바꿀 때마다</strong> 타이(THAI) <strong>100</strong>이 차감됩니다. (같은 영상 재저장·단순
             수정은 무료 · BGM 삭제는 무료)
           </p>
           <p className="mt-2 text-[11px] text-slate-400">
-            보유 도토리: <span className="font-bold text-emerald-300">{dotoriBalance.toLocaleString()}</span>
+            보유 타이(THAI): <span className="font-bold text-emerald-300">{thaiBalance.toLocaleString()}</span>
           </p>
           <label className="mt-3 block text-xs font-medium text-slate-300">
             YouTube URL
@@ -246,7 +246,7 @@ export default function LocalMinihomeMenuEditorClient({
             />
           </label>
           {bgmWillCharge ? (
-            <p className="mt-2 text-[11px] font-medium text-amber-200/90">이번 저장에서 도토리 100이 차감됩니다.</p>
+            <p className="mt-2 text-[11px] font-medium text-cyan-200/90">이번 저장에서 타이(THAI) 100이 차감됩니다.</p>
           ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
@@ -448,7 +448,7 @@ function RowFields({
           type="button"
           variant="ghost"
           size="sm"
-          className="text-rose-400 hover:bg-rose-950/50 hover:text-rose-300"
+          className="text-slate-400 hover:bg-slate-900/60 hover:text-slate-200"
           disabled={disabled}
           onClick={onDelete}
         >

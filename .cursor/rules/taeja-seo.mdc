@@ -1,10 +1,10 @@
 ---
-description: 태자월드(thaijaworld) 공개 페이지 SEO — 메타·사이트맵·robots·절대 URL과 코드베이스 패턴 정합.
+description: 「태국에, 살자」(Living in Thai / thaijaworld) 공개 페이지 SEO — 메타·사이트맵·robots·절대 URL과 코드베이스 패턴 정합.
 globs: app/**/page.tsx,app/sitemap.ts,app/robots.ts,src/lib/seo/**,src/i18n/dictionaries.ts
 alwaysApply: false
 ---
 
-# 태자월드 SEO (이 레포 패턴)
+# 「태국에, 살자」SEO (이 레포 패턴)
 
 ## 절대 URL·본문
 

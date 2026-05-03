@@ -94,7 +94,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const rawDesc =
       typeof spot.description === 'string' && spot.description.trim()
         ? spot.description
-        : `${name} 로컬 스팟 미니홈 · 태자월드`;
+        : `${name} 로컬 스팟 미니홈 · 태국에, 살자`;
     const description = trimForMetaDescription(rawDesc, 160);
     const photos = spot.photo_urls as unknown;
     const ogImage =
@@ -102,7 +102,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return {
       title: `${name} | 로컬 미니홈`,
       description,
-      keywords: [name, '태국 로컬', '방콕', '태자월드', '미니홈', 'B2B'],
+      keywords: [name, '태국 로컬', '방콕', '태국에 살자', 'Living in Thai', '미니홈', 'B2B'],
       alternates: { canonical: url },
       openGraph: {
         title: `${name} | 로컬 미니홈`,
@@ -123,7 +123,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${slug} | 로컬 인텔`,
     description: hubDesc,
-    keywords: [slug, '로컬 인텔', '태국', '태자월드'],
+    keywords: [slug, '로컬 인텔', '태국', '태국에 살자', 'Living in Thai'],
     openGraph: {
       title: `${slug} | 로컬 인텔`,
       description: hubDesc,

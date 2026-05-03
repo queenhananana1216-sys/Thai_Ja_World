@@ -2,16 +2,19 @@
  * POST /api/community/posts
  * (글쓰기 UI는 `/community/boards/new` — 별도 `boards/route.ts` 없음)
  * Authorization: Bearer <supabase access_token>
- * Body: { category, title, content, image_urls: string[] }
+ * Body: { category, title, content, image_urls: string[], owner_password?, latitude?, longitude?, location_name? }
  * 게시글은 service role로만 INSERT (모더레이션·벤 후)
  *
  * Node 런타임 고정: Edge 최적화 회피하여 Supabase·모더레이션 파이프라인 안정화.
  */
 import { createClient } from '@supabase/supabase-js';
+import { after } from 'next/server';
 import { NextResponse } from 'next/server';
 import { createModeratedPost } from '@/lib/moderation/postSubmissionPipeline';
 import { recordQuestProgress } from '@/lib/quests/progress';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
+import { logGoogleIndexingDevFailure, publishGoogleIndexingUrlUpdate } from '@/lib/seo/googleIndexingApi';
+import { getSiteBaseUrl } from '@/lib/seo/site';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -74,12 +77,27 @@ export async function POST(req: Request) {
   }
 
   const b = body as Record<string, unknown>;
+
+  function pickOptionalFiniteNumber(x: unknown): number | null | undefined {
+    if (x === undefined) return undefined;
+    if (x === null) return null;
+    if (typeof x === 'number' && Number.isFinite(x)) return x;
+    if (typeof x === 'string' && x.trim()) {
+      const n = Number(x);
+      return Number.isFinite(n) ? n : undefined;
+    }
+    return undefined;
+  }
+
   const result = await createModeratedPost(token, {
     category: typeof b.category === 'string' ? b.category : '',
     title: typeof b.title === 'string' ? b.title : '',
     content: typeof b.content === 'string' ? b.content : '',
     image_urls: Array.isArray(b.image_urls) ? b.image_urls.map((x) => String(x)) : [],
     owner_password: typeof b.owner_password === 'string' ? b.owner_password : undefined,
+    latitude: pickOptionalFiniteNumber(b.latitude),
+    longitude: pickOptionalFiniteNumber(b.longitude),
+    location_name: typeof b.location_name === 'string' ? b.location_name : undefined,
   });
 
   if (result.ok) {
@@ -101,6 +119,11 @@ export async function POST(req: Request) {
     } catch {
       // 미션 누적 실패는 게시글 생성 성공을 막지 않는다.
     }
+    const publicUrl = `${getSiteBaseUrl()}/community/boards/${result.postId}`;
+    after(async () => {
+      const r = await publishGoogleIndexingUrlUpdate(publicUrl);
+      if (!r.ok) logGoogleIndexingDevFailure(publicUrl, r.error);
+    });
     return NextResponse.json({ id: result.postId });
   }
 

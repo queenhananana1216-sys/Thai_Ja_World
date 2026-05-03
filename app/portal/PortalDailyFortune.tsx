@@ -13,7 +13,7 @@ type FortuneRpcOk = {
   ok: true;
   tip?: { id?: string; body?: string; sourcePostId?: string | null };
   amount?: number;
-  dotori_balance?: number;
+  thai_balance?: number;
 };
 
 type FortuneRpcFail = {
@@ -24,9 +24,9 @@ type FortuneRpcFail = {
 
 function attendanceLine(locale: Locale, amount: number): string {
   if (locale === 'th') {
-    return `เช็คอินสำเร็จ! +${amount} ดอกท้อ`;
+    return `เช็คอินสำเร็จ! +${amount} THAI`;
   }
-  return `출석 완료! +${amount} 도토리 획득`;
+  return `출석 완료! +${amount} 타이(THAI) 획득`;
 }
 
 export default function PortalDailyFortune({

@@ -3,7 +3,7 @@
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
 export type SaveLocalMinihomeBgmResult =
-  | { ok: true; charged: boolean; bgmUrl: string | null; dotoriBalance: number }
+  | { ok: true; charged: boolean; bgmUrl: string | null; thaiBalance: number }
   | { ok: false; reason: string; need?: number; have?: number };
 
 export async function saveLocalMinihomeBgm(localSpotId: string, bgmUrlRaw: string): Promise<SaveLocalMinihomeBgmResult> {
@@ -41,6 +41,6 @@ export async function saveLocalMinihomeBgm(localSpotId: string, bgmUrlRaw: strin
     ok: true,
     charged: Boolean(row.charged),
     bgmUrl: typeof row.bgm_url === 'string' ? row.bgm_url : row.bgm_url == null ? null : String(row.bgm_url),
-    dotoriBalance: Number(row.dotori_balance ?? 0),
+    thaiBalance: Number((row as { thai_balance?: unknown }).thai_balance ?? 0),
   };
 }

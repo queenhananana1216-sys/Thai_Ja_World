@@ -88,7 +88,7 @@ export function EntryFlowSection({ flow }: EntryFlowSectionProps) {
               START HERE
             </p>
             <h2 style={{ margin: '10px 0 0', fontSize: 'clamp(24px,4.6vw,34px)', lineHeight: 1.25, fontWeight: 800 }}>
-              태자월드 시작 가이드
+              태국에, 살자 시작 가이드
             </h2>
             <p style={{ margin: '10px 0 0', fontSize: 14, color: '#cbd5e1', lineHeight: 1.6 }}>
               거래, 구인구직, 로컬가게, 미니홈을 한눈에 보고 바로 이동할 수 있게 정리했습니다.

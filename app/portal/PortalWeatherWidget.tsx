@@ -46,6 +46,16 @@ type OmniMotherbrain = {
   chaos_skipped?: boolean;
 };
 
+type OmniSchemaLayer = {
+  ok?: boolean;
+  warn?: boolean;
+  table?: string;
+  columns_in_db_not_in_types?: string[];
+  columns_in_types_not_in_db?: string[];
+  error?: string;
+  self_heal_hint?: string;
+};
+
 type OmniPack = { ok: boolean; status: number; json: unknown };
 
 async function omniFetcher(url: string): Promise<OmniPack> {
@@ -88,9 +98,22 @@ function omniLedTooltip(
   errors: string[],
   locale: Locale,
   immuneTraining: boolean,
+  schemaLayerWarn: boolean,
+  schemaHint?: string | null,
 ): string {
   if (phase === 'neutral') {
     return locale === 'th' ? 'กำลังตรวจสอบระบบ…' : '시스템 상태 확인 중…';
+  }
+  if (phase === 'ok' && schemaLayerWarn) {
+    const tail =
+      isAdmin && schemaHint
+        ? ` — ${schemaHint}`
+        : locale === 'th'
+          ? ' — รายละเอียดสำหรับผู้ดูแล'
+          : ' — 상세는 관리자 툴팁';
+    return locale === 'th'
+      ? `🟠 Schema-Aware: DB กับชุดคีย์ TypeScript ไม่ตรงกัน${tail}`
+      : `🟠 Schema-Aware: DB와 타입·폼 계약 불일치${tail}`;
   }
   if (phase === 'ok' && immuneTraining) {
     return locale === 'th'
@@ -142,22 +165,30 @@ export default function PortalWeatherWidget({
     dedupingInterval: 2000,
   });
 
-  const { omniPhase, omniErrors, chaosRadar, motherbrain } = useMemo(() => {
+  const { omniPhase, omniErrors, chaosRadar, motherbrain, schemaLayer } = useMemo(() => {
     if (!omniPack) {
       return {
         omniPhase: 'neutral' as OmniLedPhase,
         omniErrors: [] as string[],
         chaosRadar: null as OmniChaosMonkey | null,
         motherbrain: null as OmniMotherbrain | null,
+        schemaLayer: null as OmniSchemaLayer | null,
       };
     }
     const { ok, status, json } = omniPack;
     const checks =
       json && typeof json === 'object' && !Array.isArray(json)
-        ? (json as { checks?: { chaos_monkey?: OmniChaosMonkey; motherbrain?: OmniMotherbrain } }).checks
+        ? (json as {
+            checks?: {
+              chaos_monkey?: OmniChaosMonkey;
+              motherbrain?: OmniMotherbrain;
+              schema_layer?: OmniSchemaLayer;
+            };
+          }).checks
         : undefined;
     const chaos = checks?.chaos_monkey ?? null;
     const motherbrain = checks?.motherbrain ?? null;
+    const schemaLayer = checks?.schema_layer ?? null;
 
     const healthy =
       ok &&
@@ -172,6 +203,7 @@ export default function PortalWeatherWidget({
         omniErrors: [] as string[],
         chaosRadar: chaos,
         motherbrain,
+        schemaLayer,
       };
     }
     return {
@@ -179,6 +211,7 @@ export default function PortalWeatherWidget({
       omniErrors: parseOmniErrors(json, status),
       chaosRadar: chaos,
       motherbrain,
+      schemaLayer,
     };
   }, [omniPack]);
 
@@ -190,25 +223,46 @@ export default function PortalWeatherWidget({
   const immuneTraining =
     omniPhase === 'ok' && chaosRadar?.immune_training_active === true;
 
+  const schemaLayerWarn =
+    omniPhase === 'ok' &&
+    schemaLayer != null &&
+    (schemaLayer.warn === true || schemaLayer.ok === false);
+
   const ledClass =
     omniPhase === 'ok'
-      ? immuneTraining
+      ? immuneTraining || schemaLayerWarn
         ? styles.omniLedOrange
         : styles.omniLedGreen
       : omniPhase === 'error'
         ? styles.omniLedRed
         : styles.omniLedNeutral;
 
+  const schemaHint =
+    isAdmin && schemaLayerWarn
+      ? schemaLayer?.self_heal_hint ?? schemaLayer?.error ?? null
+      : null;
+
   const ledTitle = useMemo(
-    () => omniLedTooltip(omniPhase, isAdmin, omniErrors, locale, immuneTraining),
-    [omniPhase, isAdmin, omniErrors, locale, immuneTraining],
+    () =>
+      omniLedTooltip(
+        omniPhase,
+        isAdmin,
+        omniErrors,
+        locale,
+        immuneTraining,
+        schemaLayerWarn,
+        schemaHint,
+      ),
+    [omniPhase, isAdmin, omniErrors, locale, immuneTraining, schemaLayerWarn, schemaHint],
   );
 
   const ledAria =
     omniPhase === 'ok'
-      ? immuneTraining
-        ? '자가 면역 훈련 중'
-        : '시스템 정상'
+      ? schemaLayerWarn
+        ? '스키마 계약 불일치'
+        : immuneTraining
+          ? '자가 면역 훈련 중'
+          : '시스템 정상'
       : omniPhase === 'error'
         ? '시스템 경고'
         : '시스템 상태 확인 중';

@@ -37,7 +37,7 @@ export function HomeBannerSliderClient({ banners }: { banners: PremiumBannerRow[
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/mascot/character.png"
-            alt="태자월드 마스코트 자리"
+            alt="태국에, 살자 마스코트 자리"
             className={styles.mascotImage}
             onError={(e) => {
               e.currentTarget.style.display = 'none';
@@ -46,7 +46,7 @@ export function HomeBannerSliderClient({ banners }: { banners: PremiumBannerRow[
           <div className={styles.mascotSkeleton}>
             <div className={styles.mascotHead} />
             <div className={styles.mascotBody} />
-            <span className={styles.mascotHint}>태자월드 마스코트(캐릭터) 영역</span>
+            <span className={styles.mascotHint}>태국에, 살자 마스코트(캐릭터) 영역</span>
           </div>
         </div>
         {active.href ? (

@@ -20,7 +20,7 @@ export async function probeSiteReachability(): Promise<SiteReachability> {
       method: 'GET',
       cache: 'no-store',
       signal: ctrl.signal,
-      headers: { 'User-Agent': 'TaejaAdminHealthProbe/1', Accept: 'text/html,application/json' },
+      headers: { 'User-Agent': 'LivingInThai-AdminHealthProbe/1', Accept: 'text/html,application/json' },
     });
     clearTimeout(tid);
     return {

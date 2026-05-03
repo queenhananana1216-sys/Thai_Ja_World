@@ -4,25 +4,24 @@ import KoreanBizHubClient, { type KoreanBizRow } from './KoreanBizHubClient';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerClient } from '@/lib/supabase/server';
 import { absoluteUrl } from '@/lib/seo/site';
+import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const META = {
-  title: '한인 생활망 — 마트·약국·병원·렌트·골프·스파 | 태국에, 살자',
-  description:
-    '방콕·파타야·치앙마이 한인 마트, 약국, 병원, 오토바이·차량 렌트, 골프 투어, 마사지·스파 연락처. 검증 시각을 함께 표시합니다.',
-} as const;
-
-export function generateMetadata(): Metadata {
+export async function generateMetadata(): Promise<Metadata> {
+  const ui = await loadSiteUiSettings();
   const url = absoluteUrl('/korean-biz');
+  const title = `한인 생활망 — 마트·약국·병원·렌트·골프·스파 | ${ui.siteDisplayName}`;
+  const description =
+    '방콕·파타야·치앙마이 한인 마트, 약국, 병원, 오토바이·차량 렌트, 골프 투어, 마사지·스파 연락처. 검증 시각을 함께 표시합니다.';
   return {
-    title: META.title,
-    description: META.description,
+    title,
+    description,
     alternates: { canonical: url },
     openGraph: {
-      title: META.title,
-      description: META.description,
+      title,
+      description,
       url,
       type: 'website',
       locale: 'ko_KR',

@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { requestThaiBalanceRefetch } from '@/lib/thaiBalanceBroadcast';
 import { formatDate } from '@/lib/utils/formatDate';
 
 export type BoardReportCommentRow = {
@@ -98,6 +99,7 @@ export default function BoardReportComments({
     setBody('');
     setReplyTarget(null);
     setExpanded(false);
+    requestThaiBalanceRefetch();
     router.refresh();
   }
 

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { BlurThumbImage } from '@/components/media/BlurThumbImage';
 import type { BoardPostRow } from './types';
 
 type Props = {
@@ -9,9 +10,11 @@ type Props = {
   /** 자유 게시판 목록에서만 본인 글 액션 노출 */
   showOwnerActions: boolean;
   currentUserId: string | null;
+  /** 목록에서의 인덱스 — 상단 행 LCP용 priority */
+  listIndex?: number;
 };
 
-export function BoardPostCard({ post, showOwnerActions, currentUserId }: Props) {
+export function BoardPostCard({ post, showOwnerActions, currentUserId, listIndex = 999 }: Props) {
   const router = useRouter();
   const isOwner = currentUserId !== null && post.user_id === currentUserId;
   const preview = post.content.trim().slice(0, 220);
@@ -86,13 +89,19 @@ export function BoardPostCard({ post, showOwnerActions, currentUserId }: Props) 
 
         {thumbs.length > 0 ? (
           <div className="mt-2 grid grid-cols-3 gap-0.5">
-            {thumbs.map((src) => (
+            {thumbs.map((src, ti) => (
               <div
                 key={src}
-                className="aspect-square overflow-hidden rounded-md border border-white/10 bg-slate-950"
+                className="relative aspect-square overflow-hidden rounded-md border border-white/10 bg-slate-950"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
+                <BlurThumbImage
+                  src={src}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 28vw, 160px"
+                  priority={listIndex < 3 && ti === 0}
+                />
               </div>
             ))}
           </div>

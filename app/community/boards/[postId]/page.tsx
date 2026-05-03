@@ -9,6 +9,8 @@ import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies
 import { categoryLabel } from '@/lib/community/postCategories';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
+import { mergeDictionarySiteBrand } from '@/lib/site-brand/mergeDictionaryBrand';
+import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import JsonLd from '@/lib/seo/JsonLd';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { formatDate } from '@/lib/utils/formatDate';
@@ -27,7 +29,8 @@ type PageProps = { params: Promise<{ postId: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { postId } = await params;
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const siteUi = await loadSiteUiSettings();
+  const d = mergeDictionarySiteBrand(getDictionary(locale), siteUi.siteDisplayName);
   const supabase = await createServerSupabaseAuthClient();
   const { data: post } = await supabase
     .from('posts')
@@ -51,7 +54,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const keywords = [
     catLabel,
     catKey,
-    '태국에 살자',
+    siteUi.siteDisplayName,
     '태국',
     '방콕',
     '교민',
@@ -85,7 +88,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function BoardPostDetailPage({ params }: PageProps) {
   const { postId } = await params;
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const siteUi = await loadSiteUiSettings();
+  const d = mergeDictionarySiteBrand(getDictionary(locale), siteUi.siteDisplayName);
   const supabase = await createServerSupabaseAuthClient();
   const {
     data: { user: viewer },

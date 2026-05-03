@@ -71,12 +71,13 @@ export function BoardPostList({ tab }: { tab: Tab }) {
 
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-      {posts.map((p) => (
+      {posts.map((p, i) => (
         <BoardPostCard
           key={p.id}
           post={p}
           showOwnerActions={tab === 'free'}
           currentUserId={userId}
+          listIndex={i}
         />
       ))}
     </div>

@@ -33,7 +33,7 @@ async function checkOrigin(): Promise<{ ok: boolean; status: number | null; ms: 
       method: 'GET',
       cache: 'no-store',
       signal: ctrl.signal,
-      headers: { 'User-Agent': 'TaejaHealthCheck/1' },
+      headers: { 'User-Agent': 'LivingInThai-HealthCheck/1' },
     });
     clearTimeout(t);
     return { ok: res.ok, status: res.status, ms: Date.now() - start };

@@ -36,7 +36,7 @@ export async function createStripeCheckoutSession(input: {
         price_data: {
           currency: 'thb',
           unit_amount: Math.round(input.amountThb * 100),
-          product_data: { name: `ThaiJaWorld Order ${input.orderId}` },
+          product_data: { name: `LivingInThai Order ${input.orderId}` },
         },
       },
     ],
@@ -82,7 +82,7 @@ export async function createPremiumSubscriptionCheckoutSession(input: {
             unit_amount: plan.amountKrw,
             recurring: { interval: 'month' },
             product_data: {
-              name: `태자월드 프리미엄 · ${plan.label}`,
+              name: `태국에, 살자 프리미엄 · ${plan.label}`,
               description: '월 구독 — 스폰서 배너·광고 없는 미니홈 등 혜택',
             },
           },

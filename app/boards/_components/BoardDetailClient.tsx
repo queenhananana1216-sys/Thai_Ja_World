@@ -8,6 +8,7 @@ import BoardReportComments, { type BoardReportCommentRow } from './BoardReportCo
 import BoardReportReactionsPanel from './BoardReportReactionsPanel';
 import { MiniMapView } from './MiniMapView';
 import type { BoardPostRow } from './types';
+import { BlurThumbImage } from '@/components/media/BlurThumbImage';
 
 export function BoardDetailClient({
   post,
@@ -131,16 +132,22 @@ export function BoardDetailClient({
             이미지
           </p>
           <div className="grid grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4">
-            {imgs.map((src) => (
+            {imgs.map((src, ii) => (
               <a
                 key={src}
                 href={src}
                 target="_blank"
                 rel="noreferrer"
-                className="aspect-square overflow-hidden rounded-lg border border-white/10 bg-slate-950 shadow-inner"
+                className="relative block aspect-square overflow-hidden rounded-lg border border-white/10 bg-slate-950 shadow-inner"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
+                <BlurThumbImage
+                  src={src}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 45vw, 200px"
+                  priority={ii === 0}
+                />
               </a>
             ))}
           </div>

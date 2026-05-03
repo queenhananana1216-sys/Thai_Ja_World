@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import TaejaEditorialTips from '../_components/TaejaEditorialTips';
+import EditorialTipsPanel from '../_components/EditorialTipsPanel';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { isNewsSummaryLlmConfigured, stubOnLlmFailure } from '@/bots/actions/summarizeAndPersistNews';
 import {
@@ -141,7 +141,7 @@ export default async function AdminPublishHubPage() {
         ) : null}
       </section>
 
-      <TaejaEditorialTips />
+      <EditorialTipsPanel />
 
       <div
         style={{

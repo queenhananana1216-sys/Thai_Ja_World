@@ -15,6 +15,11 @@ import {
   shouldMaskRawDbError,
 } from '@/lib/db/dbErrorDefense';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { normalizePostGeoPayload } from '@/lib/schema-autoform/postGeoFieldGroup';
+import { requestThaiBalanceRefetch } from '@/lib/thaiBalanceBroadcast';
+import PostGeoAutoFields, {
+  type PostGeoAutoFieldsValue,
+} from '@app/_components/schema-autoform/PostGeoAutoFields';
 
 /** 첫 시도 후 최대 재시도 횟수 (1초 간격, 백그라운드) */
 const POST_SUBMIT_MAX_RETRIES = 3;
@@ -63,8 +68,26 @@ export default function NewPostForm({
   const [files, setFiles] = useState<FileList | null>(null);
   const [ownerPassword, setOwnerPassword] = useState('');
   const [ownerPassword2, setOwnerPassword2] = useState('');
+  const [geo, setGeo] = useState<PostGeoAutoFieldsValue>({ latitude: '', longitude: '', location_name: '' });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const geoLabels =
+    locale === 'th'
+      ? {
+          section: 'พิกัด (ไม่บังคับ)',
+          latitude: 'ละติจูด',
+          longitude: 'ลองจิจูด',
+          locationName: 'ชื่อสถานที่',
+          hint: 'ถ้ากรอกพิกัด ต้องกรอกทั้งคู่ — ชื่อสถานที่ได้แม้ไม่มีพิกัด',
+        }
+      : {
+          section: '위치 (선택)',
+          latitude: '위도',
+          longitude: '경도',
+          locationName: '장소 이름',
+          hint: '위도·경도는 둘 다 입력하거나 비워 두세요. 이름만 넣을 수 있어요.',
+        };
 
   function isSchemaSyncPayload(p: { code?: string; message?: string }): boolean {
     const c = p.code;
@@ -152,12 +175,29 @@ export default function NewPostForm({
         return;
       }
 
+      const geoNorm = normalizePostGeoPayload(geo);
+      if (!geoNorm.ok) {
+        setError(geoNorm.error);
+        setLoading(false);
+        return;
+      }
+      const g = geoNorm.value;
+      const geoJson: Record<string, unknown> = {};
+      if (g.latitude != null && g.longitude != null) {
+        geoJson.latitude = g.latitude;
+        geoJson.longitude = g.longitude;
+        geoJson.location_name = g.location_name;
+      } else if (g.location_name != null) {
+        geoJson.location_name = g.location_name;
+      }
+
       const requestBody = JSON.stringify({
         category,
         title: title.trim(),
         content: content.trim(),
         image_urls: uploadUrls,
         ...(op ? { owner_password: op } : {}),
+        ...geoJson,
       });
 
       let lastPayload: {
@@ -208,6 +248,7 @@ export default function NewPostForm({
           lastPayload = payload;
 
           if (res.ok && payload.id) {
+            requestThaiBalanceRefetch();
             router.push(`/community/boards/${payload.id}`);
             router.refresh();
             return;
@@ -301,6 +342,8 @@ export default function NewPostForm({
         minLength={2}
         className="min-h-52 w-full rounded-2xl border border-white/10 bg-slate-950/75 p-3 text-sm leading-relaxed text-slate-100 outline-none transition focus:border-violet-300/60"
       />
+
+      <PostGeoAutoFields value={geo} onChange={setGeo} labels={geoLabels} />
 
       <div className="rounded-xl border border-white/10 bg-slate-950/60 p-3">
         <label htmlFor="pimg" className="block text-sm font-semibold text-slate-200">{board.imagesHint}</label>

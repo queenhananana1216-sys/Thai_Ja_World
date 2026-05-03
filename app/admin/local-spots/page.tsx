@@ -1,5 +1,5 @@
 /**
- * /admin/local-spots — 태자월드 로컬 가게(맛집 등) CRUD
+ * /admin/local-spots — 「태국에, 살자」로컬 가게(맛집 등) CRUD
  */
 
 import Link from 'next/link';

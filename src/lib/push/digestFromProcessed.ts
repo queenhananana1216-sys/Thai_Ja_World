@@ -1,4 +1,5 @@
 import { newsDetailFromProcessed } from '@/lib/news/processedNewsDisplay';
+import { getClientSiteDisplayName } from '@/lib/site-brand/resolveSiteDisplayName';
 import type { BangkokWeatherPair } from '@/lib/weather/bangkokWeatherSnippet';
 
 export type ProcessedNewsDigestRow = {
@@ -55,7 +56,7 @@ export function buildDailyWebPushPayload(
   lines.push(`🇰🇷 ${koLine || '—'}`, `🇹🇭 ${thLine || '—'}`);
 
   return {
-    title: '태국에, 살자 · 오늘 살이 참고 한 줄',
+    title: `${getClientSiteDisplayName()} · 오늘 살이 참고 한 줄`,
     body: lines.join('\n'),
     url: `${base}/news/${row.id}`,
     tag: `daily-news-${row.id}`,

@@ -1,10 +1,13 @@
 import type { MetadataRoute } from 'next';
+import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const ui = await loadSiteUiSettings();
+  const name = ui.siteDisplayName;
   return {
-    name: '태국에, 살자',
-    short_name: '태국살자',
-    description: '태국 생활 참여형 커뮤니티 — 태국에, 살자',
+    name,
+    short_name: name.slice(0, 12),
+    description: `태국에, 살자(Living in Thai) — 태국 생활·교민 참여형 커뮤니티. ${name}`,
     start_url: '/',
     scope: '/',
     display: 'standalone',

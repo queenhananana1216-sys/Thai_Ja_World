@@ -113,7 +113,7 @@ async function fetchJsonWithTimeout<T>(apiName: string, url: string): Promise<Fe
       signal: controller.signal,
       headers: {
         Accept: 'application/json, */*',
-        'User-Agent': 'TaejaWorld-Cron/1.0 (+content-automation)',
+        'User-Agent': 'LivingInThai-Cron/1.0 (+content-automation)',
       },
     });
     if (!res.ok) {

@@ -44,7 +44,7 @@ export function validateKnowledgePublish(ko_summary: string, ko_editorial_note: 
   const ed = ko_editorial_note.trim();
   if (isKnowledgeStubKoSummary(sum)) {
     if (ed.length < 25) {
-      return '원문 요약이 비어 있을 때는 「태자 편집팀·이용자 안내」에 25자 이상 적어 주시면 게시할 수 있어요.';
+      return '원문 요약이 비어 있을 때는 「태국에, 살자 편집팀·이용자 안내」에 25자 이상 적어 주시면 게시할 수 있어요.';
     }
     return null;
   }
@@ -75,7 +75,7 @@ export function buildPostContent(llm: KnowledgeLlmOutput, fallbackSourceUrl?: st
   const koLines = [
     `요약\n${ko?.summary ?? ''}`,
     ko?.editorial_note?.trim()
-      ? `\n태자 편집팀·이용자 안내\n${ko.editorial_note.trim()}`
+      ? `\n태국에, 살자 편집팀·이용자 안내\n${ko.editorial_note.trim()}`
       : '',
     `\n체크리스트\n${bullets(koCheck)}`,
     `\n주의사항\n${bullets(koCaut)}`,

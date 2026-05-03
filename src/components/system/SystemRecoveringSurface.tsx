@@ -1,6 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
+import { getClientSiteDisplayName } from '@/lib/site-brand/resolveSiteDisplayName';
 
 const shell: CSSProperties = {
   margin: 0,
@@ -72,6 +73,7 @@ export function SystemRecoveringSurface({ variant, error, onRetry }: Props) {
       : null;
 
   if (variant === 'global') {
+    const brand = getClientSiteDisplayName();
     return (
       <div style={shell}>
         <div style={glass}>
@@ -80,7 +82,7 @@ export function SystemRecoveringSurface({ variant, error, onRetry }: Props) {
             시스템 복구 중
           </div>
           <h1 style={{ margin: '16px 0 10px', fontSize: '1.35rem', fontWeight: 800, color: '#f8fafc' }}>
-            태국에, 살자
+            {brand}
           </h1>
           <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.65, color: '#94a3b8' }}>
             화면을 불러오는 중 문제가 발생했습니다. 인터페이스를 안전하게 복구하고 있습니다. 아래 버튼으로 다시 시도해

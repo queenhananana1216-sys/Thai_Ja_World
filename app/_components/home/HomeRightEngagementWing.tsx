@@ -34,12 +34,12 @@ async function readMyPoint(authSb: SupabaseClient, uid: string): Promise<number 
   try {
     const { data } = await authSb
       .from('profiles')
-      .select('point_balance, dotori_balance')
+      .select('point_balance, thai_balance')
       .eq('id', uid)
       .maybeSingle();
     const value =
-      (data as { point_balance?: number; dotori_balance?: number } | null)?.point_balance ??
-      (data as { point_balance?: number; dotori_balance?: number } | null)?.dotori_balance;
+      (data as { point_balance?: number; thai_balance?: number } | null)?.point_balance ??
+      (data as { point_balance?: number; thai_balance?: number } | null)?.thai_balance;
     return typeof value === 'number' ? value : 0;
   } catch {
     return null;

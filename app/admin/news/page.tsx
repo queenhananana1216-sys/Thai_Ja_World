@@ -114,7 +114,7 @@ export default async function AdminNewsQueuePage() {
       <h1 style={{ fontSize: 18, margin: '0 0 8px' }}>뉴스 초안 큐</h1>
       <p style={{ margin: '0 0 12px', fontSize: 12 }}>
         <Link href="/admin/publish" style={{ color: '#2563eb', fontWeight: 600 }}>
-          최종 승인·태자 편집 팁(한 페이지 요약) →
+          최종 승인·편집 가이드(한 페이지 요약) →
         </Link>
       </p>
       <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.55 }}>

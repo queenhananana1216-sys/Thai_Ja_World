@@ -1,7 +1,10 @@
 /**
  * Tailwind·CSS 청크 실패와 무관하게 보이도록 인라인 스타일만 사용 (첫 페인트 보험)
  */
+import { getClientSiteDisplayName } from '@/lib/site-brand/resolveSiteDisplayName';
+
 export default function PortalHomeSuspenseFallback() {
+  const brand = getClientSiteDisplayName();
   return (
     <div
       role="status"
@@ -49,7 +52,7 @@ export default function PortalHomeSuspenseFallback() {
               fontWeight: 800,
             }}
           >
-            태국에, 살자
+            {brand}
           </span>
         </span>
       </p>

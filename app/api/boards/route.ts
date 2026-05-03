@@ -2,6 +2,7 @@
  * GET /api/boards — 공개 목록 (anon RLS)
  * POST /api/boards — 작성 (Bearer); 성공 후 미션 RPC 연동
  */
+import { after } from 'next/server';
 import { NextResponse } from 'next/server';
 import { parseBoardPostBody } from './boardPayload';
 import {
@@ -13,6 +14,8 @@ import { recordQuestProgress } from '@/lib/quests/progress';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 import { createServerClient } from '@/lib/supabase/server';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
+import { logGoogleIndexingDevFailure, publishGoogleIndexingUrlUpdate } from '@/lib/seo/googleIndexingApi';
+import { getSiteBaseUrl } from '@/lib/seo/site';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -170,6 +173,12 @@ export async function POST(req: Request): Promise<NextResponse> {
   } catch {
     // 미션 실패는 글 등록 성공에 영향 없음
   }
+
+  const publicUrl = `${getSiteBaseUrl()}/boards/${encodeURIComponent(postId)}`;
+  after(async () => {
+    const r = await publishGoogleIndexingUrlUpdate(publicUrl);
+    if (!r.ok) logGoogleIndexingDevFailure(publicUrl, r.error);
+  });
 
   return NextResponse.json({ id: postId });
 }

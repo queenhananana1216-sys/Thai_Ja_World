@@ -3,28 +3,26 @@ import { Suspense } from 'react';
 import PortalFeedSection from './_components/PortalFeedSection';
 import PortalHomeGlassSkeleton from './_components/PortalHomeGlassSkeleton';
 import { absoluteUrl } from '@/lib/seo/site';
+import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 
 /** 홈 데이터 일부는 `fetch(..., { next: { revalidate: 60 } })`(home-queries)로 Data Cache — 레이아웃 force-dynamic과 병행 */
 export const revalidate = 60;
 
-const HOME_METADATA = {
-  title: '태국에, 살자',
-  description: '태국에 사는 이웃과 함께 — 광장·로컬·뉴스 허브',
-  siteName: '태국에, 살자',
-} as const;
-
-export function generateMetadata(): Metadata {
+export async function generateMetadata(): Promise<Metadata> {
   const url = absoluteUrl('/');
+  const ui = await loadSiteUiSettings();
+  const title = ui.siteDisplayName;
+  const description = '태국에 사는 이웃과 함께 — 광장·로컬·뉴스 허브';
   return {
-    title: HOME_METADATA.title,
-    description: HOME_METADATA.description,
+    title,
+    description,
     alternates: { canonical: url },
     openGraph: {
-      title: HOME_METADATA.title,
-      description: HOME_METADATA.description,
+      title,
+      description,
       url,
       type: 'website',
-      siteName: HOME_METADATA.siteName,
+      siteName: title,
       locale: 'ko_KR',
     },
   };

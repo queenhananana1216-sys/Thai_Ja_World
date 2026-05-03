@@ -166,7 +166,7 @@ function stubSeoKeywordsFromTitle(title: string): string[] {
     .split(/\s+/)
     .filter((w) => w.length > 1)
     .slice(0, 5);
-  const base = parts.length > 0 ? parts : ['태국', '뉴스', '방콕', '태자월드', '교민'];
+  const base = parts.length > 0 ? parts : ['태국', '뉴스', '방콕', '태국에 살자', 'Living in Thai', '교민'];
   return normalizeSeoKeywords(base);
 }
 
@@ -318,7 +318,7 @@ function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: 
     `원문 본문(없으면 빈 값): ${sanitizedBody?.trim() || '(없음)'}`,
     `출처 URL: ${sourceUrl}`,
     '',
-    '아래는 태국·동남아 지역과 관련된 원문 제목·본문 발췌·출처입니다. 단순 번역 금지 — 태자월드만의 색으로 재해석하라.',
+    '아래는 태국·동남아 지역과 관련된 원문 제목·본문 발췌·출처입니다. 단순 번역 금지 — 「태국에, 살자 / Living in Thai」톤으로 재해석하라.',
     '편집 각인: 태국 최고의 이슈 메이커처럼 쓸 것. 미친 가독성 + 한 줄 핵심이 먼저다. 사건·사고는 억지 웃음 말고 선 넘나드는 촌철살인 위트로 무릎 탁.',
     '제목은 클릭 안 하면 손해일 정도로 자극적으로(팩트 안에서). 예시 톤만 참고: 「방콕 시내 한복판에서 벌어진 충격적 사건, 알고보니…」',
     '딱딱한 AP체 요약이 아니라, “우리 동네 커뮤니티에서 돌아다니는 썰 + 사실” 톤으로 가공하세요.',

@@ -4,7 +4,7 @@ import type { CommunityPulse } from '@/lib/landing/fetchCommunityPulse';
 import type { Locale } from '@/i18n/types';
 
 /**
- * Philgo 식 "어디에 뭐가 있는지 한눈" — 태자월드 다크 톤.
+ * Philgo 식 "어디에 뭐가 있는지 한눈" — 「태국에, 살자」다크 톤.
  *  - 데스크톱 ≥1024px: 컬럼 수만큼 그리드 (기본 5컬럼)
  *  - 모바일 <1024px: 상단 탭 + 단일 패널 (`<PulseColumnTabs>`)
  *  - 모든 컬럼이 비면 섹션 자체 비노출 (홈이 비어 보이는 것 방지)
@@ -24,7 +24,7 @@ export function CommunityPulseSection({ pulse, locale }: Props) {
   const sub =
     locale === 'th'
       ? 'ข่าว · เคล็ดลับ · คำถาม · พูดคุย · ร้านในย่าน — อัปเดตโดยไปป์ไลน์ของแทจะโลก'
-      : '뉴스 · 정보 · 질문 · 자유 · 맛집 — 태자월드 파이프라인이 실시간 갱신합니다.';
+      : '뉴스 · 정보 · 질문 · 자유 · 맛집 — 「태국에, 살자」파이프라인이 실시간 갱신합니다.';
 
   const columnCount = Math.min(pulse.columns.length, 5);
 

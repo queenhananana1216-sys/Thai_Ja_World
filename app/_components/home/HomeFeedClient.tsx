@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { BlurThumbImage } from '@/components/media/BlurThumbImage';
 import type { HomeUnifiedFeedItem } from './home-feed-types';
 import { thumbGradientForId } from '../../portal/thumb';
 import { portalMetaLine } from '../../portal/text';
@@ -133,14 +134,21 @@ export function HomeFeedClient({
             </ul>
           </section>
         ) : null}
-        {(items ?? []).map((p) => {
+        {(items ?? []).map((p, idx) => {
           const thumbUrl = p.image_url;
           const preview = portalMetaLine({ excerpt: p.excerpt, content: null }, 100);
           return (
             <Link key={`${p.kind}-${p.id}`} href={itemHref(p)} className={styles.feedRow}>
               {thumbUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img className={styles.thumb} src={thumbUrl} alt="" width={36} height={36} />
+                <BlurThumbImage
+                  className={styles.thumb}
+                  src={thumbUrl}
+                  alt=""
+                  width={36}
+                  height={36}
+                  sizes="36px"
+                  priority={idx < 6}
+                />
               ) : (
                 <div
                   className={styles.thumbPh}

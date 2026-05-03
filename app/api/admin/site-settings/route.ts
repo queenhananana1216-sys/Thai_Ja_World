@@ -2,15 +2,16 @@
  * 오너 전용 — site_settings upsert (service role)
  */
 import { NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
-import type { TextScale } from '@/lib/site-settings/siteUiSettings';
+import { SITE_UI_SETTINGS_CACHE_TAG, type TextScale } from '@/lib/site-settings/siteUiSettings';
 import type { Json } from '../../../../supabase/types';
 
 export const runtime = 'nodejs';
 
 const ALLOWED_KEYS = new Set([
+  'brand.site_display_name',
   'ui.text_scale',
   'ui.hide_ai_chrome',
   'ui.weather_widget_enabled',
@@ -96,6 +97,20 @@ export async function PATCH(req: Request): Promise<NextResponse> {
     if (!ALLOWED_KEYS.has(key)) {
       return NextResponse.json({ error: `key_not_allowed: ${key}` }, { status: 400 });
     }
+    if (key === 'brand.site_display_name') {
+      if (typeof val !== 'string') {
+        return NextResponse.json({ error: 'brand.site_display_name must be a string' }, { status: 400 });
+      }
+      const t = val.trim();
+      if (t.length < 1 || t.length > 120) {
+        return NextResponse.json(
+          { error: 'brand.site_display_name length must be 1–120' },
+          { status: 400 },
+        );
+      }
+      rows.push({ key, value: t });
+      continue;
+    }
     if (key === 'ui.text_scale') {
       const v = val as TextScale;
       if (v !== 'compact' && v !== 'normal' && v !== 'large') {
@@ -122,6 +137,7 @@ export async function PATCH(req: Request): Promise<NextResponse> {
       { onConflict: 'key' },
     );
     if (error) return NextResponse.json({ error: error.message }, { status: 502 });
+    revalidateTag(SITE_UI_SETTINGS_CACHE_TAG);
     revalidatePath('/');
     revalidatePath('/boards');
     revalidatePath('/admin');

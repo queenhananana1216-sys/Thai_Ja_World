@@ -6,7 +6,7 @@ import PostReactionsPanel from '../../community/boards/_components/PostReactions
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
-import { trimForMetaDescription } from '@/lib/seo/site';
+import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 
 type PageProps = { params: Promise<{ postId: string }> };
 
@@ -41,6 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: row.title,
     description: desc,
     robots: { index: true, follow: true },
+    alternates: { canonical: absoluteUrl(`/tips/${encodeURIComponent(postId)}`) },
   };
 }
 

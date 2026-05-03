@@ -2,10 +2,13 @@ import 'server-only';
 
 import { unstable_cache } from 'next/cache';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { DEFAULT_SITE_DISPLAY_NAME } from '@/lib/site-brand/constants';
 
 export type TextScale = 'compact' | 'normal' | 'large';
 
 export type SiteUiSettings = {
+  /** 헤더·푸터·메타 — `brand.site_display_name` 우선, 없으면 `NEXT_PUBLIC_SITE_NAME` */
+  siteDisplayName: string;
   textScale: TextScale;
   hideAiChrome: boolean;
   weatherWidgetEnabled: boolean;
@@ -14,6 +17,7 @@ export type SiteUiSettings = {
 };
 
 const DEFAULTS: SiteUiSettings = {
+  siteDisplayName: DEFAULT_SITE_DISPLAY_NAME,
   textScale: 'normal',
   hideAiChrome: false,
   weatherWidgetEnabled: true,
@@ -36,6 +40,17 @@ function parseBool(v: unknown, fallback: boolean): boolean {
   return typeof v === 'boolean' ? v : fallback;
 }
 
+function parseSiteDisplayNameFromMap(map: Map<string, unknown>): string {
+  const raw = map.get('brand.site_display_name');
+  if (typeof raw === 'string') {
+    const t = raw.trim();
+    if (t.length > 0) return t.slice(0, 120);
+  }
+  const env = process.env.NEXT_PUBLIC_SITE_NAME?.trim();
+  if (env && env.length > 0) return env.slice(0, 120);
+  return DEFAULT_SITE_DISPLAY_NAME;
+}
+
 const loadSiteUiSettingsImpl = async (): Promise<SiteUiSettings> => {
   const sb = createReadonlyAnon();
   if (!sb) return { ...DEFAULTS };
@@ -47,6 +62,7 @@ const loadSiteUiSettingsImpl = async (): Promise<SiteUiSettings> => {
       if (row?.key) map.set(row.key, row.value);
     }
     return {
+      siteDisplayName: parseSiteDisplayNameFromMap(map),
       textScale: parseTextScale(map.get('ui.text_scale')),
       hideAiChrome: parseBool(map.get('ui.hide_ai_chrome'), DEFAULTS.hideAiChrome),
       weatherWidgetEnabled: parseBool(
@@ -60,8 +76,11 @@ const loadSiteUiSettingsImpl = async (): Promise<SiteUiSettings> => {
   }
 };
 
-const getCachedSiteUiSettings = unstable_cache(loadSiteUiSettingsImpl, ['site-ui-settings-v1'], {
+export const SITE_UI_SETTINGS_CACHE_TAG = 'site-ui-settings' as const;
+
+const getCachedSiteUiSettings = unstable_cache(loadSiteUiSettingsImpl, ['site-ui-settings-v2'], {
   revalidate: 30,
+  tags: [SITE_UI_SETTINGS_CACHE_TAG],
 });
 
 /** RSC·레이아웃용 — 실패 시 DEFAULTS (마이그레이션 전·오프라인에도 앱이 죽지 않게) */

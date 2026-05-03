@@ -10,6 +10,7 @@ export async function GET() {
   const s = await loadSiteUiSettings();
   return NextResponse.json(
     {
+      site_display_name: s.siteDisplayName,
       ui: {
         text_scale: s.textScale,
         hide_ai_chrome: s.hideAiChrome,

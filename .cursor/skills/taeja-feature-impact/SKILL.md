@@ -1,9 +1,9 @@
 ---
 name: taeja-feature-impact
-description: Maps taeja-world-only features (minihome, shop, community, bots) to files and SQL. Use only in the taeja-world repo when the user asks 영향 범위·연쇄 수정. Not for unrelated SSD projects.
+description: Maps living-in-thai-only features (minihome, shop, community, bots) to files and SQL. Use only in the living-in-thai repo when the user asks 영향 범위·연쇄 수정. Not for unrelated SSD projects.
 ---
 
-# 기능 영향 맵 (taeja-world)
+# 기능 영향 맵 (living-in-thai)
 
 에이전트는 변경 요청을 받으면 아래 표에서 **해당 축**을 전부 훑고, grep/검색으로 실제 심볼을 확인한다.
 

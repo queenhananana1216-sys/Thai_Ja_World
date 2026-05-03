@@ -107,7 +107,7 @@ export default function PremiumLoungeClient({
           transition={{ delay: 0.05 }}
           className="max-w-3xl bg-gradient-to-br from-white via-violet-100 to-fuchsia-200/90 bg-clip-text text-4xl font-black tracking-tight text-transparent md:text-5xl"
         >
-          태자월드 프리미엄 라운지
+          태국에, 살자 프리미엄 라운지
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 12 }}

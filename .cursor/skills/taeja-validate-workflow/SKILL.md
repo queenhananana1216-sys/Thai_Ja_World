@@ -1,13 +1,13 @@
 ---
 name: taeja-validate-workflow
-description: Runs taeja-world npm scripts (type-check, lint, optional build). Use only when package.json name is taeja-world and the user asks 검증·PR 전·마이그레이션 후 확인. For other repos use any-project-quick-validate.
+description: Runs living-in-thai npm scripts (type-check, lint, optional build). Use only when package.json name is living-in-thai and the user asks 검증·PR 전·마이그레이션 후 확인. For other repos use any-project-quick-validate.
 ---
 
-# taeja-world 검증 워크플로
+# living-in-thai 검증 워크플로
 
 ## 전제
 
-- 작업 디렉터리: 프로젝트 루트 (`package.json`에 `"name": "taeja-world"`).
+- 작업 디렉터리: 프로젝트 루트 (`package.json`에 `"name": "living-in-thai"`).
 - PowerShell 기준. 시크릿은 출력에 넣지 않는다.
 
 ## 필수 (코드 변경 후)

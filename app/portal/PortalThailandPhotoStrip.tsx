@@ -1,5 +1,8 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import GuestGateLink from '@app/_components/GuestGateLink';
+import { allowNextImageRemoteOptimize } from '@/lib/image/allowNextImageOptimize';
+import { TJ_TINY_BLUR_DATA_URL } from '@/lib/image/tinyBlurDataUrl';
 import type { Locale } from '@/i18n/types';
 import styles from './portal-2026.module.css';
 
@@ -47,14 +50,18 @@ export default function PortalThailandPhotoStrip({
                 className={styles.photoStoryLink}
                 title={p.title}
               >
-                <span className={styles.photoStoryRing}>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- 외부·스토리지 혼합 URL */}
-                  <img
+                <span className={`${styles.photoStoryRing} relative block overflow-hidden`}>
+                  <Image
                     src={p.thumbUrl}
                     alt=""
+                    width={58}
+                    height={58}
                     className={styles.photoStoryImg}
-                    loading="lazy"
-                    decoding="async"
+                    placeholder="blur"
+                    blurDataURL={TJ_TINY_BLUR_DATA_URL}
+                    priority={i < 4}
+                    unoptimized={!allowNextImageRemoteOptimize(p.thumbUrl)}
+                    sizes="58px"
                   />
                 </span>
                 <span className={styles.photoStoryCaption}>{p.title.slice(0, 18)}{p.title.length > 18 ? '…' : ''}</span>

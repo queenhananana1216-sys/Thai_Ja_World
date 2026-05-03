@@ -12,6 +12,8 @@ import { useClientLocaleDictionary } from '@/i18n/useClientLocaleDictionary';
 import { SURFACE_DEFAULT_TIER } from '@/lib/3d/system';
 import QRCodeGenerator from '@/components/local/QRCodeGenerator';
 import { absoluteUrl } from '@/lib/seo/site';
+import { allowNextImageRemoteOptimize } from '@/lib/image/allowNextImageOptimize';
+import { TJ_TINY_BLUR_DATA_URL } from '@/lib/image/tinyBlurDataUrl';
 
 export type ShopSpotPayload = {
   id: string;
@@ -386,7 +388,11 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
                       width={56}
                       height={56}
                       sizes="56px"
-                      loading="lazy"
+                      loading={i < 2 ? 'eager' : 'lazy'}
+                      priority={i < 2}
+                      placeholder="blur"
+                      blurDataURL={TJ_TINY_BLUR_DATA_URL}
+                      unoptimized={!allowNextImageRemoteOptimize(it.image_url)}
                       quality={88}
                       style={{ borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
                     />
@@ -521,14 +527,18 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
                 gap: 8,
               }}
             >
-              {photos.map((u) => (
+              {photos.map((u, pi) => (
                 <div key={u} className="relative w-full [aspect-ratio:1] overflow-hidden rounded-lg">
                   <Image
                     src={u}
                     alt=""
                     fill
                     sizes="(max-width: 640px) 33vw, 130px"
-                    loading="lazy"
+                    loading={pi < 4 ? 'eager' : 'lazy'}
+                    priority={pi < 4}
+                    placeholder="blur"
+                    blurDataURL={TJ_TINY_BLUR_DATA_URL}
+                    unoptimized={!allowNextImageRemoteOptimize(u)}
                     quality={88}
                     className="object-cover"
                   />
@@ -681,6 +691,8 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
                   height={240}
                   sizes="240px"
                   unoptimized
+                  placeholder="blur"
+                  blurDataURL={TJ_TINY_BLUR_DATA_URL}
                   loading="lazy"
                   className="mt-2 h-auto w-full max-w-[240px] rounded-lg"
                 />
@@ -702,7 +714,7 @@ export default function ShopMinihomeClient({ spot }: { spot: ShopSpotPayload }) 
             ) : null}
             {bridge?.kind === 'internal_point' ? (
               <p className="mt-3 text-xs text-emerald-200">
-                Dotori 결제 완료 · 잔액 {bridge.walletBalanceAfterMinor ?? 0}
+                타이(THAI) 결제 완료 · 잔액 {bridge.walletBalanceAfterMinor ?? 0}
               </p>
             ) : null}
           </div>

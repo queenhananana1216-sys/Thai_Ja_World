@@ -899,7 +899,7 @@ function DraftCard({
       />
 
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
-        태자 편집팀·이용자 안내 <span style={{ fontWeight: 400, color: '#6b7280' }}>(선택, 스텁 요약일 때 권장)</span>
+        태국에, 살자 편집팀·이용자 안내 <span style={{ fontWeight: 400, color: '#6b7280' }}>(선택, 스텁 요약일 때 권장)</span>
       </label>
       {stubLike ? (
         <p
@@ -919,7 +919,7 @@ function DraftCard({
         </p>
       ) : (
         <p style={{ margin: '0 0 6px', fontSize: 11, color: '#6b7280', lineHeight: 1.45 }}>
-          LLM 요약이 짧거나 부족할 때 덧붙이는 설명입니다. 적으면 광장 글 본문에 「태자 편집팀·이용자 안내」로 붙고, 요약과 함께
+          LLM 요약이 짧거나 부족할 때 덧붙이는 설명입니다. 적으면 광장 글 본문에 「태국에, 살자 편집팀·이용자 안내」로 붙고, 요약과 함께
           훅 문구에도 반영됩니다.
         </p>
       )}

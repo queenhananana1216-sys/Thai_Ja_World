@@ -1,5 +1,5 @@
 /**
- * supabaseClient.ts — 서버 전용 Supabase 클라이언트 (태자 월드 봇 시스템)
+ * supabaseClient.ts — 서버 전용 Supabase 클라이언트 (「태국에, 살자」봇 시스템)
  *
  * !! 주의 !!
  *   - 이 모듈은 서버(Node.js) 런타임에서만 실행되어야 합니다.

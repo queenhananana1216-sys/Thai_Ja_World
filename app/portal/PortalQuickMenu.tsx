@@ -1,4 +1,5 @@
 import GuestGateLink from '@app/_components/GuestGateLink';
+import ThaiQuickWalletStrip from '@app/_components/ThaiQuickWalletStrip';
 import { ReportQuickMenuTile } from '@app/_components/ReportModal';
 import { ThbKrwQuickMenuTile } from '@app/_components/ThbKrwBottomSheet';
 import type { Locale } from '@/i18n/types';
@@ -54,19 +55,24 @@ function orderedQuickColumns(copy: ReturnType<typeof getPortal2026Copy>) {
 type PortalQuickMenuProps = {
   locale: Locale;
   isLoggedIn: boolean;
+  /** 로그인 시 헤더와 동일 계열 — 보유 타이 THAI(SSR 스냅샷) */
+  thaiBalance?: number | null;
 };
 
-export default function PortalQuickMenu({ locale, isLoggedIn }: PortalQuickMenuProps) {
+export default function PortalQuickMenu({ locale, isLoggedIn, thaiBalance = null }: PortalQuickMenuProps) {
   const copy = getPortal2026Copy(locale);
   const aria =
     locale === 'th' ? 'เมนูด่วนโพร์ทัล' : locale === 'ko' ? '포털 퀵 메뉴' : 'Portal quick menu';
 
   const reportIconClasses =
-    'flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-rose-400/55 bg-gradient-to-br from-rose-950/75 via-slate-800/95 to-slate-900/90 text-[1.2rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_0_1px_rgba(251,113,133,0.15),0_10px_28px_rgba(225,29,72,0.22)] md:h-14 md:w-14 md:text-[1.35rem]';
+    'flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-[0.5px] border-cyan-400/40 bg-gradient-to-br from-indigo-950/85 via-slate-900/95 to-cyan-950/70 text-[1.2rem] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_0_1px_rgba(34,211,238,0.12),0_10px_28px_rgba(99,102,241,0.22)] backdrop-blur-xl md:h-14 md:w-14 md:text-[1.35rem]';
 
   return (
     <nav aria-label={aria} className="mb-2 md:mb-2.5">
       <div className={`${styles.glassBlue} px-2.5 py-2 md:px-3 md:py-2.5`}>
+        {isLoggedIn ? (
+          <ThaiQuickWalletStrip locale={locale} initialBalance={thaiBalance ?? null} />
+        ) : null}
         <ul className="grid grid-cols-4 gap-2 md:grid-cols-5 md:gap-2.5">
           {orderedQuickColumns(copy).map((board) => {
             if (board.key === 'fxRate') {

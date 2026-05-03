@@ -70,7 +70,7 @@ export default async function LocalMinihomeEditPage({ params }: PageProps) {
       .order('list_section', { ascending: true })
       .order('sort_order', { ascending: true }),
     sb.from('local_spots').select('minihome_bgm_url').eq('id', spot.id).maybeSingle(),
-    sb.from('profiles').select('dotori_balance').eq('id', user.id).maybeSingle(),
+    sb.from('profiles').select('thai_balance').eq('id', user.id).maybeSingle(),
   ]);
 
   const pathSlug = String(spot.slug ?? '').trim() || String(spot.minihome_public_slug ?? trimmed).trim();
@@ -80,7 +80,7 @@ export default async function LocalMinihomeEditPage({ params }: PageProps) {
     spotBgm && typeof (spotBgm as { minihome_bgm_url?: unknown }).minihome_bgm_url === 'string'
       ? (spotBgm as { minihome_bgm_url: string }).minihome_bgm_url
       : null;
-  const initialDotoriBalance = Number((profileWallet as { dotori_balance?: number } | null)?.dotori_balance ?? 0);
+  const initialThaiBalance = Number((profileWallet as { thai_balance?: number } | null)?.thai_balance ?? 0);
 
   return (
     <LocalMinihomeMenuEditorClient
@@ -92,7 +92,7 @@ export default async function LocalMinihomeEditPage({ params }: PageProps) {
       initialMenus={(menus ?? []) as LocalMenuRow[]}
       minihomeUrl={minihomeUrl}
       initialMinihomeBgmUrl={initialMinihomeBgmUrl}
-      initialDotoriBalance={initialDotoriBalance}
+      initialThaiBalance={initialThaiBalance}
     />
   );
 }

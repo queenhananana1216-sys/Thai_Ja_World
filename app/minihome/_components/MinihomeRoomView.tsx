@@ -11,6 +11,7 @@ import { SURFACE_DEFAULT_TIER } from '@/lib/3d/system';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { formatDate } from '@/lib/utils/formatDate';
 import MinihomeBgmPlayer from './MinihomeBgmPlayer';
+import { BlurThumbImage } from '@/components/media/BlurThumbImage';
 
 const FALLBACK_ACCENT = '#7c3aed';
 
@@ -181,6 +182,20 @@ export default function MinihomeRoomView({
       clearTimeout(fallback);
     };
   }, [entering]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const url = (roomSkin || wallpaper || '').trim();
+    if (!url || !/^https?:\/\//i.test(url)) return;
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = url;
+    document.head.appendChild(link);
+    return () => {
+      link.remove();
+    };
+  }, [roomSkin, wallpaper]);
 
   const sectionVis = useMemo(() => parseSectionVisibility(data.section_visibility), [data.section_visibility]);
 
@@ -1032,17 +1047,21 @@ export default function MinihomeRoomView({
                 gap: 8,
               }}
             >
-              {photos.map((p) => (
-                <div key={p.id} className="minihome-photo-card">
-                  {photoUrls[p.storage_path] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={photoUrls[p.storage_path]}
+              {photos.map((p, pi) => {
+                const shot = photoUrls[p.storage_path];
+                return (
+                <div key={p.id} className="minihome-photo-card relative aspect-square min-h-[88px] overflow-hidden rounded-lg bg-slate-900/40">
+                  {shot ? (
+                    <BlurThumbImage
+                      src={shot}
                       alt={p.caption ?? ''}
-                      className="minihome-photo-card__img"
+                      fill
+                      className="object-cover"
+                      sizes="120px"
+                      priority={pi < 6}
                     />
                   ) : (
-                    <div className="minihome-photo-card__img" aria-hidden />
+                    <div className="absolute inset-0 bg-slate-800/50" aria-hidden />
                   )}
                   {p.caption ? (
                     <span className="minihome-photo-card__caption">{p.caption}</span>
@@ -1057,7 +1076,8 @@ export default function MinihomeRoomView({
                     </button>
                   ) : null}
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
           {isOwner ? (

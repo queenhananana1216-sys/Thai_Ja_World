@@ -7,7 +7,7 @@ import { getSiteBaseUrl } from '@/lib/seo/site';
 import { getActiveUxFlagsServer } from '@/lib/ux/flagsServer';
 
 export const metadata: Metadata = {
-  title: '로컬 가게 — 태자 월드',
+  title: '로컬 가게 — 태국에, 살자',
   description: '태국 한인·현지 로컬 가게 미니홈. 비회원도 QR로 메뉴·공지·사진을 확인할 수 있어요.',
 };
 

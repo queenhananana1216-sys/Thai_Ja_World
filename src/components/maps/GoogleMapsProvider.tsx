@@ -36,7 +36,7 @@ function LoaderInner({
   children: ReactNode;
 }) {
   const { isLoaded, loadError } = useJsApiLoader({
-    id: 'taeja-google-maps-script',
+    id: 'living-in-thai-google-maps-script',
     googleMapsApiKey: apiKey,
     libraries: PLACES_LIBS,
     preventGoogleFontsLoading: true,

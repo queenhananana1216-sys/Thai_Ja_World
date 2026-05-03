@@ -1,10 +1,10 @@
-import { TAEJA_ROUTE_LOADING_PULSE } from '../_components/taejaRouteLoadingPulse';
+import { SITE_ROUTE_LOADING_PULSE } from '../_components/siteRouteLoadingPulse';
 
 /**
  * /local/* — 로컬 허브·상세 진입 시 카드 그리드형 스켈레톤.
  */
 export default function LocalLoading() {
-  const b = TAEJA_ROUTE_LOADING_PULSE;
+  const b = SITE_ROUTE_LOADING_PULSE;
   return (
     <div className="site-container min-h-[min(68vh,680px)] px-4 py-6" role="status" aria-live="polite">
       <p className="sr-only">로컬 가게 정보를 불러오는 중입니다.</p>

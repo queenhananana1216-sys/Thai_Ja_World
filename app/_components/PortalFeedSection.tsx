@@ -1,17 +1,19 @@
 import Portal2026View from '../portal/Portal2026View';
 import {
-  fetchHomeDotoriBalanceRanking,
-  type HomeDotoriBalanceRankRow,
+  fetchCollaborativeMissionsActive,
+  fetchHomeTodayThaiEarnRanking,
+  type HomeTodayThaiEarnRankRow,
 } from './home/home-queries';
 import {
   fetchPortalHomeFeed,
   HONEST_EMPTY_PORTAL_HOME_FEED,
 } from '../lib/home/fetchPortalHomeFeed';
-import { fetchViewerDotoriBalanceRank } from '@/lib/home/viewerDotoriRank';
+import { fetchViewerTodayThaiHallStats } from '@/lib/home/viewerThaiRank';
 import { resolveAdminForUser } from '@/lib/admin/resolveAdminAccess';
 import { getLocale } from '@/i18n/get-locale';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
+import { ensurePersonalMissionToday } from '@/lib/missions/ensurePersonalMissionToday';
 
 /** 홈 SSR 페치 전용 — 부모 `Suspense`가 즉시 폴백을 보여준 뒤 이 컴포넌트가 치환 */
 export default async function PortalFeedSection() {
@@ -41,12 +43,16 @@ export default async function PortalFeedSection() {
   }
 
   try {
-    const [balanceRes, feed, viewerDotori] = await Promise.all([
-      fetchHomeDotoriBalanceRanking(5),
+    const [todayRankRes, feed, viewerHall, collabRes, personalRes] = await Promise.all([
+      fetchHomeTodayThaiEarnRanking(5),
       fetchPortalHomeFeed(),
       authSb && viewerProfileId
-        ? fetchViewerDotoriBalanceRank(authSb, viewerProfileId)
+        ? fetchViewerTodayThaiHallStats(authSb, viewerProfileId)
         : Promise.resolve(null),
+      fetchCollaborativeMissionsActive(),
+      authSb && viewerProfileId
+        ? ensurePersonalMissionToday(authSb, viewerProfileId)
+        : Promise.resolve({ row: null, error: null as string | null }),
     ]);
 
     return (
@@ -56,17 +62,28 @@ export default async function PortalFeedSection() {
         siteUi={siteUi}
         isLoggedIn={isLoggedIn}
         isAdmin={isAdmin}
-        dotoriBalanceRanking={balanceRes.rows}
-        viewerDotori={viewerDotori}
+        todayThaiEarnRanking={todayRankRes.rows}
+        viewerThaiHall={viewerHall}
         viewerProfileId={viewerProfileId}
+        collaborativeMissions={collabRes.rows}
+        personalMission={personalRes.row}
       />
     );
   } catch {
-    let balanceRows: HomeDotoriBalanceRankRow[] = [];
+    let balanceRows: HomeTodayThaiEarnRankRow[] = [];
     try {
-      balanceRows = (await fetchHomeDotoriBalanceRanking(5)).rows;
+      balanceRows = (await fetchHomeTodayThaiEarnRanking(5)).rows;
     } catch {
       balanceRows = [];
+    }
+    const collabRows = (await fetchCollaborativeMissionsActive().catch(() => ({ rows: [] }))).rows;
+    let personalMission = null;
+    try {
+      if (authSb && viewerProfileId) {
+        personalMission = (await ensurePersonalMissionToday(authSb, viewerProfileId)).row;
+      }
+    } catch {
+      personalMission = null;
     }
     return (
       <Portal2026View
@@ -75,9 +92,11 @@ export default async function PortalFeedSection() {
         siteUi={siteUi}
         isLoggedIn={isLoggedIn}
         isAdmin={isAdmin}
-        dotoriBalanceRanking={balanceRows}
-        viewerDotori={null}
+        todayThaiEarnRanking={balanceRows}
+        viewerThaiHall={null}
         viewerProfileId={viewerProfileId}
+        collaborativeMissions={collabRows}
+        personalMission={personalMission}
       />
     );
   }

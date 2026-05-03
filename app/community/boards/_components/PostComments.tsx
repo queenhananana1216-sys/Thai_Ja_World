@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { boardModMessage } from '@/lib/community/moderationMessages';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { requestThaiBalanceRefetch } from '@/lib/thaiBalanceBroadcast';
 import { formatDate } from '@/lib/utils/formatDate';
 
 const FUNNEL_MSG = '로그인 후 이용할 수 있는 기능입니다.' as const;
@@ -106,6 +107,7 @@ export default function PostComments({
     setBody('');
     setReplyTarget(null);
     setExpanded(false);
+    requestThaiBalanceRefetch();
     router.refresh();
   }
 

@@ -1,6 +1,6 @@
 /**
  * knowledge_sources 가 비어 있거나 search_rss만 있는 경우를 대비해,
- * 태자월드용 신뢰 RSS·공식 url_list 를 idempotent 로 보강합니다.
+ * 「태국에, 살자」용 신뢰 RSS·공식 url_list 를 idempotent 로 보강합니다.
  * (supabase/migrations 039–043 과 동기화 유지)
  */
 
@@ -18,7 +18,7 @@ const RSS_URLS_TO_DEACTIVATE = [
   'https://www.bangkokpost.com/rss/data/opinion.xml',
 ];
 
-const URL_LIST_NAME = '태자월드 — 태·한 공식 (입국·비자·체류)';
+const URL_LIST_NAME = '태국에, 살자 — 태·한 공식 (입국·비자·체류)';
 
 const URL_LIST_ENTRIES: { url: string; label: string }[] = [
   { url: 'https://www.immigration.go.th/en/', label: '태국 출입국관리청 공식(영문) — 비자·체류·입국 안내' },
@@ -30,7 +30,7 @@ const URL_LIST_ENTRIES: { url: string; label: string }[] = [
   { url: 'https://www.overseas.go.kr/', label: '재외동포 포털 — 해외 거주·여행 정보(한국 교민)' },
 ];
 
-const LIFESTYLE_URL_LIST_NAME = '태자월드 — 생활·맛집·여행(메타)';
+const LIFESTYLE_URL_LIST_NAME = '태국에, 살자 — 생활·맛집·여행(메타)';
 
 const LIFESTYLE_URL_LIST_ENTRIES: { url: string; label: string }[] = [
   { url: 'https://www.bangkokpost.com/life/travel', label: 'Bangkok Post Travel·생활 — 태국 여행 맛집 정보' },

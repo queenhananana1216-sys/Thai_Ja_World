@@ -97,7 +97,7 @@ function filterLinesByTab(lines: PortalLiveFeedLine[], tab: LiveFeedTabId): Port
 function liveFeedBadgeCopy(locale: Locale) {
   return {
     urgentReport: locale === 'th' ? '🚨 แจ้งด่วน' : '🚨 긴급 제보',
-    hot: '🔥 HOT',
+    hot: 'HOT',
     fresh: locale === 'th' ? '🆕 เมื่อกี้' : '🆕 방금 전',
   };
 }
@@ -159,7 +159,7 @@ export default function PortalLiveFeedMultiTab({
           key: 'report',
           node: (
             <span
-              className={`${chipBase} bg-gradient-to-r from-red-600 to-rose-700 text-white`}
+              className={`${chipBase} bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 text-white`}
               aria-hidden
             >
               {badges.urgentReport}
@@ -172,7 +172,7 @@ export default function PortalLiveFeedMultiTab({
           key: 'hot',
           node: (
             <span
-              className={`${chipBase} bg-gradient-to-r from-orange-500 to-amber-600 text-white`}
+              className={`${chipBase} bg-gradient-to-r from-indigo-500 via-cyan-500 to-teal-500 text-slate-950`}
               aria-hidden
             >
               {badges.hot}

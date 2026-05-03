@@ -8,15 +8,23 @@ import { getSiteBaseUrl } from '@/lib/seo/site';
  * - 실제 색인·크롤 허용은 robots.txt·페이지 메타와 함께 맞춥니다.
  * - 다국어: 현재 라우트는 쿠키 기반 로케일이라 URL이 언어별로 갈라지지 않습니다.
  *   /ko/… /th/… 경로를 도입하면 alternates.languages 를 같은 엔트리에 붙이는 것이 좋습니다.
+ * - 뉴스: `processed_news` ko+th 동시 색인, 상위 N건은 `changeFrequency: hourly`.
+ * - 커뮤니티: 꿀팁(`is_knowledge_tip`)은 `/tips/[id]` 로 분기해 발견 가중치를 줍니다.
  */
-const MAX_NEWS = 800;
-const MAX_POSTS = 800;
+const MAX_NEWS = 1000;
+const MAX_POSTS = 1200;
 const MAX_BOARD_POSTS = 2000;
 const MAX_MINIHOMES = 400;
 const MAX_LOCAL_SPOTS = 500;
+/** 신규 기사·게시 상위 구간 — 크롤러에 더 자주 바뀐다고 알림 */
+const NEWS_HOT_CAP = 120;
+const POSTS_HOT_CAP = 200;
 
-/** 동적 URL 반영 주기 (프로덕션 ISR) */
-export const revalidate = 300;
+/**
+ * 동적 사이트맵 재생성 주기(초) — 짧을수록 Search Console·봇이 최신 URL을 빨리 받음.
+ * (구글 색인 속도는 여전히 크롤 예산·품질에 좌우됩니다.)
+ */
+export const revalidate = 60;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteBaseUrl();
@@ -24,7 +32,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   /** 커뮤니티 허브·거래 허브를 홈 직후에 두어 발견 가중치를 높임 */
   const staticEntries: MetadataRoute.Sitemap = [
-    { url: base, lastModified: fallback, changeFrequency: 'daily', priority: 1 },
+    /** 홈 — 포털·타이(THAI) 랭킹 등 실시간 블록 포함 → 크롤러에 갱신 신호 */
+    { url: base, lastModified: fallback, changeFrequency: 'hourly', priority: 1 },
     {
       url: `${base}/community/boards`,
       lastModified: fallback,
@@ -37,7 +46,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 0.93,
     },
-    { url: `${base}/news`, lastModified: fallback, changeFrequency: 'daily', priority: 0.82 },
+    { url: `${base}/news`, lastModified: fallback, changeFrequency: 'hourly', priority: 0.88 },
+    {
+      url: `${base}/korean-biz`,
+      lastModified: fallback,
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
     { url: `${base}/boards`, lastModified: fallback, changeFrequency: 'hourly', priority: 0.9 },
     { url: `${base}/tips`, lastModified: fallback, changeFrequency: 'daily', priority: 0.81 },
     { url: `${base}/local`, lastModified: fallback, changeFrequency: 'weekly', priority: 0.78 },
@@ -60,14 +75,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const [newsRes, postsRes, boardPostsRes, homesRes, localSpotsRes] = await Promise.all([
       supabase
         .from('processed_news')
-        .select('id, created_at')
+        .select('id, created_at, language')
         .eq('published', true)
-        .eq('language', 'ko')
+        .in('language', ['ko', 'th'])
         .order('created_at', { ascending: false })
         .limit(MAX_NEWS),
       supabase
         .from('posts')
-        .select('id, updated_at')
+        .select('id, updated_at, is_knowledge_tip, category')
         .eq('moderation_status', 'safe')
         .order('updated_at', { ascending: false })
         .limit(MAX_POSTS),
@@ -90,14 +105,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .limit(MAX_LOCAL_SPOTS),
     ]);
 
-    for (const row of postsRes.data ?? []) {
+    const postsRows = postsRes.data ?? [];
+    for (let i = 0; i < postsRows.length; i++) {
+      const row = postsRows[i]!;
       const id = row.id as string;
       const ts = row.updated_at ? new Date(row.updated_at as string) : fallback;
+      const isTip =
+        Boolean((row as { is_knowledge_tip?: boolean }).is_knowledge_tip) &&
+        String((row as { category?: string }).category ?? '') === 'info';
+      const hot = i < POSTS_HOT_CAP;
+      /** 꿀팁 허브 전용 URL — canonical은 각 페이지에서 정리 */
+      const path = isTip ? `/tips/${encodeURIComponent(id)}` : `/community/boards/${encodeURIComponent(id)}`;
       postsEntries.push({
-        url: `${base}/community/boards/${id}`,
+        url: `${base}${path}`,
         lastModified: ts,
-        changeFrequency: 'weekly',
-        priority: 0.86,
+        changeFrequency: hot ? 'hourly' : 'weekly',
+        priority: isTip ? 0.87 : hot ? 0.88 : 0.84,
       });
     }
 
@@ -113,14 +136,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     }
 
-    for (const row of newsRes.data ?? []) {
+    const newsRows = newsRes.data ?? [];
+    for (let i = 0; i < newsRows.length; i++) {
+      const row = newsRows[i]!;
       const id = row.id as string;
       const ts = row.created_at ? new Date(row.created_at as string) : fallback;
+      const hot = i < NEWS_HOT_CAP;
       newsEntries.push({
-        url: `${base}/news/${id}`,
+        url: `${base}/news/${encodeURIComponent(id)}`,
         lastModified: ts,
-        changeFrequency: 'daily',
-        priority: 0.76,
+        changeFrequency: hot ? 'hourly' : 'daily',
+        priority: hot ? 0.82 : 0.74,
       });
     }
 

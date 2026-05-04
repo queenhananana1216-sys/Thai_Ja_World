@@ -9,16 +9,18 @@
  *   node scripts/run-insight-retrofit-all.mjs
  *
  * 선택 환경 변수:
- *   INSIGHT_RETROFIT_BASE — 기본 https://thaijaworld.com
+ *   INSIGHT_RETROFIT_BASE — 기본 https://www.thaijaworld.com
  *   INSIGHT_RETROFIT_LIMIT — 기본 25
  *   INSIGHT_RETROFIT_ONLY_MISSING — 기본 true
+ *   INSIGHT_RETROFIT_INDEXING=1 — 레트로핏 전체 완료 후 POST /api/bot/seo-retrofit-indexing (Indexing JSON·SERVICE_ROLE 필요)
  */
 import { config } from 'dotenv';
 import { resolve } from 'node:path';
 
 config({ path: resolve(process.cwd(), '.env.local') });
 
-const base = (process.env.INSIGHT_RETROFIT_BASE || 'https://thaijaworld.com').replace(/\/$/, '');
+const base = (process.env.INSIGHT_RETROFIT_BASE || 'https://www.thaijaworld.com').replace(/\/$/, '');
+const runIndexingSweep = process.env.INSIGHT_RETROFIT_INDEXING === '1';
 const secret = (process.env.CRON_SECRET || process.env.BOT_CRON_SECRET || '').trim();
 const limit = Math.min(25, Math.max(1, parseInt(process.env.INSIGHT_RETROFIT_LIMIT || '25', 10) || 25));
 const onlyMissing = process.env.INSIGHT_RETROFIT_ONLY_MISSING !== 'false';
@@ -94,6 +96,24 @@ while (round < maxRounds) {
     console.log(
       `[insight-retrofit] 전체 완료 (라운드 ${round}). 누적 ok — news:${totals.processed_news} posts:${totals.posts} knowledge:${totals.processed_knowledge}`,
     );
+    if (runIndexingSweep) {
+      console.log('[insight-retrofit] INSIGHT_RETROFIT_INDEXING=1 → seo-retrofit-indexing 호출');
+      const ir = await fetch(`${base}/api/bot/seo-retrofit-indexing`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${secret}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      const ij = await ir.json().catch(() => ({}));
+      console.log(
+        `[insight-retrofit] indexing sweep http=${ir.status} submitted=${ij.submitted ?? '?'} failed=${ij.failed ?? '?'} candidate_urls=${ij.candidate_urls ?? '?'} batches=${ij.batches ?? '?'}`,
+      );
+      if (!ir.ok || ij.status === 'error') {
+        console.error('[insight-retrofit] indexing sweep 실패', ij.error || ij);
+      }
+    }
     process.exit(0);
   }
 }

@@ -25,7 +25,9 @@
     "smoke:prod": "tsx scripts/run-smoke-prod-default.ts",
     "verify:prod": "tsx scripts/verify-production-pipeline.ts",
     "backup-keys": "node scripts/backup_keys.js",
-    "verify:vault": "node scripts/verify_master_keys_backup.js"
+    "verify:vault": "node scripts/verify_master_keys_backup.js",
+    "insight:retrofit-all": "node scripts/run-insight-retrofit-all.mjs",
+    "seo:poll-omni": "node scripts/poll-omni-radar-seo.mjs"
   },
   "dependencies": {
     "@fontsource-variable/nunito": "^5.2.7",

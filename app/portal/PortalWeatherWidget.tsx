@@ -114,15 +114,21 @@ function omniLedTooltip(
   schemaHint?: string | null,
   seoIndexingRed?: boolean,
   seoErr?: string | null,
-  weatherOmniRelax?: boolean,
+  /** 3도시 실측 완료 + 옴니가 아직 ok가 아님 — 프로브 지연·타임아웃 시 표시등은 초록이나 툴팁으로 근거 표시 */
+  weatherSurfaceGreenGuard?: boolean,
 ): string {
   if (phase === 'neutral') {
+    if (weatherSurfaceGreenGuard) {
+      return locale === 'th'
+        ? '🟢 ข้อมูล 3 เมืองพร้อม — กำลังรอสัญญาณเลดาร์ (แคช/เครือข่ายล่าช้า)'
+        : '🟢 날씨 3도시 동기화 완료 — 옴니 레이더 응답 대기(캐시·네트워크 지연)';
+    }
     return locale === 'th' ? 'กำลังตรวจสอบระบบ…' : '시스템 상태 확인 중…';
   }
-  if (phase === 'error' && weatherOmniRelax) {
+  if (phase === 'error' && weatherSurfaceGreenGuard) {
     return locale === 'th'
-      ? '🟢 ข้อมูล 3 เมืองจาก Open-Meteo พร้อมแล้ว — สัญญาณเลดาร์ชั่วคราว (ฐานข้อมูลยังไม่ล่ม)'
-      : '🟢 Open-Meteo 3도시 수집 완료 — 옴니 레이더 날씨 프로브만 일시 실패(DB는 정상으로 추정)';
+      ? '🟢 ข้อมูล 3 เมืองจาก Open-Meteo พร้อมแล้ว — เลดาร์รายงานชั่วคราวผิดพลาด (ไม่ใช่ฐานข้อมูลล่ม)'
+      : '🟢 Open-Meteo 3도시 수집 완료 — 옴니 프로브·타임아웃·일시 오류( DB 오류 아님 )';
   }
   if (phase === 'ok' && schemaLayerWarn) {
     const tail =
@@ -272,27 +278,30 @@ export default function PortalWeatherWidget({
     isThailandWeatherSnapshotComplete(weatherPayload?.cities ?? []);
 
   const omniDbDown =
-    omniPhase === 'error' && omniErrors.some((e) => String(e).toLowerCase().startsWith('database:'));
-  const omniWeatherProbeFail =
     omniPhase === 'error' &&
-    !omniDbDown &&
-    omniErrors.some((e) => String(e).toLowerCase().startsWith('weather:'));
+    omniErrors.some((e) => {
+      const s = String(e).toLowerCase();
+      return s.startsWith('database:') || s.includes('database:');
+    });
 
-  /** 위젯이 이미 3도시 실측을 받았는데 옴니만 날씨 프로브 실패한 경우 — 오탐 빨강 완화 */
-  const weatherOmniRelax = weatherClientComplete && omniWeatherProbeFail;
+  /**
+   * 화면에 3도시 실측이 있으면 옴니 프로브 지연·503·weather 문자열 오류는 빨강으로 두지 않음.
+   * `database:` 가 errors에 있을 때만(진짜 DB 병목 추정) 빨강 유지.
+   */
+  const weatherSurfaceGreenGuard =
+    weatherClientComplete && omniPhase !== 'ok' && !(omniPhase === 'error' && omniDbDown);
 
-  const ledClass =
-    omniPhase === 'ok'
-      ? seoIndexingRed
-        ? styles.omniLedRed
-        : immuneTraining || schemaLayerWarn
-          ? styles.omniLedOrange
-          : styles.omniLedGreen
-      : omniPhase === 'error'
-        ? weatherOmniRelax
-          ? styles.omniLedGreen
-          : styles.omniLedRed
-        : styles.omniLedNeutral;
+  const treatOmniAsHealthyLed = omniPhase === 'ok' || weatherSurfaceGreenGuard;
+
+  const ledClass = treatOmniAsHealthyLed
+    ? seoIndexingRed
+      ? styles.omniLedRed
+      : immuneTraining || schemaLayerWarn
+        ? styles.omniLedOrange
+        : styles.omniLedGreen
+    : omniPhase === 'neutral'
+      ? styles.omniLedNeutral
+      : styles.omniLedRed;
 
   const schemaHint =
     isAdmin && schemaLayerWarn
@@ -311,7 +320,7 @@ export default function PortalWeatherWidget({
         schemaHint,
         seoIndexingRed,
         seoIndexing?.error ?? null,
-        weatherOmniRelax,
+        weatherSurfaceGreenGuard,
       ),
     [
       omniPhase,
@@ -323,24 +332,23 @@ export default function PortalWeatherWidget({
       schemaHint,
       seoIndexingRed,
       seoIndexing?.error,
-      weatherOmniRelax,
+      weatherSurfaceGreenGuard,
     ],
   );
 
-  const ledAria =
-    omniPhase === 'ok'
-      ? seoIndexingRed
-        ? 'Google 인덱싱 배치 경고'
-        : schemaLayerWarn
-          ? '스키마 계약 불일치'
-          : immuneTraining
-            ? '자가 면역 훈련 중'
+  const ledAria = treatOmniAsHealthyLed
+    ? seoIndexingRed
+      ? 'Google 인덱싱 배치 경고'
+      : schemaLayerWarn
+        ? '스키마 계약 불일치'
+        : immuneTraining
+          ? '자가 면역 훈련 중'
+          : weatherSurfaceGreenGuard
+            ? '날씨 3도시 정상, 옴니 프로브만 지연 또는 일시 오류'
             : '시스템 정상'
-      : omniPhase === 'error'
-        ? weatherOmniRelax
-          ? '날씨 3도시 수집 완료, 레이더 프로브만 지연'
-          : '시스템 경고'
-        : '시스템 상태 확인 중';
+    : omniPhase === 'neutral'
+      ? '시스템 상태 확인 중'
+      : '시스템 경고';
 
   const shieldPulse = motherbrain?.shield_pulse === true;
   const chaosRate =

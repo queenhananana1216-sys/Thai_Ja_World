@@ -3,7 +3,10 @@
  * https://open-meteo.com/
  */
 import { NextResponse } from 'next/server';
-import { fetchThailandCitiesWeather } from '@/lib/weather/fetchThailandCitiesWeather';
+import {
+  fetchThailandCitiesWeather,
+  isThailandWeatherSnapshotComplete,
+} from '@/lib/weather/fetchThailandCitiesWeather';
 
 /** Open-Meteo 프록시만 사용 — Edge 에서 저지연 응답 */
 export const runtime = 'edge';
@@ -14,7 +17,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const loc = searchParams.get('locale') === 'th' ? 'th' : 'ko';
   const { cities, updatedAt } = await fetchThailandCitiesWeather(loc);
-  if (cities.length === 0) {
+  if (!isThailandWeatherSnapshotComplete(cities)) {
     return NextResponse.json({ error: 'fetch_failed' }, { status: 502 });
   }
   return NextResponse.json({ cities, updated_at: updatedAt ?? new Date().toISOString() });

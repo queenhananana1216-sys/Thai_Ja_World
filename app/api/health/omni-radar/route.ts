@@ -11,18 +11,20 @@ import {
   checkUiIncidentRadar,
 } from '@/lib/health/omniRadarBoard';
 import { checkPostsSchemaLayerRadar } from '@/lib/health/schemaLayerRadar';
-import { createServiceRoleClient } from '@/lib/supabase/admin';
+import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
+import {
+  fetchThailandCitiesWeather,
+  isThailandWeatherSnapshotComplete,
+} from '@/lib/weather/fetchThailandCitiesWeather';
+import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-/** 홈·크론과 동일한 Open-Meteo 방콕 단일 지점 (키 불필요) */
-const OPEN_METEO_BANGKOK =
-  'https://api.open-meteo.com/v1/forecast?latitude=13.7563&longitude=100.5018&current=temperature_2m,weather_code&timezone=Asia%2FBangkok';
-
 const CRON_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-const FETCH_TIMEOUT_MS = 10_000;
+const WEATHER_PROBE_RETRIES = 3;
+const WEATHER_PROBE_BACKOFF_MS = 450;
 
 const NO_STORE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -38,7 +40,19 @@ type CheckCron = {
   age_hours?: number;
   error?: string;
 };
-type CheckWeather = { ok: boolean; http_status?: number; error?: string };
+type CheckWeather = {
+  ok: boolean;
+  http_status?: number;
+  error?: string;
+  attempts?: number;
+  cities_ok?: boolean;
+};
+type WeatherPipelineRadar = {
+  recent_error_rows: number;
+  last_scope?: string | null;
+  last_reason?: string | null;
+  scanned: boolean;
+};
 type CheckRuntime = { ok: boolean; heap_used_mb?: number; error?: string };
 
 /** PostgREST RPC `omni_radar_live_ping` → SELECT 1; 없으면 `profiles` 1행 조회로 연결만 검증 (publish_logs 미사용). */
@@ -116,25 +130,63 @@ async function checkCronRadar(): Promise<CheckCron> {
   }
 }
 
-async function checkWeatherPipeline(): Promise<CheckWeather> {
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
-    const res = await fetch(OPEN_METEO_BANGKOK, {
-      method: 'GET',
-      cache: 'no-store',
-      signal: ctrl.signal,
-      headers: { 'User-Agent': 'LivingInThai-OmniRadar/1' },
-    });
-    clearTimeout(t);
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
-    if (!res.ok) {
-      return { ok: false, http_status: res.status, error: `open_meteo_http_${res.status}` };
+/** `/api/weather` 와 동일 3도시 페이로드 — transient 오류 시 소량 재시도(셀프힐). */
+async function checkWeatherPipeline(): Promise<CheckWeather> {
+  let lastErr = 'weather_incomplete';
+  for (let attempt = 0; attempt < WEATHER_PROBE_RETRIES; attempt++) {
+    try {
+      const { cities } = await fetchThailandCitiesWeather('ko', { cache: 'no-store' });
+      if (isThailandWeatherSnapshotComplete(cities)) {
+        return { ok: true, attempts: attempt + 1, cities_ok: true };
+      }
+      lastErr = 'weather_incomplete_or_partial';
+    } catch (e) {
+      lastErr = e instanceof Error ? e.message : String(e);
     }
-    return { ok: true, http_status: res.status };
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return { ok: false, error: msg };
+    if (attempt < WEATHER_PROBE_RETRIES - 1) {
+      await sleep(WEATHER_PROBE_BACKOFF_MS * (attempt + 1));
+    }
+  }
+  void recordPipelineErrorEvent({
+    scope: 'weather.open_meteo_probe',
+    reasonCode: 'PROBE_FAILED',
+    messageExcerpt: lastErr,
+    meta: { attempts: WEATHER_PROBE_RETRIES },
+  });
+  return { ok: false, error: lastErr, attempts: WEATHER_PROBE_RETRIES, cities_ok: false };
+}
+
+async function scanRecentWeatherPipelineErrors(): Promise<WeatherPipelineRadar> {
+  if (!isServiceRoleConfigured()) {
+    return { recent_error_rows: 0, scanned: false };
+  }
+  try {
+    const sb = createServiceRoleClient();
+    const since = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const { data, error } = await sb
+      .from('pipeline_error_events')
+      .select('scope, reason_code, created_at')
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(48);
+    if (error) {
+      return { recent_error_rows: 0, scanned: true };
+    }
+    const weatherish = (data ?? []).filter((r) =>
+      /weather|meteo|open[\s._-]*meteo/i.test(`${r.scope ?? ''} ${r.reason_code ?? ''}`),
+    );
+    return {
+      recent_error_rows: weatherish.length,
+      last_scope: weatherish[0]?.scope ?? null,
+      last_reason: weatherish[0]?.reason_code ?? null,
+      scanned: true,
+    };
+  } catch {
+    return { recent_error_rows: 0, scanned: true };
   }
 }
 
@@ -158,6 +210,7 @@ export async function GET(): Promise<NextResponse> {
   const [
     database,
     weather,
+    weather_pipeline_radar,
     runtime,
     cron_radar,
     shadow_qa,
@@ -169,6 +222,7 @@ export async function GET(): Promise<NextResponse> {
   ] = await Promise.all([
     checkLiveSqlPing(),
     checkWeatherPipeline(),
+    scanRecentWeatherPipelineErrors(),
     Promise.resolve(checkRuntimeResources()),
     checkCronRadar(),
     checkShadowQaRadar(),
@@ -206,6 +260,7 @@ export async function GET(): Promise<NextResponse> {
   const checks = {
     database,
     weather,
+    weather_pipeline_radar,
     runtime,
     cron_radar,
     shadow_qa,

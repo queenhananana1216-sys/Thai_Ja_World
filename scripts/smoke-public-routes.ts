@@ -16,6 +16,7 @@ const base =
 const ALL_PATHS = [
   '/',
   '/news',
+  '/weather',
   '/tips',
   '/local',
   '/contact',

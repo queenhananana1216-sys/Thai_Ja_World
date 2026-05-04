@@ -10,19 +10,42 @@ export type ThailandCityWeather = {
   condition: string;
 };
 
+/** 3도시 모두 유효 실측 온도가 있을 때만 “수집 완료”로 본다(헬스·표시등과 동일 기준). */
+export function isThailandWeatherSnapshotComplete(cities: ThailandCityWeather[]): boolean {
+  if (!Array.isArray(cities) || cities.length < 3) return false;
+  const keys = new Set(cities.map((c) => c.key));
+  for (const k of ['bangkok', 'pattaya', 'chiang_mai'] as const) {
+    if (!keys.has(k)) return false;
+  }
+  return cities.every(
+    (c) => typeof c.temperature_c === 'number' && Number.isFinite(c.temperature_c),
+  );
+}
+
+export type FetchThailandWeatherOptions = {
+  /** 기본 ISR(60s). 헬스·프로브는 `no-store` 로 캐시된 실패/스텔스를 피한다. */
+  cache?: RequestCache;
+  revalidate?: number;
+};
+
 /**
  * Open-Meteo 3 cities (same query as /api/weather) — for SSR on landing.
  * Never throws; returns empty cities on failure.
  */
 export async function fetchThailandCitiesWeather(
   locale: Locale,
+  opts?: FetchThailandWeatherOptions,
 ): Promise<{ cities: ThailandCityWeather[]; updatedAt: string | null }> {
   const loc = locale === 'th' ? 'th' : 'ko';
   const url =
     'https://api.open-meteo.com/v1/forecast?latitude=13.7563,12.9236,18.7883&longitude=100.5018,100.8825,98.9853' +
     '&current=temperature_2m,weather_code&timezone=Asia%2FBangkok';
+  const fetchInit: RequestInit =
+    opts?.cache === 'no-store'
+      ? { cache: 'no-store' }
+      : { next: { revalidate: typeof opts?.revalidate === 'number' ? opts.revalidate : 60 } };
   try {
-    const res = await fetch(url, { next: { revalidate: 60 } });
+    const res = await fetch(url, fetchInit);
     if (!res.ok) return { cities: [], updatedAt: null };
     const data = (await res.json()) as unknown;
     const list = Array.isArray(data)

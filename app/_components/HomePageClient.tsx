@@ -634,7 +634,11 @@ export default function HomePageClient({ isLoggedIn }: { isLoggedIn: boolean }) 
       {isLoggedIn ? (
       <div className="digest-strip">
         <div className="digest-cell digest-cell--weather">
-          <p className="digest-cell__title">{h.weatherTitle}</p>
+          <p className="digest-cell__title">
+            <Link href="/weather" style={{ color: 'inherit', textDecoration: 'none' }} className="hover:underline">
+              {h.weatherTitle}
+            </Link>
+          </p>
           {weatherBusy ? (
             <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--tj-muted)' }}>{h.weatherLoading}</p>
           ) : weatherErr || weatherRows.length === 0 ? (

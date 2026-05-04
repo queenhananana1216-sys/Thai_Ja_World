@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo } from 'react';
 import useSWR from 'swr';
 import type { Locale } from '@/i18n/types';
@@ -316,6 +317,12 @@ export default function PortalWeatherWidget({
           )}
         </div>
       </div>
+      <Link
+        href="/weather"
+        className="mt-2 block text-center text-[0.65rem] font-semibold text-amber-200/90 no-underline hover:underline"
+      >
+        {locale === 'th' ? 'ดูรายละเอียด 3 เมือง →' : '3개 도시 상세 보기 →'}
+      </Link>
     </section>
   );
 }

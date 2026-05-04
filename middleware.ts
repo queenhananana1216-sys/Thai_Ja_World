@@ -95,6 +95,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  /** 구 문서·푸시 등 `/portal/weather` → 실제 `app/weather/page.tsx` */
+  if (url.pathname === '/portal/weather' || url.pathname === '/portal/weather/') {
+    const w = request.nextUrl.clone();
+    w.pathname = '/weather';
+    return NextResponse.redirect(w);
+  }
+
   const langParam = url.searchParams.get('lang');
   if (langParam === 'ko' || langParam === 'th' || langParam === 'en' || langParam === 'zh') {
     url.searchParams.delete('lang');

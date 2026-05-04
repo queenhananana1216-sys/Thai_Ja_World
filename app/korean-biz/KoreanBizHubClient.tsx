@@ -6,6 +6,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import KoreanBizSearch from './KoreanBizSearch';
 import KoreanBizReportFab from './KoreanBizReportFab';
 import type { Locale } from '@/i18n/types';
+import {
+  buildWhatsAppUrlFromPhone,
+  isMaskedOrPlaceholderPhone,
+  normalizeExternalChatUrl,
+} from '@/lib/korean-biz/publicContact';
 
 export type KoreanBizCategory =
   | 'mart'
@@ -27,6 +32,10 @@ export type KoreanBizRow = {
   longitude: number | null;
   is_verified: boolean;
   last_verified_at: string | null;
+  line_url?: string | null;
+  whatsapp_url?: string | null;
+  contact_checked_at?: string | null;
+  contact_link_ok?: boolean | null;
 };
 
 const REGIONS: {
@@ -256,11 +265,30 @@ export default function KoreanBizHubClient({
   const filtered = useMemo(() => {
     const base =
       categoryFilter === 'all' ? inRegion : inRegion.filter((r) => r.category === categoryFilter);
-    return [...base].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    const rank = (r: KoreanBizRow) => {
+      let s = 0;
+      if (r.is_verified) s += 10_000;
+      if (r.contact_link_ok === false) s -= 4_000;
+      if (r.contact_link_ok === true) s += 400;
+      const hasChat =
+        normalizeExternalChatUrl(r.line_url) ||
+        normalizeExternalChatUrl(r.whatsapp_url) ||
+        buildWhatsAppUrlFromPhone(r.phone);
+      if (hasChat) s += 900;
+      if (isMaskedOrPlaceholderPhone(r.phone) && !hasChat) s -= 300;
+      return s;
+    };
+    return [...base].sort((a, b) => {
+      const d = rank(b) - rank(a);
+      if (d !== 0) return d;
+      return a.name.localeCompare(b.name, 'ko');
+    });
   }, [inRegion, categoryFilter]);
 
   const contactLead =
-    locale === 'th' ? 'เบอร์ติดต่อล่าสุด (ที่มีอยู่จริง)' : '현존하는 최신 연락처';
+    locale === 'th'
+      ? 'LINE / WhatsApp ลิงก์ (แชทได้ทันที)'
+      : 'LINE / WhatsApp 바로 연결(채팅 우선)';
   const phoneMissing = locale === 'th' ? 'ไม่มีเบอร์โทร' : '전화번호 없음';
   const mapsCta = locale === 'th' ? 'Google Maps' : '구글맵 바로가기';
   const emptyCategoryHint =
@@ -395,6 +423,16 @@ export default function KoreanBizHubClient({
         ) : (
           filtered.map((row) => {
             const catLabel = CATEGORY_LABEL[locale][row.category];
+            const lineU = normalizeExternalChatUrl(row.line_url);
+            const waStored = normalizeExternalChatUrl(row.whatsapp_url);
+            const waDerived = buildWhatsAppUrlFromPhone(row.phone);
+            const waU = waStored ?? waDerived;
+            const phoneDisplay =
+              !isMaskedOrPlaceholderPhone(row.phone) && row.phone?.trim() ? row.phone.trim() : null;
+            const contactBroken = row.contact_link_ok === false;
+            const lineCta = locale === 'th' ? 'เปิด LINE' : 'LINE으로 연결';
+            const waCta = locale === 'th' ? 'เปิด WhatsApp' : 'WhatsApp으로 연결';
+            const checkingLabel = locale === 'th' ? 'กำลังตรวจสอบลิงก์' : '연락 링크 확인 중';
             return (
               <li key={row.id} id={`korean-biz-row-${row.id}`} className="min-w-0">
                 <article
@@ -416,6 +454,9 @@ export default function KoreanBizHubClient({
                         {locale === 'th' ? 'ต้องตรวจสอบสถานะ' : '영업 상태 확인 필요'}
                       </p>
                     ) : null}
+                    {contactBroken ? (
+                      <p className="text-xs font-semibold text-amber-200/95">⚠ {checkingLabel}</p>
+                    ) : null}
                     {row.address ? (
                       <p className="text-sm leading-relaxed text-gray-300">{row.address}</p>
                     ) : null}
@@ -423,9 +464,38 @@ export default function KoreanBizHubClient({
                       <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-200/85">
                         {contactLead}
                       </p>
-                      <p className="mt-1 font-mono text-sm font-semibold tracking-wide text-amber-100 md:text-base">
-                        {row.phone?.trim() ? row.phone : phoneMissing}
-                      </p>
+                      <div className="mt-2 flex flex-col gap-2">
+                        {lineU ? (
+                          <Link
+                            href={lineU}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-[#06C755]/55 bg-[#06C755]/20 px-3 py-2 text-center text-sm font-bold text-[#d8ffe8] no-underline shadow-[0_0_20px_rgba(6,199,85,0.18)] transition hover:bg-[#06C755]/35"
+                          >
+                            {lineCta}
+                          </Link>
+                        ) : null}
+                        {waU ? (
+                          <Link
+                            href={waU}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-emerald-400/45 bg-emerald-950/40 px-3 py-2 text-center text-sm font-bold text-emerald-50 no-underline shadow-[0_0_24px_rgba(52,211,153,0.14)] transition hover:border-emerald-300/65 hover:bg-emerald-900/50"
+                          >
+                            {waCta}
+                          </Link>
+                        ) : null}
+                        {phoneDisplay ? (
+                          <a
+                            href={`tel:${phoneDisplay.replace(/\s/g, '')}`}
+                            className="text-center font-mono text-sm font-semibold tracking-wide text-amber-100/95 underline decoration-amber-500/50 underline-offset-2 hover:text-amber-50"
+                          >
+                            {phoneDisplay}
+                          </a>
+                        ) : !lineU && !waU ? (
+                          <p className="text-center font-mono text-sm font-semibold text-gray-500">{phoneMissing}</p>
+                        ) : null}
+                      </div>
                     </div>
                     <Link
                       href={mapsHref(row)}

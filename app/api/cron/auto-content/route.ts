@@ -13,6 +13,7 @@ import { isCronAuthorized } from '@/lib/cronAuth';
 import { findActivePause, logCronEvent, pausedResponse } from '@/lib/cron/omniLogger';
 import { ensureDailyBalancePoll } from '@/lib/cron/ensureDailyBalancePoll';
 import { GHOSTWRITER_SYSTEM_USER_ID } from '@/lib/cron/ghostwriterBot';
+import { seedGhostBoardPostVitality } from '@/lib/cron/seedGhostBoardPostVitality';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -145,6 +146,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   revalidatePath('/');
   revalidatePath('/boards');
+
+  try {
+    await seedGhostBoardPostVitality(admin, id);
+  } catch (e) {
+    console.warn('[cron/auto-content] seedGhostBoardPostVitality', e);
+  }
 
   await logCronEvent({
     pipelineId: PIPELINE_ID,

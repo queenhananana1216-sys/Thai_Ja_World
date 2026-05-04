@@ -35,17 +35,25 @@ function bangkokParts(atMs: number): { y: number; mon: number; d: number; h: num
 
 /**
  * 실제 조회수 + 기존 체감 오프셋 + 시간대·일·주·월 스케일이 다른 가중치(패턴 난화).
+ * 저조회(≈150 미만)에는 글 id·시간대 기반 가변 배수를 적용해 노출 화력을 보강한다.
  */
 export function getVitalityViewCount(realViews: number, postId: string, atMs = Date.now()): number {
-  const base = getPerceivedViewCount(realViews, postId);
   const postHash = hash32(postId);
-  const { mon, d, h: bh, dow } = bangkokParts(atMs);
+  const r = Math.floor(Number(realViews));
+  const real = Number.isFinite(r) ? Math.max(0, r) : 0;
 
+  const perceived = getPerceivedViewCount(real, postId);
+  /** 예: 실제 10 → 대략 180~340대 노출(배수·노이즈로 난화) */
+  const viralFloor =
+    real <= 150 ? Math.round(real * (16 + (postHash % 10))) + (45 + (postHash % 120)) : perceived;
+  const base = real <= 150 ? Math.max(perceived, viralFloor) : perceived;
+
+  const { mon, d, h: bh, dow } = bangkokParts(atMs);
   const dayWave = ((postHash * 17 + d * 31 + bh * 5) % 47) - 23;
   const weekWave = ((dow * 19 + mon * 7) % 73) - 36;
   const monthMicro = ((mon * 11 + (postHash % 97)) % 25) - 12;
-
   const blended = dayWave * 0.55 + weekWave * 0.35 + monthMicro * 0.1;
+
   const out = Math.round(base + blended);
   return Math.max(0, out);
 }

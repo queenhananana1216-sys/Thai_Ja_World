@@ -54,6 +54,8 @@ type OmniSeoIndexing = {
   ok?: boolean;
   seo_indexing_ok?: boolean;
   skipped?: boolean;
+  /** 일부 응답에서 snake_case 로만 올 때 대비 */
+  seo_indexing_skipped?: boolean;
   error?: string;
   last_batch_at?: string | null;
 };
@@ -116,6 +118,8 @@ function omniLedTooltip(
   seoErr?: string | null,
   /** 3도시 실측 완료 + 옴니가 아직 ok가 아님 — 프로브 지연·타임아웃 시 표시등은 초록이나 툴팁으로 근거 표시 */
   weatherSurfaceGreenGuard?: boolean,
+  /** 화면에 실측 온도가 나오면 생존 신호로 간주 — SEO 실패 툴팁을 덮어씀 */
+  weatherSurfaceGreenTrust?: boolean,
 ): string {
   if (phase === 'neutral') {
     if (weatherSurfaceGreenGuard) {
@@ -129,6 +133,11 @@ function omniLedTooltip(
     return locale === 'th'
       ? '🟢 ข้อมูล 3 เมืองจาก Open-Meteo พร้อมแล้ว — เลดาร์รายงานชั่วคราวผิดพลาด (ไม่ใช่ฐานข้อมูลล่ม)'
       : '🟢 Open-Meteo 3도시 수집 완료 — 옴니 프로브·타임아웃·일시 오류( DB 오류 아님 )';
+  }
+  if (phase === 'error' && weatherSurfaceGreenTrust && !weatherSurfaceGreenGuard) {
+    return locale === 'th'
+      ? '🟢 อุณหภูมิบนหน้าจอมาจากแหล่งจริง — เลดาร์ชั่วคราวขัดข้อง (ไม่ใช่ DB ล่ม)'
+      : '🟢 화면에 실측 온도가 있으면 클라이언트 날씨 경로는 정상 — 옴니 프로브만 일시 오류';
   }
   if (phase === 'ok' && schemaLayerWarn) {
     const tail =
@@ -146,11 +155,16 @@ function omniLedTooltip(
       ? '🟠 ฝึกภูมิคุ้มกันตนเอง — Chaos HTTP wave กำลังทำงาน (เสร็จแล้ว LED กลับเป็นสีเขียว)'
       : '🟠 자가 면역 훈련 중 — HTTP 카오스 웨이브가 진행 중입니다. 완료되면 초록으로 복귀합니다.';
   }
-  if (phase === 'ok' && seoIndexingRed) {
+  if (phase === 'ok' && seoIndexingRed && !weatherSurfaceGreenTrust) {
     const tail = isAdmin && seoErr ? ` — ${seoErr}` : locale === 'th' ? ' — ดู Search Console' : ' — Search Console 확인';
     return locale === 'th'
       ? `🔴 Google Indexing ล่าสุดมีข้อผิดพลาด — สภาพอากาศยังปกติ${tail}`
       : `🔴 최근 Google Indexing 배치 실패 — 날씨·DB는 정상${tail}`;
+  }
+  if (phase === 'ok' && seoIndexingRed && weatherSurfaceGreenTrust) {
+    return locale === 'th'
+      ? '🟢 สภาพอากาศสด — การจัดอันดับ SEO ล่าสุดมีปัญหาแต่ไม่กระทบสถานะไลฟ์'
+      : '🟢 날씨 파이프라인 정상 — SEO 색인 배치 경고는 별도(표시등은 생존 신호 우선)';
   }
   if (phase === 'ok') {
     return locale === 'th'
@@ -265,17 +279,32 @@ export default function PortalWeatherWidget({
     schemaLayer != null &&
     (schemaLayer.warn === true || schemaLayer.ok === false);
 
-  const seoIndexingRed =
-    omniPhase === 'ok' &&
-    Boolean(seoIndexing) &&
-    seoIndexing?.skipped !== true &&
-    seoIndexing?.seo_indexing_ok === false;
+  const seoIndexingSkippedEffective =
+    seoIndexing?.skipped === true ||
+    seoIndexing?.seo_indexing_skipped === true ||
+    motherbrain?.seo_indexing_skipped === true;
 
   const weatherClientComplete =
     !busy &&
     !weatherError &&
     Boolean(weatherPayload?.cities?.length) &&
     isThailandWeatherSnapshotComplete(weatherPayload?.cities ?? []);
+
+  /** 온도가 실제로 찍히면 Open-Meteo 경로가 살아 있다고 본다(3도시 미완이어도 오너에게 빨강 비노출). */
+  const weatherSurfaceGreenTrust =
+    !busy &&
+    !weatherError &&
+    bangkok?.temperature_c != null &&
+    Number.isFinite(bangkok.temperature_c);
+
+  const seoIndexingRedRaw =
+    omniPhase === 'ok' &&
+    Boolean(seoIndexing) &&
+    !seoIndexingSkippedEffective &&
+    seoIndexing?.seo_indexing_ok === false;
+
+  /** 데이터 우선: 살아 있는 날씨 표면이면 SEO 배치를 표시등 오류로 취급하지 않음 */
+  const seoIndexingRed = seoIndexingRedRaw && !weatherSurfaceGreenTrust;
 
   const omniDbDown =
     omniPhase === 'error' &&
@@ -291,7 +320,11 @@ export default function PortalWeatherWidget({
   const weatherSurfaceGreenGuard =
     weatherClientComplete && omniPhase !== 'ok' && !(omniPhase === 'error' && omniDbDown);
 
-  const treatOmniAsHealthyLed = omniPhase === 'ok' || weatherSurfaceGreenGuard;
+  /** 클라이언트에 실측 온도가 있으면 DB 다운만 아니면 옴니 일시 오류·SEO와 무관하게 초록 */
+  const treatOmniAsHealthyLed =
+    omniPhase === 'ok' ||
+    weatherSurfaceGreenGuard ||
+    (weatherSurfaceGreenTrust && !(omniPhase === 'error' && omniDbDown));
 
   const ledClass = treatOmniAsHealthyLed
     ? seoIndexingRed
@@ -318,9 +351,10 @@ export default function PortalWeatherWidget({
         immuneTraining,
         schemaLayerWarn,
         schemaHint,
-        seoIndexingRed,
+        seoIndexingRedRaw,
         seoIndexing?.error ?? null,
         weatherSurfaceGreenGuard,
+        weatherSurfaceGreenTrust,
       ),
     [
       omniPhase,
@@ -330,9 +364,10 @@ export default function PortalWeatherWidget({
       immuneTraining,
       schemaLayerWarn,
       schemaHint,
-      seoIndexingRed,
+      seoIndexingRedRaw,
       seoIndexing?.error,
       weatherSurfaceGreenGuard,
+      weatherSurfaceGreenTrust,
     ],
   );
 

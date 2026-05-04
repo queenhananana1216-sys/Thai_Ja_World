@@ -5,7 +5,7 @@
  *   board_target, editorial_meta, ko{title,summary,checklist,cautions,tags}, th{...}, board_copy, sources[]
  *
  * 안전 원칙:
- *   - PII(전화번호/주소/개인연락처/계좌/실명) 절대 출력 금지 — 시스템 프롬프트에 강하게 명시
+ *   - 개인 PII(사적 전화·실명·개인 주소·계좌)는 본문에 금지. 영업장 공개 LINE·WhatsApp 링크는 sources[] 에만(프롬프트 규칙).
  *   - 비자/법률: 항상 디스클레이머 cautions 포함
  *   - 과장("100% 보장" 등) 금지 — 불확실하면 confidence_level=low, cautions 강화
  *   - JSON 파싱 실패 시 해당 항목 실패 처리 + bot_actions 기록
@@ -254,7 +254,8 @@ LANGUAGE — HIGHEST PRIORITY (do not violate):
 - Same for th.*: must be mostly Thai Unicode letters (ก-๙), not English paragraphs in th.summary.
 
 CRITICAL SAFETY RULES — violating these is unacceptable:
-1. NEVER include PII: phone numbers, physical addresses, personal contact info, account numbers, real names of private individuals, personal identifiers. If present in source, OMIT or generalize.
+1. PII: 개인 실명·주민·계좌·사적 휴대폰·개인 주소는 본문(ko/th summary 등)에 넣지 말고 생략·일반화한다.
+   예외: 출처에 명시된 영업장·관공서·브랜드의 공개 고객 채널만 허용한다. 공식 LINE 오픈채팅/LINE OA URL, WhatsApp 비즈니스 링크(https://wa.me/국번…, https://api.whatsapp.com/…)는 원문에 있을 때만 그대로 sources[]에 external_url 로 추가하고 source_name 에 업체명을 적는다. URL을 지어내지 마라.
 2. ALWAYS add legal/official disclaimer in cautions for visa, immigration, or legal topics: "법률 자문이 아닙니다. 실제 비자 신청 전 반드시 대사관·공식 기관에서 확인하세요."
 3. NEVER use expressions like "100% 가능", "보장", "확정" for uncertain facts. Use confidence_level=low and strengthen cautions instead.
 4. No exaggeration, no sensationalism, no political bias.

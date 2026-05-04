@@ -7,8 +7,8 @@ export const runtime = 'nodejs';
 
 const cachedTicker = unstable_cache(
   async (locale: Locale) => buildPortalVitalityTickerLines(locale),
-  ['portal-vitality-ticker-v1'],
-  { revalidate: 3600 },
+  ['portal-vitality-ticker-v2'],
+  { revalidate: 60 },
 );
 
 export async function GET(req: Request): Promise<NextResponse> {
@@ -18,7 +18,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     const lines = await cachedTicker(locale);
     return NextResponse.json(
       { ok: true as const, lines, generated_at: new Date().toISOString() },
-      { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=600' } },
+      { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' } },
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'unknown';

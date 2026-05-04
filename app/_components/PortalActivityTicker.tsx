@@ -43,14 +43,14 @@ async function vitalityTickerFetcher(url: string): Promise<string[]> {
 
 /**
  * 모바일 전용 — 하단 탭 바 직상단 고정 마키.
- * `/api/portal/vitality-ticker` 가 1시간 단위로 갱신되는 문구를 우선 사용(실패 시 정적 풀).
+ * `/api/portal/vitality-ticker` 가 약 1분 단위로 갱신(캐시)·실데이터 혼합 문구를 우선 사용(실패 시 정적 풀).
  */
 export default function PortalActivityTicker({ locale }: { locale: 'ko' | 'th' }) {
   const loc = locale === 'th' ? 'th' : 'ko';
   const { data } = useSWR(`/api/portal/vitality-ticker?locale=${loc}`, vitalityTickerFetcher, {
-    refreshInterval: 3_600_000,
-    revalidateOnFocus: false,
-    dedupingInterval: 60_000,
+    refreshInterval: 60_000,
+    revalidateOnFocus: true,
+    dedupingInterval: 15_000,
   });
   const text = data?.length ? data.join('   •   ') : buildTickerText(loc);
 

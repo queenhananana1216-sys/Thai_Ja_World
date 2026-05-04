@@ -36,7 +36,7 @@ export default async function KoreanBizPage() {
   const { data, error } = await sb
     .from('korean_businesses')
     .select(
-      'id, google_place_id, name, category, region, address, phone, latitude, longitude, is_verified, last_verified_at',
+      'id, google_place_id, name, category, region, address, phone, latitude, longitude, is_verified, last_verified_at, line_url, whatsapp_url, contact_checked_at, contact_link_ok',
     )
     .order('name');
 

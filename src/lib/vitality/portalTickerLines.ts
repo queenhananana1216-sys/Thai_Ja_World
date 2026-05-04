@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { Locale } from '@/i18n/types';
+import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 import { fetchThailandCitiesWeather, type ThailandCityWeather } from '@/lib/weather/fetchThailandCitiesWeather';
 import { wmoIsPrecipitation } from '@/lib/weather/wmoWeatherCode';
 
@@ -34,8 +35,49 @@ function vitalityFactor(cities: ThailandCityWeather[]): { rain: boolean; hot: bo
   return { rain, hot, tempAvg };
 }
 
+async function fetchRecentVitalityFacts(loc: 'ko' | 'th'): Promise<string[]> {
+  if (!isServiceRoleConfigured()) return [];
+  try {
+    const sb = createServiceRoleClient();
+    const { data: bp } = await sb
+      .from('board_posts')
+      .select('title')
+      .order('created_at', { ascending: false })
+      .limit(2);
+    const { data: posts } = await sb
+      .from('posts')
+      .select('title')
+      .eq('moderation_status', 'safe')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    const out: string[] = [];
+    for (const row of bp ?? []) {
+      const t = String(row.title ?? '').trim();
+      if (!t) continue;
+      const short = t.length > 36 ? `${t.slice(0, 34)}…` : t;
+      out.push(
+        loc === 'th'
+          ? `มีคนกำลังอ่านโพสต์「${short}」`
+          : `누군가 방금 「${short}」 글을 읽었습니다`,
+      );
+    }
+    const pt = String(posts?.[0]?.title ?? '').trim();
+    if (pt) {
+      const short = pt.length > 36 ? `${pt.slice(0, 34)}…` : pt;
+      out.push(
+        loc === 'th'
+          ? `HOT: 「${short}」กำลังถูกเปิดอ่าน`
+          : `실시간: 「${short}」 조회가 이어지고 있어요`,
+      );
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 /**
- * 1시간 버킷 + 방콕 날씨로 하단 티커 문구 생성(캐시된 API에서 호출).
+ * 날씨 + 최근 DB 활동 + 합성 문구로 하단 티커 생성(API 캐시 1분).
  */
 export async function buildPortalVitalityTickerLines(locale: Locale): Promise<string[]> {
   const loc: 'ko' | 'th' = locale === 'th' ? 'th' : 'ko';
@@ -46,6 +88,7 @@ export async function buildPortalVitalityTickerLines(locale: Locale): Promise<st
   const { rain, hot, tempAvg } = vitalityFactor(cities);
   const [n1, n2, n3] = loc === 'th' ? namesTh(seed) : namesKo(seed);
   const thaiAmt = 30 + ((seed >>> 3) % 120);
+  const facts = await fetchRecentVitalityFacts(loc);
 
   const ko: string[] = [
     `${n1}님이 꿀팁에 북마크했어요 · +${thaiAmt} 타이(THAI) 적립 중`,
@@ -61,6 +104,9 @@ export async function buildPortalVitalityTickerLines(locale: Locale): Promise<st
   if (hot) {
     ko.push(`기온 ${tempAvg != null ? Math.round(tempAvg) : '고'}° 부근 — 에어컨 실내 휴식 꿀팁 조회가 늘고 있어요`);
   }
+  for (const f of facts) {
+    if (!ko.includes(f)) ko.unshift(f);
+  }
 
   const th: string[] = [
     `${n1} กดบุ๊กมาร์กทิป · +${thaiAmt} THAI`,
@@ -73,6 +119,9 @@ export async function buildPortalVitalityTickerLines(locale: Locale): Promise<st
   }
   if (hot) {
     th.push(`อุณหภูมิสูง — ทิพพักในห้องแอร์ถูกเปิดอ่านมากขึ้น`);
+  }
+  for (const f of facts) {
+    if (!th.includes(f)) th.unshift(f);
   }
 
   return loc === 'th' ? th : ko;

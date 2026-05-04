@@ -3,7 +3,9 @@
  * 각 API의 eligible 이 모두 0이 될 때까지 라운드 반복.
  *
  * 사용 (PowerShell, 프로젝트 루트):
- *   $env:CRON_SECRET = "..."   # 또는 BOT_CRON_SECRET (Vercel Env와 동일)
+ *   Vercel에서 CRON_SECRET 을 교체했다면 로컬 스크립트도 동일 값이 필요합니다.
+ *   `vercel env pull` 로 .env.local 동기화 후, 또는 수동으로:
+ *   $env:CRON_SECRET = "<Vercel Production 과 동일>"   # 또는 BOT_CRON_SECRET
  *   node scripts/run-insight-retrofit-all.mjs
  *
  * 선택 환경 변수:

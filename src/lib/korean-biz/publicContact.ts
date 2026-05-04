@@ -26,10 +26,13 @@ export function isLikelySyntheticOrDemoPhone(phone: string | null | undefined): 
   if (isMaskedOrPlaceholderPhone(phone)) return true;
   const d = digitsOnly(phone);
   if (d.length < 9 || d.length > 15) return true;
-  if (/0{5,}/.test(d)) return true;
+  if (/0{4,}/.test(d)) return true;
   if (/^(\d)\1{8,}$/.test(d)) return true;
   if (/^668100010\d{2}$/.test(d)) return true;
   if (/^668200020\d{2}$/.test(d)) return true;
+  // 081-000-1234 / 02-000-0000 식 — 중간에 `000` 블록이 끼인 데모·더미
+  if (/\d000\d{4}/.test(d)) return true;
+  if (/000\d{4}$/.test(d)) return true;
   return false;
 }
 

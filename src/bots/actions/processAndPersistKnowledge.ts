@@ -244,7 +244,7 @@ function shouldFallback(err: unknown): boolean {
 // ── 시스템 프롬프트 ───────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are a pragmatic knowledge curator for "Thai Ja World" (Thailand–Korea community).
-Persona: **적당히 위트 있고 냉철한 중립적 전문가** — 태국 생활의 애환을 이해하지만, 가볍게 떠들지 않는다. 단순 번역이 아니라 사건·절차에서 **배울 점과 대비책**을 checklist/cautions에 녹인다.
+Persona: **태국 현지에 오래 묻어 있는 한인 운영자** — 적당히 위트 있되 냉철한 중립. 단순 번역·불릿 나열이 아니라 "내가 동네에서 이렇게 한다" 식 **실전 스텝**을 checklist에 쪼개 담는다. 사건·절차에서 배울 점과 대비책을 cautions에도 녹인다.
 Your job: given a Thai/Korea-related web article (title + excerpt + URL), output a structured JSON with practical information.
 
 LANGUAGE — HIGHEST PRIORITY (do not violate):
@@ -278,8 +278,8 @@ OUTPUT STRUCTURE (strict JSON):
   },
   "ko": {
     "title": "클릭을 부르는 호기심 제목(질문·구체 숫자·상황) 가능. 단, 과장·거짓·선정 금지. 출처 사실 범위만. 120자 이내 권장.",
-    "summary": "① 맨 앞 1~2문장(총 120~200자): 비회원 피드·꿀팁 허브에 노출되는 '궁금증 훅'. ② 줄바꿈 후 본 요약(실용). ③ 마지막에 줄바꿈 후 한 줄 헤더 **[AI의 대비책]** 를 넣고, 그 아래 2~4문장으로 오늘 할 일을 압축(상세 스텝은 checklist로 이어짐). 총 300~800자. 불확실하면 '보도에 따르면/공식 확인 필요'.",
-    "checklist": ["뉴스 데스크의 '[AI의 대비책]'에 해당하는 실행 스텝. PII 금지"],
+    "summary": "① 맨 앞 1~2문장(총 120~200자): 비회원 피드·꿀팁 허브에 노출되는 '궁금증 훅'. ② 줄바꿈 후 본 요약(실용). ③ 마지막에 줄바꿈 후 반드시 한 줄 헤더 **[AI의 대비책]** 를 넣고, 그 아래 '운영자 실전 스텝' 톤으로 2~4문장(오늘·이번 주 행동). 상세 번호 스텝은 checklist에 이어짐. 총 300~800자. 불확실하면 '보도에 따르면/공식 확인 필요'.",
+    "checklist": ["[AI의 대비책] 본문과 맞닿는 실행 스텝(①②③ 순서). PII 금지"],
     "cautions": ["공식확인권장/법률자문아님/불확실성 명시. 비자·법률 관련은 반드시 포함"],
     "tags": ["키워드5~8개. PII 금지"]
   },
@@ -319,6 +319,44 @@ const KNOWLEDGE_LLM_LOCALE_RETRY_USER = [
 
 const HANGUL_SYLLABLE_RE = /[\uAC00-\uD7AF]/g;
 const THAI_LETTER_RE = /[\u0E00-\u0E7F]/g;
+
+const KNOWLEDGE_KO_CM_HEADER = '**[AI의 대비책]**';
+const KNOWLEDGE_TH_CM_HEADER = '**[แผนรับมือจาก AI]**';
+
+function countermeasureStepsFromChecklist(items: string[], max: number): string {
+  return items
+    .slice(0, max)
+    .map((s, i) => `${i + 1}) ${String(s).replace(/^[\d.)]+\s*/, '').trim()}`)
+    .filter((line) => line.length > 3)
+    .join('\n');
+}
+
+/** 요약 본문 하단에 **[AI의 대비책]** 고정 — LLM 누락 시에도 UI·SEO 결속 */
+function enforceKnowledgeCountermeasureInSummary(llm: KnowledgeLlmOutput): KnowledgeLlmOutput {
+  const koSteps = countermeasureStepsFromChecklist(llm.ko.checklist, 5);
+  const thSteps = countermeasureStepsFromChecklist(llm.th.checklist, 5);
+  let koSum = llm.ko.summary.trim();
+  if (!koSum.includes('[AI의 대비책]')) {
+    const tail =
+      koSteps.trim().length > 0
+        ? `(운영자 실전 스텝)\n${koSteps}`
+        : `(운영자 실전 스텝)\n1) 출처 URL을 열어 날짜·적용 대상을 확인합니다.\n2) 본인 서류·일정과 겹치는지 점검합니다.\n3) 불확실하면 공식 창구·대사관 안내만 따릅니다.`;
+    koSum = `${koSum}\n\n${KNOWLEDGE_KO_CM_HEADER}\n${tail}`;
+  }
+  let thSum = llm.th.summary.trim();
+  if (!thSum.includes('แผนรับมือจาก AI')) {
+    const tail =
+      thSteps.trim().length > 0
+        ? thSteps
+        : '1) เปิดลิงก์ต้นทางเพื่อตรวจวันที่และเงื่อนไข\n2) เช็กว่ามีผลกับคุณหรือไม่\n3) หากไม่ชัดเจน ให้ใช้ช่องทางราชการเท่านั้น';
+    thSum = `${thSum}\n\n${KNOWLEDGE_TH_CM_HEADER}\n${tail}`;
+  }
+  return {
+    ...llm,
+    ko: { ...llm.ko, summary: koSum },
+    th: { ...llm.th, summary: thSum },
+  };
+}
 
 function countRegexMatches(s: string, re: RegExp): number {
   const m = s.match(re);
@@ -678,7 +716,10 @@ export async function processKnowledgeFromResolvedRaw(
   const bodyForLlm = resolved.llmText;
   const llmReady = isKnowledgeLlmConfigured();
   const allowStub = stubKnowledgeOnLlmFailure();
-  const finalize = (llm: KnowledgeLlmOutput) => (opts?.mirrorThFromKo ? mirrorKnowledgeThFromKo(llm) : llm);
+  const finalize = (llm: KnowledgeLlmOutput) => {
+    const patched = enforceKnowledgeCountermeasureInSummary(llm);
+    return opts?.mirrorThFromKo ? mirrorKnowledgeThFromKo(patched) : patched;
+  };
 
   if (!llmReady) {
     let stubLlm = buildKnowledgeStubLlmOutput(title, bodyForLlm, url, fetchedAt);
@@ -840,8 +881,8 @@ function buildKnowledgeStubLlmOutput(
   const visaTh =
     'ข้อมูลนี้ไม่ใช่คำแนะนำทางกฎหมาย — โปรดยืนยันกับสถานทูตหรือหน่วยงานทางการเสมอ';
   const koSummary = excerpt
-    ? `${excerpt}\n\n—\n(자동 초안: 원문 발췌. LLM 가공 전입니다. 승인 전에 다듬어 주세요.)`
-    : `${KNOWLEDGE_STUB_SUMMARY_SNIPPET}. 출처를 확인한 뒤 편집해 주세요.\n${sourceUrl}`;
+    ? `${excerpt}\n\n—\n(자동 초안: 원문 발췌. LLM 가공 전입니다. 승인 전에 다듬어 주세요.)\n\n${KNOWLEDGE_KO_CM_HEADER}\n(운영자 실전 스텝)\n1) 출처에서 날짜·조건을 확인합니다.\n2) 게시 전 편집자 검증이 필요합니다.`
+    : `${KNOWLEDGE_STUB_SUMMARY_SNIPPET}. 출처를 확인한 뒤 편집해 주세요.\n${sourceUrl}\n\n${KNOWLEDGE_KO_CM_HEADER}\n(운영자 실전 스텝)\n1) 공식 기관 안내만 따릅니다.`;
 
   return {
     board_target: 'board_board',

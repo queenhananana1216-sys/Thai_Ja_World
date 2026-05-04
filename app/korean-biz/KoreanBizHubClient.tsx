@@ -294,7 +294,7 @@ export default function KoreanBizHubClient({
         ? 'Verifying real contact details — use Maps or suggest an update.'
         : locale === 'zh'
           ? '正在核对真实电话 — 建议使用地图或向我们补充。'
-          : '실제 연락처 확인 중 — 구글맵으로 위치를 확인하거나 제보로 번호를 알려 주세요.';
+          : '실제 연락처 확인 중. 전화·채팅 링크는 숨겨 두었습니다. 아래 구글맵으로 위치만 확인해 주세요.';
   const mapsCta = locale === 'th' ? 'Google Maps' : '구글맵 바로가기';
   const emptyCategoryHint =
     locale === 'th'

@@ -187,6 +187,56 @@ function normalizeIncidentAttention(
   return 'none';
 }
 
+const NEWS_CM_HEADER_KO = '**[AI의 대비책]**';
+const NEWS_CM_HEADER_TH = '**[แผนรับมือจาก AI]**';
+
+function defaultNewsKoCountermeasure(): string {
+  return '· 출처 기사·관할 기관 공지를 한 번 더 확인한다.\n· 오늘·이번 주 일정에 영향이 있는지 판단한다.\n· 세부 불확실 시 대사관·공식 채널로만 확인한다.';
+}
+
+function defaultNewsThCountermeasure(): string {
+  return '· ตรวจสอบแถลงการณ์จากหน่วยงานที่เกี่ยวข้องอีกครั้ง\n· ประเมินผลกระทบต่อตารางงานของคุณในสัปดาห์นี้\n· หากไม่แน่ใจ ให้ยืนยันผ่านช่องทางราชการหรือสถานทูตเท่านั้น';
+}
+
+function defaultNewsKoInsightFromTitle(title: string): string {
+  const t = title.trim() || '이번 소식';
+  return `${t}을(를) 태국에 체류·거주하는 한국인 독자 눈높이에서 보면, 당장 확인할 우선순위가 있는지 점검할 가치가 있습니다. 원문 밖 사실은 쓰지 않습니다.`;
+}
+
+/** LLM이 헤더·필드를 빠뜨려도 저장·피드 전 **대비책 블록**이 빠지지 않게 보강 */
+function enforceNewsBilingualCountermeasureSections(payload: LlmBilingualPayload): LlmBilingualPayload {
+  let koCm = payload.ko_countermeasure.trim();
+  let thCm = payload.th_countermeasure.trim();
+  let koInsight = payload.ko_insight_impact.trim();
+  let thInsight = payload.th_insight_impact.trim();
+
+  if (!koInsight) koInsight = defaultNewsKoInsightFromTitle(payload.title_kr);
+  if (!thInsight) thInsight = koInsight;
+
+  if (!koCm) koCm = defaultNewsKoCountermeasure();
+  if (!thCm) thCm = defaultNewsThCountermeasure();
+
+  let content_kr = payload.content_kr.trim();
+  let content_th = payload.content_th.trim();
+
+  if (!content_kr.includes('[AI의 대비책]')) {
+    content_kr = `${content_kr}\n\n${NEWS_CM_HEADER_KO}\n${koCm}`;
+  }
+  if (!content_th.includes('แผนรับมือจาก AI')) {
+    content_th = `${content_th}\n\n${NEWS_CM_HEADER_TH}\n${thCm}`;
+  }
+
+  return {
+    ...payload,
+    content_kr,
+    content_th,
+    ko_insight_impact: koInsight,
+    th_insight_impact: thInsight,
+    ko_countermeasure: koCm,
+    th_countermeasure: thCm,
+  };
+}
+
 function sanitizeNewsPayloadTone(payload: LlmBilingualPayload): LlmBilingualPayload {
   const sanitizeThai = (input: string, max: number) => {
     const noAi = sanitizeAiThaiPhrases(input);
@@ -310,10 +360,12 @@ function buildStubBilingualPayload(
     th_blurb: clampPlainText(head, 100),
     th_editor_note: 'ร่างอัตโนมัติ — แก้ภาษาไทยก่อนเผยแพร่',
     seo_keywords: stubSeoKeywordsFromTitle(head),
-    ko_insight_impact: '',
-    ko_countermeasure: '',
-    th_insight_impact: '',
-    th_countermeasure: '',
+    ko_insight_impact:
+      '원문만으로는 영향 범위를 단정할 수 없어요. 승인 전에 출처를 열어 팩트·날짜를 꼭 대조해 주세요.',
+    ko_countermeasure: defaultNewsKoCountermeasure(),
+    th_insight_impact:
+      'จากข้อความต้นฉบับเพียงอย่างเดียวยังสรุปผลกระทบไม่ได้ — โปรดตรวจสอบแหล่งที่มาและวันที่ก่อนเผยแพร่',
+    th_countermeasure: defaultNewsThCountermeasure(),
     incident_attention: 'none',
     feed_warning_ko: '',
     feed_warning_th: '',
@@ -323,7 +375,7 @@ function buildStubBilingualPayload(
 /** 뉴스 크론 가공 톤 — 사건에서 배우는 대비책 + 적당한 위트 + 냉철한 중립 */
 const BILINGUAL_SYSTEM_PROMPT = [
   'You are the lead editor AND resident-life strategist for "Thai Ja World" / 「태국에, 살자」(Thailand–Korea 교민 autonomous news pipeline).',
-  'PERSONA: A "적당히 위트 있고 냉철한 중립적 전문가" who knows the small joys and frictions of living in Thailand — never flippant, never a clown, never cruel.',
+  'PERSONA: A **태국 현지 사정에 익숙한 한인 운영자** — 말투는 적당히 위트 있되 냉철한 중립을 유지한다. 기계 번역·나열 체가 아니라 "이런 일이니 이렇게 조심하자"라고 옆에서 짚어 주는 한마디 톤. never flippant, never a clown, never cruel.',
   'MISSION: Do NOT "copy the wire" or plain-translate. Learn from the incident: what happened → what it implies for readers → what they should do next. Trust beats hype.',
   'TONE: dry warmth, one beat of wit per paragraph max; no meme spam, no victim mockery, no fake urgency. Never read like a bland press release.',
   '',
@@ -888,7 +940,7 @@ async function callBilingualSummary(
 
 /** 관리자 한국어 전용 가공 — 크론 이중언어 파이프라인과 별도 */
 const KOREAN_ONLY_SYSTEM_PROMPT = [
-  'You are the lead editor for "Thai Ja World" (태국에, 살자) Korean news desk — persona: **적당히 위트 있고 냉철한 중립적 전문가** who understands daily life in Thailand.',
+  'You are the lead editor for "Thai Ja World" (태국에, 살자) Korean news desk — persona: **태국 현지에 익숙한 한인 운영자** (적당히 위트 있되 냉철한 중립; 기계 번역 톤 금지).',
   'The source may be Thai, English, or any language. Output MUST be 100% Korean Hangul only in every Korean-payload field below (no Thai script, no English sentences in Korean fields).',
   'If a proper noun must stay in Latin (e.g. BTS, UNESCO), keep it short.',
   'Output valid JSON only with exactly these keys: title_kr, content_kr, ko_blurb, ko_editor_note, ko_insight_impact, ko_countermeasure, feed_warning_ko, incident_attention, seo_keywords.',
@@ -1289,7 +1341,7 @@ async function persistBilingualProcessedNews(
   publishedOverride?: boolean,
 ): Promise<SummarizeRowResult> {
   const url = row.external_url ?? '';
-  const sanitized = sanitizeNewsPayloadTone(llm);
+  const sanitized = sanitizeNewsPayloadTone(enforceNewsBilingualCountermeasureSections(llm));
   const cleanBody = buildPersistedCleanBodyJson(sanitized, url);
 
   const publishedFlag =
@@ -1382,7 +1434,7 @@ async function updateBilingualProcessedNews(
   options?: UpdateBilingualProcessedNewsOptions,
 ): Promise<SummarizeRowResult> {
   const url = row.external_url ?? '';
-  const sanitized = sanitizeNewsPayloadTone(llm);
+  const sanitized = sanitizeNewsPayloadTone(enforceNewsBilingualCountermeasureSections(llm));
   const cleanBody = buildPersistedCleanBodyJson(sanitized, url);
   const publishedPatch = options?.publishedPatch;
   const skipTipsArticles = options?.skipTipsArticles === true;

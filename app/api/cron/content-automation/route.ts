@@ -7,6 +7,8 @@ import { sanitizeAiKoreanPhrases, sanitizeAiThaiPhrases } from '@/lib/text/norma
 import { pingGoogleSitemap } from '@/lib/seo/googleSitemapPing';
 import { isGoogleIndexingConfigured } from '@/lib/seo/googleIndexingApi';
 import { runRetrofitIndexingSweep } from '@/lib/seo/retrofitIndexingSweep';
+import { runWeatherCoupledGoogleIndexingPass } from '@/lib/seo/weatherCoupledGoogleIndexing';
+import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
 import { fetchThailandCitiesWeather } from '@/lib/weather/fetchThailandCitiesWeather';
 import { isThailandWeatherSnapshotComplete } from '@/lib/weather/thailandWeatherSnapshot';
 
@@ -185,11 +187,21 @@ async function fetchSnapshots(now: Date): Promise<{ rows: SnapshotRow[]; metrics
       const err = '[open-meteo] 3-city snapshot incomplete (Bangkok/Pattaya/Chiang Mai)';
       metrics.errors.push(err);
       console.error('[API /api/cron/content-automation]', err);
+      void recordPipelineErrorEvent({
+        scope: 'weather.open_meteo',
+        reasonCode: 'SNAPSHOT_INCOMPLETE',
+        messageExcerpt: err,
+      });
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     metrics.errors.push(`[open-meteo] ${msg}`);
     console.error('[API /api/cron/content-automation] weather fetch failed:', msg);
+    void recordPipelineErrorEvent({
+      scope: 'weather.open_meteo',
+      reasonCode: 'FETCH_FAILED',
+      messageExcerpt: msg.slice(0, 400),
+    });
   }
 
   const fxRes = await fetchJsonWithTimeout<{ rates?: Record<string, number>; time_last_update_utc?: string }>(
@@ -365,8 +377,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       batches?: number;
     } | null = null;
     let sitemapPing: { ok: boolean; status?: number; error?: string } | null = null;
+    let weatherCoupledIndexing: Awaited<ReturnType<typeof runWeatherCoupledGoogleIndexingPass>> | null = null;
     if (metrics.weather_pipeline_ok) {
       if (isGoogleIndexingConfigured()) {
+        weatherCoupledIndexing = await runWeatherCoupledGoogleIndexingPass(admin);
         seoIndexing = await runRetrofitIndexingSweep(admin, {
           newsLimit: 500,
           postsLimit: 700,
@@ -385,6 +399,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         external_api_errors: metrics.errors.length,
         sanitized_news: sanitizedRows,
         weather_pipeline_ok: metrics.weather_pipeline_ok,
+        seo_indexing_weather_coupled: weatherCoupledIndexing,
         seo_indexing_batch: seoIndexing,
         sitemap_ping: sitemapPing,
       },
@@ -402,6 +417,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       updated_exchange: metrics.exchangeSummary ?? 'exchange unavailable',
       external_api_errors: metrics.errors,
       weather_pipeline_ok: metrics.weather_pipeline_ok,
+      seo_indexing_weather_coupled: weatherCoupledIndexing,
       seo_indexing_batch: seoIndexing,
       sitemap_ping: sitemapPing,
       collect: newsResult.collect,

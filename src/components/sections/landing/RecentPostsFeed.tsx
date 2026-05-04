@@ -55,7 +55,7 @@ const CATEGORY_COLOR_PORTAL: Record<string, { color: string; bg: string }> = {
 };
 
 export async function RecentPostsFeed({ locale, variant = 'dark', limit = 12 }: Props) {
-  const items = await fetchRecentPosts(limit);
+  const items = await fetchRecentPosts(limit, locale);
   if (items.length === 0) return null;
 
   const isPortal = variant === 'portal';
@@ -185,6 +185,39 @@ export async function RecentPostsFeed({ locale, variant = 'dark', limit = 12 }: 
               >
                 {p.isKnowledgeTip ? (locale === 'th' ? 'เคล็ดลับ' : '꿀팁') : categoryLabel(p.category, locale)}
               </span>
+              {p.insightBadge === 'urgent' ? (
+                <span
+                  aria-hidden
+                  style={{
+                    flexShrink: 0,
+                    fontSize: 9,
+                    fontWeight: 800,
+                    color: '#fecdd3',
+                    background: 'rgba(244,63,94,0.22)',
+                    padding: '2px 6px',
+                    borderRadius: 999,
+                    border: '1px solid rgba(251,113,133,0.45)',
+                  }}
+                >
+                  🚨 {locale === 'th' ? 'ระวัง' : '주의'}
+                </span>
+              ) : p.insightBadge === 'insight' ? (
+                <span
+                  aria-hidden
+                  style={{
+                    flexShrink: 0,
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: '#ddd6fe',
+                    background: 'rgba(139,92,246,0.2)',
+                    padding: '2px 6px',
+                    borderRadius: 999,
+                    border: '1px solid rgba(167,139,250,0.35)',
+                  }}
+                >
+                  {locale === 'th' ? 'อินไซต์' : '인사이트'}
+                </span>
+              ) : null}
               <span
                 style={{
                   flex: '1 1 auto',

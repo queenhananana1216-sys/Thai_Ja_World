@@ -7,6 +7,7 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
+import PostAiInsightSection from '../../community/boards/_components/PostAiInsightSection';
 
 type PageProps = { params: Promise<{ postId: string }> };
 
@@ -20,6 +21,7 @@ type TipPostRow = {
   latitude: number | null;
   longitude: number | null;
   location_name: string | null;
+  ai_insight?: unknown;
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -57,7 +59,7 @@ export default async function TipsTeaserPage({ params }: PageProps) {
   const auth = await createServerSupabaseAuthClient();
   const { data: post, error } = await auth
     .from('posts')
-    .select('id,title,content,excerpt,created_at,author_id,latitude,longitude,location_name')
+    .select('id,title,content,excerpt,created_at,author_id,latitude,longitude,location_name,ai_insight')
     .eq('id', postId)
     .eq('category', 'info')
     .eq('is_knowledge_tip', true)
@@ -74,6 +76,16 @@ export default async function TipsTeaserPage({ params }: PageProps) {
   }
 
   const tipRow = post as TipPostRow;
+  let insightForTip: unknown = tipRow.ai_insight;
+  if (insightForTip == null) {
+    const { data: pkRow } = await auth
+      .from('processed_knowledge')
+      .select('ai_insight')
+      .eq('post_id', postId)
+      .eq('published', true)
+      .maybeSingle();
+    insightForTip = (pkRow as { ai_insight?: unknown } | null)?.ai_insight ?? null;
+  }
   const { data: commentsRaw } = await auth
     .from('comments')
     .select('id,content,created_at,author_id,parent_comment_id')
@@ -141,6 +153,16 @@ export default async function TipsTeaserPage({ params }: PageProps) {
             {tipRow.excerpt}
           </p>
         ) : null}
+        <PostAiInsightSection
+          aiInsight={insightForTip}
+          locale={locale}
+          labels={{
+            aiInsightBlockTitle: d.board.aiInsightBlockTitle,
+            aiInsightSummaryLabel: d.board.aiInsightSummaryLabel,
+            aiInsightImpactLabel: d.board.aiInsightImpactLabel,
+            aiInsightCounterLabel: d.board.aiInsightCounterLabel,
+          }}
+        />
         <PostReactionsPanel postId={postId} loginNextPath={path} />
       </article>
 

@@ -20,6 +20,7 @@ import {
   shouldBlurCommunityPostForGuest,
 } from '@/lib/community/postGuestBlurTrap';
 import PostBodyGuestBlur from '../_components/PostBodyGuestBlur';
+import PostAiInsightSection from '../_components/PostAiInsightSection';
 
 /** 존재하지 않는 글은 캐시된 404 대신 즉시 `notFound()` — Radar 404 루프 완화 */
 export const dynamic = 'force-dynamic';
@@ -101,7 +102,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const { data: post, error } = await supabase
     .from('posts')
     .select(
-      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set, is_knowledge_tip, latitude, longitude, location_name',
+      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set, is_knowledge_tip, latitude, longitude, location_name, ai_insight',
     )
     .eq('id', postId)
     .eq('moderation_status', 'safe')
@@ -334,6 +335,16 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
               />
             ))
           : null}
+        <PostAiInsightSection
+          aiInsight={(post as { ai_insight?: unknown }).ai_insight}
+          locale={locale}
+          labels={{
+            aiInsightBlockTitle: d.board.aiInsightBlockTitle,
+            aiInsightSummaryLabel: d.board.aiInsightSummaryLabel,
+            aiInsightImpactLabel: d.board.aiInsightImpactLabel,
+            aiInsightCounterLabel: d.board.aiInsightCounterLabel,
+          }}
+        />
         </article>
       </div>
 

@@ -5,6 +5,7 @@ import {
   categoryLabel,
   parseBoardListCategoryParam,
 } from '@/lib/community/postCategories';
+import { postAiFeedSignalsFromInsight } from '@/lib/community/postAiInsightDisplay';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { formatDate } from '@/lib/utils/formatDate';
@@ -71,7 +72,7 @@ export default async function BoardsListPage({
   let query = supabase
     .from('posts')
     .select(
-      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set',
+      'id, title, content, category, created_at, comment_count, view_count, author_id, image_urls, author_hidden, owner_edit_password_set, ai_insight',
     )
     .eq('moderation_status', 'safe')
     .eq('is_knowledge_tip', false)
@@ -155,11 +156,24 @@ export default async function BoardsListPage({
 
         const isAuthor = viewerId !== null && viewerId === (p.author_id as string);
         const authorHidden = Boolean(p.author_hidden);
+        const aiSig = postAiFeedSignalsFromInsight((p as { ai_insight?: unknown }).ai_insight, locale);
 
         return (
           <article key={pid} className="mb-2 rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2 shadow-[0_10px_24px_rgba(2,6,23,0.35)] transition hover:bg-slate-800/50">
             <Link href={`/community/boards/${pid}`} className="block no-underline hover:no-underline">
               <div className="flex items-center gap-2 text-xs text-slate-400">
+                {aiSig.hasInsightBlock ? (
+                  <span
+                    className={
+                      aiSig.incidentAttention !== 'none'
+                        ? 'shrink-0 rounded-full bg-rose-500/25 px-2 py-0.5 text-[10px] font-bold text-rose-100 ring-1 ring-rose-400/35'
+                        : 'shrink-0 rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-semibold text-violet-100 ring-1 ring-violet-400/30'
+                    }
+                    title={aiSig.feedWarning ?? undefined}
+                  >
+                    {aiSig.incidentAttention !== 'none' ? `🚨 ${d.board.aiInsightFeedUrgent}` : d.board.aiInsightFeedBadge}
+                  </span>
+                ) : null}
                 <span className="truncate text-sm font-semibold text-slate-100">{p.title as string}</span>
                 <span className="shrink-0">{d.board.comments} {p.comment_count ?? 0}</span>
                 <span className="shrink-0">{formatDate(p.created_at as string | null)}</span>

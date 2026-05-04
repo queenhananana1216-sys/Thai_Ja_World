@@ -236,6 +236,13 @@ export type Dictionary = {
     postOwnerPasswordWrong: string;
     /** 목록에서 비공개 글 배지 */
     postPrivateBadge: string;
+    /** 게시글 상세 — AI 부가 인사이트 블록 */
+    aiInsightBlockTitle: string;
+    aiInsightSummaryLabel: string;
+    aiInsightImpactLabel: string;
+    aiInsightCounterLabel: string;
+    aiInsightFeedBadge: string;
+    aiInsightFeedUrgent: string;
     /** 중고·알바 허브 상단 안내 */
     gatedBanner: string;
     /** 게이트 구역에서 글쓰기 버튼 대체 */
@@ -882,6 +889,12 @@ const ko: Dictionary = {
     postOwnerPasswordRequired: '글 비밀번호를 입력해 주세요.',
     postOwnerPasswordWrong: '비밀번호가 맞지 않습니다.',
     postPrivateBadge: '비공개',
+    aiInsightBlockTitle: 'AI의 한마디 — 이렇게 대비하세요',
+    aiInsightSummaryLabel: '한마디',
+    aiInsightImpactLabel: '영향·포인트',
+    aiInsightCounterLabel: '대비책',
+    aiInsightFeedBadge: '인사이트',
+    aiInsightFeedUrgent: '주의',
     gatedBanner:
       '정식 오픈 전이라 새 글 작성만 잠시 닫아 둔 구역이에요. 목록 보기와 예전 글 읽기는 그대로예요.',
     newPostDisabled: '곧 글쓰기가 열려요',
@@ -1578,6 +1591,12 @@ const th: Dictionary = {
     postOwnerPasswordRequired: 'กรุณาใส่รหัสโพสต์',
     postOwnerPasswordWrong: 'รหัสไม่ถูกต้อง',
     postPrivateBadge: 'ส่วนตัว',
+    aiInsightBlockTitle: 'AI พูดสั้นๆ — เตรียมตัวแบบนี้',
+    aiInsightSummaryLabel: 'สรุปสั้น',
+    aiInsightImpactLabel: 'ผลกระทบ',
+    aiInsightCounterLabel: 'แนวทางรับมือ',
+    aiInsightFeedBadge: 'อินไซต์',
+    aiInsightFeedUrgent: 'ระวัง',
     gatedBanner:
       'ก่อนเปิดตัวจริง — โพสต์ใหม่ปิดชั่วคราว ดูรายการและโพสต์เดิมได้ตามปกติ',
     newPostDisabled: 'จะเปิดให้โพสต์เร็วๆ นี้',

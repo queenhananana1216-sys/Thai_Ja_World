@@ -440,7 +440,7 @@ function chatCompletionsUrlFromBase(baseUrl: string): string {
   return `${b}/v1/chat/completions`;
 }
 
-function stripMarkdownJsonFence(content: string): string {
+export function stripMarkdownJsonFence(content: string): string {
   const t = content.trim();
   const m = /^```(?:json)?\s*([\s\S]*?)```$/im.exec(t);
   if (m?.[1]) return m[1].trim();
@@ -746,7 +746,8 @@ async function ensureLocalLlmReachable(baseUrl: string): Promise<void> {
   }
 }
 
-async function runNewsSummaryProviders<T>(
+/** 커뮤니티 인사이트 등 뉴스 외 LLM 호출에서 재사용 (OpenAI→Gemini→로컬 폴백 동일). */
+export async function runNewsSummaryProviders<T>(
   messages: Array<{ role: string; content: string }>,
   parseFromContent: (content: string, label: string) => T,
   maxTokens: number,

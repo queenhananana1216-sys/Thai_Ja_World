@@ -4,6 +4,8 @@ import { isCronAuthorized } from '@/lib/cronAuth';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 import { findActivePause, logCronEvent, pausedResponse, registerFailureAndSelfHeal } from '@/lib/cron/omniLogger';
 import { sanitizeAiKoreanPhrases, sanitizeAiThaiPhrases } from '@/lib/text/normalizeDisplayText';
+import { pingGoogleSitemap } from '@/lib/seo/googleSitemapPing';
+import { runWeatherCoupledGoogleIndexingPass } from '@/lib/seo/weatherCoupledGoogleIndexing';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,6 +23,8 @@ type SnapshotMetrics = {
   weatherSummary: string | null;
   exchangeSummary: string | null;
   errors: string[];
+  /** Open-Meteo 방콕 스냅샷이 HTTP·JSON 모두 성공했는지 — SEO 배치 인덱싱 트리거 */
+  weather_pipeline_ok: boolean;
 };
 
 type FetchJsonResult<T> = {
@@ -150,6 +154,7 @@ async function fetchSnapshots(now: Date): Promise<{ rows: SnapshotRow[]; metrics
     weatherSummary: null,
     exchangeSummary: null,
     errors: [],
+    weather_pipeline_ok: false,
   };
 
   const weatherRes = await fetchJsonWithTimeout<{ current?: { temperature_2m?: number; weather_code?: number } }>(
@@ -157,6 +162,7 @@ async function fetchSnapshots(now: Date): Promise<{ rows: SnapshotRow[]; metrics
     'https://api.open-meteo.com/v1/forecast?latitude=13.7563&longitude=100.5018&current=temperature_2m,weather_code&timezone=Asia%2FBangkok',
   );
   if (weatherRes.ok && weatherRes.data) {
+    metrics.weather_pipeline_ok = true;
     const weather = weatherRes.data;
     const temp = weather.current?.temperature_2m;
     metrics.weatherSummary =
@@ -342,6 +348,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       typeof processOutput.succeeded === 'number' ? processOutput.succeeded : null;
     const sanitizedRows = await runSanitizationPass(admin);
 
+    let seoIndexing: { ran: boolean; submitted: number; failed: number; candidate_urls: number } | null = null;
+    let sitemapPing: { ok: boolean; status?: number; error?: string } | null = null;
+    if (metrics.weather_pipeline_ok) {
+      seoIndexing = await runWeatherCoupledGoogleIndexingPass(admin);
+      sitemapPing = await pingGoogleSitemap();
+    }
+
     await logCronEvent({
       pipelineId,
       event: 'content_automation',
@@ -350,6 +363,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         snapshots_inserted: snapshots.length,
         external_api_errors: metrics.errors.length,
         sanitized_news: sanitizedRows,
+        weather_pipeline_ok: metrics.weather_pipeline_ok,
+        seo_indexing_batch: seoIndexing,
+        sitemap_ping: sitemapPing,
       },
     });
 
@@ -364,6 +380,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       updated_weather: metrics.weatherSummary ?? 'weather unavailable',
       updated_exchange: metrics.exchangeSummary ?? 'exchange unavailable',
       external_api_errors: metrics.errors,
+      weather_pipeline_ok: metrics.weather_pipeline_ok,
+      seo_indexing_batch: seoIndexing,
+      sitemap_ping: sitemapPing,
       collect: newsResult.collect,
       process: newsResult.process,
     });

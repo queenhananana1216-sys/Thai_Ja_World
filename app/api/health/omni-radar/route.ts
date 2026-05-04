@@ -17,6 +17,7 @@ import {
   isThailandWeatherSnapshotComplete,
 } from '@/lib/weather/fetchThailandCitiesWeather';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
+import { checkSeoIndexingRadar } from '@/lib/seo/seoIndexingRadar';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -211,6 +212,7 @@ export async function GET(): Promise<NextResponse> {
     database,
     weather,
     weather_pipeline_radar,
+    seo_indexing,
     runtime,
     cron_radar,
     shadow_qa,
@@ -223,6 +225,7 @@ export async function GET(): Promise<NextResponse> {
     checkLiveSqlPing(),
     checkWeatherPipeline(),
     scanRecentWeatherPipelineErrors(),
+    checkSeoIndexingRadar(),
     Promise.resolve(checkRuntimeResources()),
     checkCronRadar(),
     checkShadowQaRadar(),
@@ -261,6 +264,7 @@ export async function GET(): Promise<NextResponse> {
     database,
     weather,
     weather_pipeline_radar,
+    seo_indexing,
     runtime,
     cron_radar,
     shadow_qa,
@@ -275,6 +279,8 @@ export async function GET(): Promise<NextResponse> {
       defense_success_rate: chaos_monkey.defense_success_rate ?? null,
       chaos_skipped: chaos_monkey.skipped === true,
       shadow_write_ok,
+      seo_indexing_ok: seo_indexing.seo_indexing_ok,
+      seo_indexing_skipped: seo_indexing.skipped === true,
       /** 과거 설계: 전 구간 합격 여부(모니터링용, healthy 와 무관) */
       legacy_secondary_ok,
     },

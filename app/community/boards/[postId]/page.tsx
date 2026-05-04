@@ -13,6 +13,7 @@ import { mergeDictionarySiteBrand } from '@/lib/site-brand/mergeDictionaryBrand'
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import JsonLd from '@/lib/seo/JsonLd';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
+import { parsePostAiInsightV1 } from '@/lib/community/postAiInsightDisplay';
 import { formatDate } from '@/lib/utils/formatDate';
 import { getPerceivedViewCount } from '@/lib/utils';
 import {
@@ -35,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const supabase = await createServerSupabaseAuthClient();
   const { data: post } = await supabase
     .from('posts')
-    .select('id, title, content, created_at, image_urls, author_hidden, category, location_name')
+    .select('id, title, content, created_at, image_urls, author_hidden, category, location_name, ai_insight')
     .eq('id', postId)
     .eq('moderation_status', 'safe')
     .maybeSingle();
@@ -45,14 +46,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const noIndex = Boolean(post.author_hidden);
-  const description = trimForMetaDescription(String(post.content ?? ''));
+  const bodyExcerpt = trimForMetaDescription(String(post.content ?? ''));
+  const insight = parsePostAiInsightV1((post as { ai_insight?: unknown }).ai_insight);
+  const block = locale === 'th' ? insight?.display?.th ?? insight?.display?.ko : insight?.display?.ko;
+  const wit = block?.summary?.trim() ?? '';
+  const counterKw = block?.countermeasure?.trim() ?? '';
+  const description = trimForMetaDescription(
+    [wit, counterKw, bodyExcerpt].filter(Boolean).join(' — '),
+  );
   const url = absoluteUrl(`/community/boards/${postId}`);
   const images = Array.isArray(post.image_urls) ? (post.image_urls as string[]) : [];
   const ogImage = typeof images[0] === 'string' ? images[0] : undefined;
-  const titleStr = String(post.title ?? '');
+  let titleStr = String(post.title ?? '');
+  if (wit && titleStr.length < 52) {
+    const merged = `${titleStr} — ${wit}`.replace(/\s+/g, ' ').trim();
+    titleStr = merged.length > 62 ? `${merged.slice(0, 59)}…` : merged;
+  }
   const catKey = String(post.category ?? '');
   const catLabel = categoryLabel(catKey, locale);
   const locName = String((post as { location_name?: string | null }).location_name ?? '').trim();
+  const counterTokens = counterKw
+    ? counterKw
+        .split(/[\s,.;]+/)
+        .filter((w) => w.length > 1)
+        .slice(0, 5)
+    : [];
   const keywords = [
     catLabel,
     catKey,
@@ -62,6 +80,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     '교민',
     locale === 'th' ? 'ชุมชน' : '커뮤니티',
     ...(locName ? [locName] : []),
+    ...counterTokens,
   ];
 
   return {

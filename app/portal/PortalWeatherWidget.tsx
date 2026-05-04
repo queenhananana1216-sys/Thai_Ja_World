@@ -45,6 +45,16 @@ type OmniMotherbrain = {
   all_green?: boolean;
   defense_success_rate?: number | null;
   chaos_skipped?: boolean;
+  seo_indexing_ok?: boolean;
+  seo_indexing_skipped?: boolean;
+};
+
+type OmniSeoIndexing = {
+  ok?: boolean;
+  seo_indexing_ok?: boolean;
+  skipped?: boolean;
+  error?: string;
+  last_batch_at?: string | null;
 };
 
 type OmniSchemaLayer = {
@@ -101,6 +111,8 @@ function omniLedTooltip(
   immuneTraining: boolean,
   schemaLayerWarn: boolean,
   schemaHint?: string | null,
+  seoIndexingRed?: boolean,
+  seoErr?: string | null,
 ): string {
   if (phase === 'neutral') {
     return locale === 'th' ? 'กำลังตรวจสอบระบบ…' : '시스템 상태 확인 중…';
@@ -120,6 +132,12 @@ function omniLedTooltip(
     return locale === 'th'
       ? '🟠 ฝึกภูมิคุ้มกันตนเอง — Chaos HTTP wave กำลังทำงาน (เสร็จแล้ว LED กลับเป็นสีเขียว)'
       : '🟠 자가 면역 훈련 중 — HTTP 카오스 웨이브가 진행 중입니다. 완료되면 초록으로 복귀합니다.';
+  }
+  if (phase === 'ok' && seoIndexingRed) {
+    const tail = isAdmin && seoErr ? ` — ${seoErr}` : locale === 'th' ? ' — ดู Search Console' : ' — Search Console 확인';
+    return locale === 'th'
+      ? `🔴 Google Indexing ล่าสุดมีข้อผิดพลาด — สภาพอากาศยังปกติ${tail}`
+      : `🔴 최근 Google Indexing 배치 실패 — 날씨·DB는 정상${tail}`;
   }
   if (phase === 'ok') {
     return locale === 'th'
@@ -166,7 +184,7 @@ export default function PortalWeatherWidget({
     dedupingInterval: 2000,
   });
 
-  const { omniPhase, omniErrors, chaosRadar, motherbrain, schemaLayer } = useMemo(() => {
+  const { omniPhase, omniErrors, chaosRadar, motherbrain, schemaLayer, seoIndexing } = useMemo(() => {
     if (!omniPack) {
       return {
         omniPhase: 'neutral' as OmniLedPhase,
@@ -174,6 +192,7 @@ export default function PortalWeatherWidget({
         chaosRadar: null as OmniChaosMonkey | null,
         motherbrain: null as OmniMotherbrain | null,
         schemaLayer: null as OmniSchemaLayer | null,
+        seoIndexing: null as OmniSeoIndexing | null,
       };
     }
     const { ok, status, json } = omniPack;
@@ -184,12 +203,14 @@ export default function PortalWeatherWidget({
               chaos_monkey?: OmniChaosMonkey;
               motherbrain?: OmniMotherbrain;
               schema_layer?: OmniSchemaLayer;
+              seo_indexing?: OmniSeoIndexing;
             };
           }).checks
         : undefined;
     const chaos = checks?.chaos_monkey ?? null;
     const motherbrain = checks?.motherbrain ?? null;
     const schemaLayer = checks?.schema_layer ?? null;
+    const seoIndexing = checks?.seo_indexing ?? null;
 
     const healthy =
       ok &&
@@ -205,6 +226,7 @@ export default function PortalWeatherWidget({
         chaosRadar: chaos,
         motherbrain,
         schemaLayer,
+        seoIndexing,
       };
     }
     return {
@@ -213,6 +235,7 @@ export default function PortalWeatherWidget({
       chaosRadar: chaos,
       motherbrain,
       schemaLayer,
+      seoIndexing,
     };
   }, [omniPack]);
 
@@ -229,11 +252,19 @@ export default function PortalWeatherWidget({
     schemaLayer != null &&
     (schemaLayer.warn === true || schemaLayer.ok === false);
 
+  const seoIndexingRed =
+    omniPhase === 'ok' &&
+    Boolean(seoIndexing) &&
+    seoIndexing?.skipped !== true &&
+    seoIndexing?.seo_indexing_ok === false;
+
   const ledClass =
     omniPhase === 'ok'
-      ? immuneTraining || schemaLayerWarn
-        ? styles.omniLedOrange
-        : styles.omniLedGreen
+      ? seoIndexingRed
+        ? styles.omniLedRed
+        : immuneTraining || schemaLayerWarn
+          ? styles.omniLedOrange
+          : styles.omniLedGreen
       : omniPhase === 'error'
         ? styles.omniLedRed
         : styles.omniLedNeutral;
@@ -253,17 +284,31 @@ export default function PortalWeatherWidget({
         immuneTraining,
         schemaLayerWarn,
         schemaHint,
+        seoIndexingRed,
+        seoIndexing?.error ?? null,
       ),
-    [omniPhase, isAdmin, omniErrors, locale, immuneTraining, schemaLayerWarn, schemaHint],
+    [
+      omniPhase,
+      isAdmin,
+      omniErrors,
+      locale,
+      immuneTraining,
+      schemaLayerWarn,
+      schemaHint,
+      seoIndexingRed,
+      seoIndexing?.error,
+    ],
   );
 
   const ledAria =
     omniPhase === 'ok'
-      ? schemaLayerWarn
-        ? '스키마 계약 불일치'
-        : immuneTraining
-          ? '자가 면역 훈련 중'
-          : '시스템 정상'
+      ? seoIndexingRed
+        ? 'Google 인덱싱 배치 경고'
+        : schemaLayerWarn
+          ? '스키마 계약 불일치'
+          : immuneTraining
+            ? '자가 면역 훈련 중'
+            : '시스템 정상'
       : omniPhase === 'error'
         ? '시스템 경고'
         : '시스템 상태 확인 중';

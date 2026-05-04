@@ -7,6 +7,7 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
+import { parsePostAiInsightV1 } from '@/lib/community/postAiInsightDisplay';
 import PostAiInsightSection from '../../community/boards/_components/PostAiInsightSection';
 
 type PageProps = { params: Promise<{ postId: string }> };
@@ -31,19 +32,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const sb = await createServerSupabaseAuthClient();
   const { data } = await sb
     .from('posts')
-    .select('id,title,excerpt,content')
+    .select('id,title,excerpt,content,ai_insight')
     .eq('id', postId)
     .eq('category', 'info')
     .eq('is_knowledge_tip', true)
     .eq('moderation_status', 'safe')
     .maybeSingle();
-  const row = data as Pick<TipPostRow, 'title' | 'excerpt' | 'content'> | null;
+  const row = data as Pick<TipPostRow, 'title' | 'excerpt' | 'content' | 'ai_insight'> | null;
   if (!row) {
     return { title: d.tips.pageTitle, robots: { index: false, follow: true } };
   }
-  const desc = trimForMetaDescription(row.excerpt || row.content || row.title);
+  const insight = parsePostAiInsightV1(row.ai_insight);
+  const block = locale === 'th' ? insight?.display?.th ?? insight?.display?.ko : insight?.display?.ko;
+  const wit = block?.summary?.trim() ?? '';
+  const counter = block?.countermeasure?.trim() ?? '';
+  const baseDesc = row.excerpt || row.content || row.title;
+  const desc = trimForMetaDescription([wit, counter, baseDesc].filter(Boolean).join(' — '));
+  let titleOut = row.title;
+  if (wit && titleOut.length < 48) {
+    const merged = `${titleOut} — ${wit}`.replace(/\s+/g, ' ').trim();
+    titleOut = merged.length > 60 ? `${merged.slice(0, 57)}…` : merged;
+  }
   return {
-    title: row.title,
+    title: titleOut,
     description: desc,
     robots: { index: true, follow: true },
     alternates: { canonical: absoluteUrl(`/tips/${encodeURIComponent(postId)}`) },

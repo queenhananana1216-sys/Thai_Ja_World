@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 import { unstable_noStore as noStore } from 'next/cache';
-import KoreanBizHubClient, { type KoreanBizRow } from './KoreanBizHubClient';
+import KoreanBizHubClient from './KoreanBizHubClient';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerClient } from '@/lib/supabase/server';
 import { absoluteUrl } from '@/lib/seo/site';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
+import { ensureKoreanBizMinimumRows } from '@/lib/korean-biz/ensureKoreanBizMinimumRows';
+import { fetchKoreanBusinessesForPublicPage } from '@/lib/korean-biz/fetchKoreanBusinesses';
+import type { KoreanBizRow } from '@/lib/korean-biz/koreanBizTypes';
+import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -33,19 +37,30 @@ export default async function KoreanBizPage() {
   noStore();
   const locale = await getLocale();
   const sb = createServerClient();
-  const { data, error } = await sb
-    .from('korean_businesses')
-    .select(
-      'id, google_place_id, name, category, region, address, phone, latitude, longitude, is_verified, last_verified_at, line_url, whatsapp_url, contact_checked_at, contact_link_ok',
-    )
-    .order('name');
+  let { rows, error } = await fetchKoreanBusinessesForPublicPage(sb);
+  const needSelfHeal = rows.length === 0 || Boolean(error) || rows.length < 10;
+  if (needSelfHeal) {
+    await ensureKoreanBizMinimumRows();
+    const second = await fetchKoreanBusinessesForPublicPage(sb);
+    rows = second.rows;
+    error = second.error;
+  }
 
-  const rows: KoreanBizRow[] = Array.isArray(data) ? (data as KoreanBizRow[]) : [];
+  if (rows.length === 0 && error) {
+    await recordPipelineErrorEvent({
+      scope: 'public/korean-biz',
+      reasonCode: 'korean_biz_page_empty_after_self_heal',
+      messageExcerpt: error.message,
+      meta: { code: error.code ?? null },
+    });
+  }
+
   const globalEmpty = rows.length === 0;
+  const fetchError = Boolean(error) && rows.length === 0;
 
   return (
     <div className="min-h-[70vh] bg-[#060a12] bg-[radial-gradient(ellipse_at_top,_rgba(251,191,36,0.08),_transparent_55%)]">
-      <KoreanBizHubClient rows={rows} locale={locale} globalEmpty={globalEmpty} fetchError={Boolean(error)} />
+      <KoreanBizHubClient rows={rows} locale={locale} globalEmpty={globalEmpty} fetchError={fetchError} />
     </div>
   );
 }

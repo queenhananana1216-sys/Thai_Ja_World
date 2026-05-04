@@ -11,32 +11,10 @@ import {
   isMaskedOrPlaceholderPhone,
   normalizeExternalChatUrl,
 } from '@/lib/korean-biz/publicContact';
+import type { KoreanBizCategory, KoreanBizRow } from '@/lib/korean-biz/koreanBizTypes';
+import { getKoreanBizDisplayViews, koreanBizCommunityWhisper } from '@/lib/korean-biz/koreanBizVitality';
 
-export type KoreanBizCategory =
-  | 'mart'
-  | 'pharmacy'
-  | 'hospital'
-  | 'vehicle_rent'
-  | 'golf'
-  | 'massage_spa';
-
-export type KoreanBizRow = {
-  id: string;
-  google_place_id: string;
-  name: string;
-  category: KoreanBizCategory;
-  region: 'bangkok' | 'pattaya' | 'chiangmai';
-  address: string | null;
-  phone: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  is_verified: boolean;
-  last_verified_at: string | null;
-  line_url?: string | null;
-  whatsapp_url?: string | null;
-  contact_checked_at?: string | null;
-  contact_link_ok?: boolean | null;
-};
+export type { KoreanBizCategory, KoreanBizRow } from '@/lib/korean-biz/koreanBizTypes';
 
 const REGIONS: {
   key: KoreanBizRow['region'];
@@ -542,6 +520,17 @@ export default function KoreanBizHubClient({
                         {mapsCta}
                       </Link>
                     )}
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-emerald-500/15 bg-black/30 px-2 py-1.5">
+                      <span className="shrink-0 text-[11px] text-emerald-200/75">
+                        {locale === 'th' ? 'ยอดดู' : '조회'}{' '}
+                        <span className="font-mono font-semibold text-emerald-100">
+                          {getKoreanBizDisplayViews(row.id)}
+                        </span>
+                      </span>
+                      <span className="min-w-0 truncate text-right text-[10px] italic text-amber-100/85">
+                        {koreanBizCommunityWhisper(row.id, locale === 'th' ? 'th' : 'ko')}
+                      </span>
+                    </div>
                     <p className="text-[11px] leading-relaxed text-gray-500">
                       {row.is_verified ? (
                         <>{verifiedLine(row.last_verified_at)}</>

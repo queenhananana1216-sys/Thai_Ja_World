@@ -31,7 +31,12 @@ export async function checkSeoIndexingRadar(): Promise<SeoIndexingRadar> {
     return base;
   }
   if (!isServiceRoleConfigured()) {
-    return { ...base, skipped: true, error: 'service_role_unavailable' };
+    return {
+      ok: false,
+      seo_indexing_ok: false,
+      skipped: false,
+      error: 'service_role_unavailable',
+    };
   }
 
   try {

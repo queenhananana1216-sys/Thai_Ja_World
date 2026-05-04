@@ -14,6 +14,7 @@ import {
   listTitleSummaryFromProcessedNoRaw,
   newsDetailFromProcessed,
   passesKoPublicGate,
+  passesPublishedNewsSearchGate,
 } from '@/lib/news/processedNewsDisplay';
 import JsonLd from '@/lib/seo/JsonLd';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
@@ -47,27 +48,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const locale = await getLocale();
   const d = getDictionary(locale);
   const supabase = createServerClient();
-  const { data: row } = await supabase
+  const { data: row, error: rowErr } = await supabase
     .from('processed_news')
     .select('id, clean_body, created_at, language, seo_keywords, summaries(summary_text, model)')
     .eq('id', id)
     .eq('published', true)
     .maybeSingle();
 
-  if (!row) {
+  if (rowErr || !row) {
     return { title: d.home.newsTitle, robots: { index: false, follow: true } };
   }
 
   const sumsMeta = row.summaries as unknown as
     | { summary_text: string; model: string | null }[]
     | null;
-  if (
-    !passesKoPublicGate(
-      row.language as string | null,
-      (row.clean_body as string | null) ?? null,
-      sumsMeta,
-    )
-  ) {
+  if (!passesPublishedNewsSearchGate((row.clean_body as string | null) ?? null, sumsMeta)) {
     return { title: d.home.newsTitle, robots: { index: false, follow: true } };
   }
 
@@ -88,7 +83,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const description = trimForMetaDescription(
     useGracefulFallback
       ? d.home.newsTitle
-      : [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
+      : [detail.blurb, detail.insightImpact, detail.countermeasure, detail.summary]
+          .filter(Boolean)
+          .join(' ')
+          .trim() || detail.title,
   );
   const url = absoluteUrl(`/news/${id}`);
   const datePublished = row.created_at as string;
@@ -141,13 +139,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
   const sumsGate = row.summaries as unknown as
     | { summary_text: string; model: string | null }[]
     | null;
-  if (
-    !passesKoPublicGate(
-      row.language as string | null,
-      (row.clean_body as string | null) ?? null,
-      sumsGate,
-    )
-  ) {
+  if (!passesPublishedNewsSearchGate((row.clean_body as string | null) ?? null, sumsGate)) {
     notFound();
   }
 

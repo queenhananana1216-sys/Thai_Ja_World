@@ -222,6 +222,23 @@ export function passesKoPublicGate(
   return listTitleSummaryFromProcessedNoRaw(cleanBody, summaries, 'ko') !== null;
 }
 
+/**
+ * `/news/[id]` 상세·메타 색인용: `published` 는 쿼리에서 걸러진 뒤 호출한다.
+ * `language` 가 `th` 여도 clean_body·summaries 로 제목을 만들 수 있으면 통과(홈·목록의 `passesKoPublicGate` 보다 완화).
+ */
+export function passesPublishedNewsSearchGate(
+  cleanBody: string | null | undefined,
+  summaries:
+    | { summary_text: string; model?: string | null }[]
+    | null
+    | undefined,
+): boolean {
+  return (
+    listTitleSummaryFromProcessedNoRaw(cleanBody, summaries, 'ko') !== null ||
+    listTitleSummaryFromProcessedNoRaw(cleanBody, summaries, 'th') !== null
+  );
+}
+
 export type NewsDetailParts = {
   title: string;
   summary: string | null;

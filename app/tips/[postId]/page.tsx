@@ -5,6 +5,7 @@ import PostComments, { type CommentRow } from '../../community/boards/_component
 import PostReactionsPanel from '../../community/boards/_components/PostReactionsPanel';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
+import { createServerClient } from '@/lib/supabase/server';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { parsePostAiInsightV1 } from '@/lib/community/postAiInsightDisplay';
@@ -29,15 +30,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { postId } = await params;
   const locale = await getLocale();
   const d = getDictionary(locale);
-  const sb = await createServerSupabaseAuthClient();
-  const { data } = await sb
+  const sb = createServerClient();
+  const { data, error: metaErr } = await sb
     .from('posts')
     .select('id,title,excerpt,content,ai_insight')
     .eq('id', postId)
     .eq('category', 'info')
     .eq('is_knowledge_tip', true)
     .eq('moderation_status', 'safe')
+    .eq('author_hidden', false)
     .maybeSingle();
+  if (metaErr) {
+    return { title: d.tips.pageTitle, robots: { index: false, follow: true } };
+  }
   const row = data as Pick<TipPostRow, 'title' | 'excerpt' | 'content' | 'ai_insight'> | null;
   if (!row) {
     return { title: d.tips.pageTitle, robots: { index: false, follow: true } };

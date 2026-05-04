@@ -32,35 +32,68 @@ export function readGoogleIndexingServiceAccountJson(): string {
   );
 }
 
+export type ParsedGoogleIndexingServiceAccount = {
+  client_email: string;
+  /** PEM — JWT 서명 시 `\\n` → 줄바꿈으로 치환 */
+  private_key: string;
+};
+
+function stripBomMarkdownFences(input: string): string {
+  let s = input.trim();
+  if (s.charCodeAt(0) === 0xfeff) s = s.slice(1).trim();
+  if (/^```/u.test(s)) {
+    s = s.replace(/^```(?:json)?\s*/iu, '').replace(/\s*```\s*$/u, '').trim();
+  }
+  return s;
+}
+
+/**
+ * Vercel 한 줄·여러 줄·코드펜스·이중 JSON 문자열 등 흔한 붙여넣기 변형을 흡수한다.
+ * (비밀 값은 로그하지 말 것.)
+ */
+export function parseGoogleIndexingServiceAccount(raw: string): ParsedGoogleIndexingServiceAccount | null {
+  let s = stripBomMarkdownFences(raw);
+  if (!s) return null;
+
+  const tryParse = (txt: string): unknown => {
+    try {
+      return JSON.parse(txt) as unknown;
+    } catch {
+      return null;
+    }
+  };
+
+  let obj: unknown = tryParse(s);
+  if (typeof obj === 'string') {
+    obj = tryParse(String(obj).trim());
+  }
+  if (!obj || typeof obj !== 'object') return null;
+
+  const rec = obj as Record<string, unknown>;
+  const client_email = typeof rec.client_email === 'string' ? rec.client_email.trim() : '';
+  const pkRaw = typeof rec.private_key === 'string' ? String(rec.private_key) : '';
+  if (!client_email || !pkRaw) return null;
+
+  const normalized = pkRaw.replace(/\\n/g, '\n');
+  if (!normalized.includes('BEGIN') || normalized.length < 120) return null;
+
+  return { client_email, private_key: pkRaw };
+}
+
 export function isGoogleIndexingConfigured(): boolean {
   const raw = readGoogleIndexingServiceAccountJson();
   if (!raw) return false;
-  try {
-    const sa = JSON.parse(raw) as { client_email?: string; private_key?: string };
-    return Boolean(
-      typeof sa.client_email === 'string' &&
-        sa.client_email.trim() &&
-        typeof sa.private_key === 'string' &&
-        sa.private_key,
-    );
-  } catch {
-    return false;
-  }
+  return parseGoogleIndexingServiceAccount(raw) != null;
 }
 
 async function getGoogleIndexingAccessToken(): Promise<{ token: string } | { error: string }> {
   const raw = readGoogleIndexingServiceAccountJson();
   if (!raw) return { error: 'missing_config' };
 
-  let sa: { client_email?: string; private_key?: string };
-  try {
-    sa = JSON.parse(raw) as { client_email?: string; private_key?: string };
-  } catch {
-    return { error: 'invalid_json' };
-  }
-  const email = typeof sa.client_email === 'string' ? sa.client_email.trim() : '';
-  const pkRaw = typeof sa.private_key === 'string' ? sa.private_key : '';
-  if (!email || !pkRaw) return { error: 'invalid_sa' };
+  const sa = parseGoogleIndexingServiceAccount(raw);
+  if (!sa) return { error: 'invalid_json' };
+  const email = sa.client_email;
+  const pkRaw = sa.private_key;
 
   const privateKey = pkRaw.replace(/\\n/g, '\n');
   const now = Math.floor(Date.now() / 1000);

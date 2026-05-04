@@ -5,6 +5,7 @@ import PostAuthorMenu from '../_components/PostAuthorMenu';
 import PostEngagementActions from '../_components/PostEngagementActions';
 import PostComments, { type CommentRow } from '../_components/PostComments';
 import PostReactionsPanel from '../_components/PostReactionsPanel';
+import { createServerClient } from '@/lib/supabase/server';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { categoryLabel } from '@/lib/community/postCategories';
 import { getDictionary } from '@/i18n/dictionaries';
@@ -33,15 +34,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const locale = await getLocale();
   const siteUi = await loadSiteUiSettings();
   const d = mergeDictionarySiteBrand(getDictionary(locale), siteUi.siteDisplayName);
-  const supabase = await createServerSupabaseAuthClient();
-  const { data: post } = await supabase
+  /** 크롤러·OG와 동일 경로: anon + 공개 행만 (쿠키 없는 봇과 일치) */
+  const supabase = createServerClient();
+  const { data: post, error: postMetaErr } = await supabase
     .from('posts')
     .select('id, title, content, created_at, image_urls, author_hidden, category, location_name, ai_insight')
     .eq('id', postId)
     .eq('moderation_status', 'safe')
+    .eq('author_hidden', false)
     .maybeSingle();
 
-  if (!post) {
+  if (postMetaErr || !post) {
     return { title: d.board.pageTitle, robots: { index: false, follow: true } };
   }
 

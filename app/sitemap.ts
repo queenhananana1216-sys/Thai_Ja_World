@@ -90,6 +90,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .from('posts')
         .select('id, updated_at, is_knowledge_tip, category')
         .eq('moderation_status', 'safe')
+        .eq('author_hidden', false)
         .order('updated_at', { ascending: false })
         .limit(MAX_POSTS),
       supabase

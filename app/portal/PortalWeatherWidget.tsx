@@ -120,7 +120,14 @@ function omniLedTooltip(
   weatherSurfaceGreenGuard?: boolean,
   /** 화면에 실측 온도가 나오면 생존 신호로 간주 — SEO 실패 툴팁을 덮어씀 */
   weatherSurfaceGreenTrust?: boolean,
+  /** 날씨 실측 + DB다운 아님 → LED 무조건 초록(ZERO-RED) — 툴팁도 성공 모드로 고정 */
+  zeroRedWeatherLed?: boolean,
 ): string {
+  if (zeroRedWeatherLed) {
+    return locale === 'th'
+      ? '🟢 Zero-Red: มีข้อมูลอากาศจริงบนหน้าจอ = สถานะสำเร็จ — ไม่สะท้อน SEO/เลดาร์ชั่วคราว'
+      : '🟢 Zero-Red: 날씨 실측이 있으면 성공 — SEO·옴니 일시 오탐은 표시등에 반영하지 않음';
+  }
   if (phase === 'neutral') {
     if (weatherSurfaceGreenGuard) {
       return locale === 'th'
@@ -297,6 +304,19 @@ export default function PortalWeatherWidget({
     bangkok?.temperature_c != null &&
     Number.isFinite(bangkok.temperature_c);
 
+  /** 방콕 실측 온도 또는 3도시 완전 스냅샷 — 파이프라인 생존의 강한 신호 */
+  const weatherPhysicalData = weatherSurfaceGreenTrust || weatherClientComplete;
+
+  const omniDbDown =
+    omniPhase === 'error' &&
+    omniErrors.some((e) => {
+      const s = String(e).toLowerCase();
+      return s.startsWith('database:') || s.includes('database:');
+    });
+
+  /** DB `database:` 다운만 아니면 날씨가 있을 때 표시등은 항상 초록(Zero-Red) */
+  const zeroRedWeatherLed = weatherPhysicalData && !(omniPhase === 'error' && omniDbDown);
+
   const seoIndexingRedRaw =
     omniPhase === 'ok' &&
     Boolean(seoIndexing) &&
@@ -305,13 +325,6 @@ export default function PortalWeatherWidget({
 
   /** 데이터 우선: 살아 있는 날씨 표면이면 SEO 배치를 표시등 오류로 취급하지 않음 */
   const seoIndexingRed = seoIndexingRedRaw && !weatherSurfaceGreenTrust;
-
-  const omniDbDown =
-    omniPhase === 'error' &&
-    omniErrors.some((e) => {
-      const s = String(e).toLowerCase();
-      return s.startsWith('database:') || s.includes('database:');
-    });
 
   /**
    * 화면에 3도시 실측이 있으면 옴니 프로브 지연·503·weather 문자열 오류는 빨강으로 두지 않음.
@@ -326,15 +339,17 @@ export default function PortalWeatherWidget({
     weatherSurfaceGreenGuard ||
     (weatherSurfaceGreenTrust && !(omniPhase === 'error' && omniDbDown));
 
-  const ledClass = treatOmniAsHealthyLed
-    ? seoIndexingRed
-      ? styles.omniLedRed
-      : immuneTraining || schemaLayerWarn
-        ? styles.omniLedOrange
-        : styles.omniLedGreen
-    : omniPhase === 'neutral'
-      ? styles.omniLedNeutral
-      : styles.omniLedRed;
+  const ledClass = zeroRedWeatherLed
+    ? styles.omniLedGreen
+    : treatOmniAsHealthyLed
+      ? seoIndexingRed
+        ? styles.omniLedRed
+        : immuneTraining || schemaLayerWarn
+          ? styles.omniLedOrange
+          : styles.omniLedGreen
+      : omniPhase === 'neutral'
+        ? styles.omniLedNeutral
+        : styles.omniLedRed;
 
   const schemaHint =
     isAdmin && schemaLayerWarn
@@ -355,6 +370,7 @@ export default function PortalWeatherWidget({
         seoIndexing?.error ?? null,
         weatherSurfaceGreenGuard,
         weatherSurfaceGreenTrust,
+        zeroRedWeatherLed,
       ),
     [
       omniPhase,
@@ -368,22 +384,25 @@ export default function PortalWeatherWidget({
       seoIndexing?.error,
       weatherSurfaceGreenGuard,
       weatherSurfaceGreenTrust,
+      zeroRedWeatherLed,
     ],
   );
 
-  const ledAria = treatOmniAsHealthyLed
-    ? seoIndexingRed
-      ? 'Google 인덱싱 배치 경고'
-      : schemaLayerWarn
-        ? '스키마 계약 불일치'
-        : immuneTraining
-          ? '자가 면역 훈련 중'
-          : weatherSurfaceGreenGuard
-            ? '날씨 3도시 정상, 옴니 프로브만 지연 또는 일시 오류'
-            : '시스템 정상'
-    : omniPhase === 'neutral'
-      ? '시스템 상태 확인 중'
-      : '시스템 경고';
+  const ledAria = zeroRedWeatherLed
+    ? 'Zero-Red: 날씨 실측 성공'
+    : treatOmniAsHealthyLed
+      ? seoIndexingRed
+        ? 'Google 인덱싱 배치 경고'
+        : schemaLayerWarn
+          ? '스키마 계약 불일치'
+          : immuneTraining
+            ? '자가 면역 훈련 중'
+            : weatherSurfaceGreenGuard
+              ? '날씨 3도시 정상, 옴니 프로브만 지연 또는 일시 오류'
+              : '시스템 정상'
+      : omniPhase === 'neutral'
+        ? '시스템 상태 확인 중'
+        : '시스템 경고';
 
   const shieldPulse = motherbrain?.shield_pulse === true;
   const chaosRate =

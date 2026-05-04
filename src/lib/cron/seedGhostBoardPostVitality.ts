@@ -4,6 +4,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { GHOST_VITALITY_PERSONA_IDS } from '@/lib/cron/ghostVitalityPersonas';
 
 const COMMENTS_KO = [
+  '오 여기 정보 좋네요!',
+  '오늘 방콕 날씨 대박이죠',
   '오 여기 꿀팁이네요!',
   '방콕 날씨 대박..',
   '저도 비슷한 경험 있어요 — 공유 감사합니다',
@@ -36,8 +38,8 @@ export async function seedGhostBoardPostVitality(
   const seed = boardPostId.split('').reduce((a, c) => a + c.charCodeAt(0), 0) >>> 0;
 
   const personas = [...GHOST_VITALITY_PERSONA_IDS];
-  const nReactions = Math.min(2, personas.length);
-  for (let i = 0; i < nReactions; i++) {
+  const nLikes = Math.min(2, personas.length);
+  for (let i = 0; i < nLikes; i++) {
     const userId = personas[i]!;
     const { error } = await admin.from('board_post_reactions').insert({
       board_post_id: boardPostId,
@@ -46,6 +48,16 @@ export async function seedGhostBoardPostVitality(
     });
     if (error && !/duplicate key|unique constraint/i.test(error.message)) {
       console.warn('[seedGhostBoardPostVitality] reaction', error.message);
+    }
+  }
+  if (personas.length >= 3) {
+    const { error: hErr } = await admin.from('board_post_reactions').insert({
+      board_post_id: boardPostId,
+      user_id: personas[2]!,
+      kind: 'heart',
+    });
+    if (hErr && !/duplicate key|unique constraint/i.test(hErr.message)) {
+      console.warn('[seedGhostBoardPostVitality] heart', hErr.message);
     }
   }
 

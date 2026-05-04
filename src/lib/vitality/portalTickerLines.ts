@@ -26,6 +26,34 @@ function namesTh(seed: number): string[] {
   return [pick(a, seed, 0), pick(a, seed ^ 1, 1), pick(a, seed ^ 2, 2)];
 }
 
+/** 가상 활동 줄 — DB 실데이터와 섞여 틱커가 끊임없이 움직이게 */
+function syntheticActivityKo(seed: number): string[] {
+  const hubs = ['번개장터', '꿀팁 허브', 'Q&A', '한인 생활망', '미션 센터'];
+  const h = pick(hubs, seed, 0);
+  const nick = pick(['익명', '방콕러', 'CM드라이버', '파타야주민', '비자9'], seed, 1);
+  const city = pick(['방콕', '파타야', '치앙마이'], seed, 2);
+  const amt = 80 + (seed % 220);
+  return [
+    `${nick}님이 ${h}에서 활동 중이에요`,
+    `+${amt} 타이(THAI) 획득 — 실시간 리워드 흐름`,
+    `누군가 ${city} 날씨·교통 카드를 방금 읽었습니다`,
+    `LIVE: 신규 멤버가 온보딩 체크리스트를 진행 중`,
+    `${pick(['Udoner', '한끼여행자'], seed, 3)}님이 꿀팁에 반응했어요`,
+  ];
+}
+
+function syntheticActivityTh(seed: number): string[] {
+  const nick = pick(['ผู้ใช้', 'คนกรุงเทพ', 'พัทยา', 'เชียงใหม่'], seed, 0);
+  const amt = 80 + (seed % 220);
+  return [
+    `${nick} กำลังมีกิจกรรมในชุมชน`,
+    `+${amt} THAI — รางวัลไหลแบบเรียลไทม์`,
+    `มีคนเพิ่งอ่านการ์ดอากาศ·จราจร`,
+    `LIVE: สมาชิกใหม่กำลังทำเช็กลิสต์`,
+    `มีคนกดถูกใจทิปเมื่อครู่นี้`,
+  ];
+}
+
 function vitalityFactor(cities: ThailandCityWeather[]): { rain: boolean; hot: boolean; tempAvg: number | null } {
   if (!cities.length) return { rain: false, hot: false, tempAvg: null };
   const temps = cities.map((c) => c.temperature_c).filter((t): t is number => typeof t === 'number');
@@ -91,6 +119,7 @@ export async function buildPortalVitalityTickerLines(locale: Locale): Promise<st
   const facts = await fetchRecentVitalityFacts(loc);
 
   const ko: string[] = [
+    ...syntheticActivityKo(seed),
     `${n1}님이 꿀팁에 북마크했어요 · +${thaiAmt} 타이(THAI) 적립 중`,
     `${n2}님이 커뮤니티에서 +50 타이를 획득했습니다`,
     `실시간: 누군가 번개장터에서 거래 메시지를 보냈습니다`,
@@ -109,6 +138,7 @@ export async function buildPortalVitalityTickerLines(locale: Locale): Promise<st
   }
 
   const th: string[] = [
+    ...syntheticActivityTh(seed),
     `${n1} กดบุ๊กมาร์กทิป · +${thaiAmt} THAI`,
     `${n2} รับ +50 THAI จากชุมชน`,
     `ตลาดมือสอง: มีข้อความใหม่`,

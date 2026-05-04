@@ -35,7 +35,7 @@ function bangkokParts(atMs: number): { y: number; mon: number; d: number; h: num
 
 /**
  * 실제 조회수 + 기존 체감 오프셋 + 시간대·일·주·월 스케일이 다른 가중치(패턴 난화).
- * 저조회(≈150 미만)에는 글 id·시간대 기반 가변 배수를 적용해 노출 화력을 보강한다.
+ * 저조회(실제 ≈320 이하)에는 글 id·시간대 기반 가변 배수로 수백 회 이상 노출을 보장한다.
  */
 export function getVitalityViewCount(realViews: number, postId: string, atMs = Date.now()): number {
   const postHash = hash32(postId);
@@ -43,10 +43,15 @@ export function getVitalityViewCount(realViews: number, postId: string, atMs = D
   const real = Number.isFinite(r) ? Math.max(0, r) : 0;
 
   const perceived = getPerceivedViewCount(real, postId);
-  /** 예: 실제 10 → 대략 180~340대 노출(배수·노이즈로 난화) */
+  /** 저조회: 최소 수백 단위 노출(가변 배수·난화) — 필고급 체감 화력 */
   const viralFloor =
-    real <= 150 ? Math.round(real * (16 + (postHash % 10))) + (45 + (postHash % 120)) : perceived;
-  const base = real <= 150 ? Math.max(perceived, viralFloor) : perceived;
+    real <= 320
+      ? Math.max(
+          520,
+          Math.round(real * (34 + (postHash % 18))) + (180 + (postHash % 500)),
+        )
+      : perceived;
+  const base = real <= 320 ? Math.max(perceived, viralFloor) : perceived;
 
   const { mon, d, h: bh, dow } = bangkokParts(atMs);
   const dayWave = ((postHash * 17 + d * 31 + bh * 5) % 47) - 23;

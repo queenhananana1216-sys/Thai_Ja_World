@@ -269,11 +269,13 @@ export default function KoreanBizHubClient({
       let s = 0;
       if (r.is_verified) s += 10_000;
       if (r.contact_link_ok === false) s -= 4_000;
-      if (r.contact_link_ok === true) s += 400;
-      const hasChat =
-        normalizeExternalChatUrl(r.line_url) ||
-        normalizeExternalChatUrl(r.whatsapp_url) ||
-        buildWhatsAppUrlFromPhone(r.phone);
+      const line = normalizeExternalChatUrl(r.line_url);
+      const wa =
+        normalizeExternalChatUrl(r.whatsapp_url) ?? buildWhatsAppUrlFromPhone(r.phone);
+      const hasChat = Boolean(line || wa);
+      const contactChannelOk = r.contact_link_ok === true && hasChat;
+      if (contactChannelOk) s += 3_500;
+      else if (r.contact_link_ok === true) s += 400;
       if (hasChat) s += 900;
       if (isMaskedOrPlaceholderPhone(r.phone) && !hasChat) s -= 300;
       return s;
@@ -287,8 +289,11 @@ export default function KoreanBizHubClient({
 
   const contactLead =
     locale === 'th'
-      ? 'LINE / WhatsApp ลิงก์ (แชทได้ทันที)'
-      : 'LINE / WhatsApp 바로 연결(채팅 우선)';
+      ? 'แชททันที (LINE / WhatsApp)'
+      : '채팅 우선 (LINE / WhatsApp)';
+  const chatCta = locale === 'th' ? 'แชทเลย' : '채팅하기';
+  const chatAltLine = locale === 'th' ? 'เปิด LINE' : 'LINE으로';
+  const chatAltWa = locale === 'th' ? 'WhatsApp' : 'WhatsApp으로';
   const phoneMissing = locale === 'th' ? 'ไม่มีเบอร์โทร' : '전화번호 없음';
   const mapsCta = locale === 'th' ? 'Google Maps' : '구글맵 바로가기';
   const emptyCategoryHint =
@@ -430,9 +435,13 @@ export default function KoreanBizHubClient({
             const phoneDisplay =
               !isMaskedOrPlaceholderPhone(row.phone) && row.phone?.trim() ? row.phone.trim() : null;
             const contactBroken = row.contact_link_ok === false;
-            const lineCta = locale === 'th' ? 'เปิด LINE' : 'LINE으로 연결';
-            const waCta = locale === 'th' ? 'เปิด WhatsApp' : 'WhatsApp으로 연결';
             const checkingLabel = locale === 'th' ? 'กำลังตรวจสอบลิงก์' : '연락 링크 확인 중';
+            const chatPrimary = lineU ?? waU;
+            const chatSecondary = lineU && waU ? (chatPrimary === lineU ? waU : lineU) : null;
+            const contactChannelOk =
+              row.contact_link_ok === true && Boolean(lineU || waU);
+            const channelBadge =
+              locale === 'th' ? 'ลิงก์ติดต่อยืนยัน' : '연락 인증됨';
             return (
               <li key={row.id} id={`korean-biz-row-${row.id}`} className="min-w-0">
                 <article
@@ -445,9 +454,16 @@ export default function KoreanBizHubClient({
                       <h2 className="min-w-0 flex-1 text-base font-bold leading-snug text-white md:text-lg">
                         {row.name}
                       </h2>
-                      <span className="shrink-0 rounded-full border border-cyan-400/40 bg-cyan-950/50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-cyan-100">
-                        {catLabel}
-                      </span>
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                        {contactChannelOk ? (
+                          <span className="rounded-full border border-emerald-400/55 bg-emerald-950/55 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-100">
+                            {channelBadge}
+                          </span>
+                        ) : null}
+                        <span className="rounded-full border border-cyan-400/40 bg-cyan-950/50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-cyan-100">
+                          {catLabel}
+                        </span>
+                      </div>
                     </div>
                     {!row.is_verified ? (
                       <p className="text-xs font-semibold text-rose-300/95">
@@ -458,31 +474,41 @@ export default function KoreanBizHubClient({
                       <p className="text-xs font-semibold text-amber-200/95">⚠ {checkingLabel}</p>
                     ) : null}
                     {row.address ? (
-                      <p className="text-sm leading-relaxed text-gray-300">{row.address}</p>
+                      <Link
+                        href={mapsHref(row)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm leading-relaxed text-sky-200/95 underline decoration-sky-400/40 underline-offset-2 transition hover:text-white"
+                      >
+                        <span aria-hidden className="mr-1">
+                          📍
+                        </span>
+                        {row.address}
+                      </Link>
                     ) : null}
                     <div className="mt-auto border-t border-white/10 pt-3">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-200/85">
                         {contactLead}
                       </p>
                       <div className="mt-2 flex flex-col gap-2">
-                        {lineU ? (
+                        {chatPrimary ? (
                           <Link
-                            href={lineU}
+                            href={chatPrimary}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-[#06C755]/55 bg-[#06C755]/20 px-3 py-2 text-center text-sm font-bold text-[#d8ffe8] no-underline shadow-[0_0_20px_rgba(6,199,85,0.18)] transition hover:bg-[#06C755]/35"
+                            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-violet-400/50 bg-gradient-to-r from-violet-600/35 to-fuchsia-600/25 px-3 py-2.5 text-center text-sm font-black text-white no-underline shadow-[0_0_28px_rgba(167,139,250,0.25)] transition hover:border-violet-300/70"
                           >
-                            {lineCta}
+                            {chatCta}
                           </Link>
                         ) : null}
-                        {waU ? (
+                        {chatSecondary ? (
                           <Link
-                            href={waU}
+                            href={chatSecondary}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-emerald-400/45 bg-emerald-950/40 px-3 py-2 text-center text-sm font-bold text-emerald-50 no-underline shadow-[0_0_24px_rgba(52,211,153,0.14)] transition hover:border-emerald-300/65 hover:bg-emerald-900/50"
+                            className="text-center text-xs font-semibold text-emerald-200/90 underline decoration-emerald-500/40 underline-offset-2 hover:text-emerald-50"
                           >
-                            {waCta}
+                            {chatSecondary === lineU ? chatAltLine : chatAltWa}
                           </Link>
                         ) : null}
                         {phoneDisplay ? (
@@ -492,19 +518,30 @@ export default function KoreanBizHubClient({
                           >
                             {phoneDisplay}
                           </a>
-                        ) : !lineU && !waU ? (
+                        ) : !chatPrimary ? (
                           <p className="text-center font-mono text-sm font-semibold text-gray-500">{phoneMissing}</p>
                         ) : null}
                       </div>
                     </div>
-                    <Link
-                      href={mapsHref(row)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-emerald-400/45 bg-emerald-950/40 px-3 py-2 text-center text-sm font-bold text-emerald-50 no-underline shadow-[0_0_24px_rgba(52,211,153,0.14)] transition hover:border-emerald-300/65 hover:bg-emerald-900/50"
-                    >
-                      {mapsCta}
-                    </Link>
+                    {row.address ? (
+                      <Link
+                        href={mapsHref(row)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-center text-xs font-semibold text-emerald-200/80 underline decoration-emerald-500/35 underline-offset-2 hover:text-emerald-100"
+                      >
+                        {mapsCta}
+                      </Link>
+                    ) : (
+                      <Link
+                        href={mapsHref(row)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-emerald-400/45 bg-emerald-950/40 px-3 py-2 text-center text-sm font-bold text-emerald-50 no-underline shadow-[0_0_24px_rgba(52,211,153,0.14)] transition hover:border-emerald-300/65 hover:bg-emerald-900/50"
+                      >
+                        {mapsCta}
+                      </Link>
+                    )}
                     <p className="text-[11px] leading-relaxed text-gray-500">
                       {row.is_verified ? (
                         <>{verifiedLine(row.last_verified_at)}</>

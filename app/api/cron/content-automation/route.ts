@@ -5,7 +5,10 @@ import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase
 import { findActivePause, logCronEvent, pausedResponse, registerFailureAndSelfHeal } from '@/lib/cron/omniLogger';
 import { sanitizeAiKoreanPhrases, sanitizeAiThaiPhrases } from '@/lib/text/normalizeDisplayText';
 import { pingGoogleSitemap } from '@/lib/seo/googleSitemapPing';
-import { runWeatherCoupledGoogleIndexingPass } from '@/lib/seo/weatherCoupledGoogleIndexing';
+import { isGoogleIndexingConfigured } from '@/lib/seo/googleIndexingApi';
+import { runRetrofitIndexingSweep } from '@/lib/seo/retrofitIndexingSweep';
+import { fetchThailandCitiesWeather } from '@/lib/weather/fetchThailandCitiesWeather';
+import { isThailandWeatherSnapshotComplete } from '@/lib/weather/thailandWeatherSnapshot';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -157,30 +160,36 @@ async function fetchSnapshots(now: Date): Promise<{ rows: SnapshotRow[]; metrics
     weather_pipeline_ok: false,
   };
 
-  const weatherRes = await fetchJsonWithTimeout<{ current?: { temperature_2m?: number; weather_code?: number } }>(
-    'open-meteo',
-    'https://api.open-meteo.com/v1/forecast?latitude=13.7563&longitude=100.5018&current=temperature_2m,weather_code&timezone=Asia%2FBangkok',
-  );
-  if (weatherRes.ok && weatherRes.data) {
-    metrics.weather_pipeline_ok = true;
-    const weather = weatherRes.data;
-    const temp = weather.current?.temperature_2m;
-    metrics.weatherSummary =
-      typeof temp === 'number' ? `Bangkok ${Math.round(temp * 10) / 10}C` : 'Bangkok temperature unavailable';
-    rows.push({
-      source: 'weather',
-      title: `[AUTO][WEATHER] Bangkok ${day}`,
-      external_url: `internal://weather/bangkok/${day}`,
-      raw_body: JSON.stringify({
-        source: 'open-meteo',
-        collected_at: now.toISOString(),
-        city: 'Bangkok',
-        current: weather.current ?? {},
-      }),
-    });
-  } else if (weatherRes.error) {
-    metrics.errors.push(weatherRes.error);
-    console.error('[API /api/cron/content-automation] weather fetch failed:', weatherRes.error);
+  try {
+    const tw = await fetchThailandCitiesWeather('ko', { cache: 'no-store' });
+    if (isThailandWeatherSnapshotComplete(tw.cities)) {
+      metrics.weather_pipeline_ok = true;
+      const bkk = tw.cities.find((c) => c.key === 'bangkok');
+      const temp = bkk?.temperature_c;
+      metrics.weatherSummary =
+        typeof temp === 'number'
+          ? `3city OK · Bangkok ${temp}°C`
+          : '3city Open-Meteo snapshot OK';
+      rows.push({
+        source: 'weather',
+        title: `[AUTO][WEATHER] Thailand 3-city ${day}`,
+        external_url: `internal://weather/thailand-3city/${day}`,
+        raw_body: JSON.stringify({
+          source: 'open-meteo',
+          collected_at: now.toISOString(),
+          cities: tw.cities,
+          updated_at: tw.updatedAt,
+        }),
+      });
+    } else {
+      const err = '[open-meteo] 3-city snapshot incomplete (Bangkok/Pattaya/Chiang Mai)';
+      metrics.errors.push(err);
+      console.error('[API /api/cron/content-automation]', err);
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    metrics.errors.push(`[open-meteo] ${msg}`);
+    console.error('[API /api/cron/content-automation] weather fetch failed:', msg);
   }
 
   const fxRes = await fetchJsonWithTimeout<{ rates?: Record<string, number>; time_last_update_utc?: string }>(
@@ -348,10 +357,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       typeof processOutput.succeeded === 'number' ? processOutput.succeeded : null;
     const sanitizedRows = await runSanitizationPass(admin);
 
-    let seoIndexing: { ran: boolean; submitted: number; failed: number; candidate_urls: number } | null = null;
+    let seoIndexing: {
+      ran: boolean;
+      submitted: number;
+      failed: number;
+      candidate_urls: number;
+      batches?: number;
+    } | null = null;
     let sitemapPing: { ok: boolean; status?: number; error?: string } | null = null;
     if (metrics.weather_pipeline_ok) {
-      seoIndexing = await runWeatherCoupledGoogleIndexingPass(admin);
+      if (isGoogleIndexingConfigured()) {
+        seoIndexing = await runRetrofitIndexingSweep(admin, {
+          newsLimit: 500,
+          postsLimit: 700,
+          maxPublishTotal: 160,
+        });
+      }
       sitemapPing = await pingGoogleSitemap();
     }
 

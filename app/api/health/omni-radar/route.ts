@@ -24,8 +24,8 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const CRON_MAX_AGE_MS = 24 * 60 * 60 * 1000;
-const WEATHER_PROBE_RETRIES = 3;
-const WEATHER_PROBE_BACKOFF_MS = 450;
+const WEATHER_PROBE_RETRIES = 5;
+const WEATHER_PROBE_BACKOFF_MS = 400;
 
 const NO_STORE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',

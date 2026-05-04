@@ -6,6 +6,7 @@ import useSWR from 'swr';
 import type { Locale } from '@/i18n/types';
 import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import { usePublicWeatherSwr } from '@/lib/hooks/usePublicWeatherSwr';
+import { isThailandWeatherSnapshotComplete } from '@/lib/weather/thailandWeatherSnapshot';
 import styles from './portal-2026.module.css';
 
 /** 라이브 레이더 — 포커스·마운트 시 즉시 재검증 + 주기 폴링 */
@@ -113,9 +114,15 @@ function omniLedTooltip(
   schemaHint?: string | null,
   seoIndexingRed?: boolean,
   seoErr?: string | null,
+  weatherOmniRelax?: boolean,
 ): string {
   if (phase === 'neutral') {
     return locale === 'th' ? 'กำลังตรวจสอบระบบ…' : '시스템 상태 확인 중…';
+  }
+  if (phase === 'error' && weatherOmniRelax) {
+    return locale === 'th'
+      ? '🟢 ข้อมูล 3 เมืองจาก Open-Meteo พร้อมแล้ว — สัญญาณเลดาร์ชั่วคราว (ฐานข้อมูลยังไม่ล่ม)'
+      : '🟢 Open-Meteo 3도시 수집 완료 — 옴니 레이더 날씨 프로브만 일시 실패(DB는 정상으로 추정)';
   }
   if (phase === 'ok' && schemaLayerWarn) {
     const tail =
@@ -258,6 +265,22 @@ export default function PortalWeatherWidget({
     seoIndexing?.skipped !== true &&
     seoIndexing?.seo_indexing_ok === false;
 
+  const weatherClientComplete =
+    !busy &&
+    !weatherError &&
+    Boolean(weatherPayload?.cities?.length) &&
+    isThailandWeatherSnapshotComplete(weatherPayload?.cities ?? []);
+
+  const omniDbDown =
+    omniPhase === 'error' && omniErrors.some((e) => String(e).toLowerCase().startsWith('database:'));
+  const omniWeatherProbeFail =
+    omniPhase === 'error' &&
+    !omniDbDown &&
+    omniErrors.some((e) => String(e).toLowerCase().startsWith('weather:'));
+
+  /** 위젯이 이미 3도시 실측을 받았는데 옴니만 날씨 프로브 실패한 경우 — 오탐 빨강 완화 */
+  const weatherOmniRelax = weatherClientComplete && omniWeatherProbeFail;
+
   const ledClass =
     omniPhase === 'ok'
       ? seoIndexingRed
@@ -266,7 +289,9 @@ export default function PortalWeatherWidget({
           ? styles.omniLedOrange
           : styles.omniLedGreen
       : omniPhase === 'error'
-        ? styles.omniLedRed
+        ? weatherOmniRelax
+          ? styles.omniLedGreen
+          : styles.omniLedRed
         : styles.omniLedNeutral;
 
   const schemaHint =
@@ -286,6 +311,7 @@ export default function PortalWeatherWidget({
         schemaHint,
         seoIndexingRed,
         seoIndexing?.error ?? null,
+        weatherOmniRelax,
       ),
     [
       omniPhase,
@@ -297,6 +323,7 @@ export default function PortalWeatherWidget({
       schemaHint,
       seoIndexingRed,
       seoIndexing?.error,
+      weatherOmniRelax,
     ],
   );
 
@@ -310,7 +337,9 @@ export default function PortalWeatherWidget({
             ? '자가 면역 훈련 중'
             : '시스템 정상'
       : omniPhase === 'error'
-        ? '시스템 경고'
+        ? weatherOmniRelax
+          ? '날씨 3도시 수집 완료, 레이더 프로브만 지연'
+          : '시스템 경고'
         : '시스템 상태 확인 중';
 
   const shieldPulse = motherbrain?.shield_pulse === true;

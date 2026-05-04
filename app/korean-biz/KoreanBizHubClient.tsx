@@ -8,7 +8,9 @@ import KoreanBizReportFab from './KoreanBizReportFab';
 import type { Locale } from '@/i18n/types';
 import {
   buildWhatsAppUrlFromPhone,
+  isLikelySyntheticOrDemoPhone,
   isMaskedOrPlaceholderPhone,
+  isTaejaInternalDemoPlaceId,
   normalizeExternalChatUrl,
 } from '@/lib/korean-biz/publicContact';
 import type { KoreanBizCategory, KoreanBizRow } from '@/lib/korean-biz/koreanBizTypes';
@@ -255,7 +257,12 @@ export default function KoreanBizHubClient({
       if (contactChannelOk) s += 3_500;
       else if (r.contact_link_ok === true) s += 400;
       if (hasChat) s += 900;
-      if (isMaskedOrPlaceholderPhone(r.phone) && !hasChat) s -= 300;
+      if (
+        (isLikelySyntheticOrDemoPhone(r.phone) || isTaejaInternalDemoPlaceId(r.google_place_id)) &&
+        !hasChat
+      ) {
+        s -= 300;
+      }
       return s;
     };
     return [...base].sort((a, b) => {
@@ -272,7 +279,22 @@ export default function KoreanBizHubClient({
   const chatCta = locale === 'th' ? 'แชทเลย' : '채팅하기';
   const chatAltLine = locale === 'th' ? 'เปิด LINE' : 'LINE으로';
   const chatAltWa = locale === 'th' ? 'WhatsApp' : 'WhatsApp으로';
-  const phoneMissing = locale === 'th' ? 'ไม่มีเบอร์โทร' : '전화번호 없음';
+  const phoneMissing =
+    locale === 'th'
+      ? 'ไม่มีเบอร์โทร'
+      : locale === 'en'
+        ? 'No phone on file'
+        : locale === 'zh'
+          ? '暂无电话'
+          : '전화번호 없음';
+  const contactVerifying =
+    locale === 'th'
+      ? 'กำลังตรวจสอบเบอร์โทรจริง — แนะนำให้เปิดแผนที่หรือแจ้งข้อมูลเพิ่ม'
+      : locale === 'en'
+        ? 'Verifying real contact details — use Maps or suggest an update.'
+        : locale === 'zh'
+          ? '正在核对真实电话 — 建议使用地图或向我们补充。'
+          : '실제 연락처 확인 중 — 구글맵으로 위치를 확인하거나 제보로 번호를 알려 주세요.';
   const mapsCta = locale === 'th' ? 'Google Maps' : '구글맵 바로가기';
   const emptyCategoryHint =
     locale === 'th'
@@ -406,18 +428,30 @@ export default function KoreanBizHubClient({
         ) : (
           filtered.map((row) => {
             const catLabel = CATEGORY_LABEL[locale][row.category];
-            const lineU = normalizeExternalChatUrl(row.line_url);
-            const waStored = normalizeExternalChatUrl(row.whatsapp_url);
-            const waDerived = buildWhatsAppUrlFromPhone(row.phone);
+            const integrityPending =
+              isTaejaInternalDemoPlaceId(row.google_place_id) ||
+              isLikelySyntheticOrDemoPhone(row.phone);
+            const lineU = integrityPending ? null : normalizeExternalChatUrl(row.line_url);
+            const waStored = integrityPending ? null : normalizeExternalChatUrl(row.whatsapp_url);
+            const waDerived = integrityPending ? null : buildWhatsAppUrlFromPhone(row.phone);
             const waU = waStored ?? waDerived;
             const phoneDisplay =
-              !isMaskedOrPlaceholderPhone(row.phone) && row.phone?.trim() ? row.phone.trim() : null;
-            const contactBroken = row.contact_link_ok === false;
+              !integrityPending &&
+              !isMaskedOrPlaceholderPhone(row.phone) &&
+              row.phone?.trim()
+                ? row.phone.trim()
+                : null;
+            const contactBroken = row.contact_link_ok === false && !integrityPending;
             const checkingLabel = locale === 'th' ? 'กำลังตรวจสอบลิงก์' : '연락 링크 확인 중';
-            const chatPrimary = lineU ?? waU;
-            const chatSecondary = lineU && waU ? (chatPrimary === lineU ? waU : lineU) : null;
+            const chatPrimary = integrityPending ? null : lineU ?? waU;
+            const chatSecondary =
+              integrityPending || !(lineU && waU)
+                ? null
+                : chatPrimary === lineU
+                  ? waU
+                  : lineU;
             const contactChannelOk =
-              row.contact_link_ok === true && Boolean(lineU || waU);
+              !integrityPending && row.contact_link_ok === true && Boolean(lineU || waU);
             const channelBadge =
               locale === 'th' ? 'ลิงก์ติดต่อยืนยัน' : '연락 인증됨';
             return (
@@ -447,6 +481,9 @@ export default function KoreanBizHubClient({
                       <p className="text-xs font-semibold text-rose-300/95">
                         {locale === 'th' ? 'ต้องตรวจสอบสถานะ' : '영업 상태 확인 필요'}
                       </p>
+                    ) : null}
+                    {integrityPending ? (
+                      <p className="text-xs font-semibold text-amber-200/95">⏳ {contactVerifying}</p>
                     ) : null}
                     {contactBroken ? (
                       <p className="text-xs font-semibold text-amber-200/95">⚠ {checkingLabel}</p>
@@ -497,7 +534,17 @@ export default function KoreanBizHubClient({
                             {phoneDisplay}
                           </a>
                         ) : !chatPrimary ? (
-                          <p className="text-center font-mono text-sm font-semibold text-gray-500">{phoneMissing}</p>
+                          <p className="text-center font-mono text-sm font-semibold text-gray-500">
+                            {integrityPending
+                              ? locale === 'th'
+                                ? 'ดูแผนที่ด้านบน'
+                                : locale === 'en'
+                                  ? 'See Maps above'
+                                  : locale === 'zh'
+                                    ? '请使用上方地图'
+                                    : '위 지도 링크를 참고해 주세요'
+                              : phoneMissing}
+                          </p>
                         ) : null}
                       </div>
                     </div>

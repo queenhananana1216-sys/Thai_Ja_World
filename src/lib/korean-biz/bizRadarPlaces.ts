@@ -133,6 +133,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** Places에서 받은 번호 — **XX 마스킹 없이** 공백만 정리해 DB에 저장한다. */
 function normalizePhone(s: string | null | undefined): string {
   return (s ?? '').replace(/\s+/g, ' ').trim();
 }
@@ -174,7 +175,7 @@ export function mergeDetailIntoChange(params: {
   const { detail } = params;
   const addr = detail.formatted_address ?? params.existingAddress;
   const phone =
-    normalizePhone(detail.formatted_phone_number ?? detail.international_phone_number ?? '') ||
+    normalizePhone(detail.international_phone_number ?? detail.formatted_phone_number ?? '') ||
     params.existingPhone;
   const name = (detail.name ?? params.existingName).trim();
   const lat = detail.geometry?.location?.lat ?? params.existingLat;
@@ -250,7 +251,7 @@ export async function placesDetails(params: {
   }
 
   const phoneFirst =
-    normalizePhone(json.nationalPhoneNumber) || normalizePhone(json.internationalPhoneNumber);
+    normalizePhone(json.internationalPhoneNumber) || normalizePhone(json.nationalPhoneNumber);
   const loc = json.location;
   const biz = normalizeBusinessStatus(
     typeof json.businessStatus === 'string' ? json.businessStatus : '',

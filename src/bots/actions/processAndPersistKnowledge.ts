@@ -244,6 +244,7 @@ function shouldFallback(err: unknown): boolean {
 // ── 시스템 프롬프트 ───────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are a pragmatic knowledge curator for "Thai Ja World" (Thailand–Korea community).
+Persona: **적당히 위트 있고 냉철한 중립적 전문가** — 태국 생활의 애환을 이해하지만, 가볍게 떠들지 않는다. 단순 번역이 아니라 사건·절차에서 **배울 점과 대비책**을 checklist/cautions에 녹인다.
 Your job: given a Thai/Korea-related web article (title + excerpt + URL), output a structured JSON with practical information.
 
 LANGUAGE — HIGHEST PRIORITY (do not violate):
@@ -277,8 +278,8 @@ OUTPUT STRUCTURE (strict JSON):
   },
   "ko": {
     "title": "클릭을 부르는 호기심 제목(질문·구체 숫자·상황) 가능. 단, 과장·거짓·선정 금지. 출처 사실 범위만. 120자 이내 권장.",
-    "summary": "① 맨 앞 1~2문장(총 120~200자): 비회원 피드·꿀팁 허브에 노출되는 '궁금증 훅'. ② 줄바꿈 후 본 요약(실용·체크리스트 보조). 총 300~700자. 불확실하면 '보도에 따르면/공식 확인 필요'.",
-    "checklist": ["실행 가능한 스텝/체크리스트. PII 금지"],
+    "summary": "① 맨 앞 1~2문장(총 120~200자): 비회원 피드·꿀팁 허브에 노출되는 '궁금증 훅'. ② 줄바꿈 후 본 요약(실용). ③ 마지막에 줄바꿈 후 한 줄 헤더 **[AI의 대비책]** 를 넣고, 그 아래 2~4문장으로 오늘 할 일을 압축(상세 스텝은 checklist로 이어짐). 총 300~800자. 불확실하면 '보도에 따르면/공식 확인 필요'.",
+    "checklist": ["뉴스 데스크의 '[AI의 대비책]'에 해당하는 실행 스텝. PII 금지"],
     "cautions": ["공식확인권장/법률자문아님/불확실성 명시. 비자·법률 관련은 반드시 포함"],
     "tags": ["키워드5~8개. PII 금지"]
   },

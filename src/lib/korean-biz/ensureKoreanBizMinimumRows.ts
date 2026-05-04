@@ -4,14 +4,13 @@ import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase
 
 const MIN_ROWS = 10;
 
-/** 서비스 롤 자가 치유 시드 — enum·확장 컬럼 없는 DB에서도 동작하도록 코어만 upsert */
+/** 서비스 롤 자가 치유 시드 — 연락처는 비워 두고 지도·업종만 제공(가짜 번호 노출 방지) */
 const MINIMAL_SELF_HEAL: Array<{
   google_place_id: string;
   name: string;
   category: 'mart' | 'pharmacy' | 'hospital';
   region: 'bangkok' | 'pattaya' | 'chiangmai';
   address: string;
-  phone: string;
   latitude: number;
   longitude: number;
 }> = [
@@ -21,7 +20,6 @@ const MINIMAL_SELF_HEAL: Array<{
     category: 'mart',
     region: 'bangkok',
     address: 'Sukhumvit · 방콕',
-    phone: '+66810001001',
     latitude: 13.7367,
     longitude: 100.5631,
   },
@@ -31,7 +29,6 @@ const MINIMAL_SELF_HEAL: Array<{
     category: 'pharmacy',
     region: 'bangkok',
     address: 'Thonglor · 방콕',
-    phone: '+66810001002',
     latitude: 13.7244,
     longitude: 100.5841,
   },
@@ -41,7 +38,6 @@ const MINIMAL_SELF_HEAL: Array<{
     category: 'hospital',
     region: 'bangkok',
     address: 'Asok · 방콕',
-    phone: '+66810001003',
     latitude: 13.7379,
     longitude: 100.5604,
   },
@@ -51,7 +47,6 @@ const MINIMAL_SELF_HEAL: Array<{
     category: 'mart',
     region: 'pattaya',
     address: 'Beach Rd · 파타야',
-    phone: '+66810001004',
     latitude: 12.9316,
     longitude: 100.8829,
   },
@@ -61,7 +56,6 @@ const MINIMAL_SELF_HEAL: Array<{
     category: 'pharmacy',
     region: 'pattaya',
     address: 'Jomtien · 파타야',
-    phone: '+66810001005',
     latitude: 12.8771,
     longitude: 100.8797,
   },
@@ -71,7 +65,6 @@ const MINIMAL_SELF_HEAL: Array<{
     category: 'hospital',
     region: 'pattaya',
     address: 'Central Pattaya',
-    phone: '+66810001006',
     latitude: 12.9236,
     longitude: 100.8825,
   },
@@ -81,7 +74,6 @@ const MINIMAL_SELF_HEAL: Array<{
     category: 'mart',
     region: 'chiangmai',
     address: 'Nimman · 치앙마이',
-    phone: '+66810001007',
     latitude: 18.7961,
     longitude: 98.9793,
   },
@@ -91,7 +83,6 @@ const MINIMAL_SELF_HEAL: Array<{
     category: 'pharmacy',
     region: 'chiangmai',
     address: 'Old City',
-    phone: '+66810001008',
     latitude: 18.7883,
     longitude: 98.9853,
   },
@@ -101,7 +92,6 @@ const MINIMAL_SELF_HEAL: Array<{
     category: 'hospital',
     region: 'chiangmai',
     address: 'Chang Khlan',
-    phone: '+66810001009',
     latitude: 18.7815,
     longitude: 99.0067,
   },
@@ -111,7 +101,6 @@ const MINIMAL_SELF_HEAL: Array<{
     category: 'mart',
     region: 'bangkok',
     address: 'Ekkamai · 방콕',
-    phone: '+66810001010',
     latitude: 13.7267,
     longitude: 100.5851,
   },
@@ -143,10 +132,10 @@ export async function ensureKoreanBizMinimumRows(): Promise<{ inserted: number; 
         category: row.category,
         region: row.region,
         address: row.address,
-        phone: row.phone,
+        phone: null,
         latitude: row.latitude,
         longitude: row.longitude,
-        is_verified: true,
+        is_verified: false,
         last_verified_at: now,
       },
       { onConflict: 'google_place_id' },

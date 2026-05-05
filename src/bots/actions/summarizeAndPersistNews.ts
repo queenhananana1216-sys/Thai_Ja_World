@@ -29,6 +29,7 @@ import {
   sanitizeAiThaiPhrases,
   sanitizeKoreanCommunityText,
 } from '@/lib/text/normalizeDisplayText';
+import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
 
 export type NewsSummaryProvider = 'openai' | 'gemini' | 'local' | 'auto';
 
@@ -727,6 +728,14 @@ async function callOpenAiCompatibleChatCompletion(params: {
       );
       await sleepMs(backoff);
       continue;
+    }
+    if (res.status === 429 || res.status === 503) {
+      void recordPipelineErrorEvent({
+        scope: 'news.llm.http',
+        reasonCode: `HTTP_${res.status}`,
+        messageExcerpt: t.slice(0, 400),
+        meta: { host },
+      });
     }
     throw new HttpCompletionError(res.status, `LLM HTTP ${res.status}: ${t.slice(0, 400)}`);
   }

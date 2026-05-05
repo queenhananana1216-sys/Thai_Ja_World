@@ -22,6 +22,7 @@ import { resolveKnowledgeRawBodyForProcessing } from '@/lib/knowledge/fetchKnowl
 import { KNOWLEDGE_STUB_SUMMARY_SNIPPET } from '@/lib/knowledge/knowledgeStubConstants';
 import { knowledgeInsertAsPublished } from '@/lib/knowledge/knowledgePublishMode';
 import type { KnowledgeLlmOutput } from '@/lib/knowledge/knowledgeLlmTypes';
+import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
 
 // ── 타입 ──────────────────────────────────────────────────────────────────
 
@@ -315,6 +316,14 @@ async function callLlm(params: {
       );
       await sleepMsKnowledge(bo);
       continue;
+    }
+    if (res.status === 429 || res.status === 503) {
+      void recordPipelineErrorEvent({
+        scope: 'knowledge.llm.http',
+        reasonCode: `HTTP_${res.status}`,
+        messageExcerpt: t.slice(0, 400),
+        meta: { url: url.slice(0, 200) },
+      });
     }
     throw new HttpCompletionError(res.status, `LLM HTTP ${res.status}: ${t.slice(0, 400)}`);
   }

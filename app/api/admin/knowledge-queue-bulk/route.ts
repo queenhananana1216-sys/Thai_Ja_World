@@ -6,10 +6,8 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
-import {
-  executeKnowledgePublishOrDraft,
-  type ProcessedKnowledgeRow,
-} from '@/lib/knowledge/knowledgeQueuePublishCore';
+import { executeKnowledgePublishWithAutoConcept } from '@/lib/knowledge/knowledgeAutoConceptPublish';
+import type { ProcessedKnowledgeRow } from '@/lib/knowledge/knowledgeQueuePublishCore';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
@@ -83,7 +81,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, succeeded: 0, failed: 0, results: [], message: '처리할 초안이 없습니다.' });
   }
 
-  const results: Array<{ id: string; ok: boolean; error?: string }> = [];
+  const results: Array<{
+    id: string;
+    ok: boolean;
+    error?: string;
+    replaced_id?: string;
+    auto_enriched?: boolean;
+  }> = [];
 
   for (const id of idList) {
     const { data: row, error: fetchErr } = await admin
@@ -102,10 +106,9 @@ export async function POST(req: Request) {
       continue;
     }
 
-    const result = await executeKnowledgePublishOrDraft(admin, {
+    const result = await executeKnowledgePublishWithAutoConcept(admin, {
       row: pr,
       authorId,
-      action: 'publish',
       fieldPatch: {},
       skipRevalidate: true,
     });
@@ -113,12 +116,18 @@ export async function POST(req: Request) {
     if (!result.ok) {
       results.push({ id, ok: false, error: result.error });
     } else {
-      results.push({ id, ok: true });
+      results.push({
+        id: result.effective_processed_knowledge_id,
+        ok: true,
+        replaced_id: result.effective_processed_knowledge_id !== id ? id : undefined,
+        auto_enriched: result.auto_enriched,
+      });
     }
   }
 
   const succeeded = results.filter((r) => r.ok).length;
   const failed = results.length - succeeded;
+  const auto_enriched = results.filter((r) => r.ok && r.auto_enriched).length;
 
   if (succeeded > 0) {
     revalidatePath('/community/boards', 'layout');
@@ -129,6 +138,7 @@ export async function POST(req: Request) {
     ok: true,
     succeeded,
     failed,
+    auto_enriched,
     results,
   });
 }

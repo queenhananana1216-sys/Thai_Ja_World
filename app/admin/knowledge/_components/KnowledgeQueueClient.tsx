@@ -262,7 +262,11 @@ export default function KnowledgeQueueClient({
                 }),
           }),
         });
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        const j = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          auto_enriched?: boolean;
+          effective_processed_knowledge_id?: string;
+        };
         if (!res.ok) {
           setMsg(j.error ?? `오류 (${res.status})`);
           return;
@@ -270,9 +274,19 @@ export default function KnowledgeQueueClient({
         if (action === 'delete') {
           setMsg('삭제했습니다. (원문·요약·관련 데이터가 DB에서 함께 제거됩니다)');
         } else {
+          const tail =
+            action === 'publish' && j.auto_enriched
+              ? ' (미가공 초안은 전문가 톤 JSON으로 자동 가공한 뒤 게시했습니다.)'
+              : '';
+          const idHint =
+            action === 'publish' &&
+            j.effective_processed_knowledge_id &&
+            j.effective_processed_knowledge_id !== id
+              ? ` 초안 ID가 ${j.effective_processed_knowledge_id.slice(0, 8)}… 로 갱신되었습니다.`
+              : '';
           setMsg(
             action === 'publish'
-              ? '즉시 게시: 광장·/tips 에 반영했습니다.'
+              ? `즉시 게시: 광장·/tips 에 반영했습니다.${tail}${idHint}`
               : '편집 내용을 저장했습니다.',
           );
         }
@@ -314,7 +328,8 @@ export default function KnowledgeQueueClient({
     const total = items.length;
     if (
       !window.confirm(
-        `승인 대기 초안 ${total}건(최대 80건)을 일괄 즉시 게시할까요?\n요약·편집 안내 기준 미달 건은 건너뜁니다.`,
+        `승인 대기 초안 ${total}건(최대 80건)을 일괄 즉시 게시할까요?\n` +
+          '미가공·스텁 건은 LLM이 「태국에, 살자」 전문가 JSON 컨셉으로 먼저 채운 뒤 게시합니다. (LLM 미설정 시 해당 건은 실패로 집계됩니다.)',
       )
     ) {
       return;
@@ -332,12 +347,17 @@ export default function KnowledgeQueueClient({
         error?: string;
         succeeded?: number;
         failed?: number;
+        auto_enriched?: number;
       };
       if (!res.ok) {
         setMsg(j.error ?? `오류 (${res.status})`);
         return;
       }
-      setMsg(`일괄 게시: 성공 ${j.succeeded ?? 0}건 · 실패 ${j.failed ?? 0}건`);
+      const enrich =
+        typeof j.auto_enriched === 'number' && j.auto_enriched > 0
+          ? ` · 자동 가공 후 게시 ${j.auto_enriched}건`
+          : '';
+      setMsg(`일괄 게시: 성공 ${j.succeeded ?? 0}건 · 실패 ${j.failed ?? 0}건${enrich}`);
       router.refresh();
     } finally {
       setBulkPubBusy(false);

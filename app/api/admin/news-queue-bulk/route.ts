@@ -1,6 +1,10 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
+import {
+  adminReprocessProcessedNewsKoreanOnly,
+  isNewsSummaryLlmConfigured,
+} from '@/bots/actions/summarizeAndPersistNews';
 import { validateProcessedNewsRowForPublish } from '@/lib/news/validateNewsPublish';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
@@ -43,12 +47,31 @@ export async function POST(req: Request) {
 
   const toPublish: string[] = [];
   const skipped: Array<{ id: string; reason: string }> = [];
+  let auto_enriched = 0;
 
   for (const r of rows ?? []) {
     const id = String(r.id);
     const rn = r.raw_news as unknown as { title: string } | null;
     const sums = r.summaries as unknown as { summary_text: string; model: string | null }[] | null;
-    const err = validateProcessedNewsRowForPublish(r.clean_body as string | null, rn?.title ?? null, sums ?? null);
+    let err = validateProcessedNewsRowForPublish(r.clean_body as string | null, rn?.title ?? null, sums ?? null);
+
+    if (err && isNewsSummaryLlmConfigured()) {
+      const rr = await adminReprocessProcessedNewsKoreanOnly(id);
+      if (rr.ok) {
+        const { data: r2, error: e2 } = await admin
+          .from('processed_news')
+          .select('id, clean_body, raw_news(title), summaries(summary_text, model)')
+          .eq('id', id)
+          .maybeSingle();
+        if (!e2 && r2) {
+          const rn2 = r2.raw_news as unknown as { title: string } | null;
+          const sums2 = r2.summaries as unknown as { summary_text: string; model: string | null }[] | null;
+          err = validateProcessedNewsRowForPublish(r2.clean_body as string | null, rn2?.title ?? null, sums2 ?? null);
+          if (!err) auto_enriched += 1;
+        }
+      }
+    }
+
     if (err) {
       skipped.push({ id, reason: err });
       continue;
@@ -64,7 +87,7 @@ export async function POST(req: Request) {
       skipped_samples: skipped.slice(0, 8),
       message:
         skipped.length > 0
-          ? '품질 기준을 통과한 초안이 없습니다. 제목·한국어 요약(20자 이상)을 다듬은 뒤 다시 시도하세요.'
+          ? '품질 기준을 통과한 초안이 없습니다. LLM이 꺼져 있거나 재가공 후에도 기준이 안 맞으면 수동 확인이 필요합니다.'
           : '승인할 뉴스 초안이 없습니다.',
     });
   }
@@ -79,5 +102,6 @@ export async function POST(req: Request) {
     updated: toPublish.length,
     skipped: skipped.length,
     skipped_samples: skipped.slice(0, 8),
+    auto_enriched,
   });
 }

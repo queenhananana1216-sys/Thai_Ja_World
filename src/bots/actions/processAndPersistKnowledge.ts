@@ -35,6 +35,8 @@ export interface KnowledgeProcessRowResult {
   ok: boolean;
   board_target?: 'tips_board' | 'board_board';
   error?: string;
+  /** insertProcessedKnowledgeFromLlm 성공 시에만 */
+  processed_knowledge_id?: string;
 }
 
 export interface KnowledgeProcessBatchResult {
@@ -887,7 +889,12 @@ export async function processKnowledgeFromResolvedRaw(
     stubLlm = finalize(stubLlm);
     const r = await insertProcessedKnowledgeFromLlm(client, rawId, stubLlm, false);
     return r.ok
-      ? { raw_knowledge_id: rawId, ok: true, board_target: stubLlm.board_target }
+      ? {
+          raw_knowledge_id: rawId,
+          ok: true,
+          board_target: stubLlm.board_target,
+          processed_knowledge_id: r.processed_knowledge_id,
+        }
       : { raw_knowledge_id: rawId, ok: false, error: r.error };
   }
 
@@ -897,7 +904,12 @@ export async function processKnowledgeFromResolvedRaw(
     const publishedInsert = opts?.forceDraft ? false : knowledgeInsertAsPublished();
     const r = await insertProcessedKnowledgeFromLlm(client, rawId, llm, publishedInsert);
     return r.ok
-      ? { raw_knowledge_id: rawId, ok: true, board_target: llm.board_target }
+      ? {
+          raw_knowledge_id: rawId,
+          ok: true,
+          board_target: llm.board_target,
+          processed_knowledge_id: r.processed_knowledge_id,
+        }
       : { raw_knowledge_id: rawId, ok: false, error: r.error };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -906,7 +918,12 @@ export async function processKnowledgeFromResolvedRaw(
       stubLlm = finalize(stubLlm);
       const r = await insertProcessedKnowledgeFromLlm(client, rawId, stubLlm, false);
       return r.ok
-        ? { raw_knowledge_id: rawId, ok: true, board_target: stubLlm.board_target }
+        ? {
+            raw_knowledge_id: rawId,
+            ok: true,
+            board_target: stubLlm.board_target,
+            processed_knowledge_id: r.processed_knowledge_id,
+          }
         : { raw_knowledge_id: rawId, ok: false, error: r.error ?? msg };
     }
     return { raw_knowledge_id: rawId, ok: false, error: msg };
@@ -916,7 +933,7 @@ export async function processKnowledgeFromResolvedRaw(
 /** 승인 대기 초안만: 삭제 후 원문 URL에서 본문을 다시 긁고 LLM으로 초안 재생성 */
 export async function reprocessKnowledgeDraftWithLlm(
   processedKnowledgeId: string,
-): Promise<{ ok: boolean; error?: string; board_target?: string }> {
+): Promise<{ ok: boolean; error?: string; board_target?: string; processed_knowledge_id?: string }> {
   const client = getServerSupabaseClient();
   const pid = processedKnowledgeId.trim();
   if (!pid) {
@@ -966,7 +983,11 @@ export async function reprocessKnowledgeDraftWithLlm(
   if (!rowResult.ok) {
     return { ok: false, error: rowResult.error ?? '재가공 실패' };
   }
-  return { ok: true, board_target: rowResult.board_target };
+  return {
+    ok: true,
+    board_target: rowResult.board_target,
+    processed_knowledge_id: rowResult.processed_knowledge_id,
+  };
 }
 
 // ── 메인 배치 처리 ────────────────────────────────────────────────────────

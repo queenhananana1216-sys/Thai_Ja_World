@@ -7,6 +7,7 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
+import { executeKnowledgePublishWithAutoConcept } from '@/lib/knowledge/knowledgeAutoConceptPublish';
 import {
   executeKnowledgePublishOrDraft,
   type ProcessedKnowledgeRow,
@@ -100,18 +101,37 @@ export async function POST(req: Request) {
   const thS = (body.th_summary ?? '').trim() || koS;
   const thE = (body.th_editorial_note ?? '').trim() || koE;
 
+  const fieldPatch = {
+    ko_title: body.ko_title,
+    ko_summary: body.ko_summary,
+    ko_editorial_note: body.ko_editorial_note,
+    th_title: thT,
+    th_summary: thS,
+    th_editorial_note: thE,
+  };
+
+  if (action === 'publish') {
+    const result = await executeKnowledgePublishWithAutoConcept(admin, {
+      row: processedRow,
+      authorId,
+      fieldPatch,
+    });
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+    return NextResponse.json({
+      ok: true,
+      published: result.published,
+      auto_enriched: result.auto_enriched,
+      effective_processed_knowledge_id: result.effective_processed_knowledge_id,
+    });
+  }
+
   const result = await executeKnowledgePublishOrDraft(admin, {
     row: processedRow,
     authorId,
-    action,
-    fieldPatch: {
-      ko_title: body.ko_title,
-      ko_summary: body.ko_summary,
-      ko_editorial_note: body.ko_editorial_note,
-      th_title: thT,
-      th_summary: thS,
-      th_editorial_note: thE,
-    },
+    action: 'draft',
+    fieldPatch,
   });
 
   if (!result.ok) {

@@ -74,7 +74,7 @@ export default function NewsQueueClient({
                 }),
           }),
         });
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        const j = (await res.json().catch(() => ({}))) as { error?: string; auto_enriched?: boolean };
         if (!res.ok) {
           setMsg(j.error ?? `오류 (${res.status})`);
           return;
@@ -82,7 +82,11 @@ export default function NewsQueueClient({
         if (action === 'delete') {
           setMsg('삭제했습니다. (수집 원문·요약·댓글까지 DB에서 제거됩니다)');
         } else {
-          setMsg(action === 'publish' ? '사이트에 게시했습니다.' : '편집 내용을 저장했습니다.');
+          const tail =
+            action === 'publish' && j.auto_enriched
+              ? ' (짧았던 초안은 데스크 LLM이 전문가 톤으로 채운 뒤 게시했습니다.)'
+              : '';
+          setMsg(action === 'publish' ? `사이트에 게시했습니다.${tail}` : '편집 내용을 저장했습니다.');
         }
         router.refresh();
       } finally {
@@ -218,7 +222,7 @@ export default function NewsQueueClient({
     if (
       !window.confirm(
         `현재 승인 대기 뉴스 ${n}건을 한 번에 홈 공개로 올릴까요?\n` +
-          '한국어 제목 2자 이상·요약 20자 이상인 초안만 올라가고, 짧은 스텁은 자동으로 건너뜁니다.',
+          '짧은 스텁은 LLM이 한국어 데스크 JSON 컨셉으로 먼저 채운 뒤 게시합니다. (뉴스 LLM 미설정 시 기준 미달 건은 건너뜁니다.)',
       )
     ) {
       return;
@@ -238,6 +242,7 @@ export default function NewsQueueClient({
         skipped?: number;
         skipped_samples?: { id: string; reason: string }[];
         message?: string;
+        auto_enriched?: number;
       };
       if (!res.ok) {
         setMsg(j.error ?? `오류 (${res.status})`);
@@ -250,9 +255,13 @@ export default function NewsQueueClient({
               ? ` (예: ${j.skipped_samples.map((s) => s.reason.slice(0, 40)).join(' / ')})`
               : '')
           : '';
+      const enrich =
+        typeof j.auto_enriched === 'number' && j.auto_enriched > 0
+          ? ` · 자동 가공 후 게시 ${j.auto_enriched}건`
+          : '';
       setMsg(
         j.updated && j.updated > 0
-          ? `일괄 게시 완료: ${j.updated}건${skipHint}`
+          ? `일괄 게시 완료: ${j.updated}건${enrich}${skipHint}`
           : (j.message ?? '게시할 초안이 없습니다.') + skipHint,
       );
       router.refresh();

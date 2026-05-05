@@ -6,8 +6,12 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { parseAdminAllowedEmails } from '@/lib/admin/adminAllowedEmails';
+import {
+  adminReprocessProcessedNewsKoreanOnly,
+  isNewsSummaryLlmConfigured,
+} from '@/bots/actions/summarizeAndPersistNews';
 import { mergeBilingualCleanBody } from '@/lib/news/mergeCleanBody';
-import { validateNewsPublishFields } from '@/lib/news/validateNewsPublish';
+import { validateProcessedNewsRowForPublish } from '@/lib/news/validateNewsPublish';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
@@ -55,7 +59,7 @@ export async function POST(req: Request) {
 
   const { data: row, error: fetchErr } = await admin
     .from('processed_news')
-    .select('id, clean_body, published, raw_news_id')
+    .select('id, clean_body, published, raw_news_id, raw_news(title), summaries(summary_text, model)')
     .eq('id', id)
     .maybeSingle();
 
@@ -86,24 +90,49 @@ export async function POST(req: Request) {
 
   const action = body.action === 'draft' ? 'draft' : 'publish';
 
-  if (action === 'publish') {
-    const v = validateNewsPublishFields(body.ko_title ?? '', body.ko_summary ?? '');
-    if (v) {
-      return NextResponse.json({ error: v }, { status: 400 });
-    }
-  }
-
   const koT = (body.ko_title ?? '').trim();
   const koS = (body.ko_summary ?? '').trim();
   const thT = (body.th_title ?? '').trim();
   const thS = (body.th_summary ?? '').trim();
   /** 관리자 UI는 태국어 필드를 숨기므로, 비었으면 한국어와 동일 값으로 저장(DB·이중언어 호환) */
-  const nextBody = mergeBilingualCleanBody(row.clean_body as string | null, {
+  let nextBody = mergeBilingualCleanBody(row.clean_body as string | null, {
     ko_title: body.ko_title,
     ko_summary: body.ko_summary,
     th_title: thT || koT,
     th_summary: thS || koS,
   });
+
+  let auto_enriched = false;
+  if (action === 'publish') {
+    const rn = row.raw_news as unknown as { title: string } | null;
+    const sums = row.summaries as unknown as { summary_text: string; model: string | null }[] | null;
+    let pubErr = validateProcessedNewsRowForPublish(nextBody, rn?.title ?? null, sums ?? null);
+    if (pubErr && isNewsSummaryLlmConfigured()) {
+      const rr = await adminReprocessProcessedNewsKoreanOnly(id);
+      if (rr.ok) {
+        const { data: row2, error: r2e } = await admin
+          .from('processed_news')
+          .select('id, clean_body, published, raw_news_id, raw_news(title), summaries(summary_text, model)')
+          .eq('id', id)
+          .maybeSingle();
+        if (!r2e && row2) {
+          nextBody = mergeBilingualCleanBody(row2.clean_body as string | null, {
+            ko_title: body.ko_title,
+            ko_summary: body.ko_summary,
+            th_title: thT || koT,
+            th_summary: thS || koS,
+          });
+          const rn2 = row2.raw_news as unknown as { title: string } | null;
+          const sums2 = row2.summaries as unknown as { summary_text: string; model: string | null }[] | null;
+          pubErr = validateProcessedNewsRowForPublish(nextBody, rn2?.title ?? null, sums2 ?? null);
+          if (!pubErr) auto_enriched = true;
+        }
+      }
+    }
+    if (pubErr) {
+      return NextResponse.json({ error: pubErr }, { status: 400 });
+    }
+  }
 
   const { error: upErr } = await admin
     .from('processed_news')
@@ -129,5 +158,9 @@ export async function POST(req: Request) {
   revalidatePath('/news');
   revalidatePath(`/news/${id}`);
 
-  return NextResponse.json({ ok: true, published: action === 'publish' });
+  return NextResponse.json({
+    ok: true,
+    published: action === 'publish',
+    auto_enriched: action === 'publish' ? auto_enriched : undefined,
+  });
 }

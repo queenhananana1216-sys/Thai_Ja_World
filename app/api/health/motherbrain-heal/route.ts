@@ -32,11 +32,17 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   let pathname: string | undefined;
   let deep = false;
+  /** 크론 전용 — 오래된 파이프라인 오류 스냅샷만 정리(운세·레이더 false positive 완화) */
+  let pipeline_error_retention_hours: number | undefined;
   if (text.trim()) {
     try {
       const o = JSON.parse(text) as Record<string, unknown>;
       if (typeof o.pathname === 'string') pathname = o.pathname;
       if (o.deep === true) deep = true;
+      const pr = o.pipeline_error_retention_hours;
+      if (typeof pr === 'number' && Number.isFinite(pr) && pr >= 24 && pr <= 24 * 30) {
+        pipeline_error_retention_hours = Math.floor(pr);
+      }
     } catch {
       return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 });
     }
@@ -54,6 +60,19 @@ export async function POST(req: Request): Promise<NextResponse> {
     }
   }
 
+  let pipeline_purge_removed: number | null = null;
+  if (
+    cronDeep &&
+    typeof pipeline_error_retention_hours === 'number'
+  ) {
+    const cutoff = new Date(Date.now() - pipeline_error_retention_hours * 3600 * 1000).toISOString();
+    const del = await admin.from('pipeline_error_events').delete().lt('created_at', cutoff).select('id');
+    pipeline_purge_removed = del.error ? null : del.data?.length ?? 0;
+    if (del.error) {
+      console.error('[motherbrain-heal] pipeline_error_events purge:', del.error.message);
+    }
+  }
+
   try {
     await admin.from('publish_logs').insert({
       channel: 'system_health',
@@ -63,6 +82,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         event: 'motherbrain_heal_ok',
         pathname: pathname?.slice(0, 1024) ?? '',
         deep_pgrst_attempted: deep && cronDeep,
+        pipeline_error_purge_removed: pipeline_purge_removed,
         at: new Date().toISOString(),
       },
     });
@@ -88,5 +108,6 @@ export async function POST(req: Request): Promise<NextResponse> {
     ok: true,
     revalidated_paths: n,
     deep_pgrst: deep && cronDeep ? pgrst_ok : null,
+    pipeline_error_purge_removed: pipeline_purge_removed,
   });
 }

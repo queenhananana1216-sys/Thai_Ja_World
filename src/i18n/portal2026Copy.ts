@@ -98,6 +98,12 @@ export type Portal2026Copy = {
   /** 포춘 API/네트워크 실패 구분 */
   fortuneErrorNetwork: string;
   fortuneErrorServer: string;
+  /** 로딩 스켈레톤 — 순환 표시용 짧은 문구 */
+  fortuneFetchingWittyA: string;
+  fortuneFetchingWittyB: string;
+  fortuneFetchingWittyC: string;
+  fortuneRetryCta: string;
+  fortuneTransientHint: string;
   /** 개인화·공동 미션 허브 */
   missionHubPersonalTitle: string;
   missionHubPersonalLoginHint: string;
@@ -194,6 +200,12 @@ const ko: Portal2026Copy = {
   feedBadgeTipsHoney: '실전 꿀팁',
   fortuneErrorNetwork: '네트워크가 불안정해요. 잠시 후 다시 시도해 주세요.',
   fortuneErrorServer: '서버 응답이 지연됐어요. 잠시 후 다시 시도해 주세요.',
+  fortuneFetchingWittyA: '🌴 방콕의 오늘 기운을 읽어 오는 중…',
+  fortuneFetchingWittyB: '🥠 포춘 쿠키 안의 한 줄을 고르고 있어요…',
+  fortuneFetchingWittyC: '📡 Bangkok 자정 기준 출석 줄을 서버와 맞추는 중!',
+  fortuneRetryCta: '다시 받아보기',
+  fortuneTransientHint:
+    '잠깐 길목이 혼잡했어요. 아래 버튼으로 재시도하거나, 조금 뒤에 다시 열어 보세요.',
   missionHubPersonalTitle: '오늘 나만의 미션',
   missionHubPersonalLoginHint: '로그인하면 활동 기반 맞춤 미션이 매일 표시됩니다.',
   missionHubPersonalEmpty: '오늘 미션을 준비하는 중이에요. 잠시 후 새로고침해 보세요.',
@@ -288,6 +300,11 @@ const th: Portal2026Copy = {
   feedBadgeTipsHoney: 'เคล็ดลับใช้จริง',
   fortuneErrorNetwork: 'เน็ตเวิร์กไม่เสถียร ลองใหม่ในอีกสักครู่',
   fortuneErrorServer: 'เซิร์ฟเวอร์ตอบช้า ลองใหม่ในอีกสักครู่',
+  fortuneFetchingWittyA: '🌴 กำลังอ่านค่าวันนี้จากกรุงเทพฯ…',
+  fortuneFetchingWittyB: '🥠 กำลังหยิบคำทำนายหนึ่งบรรทัดในคุกกี้ดวง…',
+  fortuneFetchingWittyC: '📡 กำลังเช็คเวลาไทยกับเซิร์ฟเวอร์เพื่อเช็คอินรายวัน!',
+  fortuneRetryCta: 'ลองอีกครั้ง',
+  fortuneTransientHint: 'ตอนนี้คิวหน่วงนิดหน่อย แตะลองใหม่ หรือกลับมาใหม่ในอึดใจ',
   missionHubPersonalTitle: 'ภารกิจวันนี้ของคุณ',
   missionHubPersonalLoginHint: 'ล็อกอินเพื่อรับภารกิจรายวันตามพฤติกรรม',
   missionHubPersonalEmpty: 'กำลังเตรียมภารกิจ — ลองรีเฟรชอีกครั้ง',

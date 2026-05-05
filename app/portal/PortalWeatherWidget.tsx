@@ -30,7 +30,7 @@ type WeatherCity = {
   condition: string;
 };
 
-type OmniLedPhase = 'neutral' | 'ok' | 'error';
+type OmniLedPhase = 'neutral' | 'ok' | 'error' | 'degraded';
 
 type OmniChaosMonkey = {
   shield_pulse?: boolean;
@@ -122,7 +122,15 @@ function omniLedTooltip(
   weatherSurfaceGreenTrust?: boolean,
   /** 날씨 실측 + DB다운 아님 → LED 무조건 초록(ZERO-RED) — 툴팁도 성공 모드로 고정 */
   zeroRedWeatherLed?: boolean,
+  degradedHints?: string[],
 ): string {
+  if (phase === 'degraded') {
+    const tip = degradedHints?.[0] ? degradedHints[0].slice(0, 140) : '';
+    const adminTail = isAdmin && tip ? ` — ${tip}` : '';
+    return locale === 'th'
+      ? `🟠 โหมดเตือน: พื้นฐาน OK แต่ดวง/เซ็นเตอร์เกาหลี/การประมวลผลข่าว·LLM ต้องจับตา${adminTail}`
+      : `🟠 서브 헬스 경고: DB·날씨는 통과했지만 운세·한인 생활망·가공(LLM) 중 이슈가 있어요${adminTail}`;
+  }
   if (zeroRedWeatherLed) {
     return locale === 'th'
       ? '🟢 Zero-Red: มีข้อมูลอากาศจริงบนหน้าจอ = สถานะสำเร็จ — ไม่สะท้อน SEO/เลดาร์ชั่วคราว'
@@ -218,11 +226,12 @@ export default function PortalWeatherWidget({
     dedupingInterval: 2000,
   });
 
-  const { omniPhase, omniErrors, chaosRadar, motherbrain, schemaLayer, seoIndexing } = useMemo(() => {
+  const { omniPhase, omniErrors, degradedHints, chaosRadar, motherbrain, schemaLayer, seoIndexing } = useMemo(() => {
     if (!omniPack) {
       return {
         omniPhase: 'neutral' as OmniLedPhase,
         omniErrors: [] as string[],
+        degradedHints: [] as string[],
         chaosRadar: null as OmniChaosMonkey | null,
         motherbrain: null as OmniMotherbrain | null,
         schemaLayer: null as OmniSchemaLayer | null,
@@ -246,26 +255,52 @@ export default function PortalWeatherWidget({
     const schemaLayer = checks?.schema_layer ?? null;
     const seoIndexing = checks?.seo_indexing ?? null;
 
-    const healthy =
-      ok &&
+    const statusStr =
+      json && typeof json === 'object' && !Array.isArray(json)
+        ? String((json as { status?: unknown }).status ?? '')
+        : '';
+
+    const allGo =
       json &&
       typeof json === 'object' &&
-      (json as { status?: string }).status === 'healthy' &&
+      !Array.isArray(json) &&
       (json as { all_systems_go?: boolean }).all_systems_go === true;
+
+    const healthy = ok && statusStr === 'healthy' && Boolean(allGo);
 
     if (healthy) {
       return {
         omniPhase: 'ok' as const,
         omniErrors: [] as string[],
+        degradedHints: [] as string[],
         chaosRadar: chaos,
         motherbrain,
         schemaLayer,
         seoIndexing,
       };
     }
+
+    if (ok && statusStr === 'degraded') {
+      const hintsRaw =
+        json && typeof json === 'object' && !Array.isArray(json)
+          ? (json as { degradation_errors?: unknown }).degradation_errors
+          : null;
+      const hints = Array.isArray(hintsRaw) ? hintsRaw.map((x) => String(x)).filter(Boolean) : [];
+      return {
+        omniPhase: 'degraded' as const,
+        omniErrors: hints.length ? hints : ['degraded:unknown'],
+        degradedHints: hints,
+        chaosRadar: chaos,
+        motherbrain,
+        schemaLayer,
+        seoIndexing,
+      };
+    }
+
     return {
       omniPhase: 'error' as const,
       omniErrors: parseOmniErrors(json, status),
+      degradedHints: [] as string[],
       chaosRadar: chaos,
       motherbrain,
       schemaLayer,
@@ -314,8 +349,11 @@ export default function PortalWeatherWidget({
       return s.startsWith('database:') || s.includes('database:');
     });
 
-  /** DB `database:` 다운만 아니면 날씨가 있을 때 표시등은 항상 초록(Zero-Red) */
-  const zeroRedWeatherLed = weatherPhysicalData && !(omniPhase === 'error' && omniDbDown);
+  const omniStrictDegraded = omniPhase === 'degraded';
+
+  /** 운세·망 등 서브 헬스가 degraded면 날씨만 보고 무조건 초록으로 덮어쓰지 않음 */
+  const zeroRedWeatherLed =
+    !omniStrictDegraded && weatherPhysicalData && !(omniPhase === 'error' && omniDbDown);
 
   const seoIndexingRedRaw =
     omniPhase === 'ok' &&
@@ -335,11 +373,14 @@ export default function PortalWeatherWidget({
 
   /** 클라이언트에 실측 온도가 있으면 DB 다운만 아니면 옴니 일시 오류·SEO와 무관하게 초록 */
   const treatOmniAsHealthyLed =
-    omniPhase === 'ok' ||
-    weatherSurfaceGreenGuard ||
-    (weatherSurfaceGreenTrust && !(omniPhase === 'error' && omniDbDown));
+    !omniStrictDegraded &&
+    (omniPhase === 'ok' ||
+      weatherSurfaceGreenGuard ||
+      (weatherSurfaceGreenTrust && !(omniPhase === 'error' && omniDbDown)));
 
-  const ledClass = zeroRedWeatherLed
+  const ledClass = omniStrictDegraded
+    ? styles.omniLedOrange
+    : zeroRedWeatherLed
     ? styles.omniLedGreen
     : treatOmniAsHealthyLed
       ? seoIndexingRed
@@ -371,6 +412,7 @@ export default function PortalWeatherWidget({
         weatherSurfaceGreenGuard,
         weatherSurfaceGreenTrust,
         zeroRedWeatherLed,
+        degradedHints,
       ),
     [
       omniPhase,
@@ -385,10 +427,13 @@ export default function PortalWeatherWidget({
       weatherSurfaceGreenGuard,
       weatherSurfaceGreenTrust,
       zeroRedWeatherLed,
+      degradedHints,
     ],
   );
 
-  const ledAria = zeroRedWeatherLed
+  const ledAria = omniStrictDegraded
+    ? '운세·한인망·가공 파이프라인 점검 필요'
+    : zeroRedWeatherLed
     ? 'Zero-Red: 날씨 실측 성공'
     : treatOmniAsHealthyLed
       ? seoIndexingRed

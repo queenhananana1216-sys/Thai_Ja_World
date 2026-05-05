@@ -1,6 +1,8 @@
 /**
- * GET /api/health/omni-radar — 초록불은 오직 ① Supabase 생존 ② 외부 날씨 API.
- * publish_logs·ui_incident·Shadow QA·Chaos 등 과거 봇 기록은 checks 에만 남기고 판정(healthy)에는 불참.
+ * GET /api/health/omni-radar
+ * - error(503): DB 생존 또는 날씨 API 실패
+ * - degraded(200): 코어는 살았으나 운세·한인망·콘텐츠(LLM) 파이프라인 중 하나 이상 이상
+ * - healthy(200): 코어 + 확장 vitality 전부 통과
  */
 import { NextResponse } from 'next/server';
 import {
@@ -10,6 +12,12 @@ import {
   checkShadowQaRadar,
   checkUiIncidentRadar,
 } from '@/lib/health/omniRadarBoard';
+import {
+  checkContentPipelineStress,
+  checkFortuneVitality,
+  checkKoreanLivingGridNonempty,
+  extendedVitalityAllOk,
+} from '@/lib/health/serviceVitalityProbes';
 import { checkPostsSchemaLayerRadar } from '@/lib/health/schemaLayerRadar';
 import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
 import {
@@ -221,6 +229,9 @@ export async function GET(): Promise<NextResponse> {
     ui_surface,
     board_posts_read,
     schema_layer,
+    fortune_vitality,
+    korean_living_grid,
+    content_pipeline,
   ] = await Promise.all([
     checkLiveSqlPing(),
     checkWeatherPipeline(),
@@ -234,6 +245,9 @@ export async function GET(): Promise<NextResponse> {
     checkUiIncidentRadar(),
     checkBoardPostsReadProbe(),
     checkPostsSchemaLayerRadar(),
+    checkFortuneVitality(),
+    checkKoreanLivingGridNonempty(),
+    checkContentPipelineStress(),
   ]);
 
   const chaos_monkey = {
@@ -245,10 +259,12 @@ export async function GET(): Promise<NextResponse> {
   const chaosOk = chaos_monkey.ok || chaos_monkey.skipped === true;
   const shadow_write_ok = shadow_qa.skipped === true || shadow_qa.ok;
 
-  /** 레이더 본판(초록/빨강): DB 생존 + 날씨 API만. 나머지는 관측용. */
-  const healthy = database.ok && weather.ok;
+  const core_ok = database.ok && weather.ok;
+  const extended_ok = extendedVitalityAllOk(fortune_vitality, korean_living_grid, content_pipeline);
+  const healthy = core_ok && extended_ok;
+  const radar_status: 'healthy' | 'degraded' | 'error' = !core_ok ? 'error' : extended_ok ? 'healthy' : 'degraded';
 
-  const shield_pulse = Boolean(healthy && chaos_monkey.shield_pulse);
+  const shield_pulse = Boolean(core_ok && extended_ok && chaos_monkey.shield_pulse);
 
   const legacy_secondary_ok =
     database.ok &&
@@ -259,6 +275,19 @@ export async function GET(): Promise<NextResponse> {
     chaosOk &&
     ui_surface.ok &&
     board_posts_read.ok;
+
+  const degradation_errors: string[] = [];
+  if (radar_status === 'degraded') {
+    if (!fortune_vitality.skipped && !fortune_vitality.ok) {
+      degradation_errors.push(`fortune_vitality: ${fortune_vitality.error ?? 'fail'}`);
+    }
+    if (!korean_living_grid.skipped && !korean_living_grid.ok) {
+      degradation_errors.push(`korean_living_grid: ${korean_living_grid.error ?? 'fail'}`);
+    }
+    if (!content_pipeline.skipped && !content_pipeline.ok) {
+      degradation_errors.push(`content_pipeline: ${content_pipeline.error ?? 'fail'}`);
+    }
+  }
 
   const checks = {
     database,
@@ -272,10 +301,23 @@ export async function GET(): Promise<NextResponse> {
     ui_surface,
     board_posts_read,
     schema_layer,
+    fortune_vitality,
+    korean_living_grid,
+    content_pipeline,
     motherbrain: {
       shield_pulse,
       all_green: healthy,
-      health_basis: 'database_and_weather_only' as const,
+      radar_status,
+      core_ok,
+      extended_ok,
+      health_basis: (radar_status === 'error'
+        ? 'database_or_weather_down'
+        : extended_ok
+          ? 'database_weather_fortune_korean_news'
+          : 'core_ok_extended_degraded') as
+        | 'database_or_weather_down'
+        | 'database_weather_fortune_korean_news'
+        | 'core_ok_extended_degraded',
       defense_success_rate: chaos_monkey.defense_success_rate ?? null,
       chaos_skipped: chaos_monkey.skipped === true,
       shadow_write_ok,
@@ -286,12 +328,24 @@ export async function GET(): Promise<NextResponse> {
     },
   };
 
-  if (healthy) {
+  if (radar_status === 'healthy') {
     return NextResponse.json(
       {
         status: 'healthy',
         all_systems_go: true,
         checks,
+      },
+      { headers: NO_STORE_HEADERS },
+    );
+  }
+
+  if (radar_status === 'degraded') {
+    return NextResponse.json(
+      {
+        status: 'degraded',
+        all_systems_go: false,
+        checks,
+        degradation_errors,
       },
       { headers: NO_STORE_HEADERS },
     );

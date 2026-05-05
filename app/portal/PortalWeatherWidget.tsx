@@ -70,6 +70,13 @@ type OmniSchemaLayer = {
   self_heal_hint?: string;
 };
 
+type OmniBizAuditQueue = {
+  warn?: boolean;
+  pending_count?: number;
+  oldest_pending_hours?: number | null;
+  hint?: string | null;
+};
+
 type OmniPack = { ok: boolean; status: number; json: unknown };
 
 async function omniFetcher(url: string): Promise<OmniPack> {
@@ -123,6 +130,8 @@ function omniLedTooltip(
   /** 날씨 실측 + DB다운 아님 → LED 무조건 초록(ZERO-RED) — 툴팁도 성공 모드로 고정 */
   zeroRedWeatherLed?: boolean,
   degradedHints?: string[],
+  bizAuditWarn?: boolean,
+  bizAuditHint?: string | null,
 ): string {
   if (phase === 'degraded') {
     const tip = degradedHints?.[0] ? degradedHints[0].slice(0, 140) : '';
@@ -153,6 +162,16 @@ function omniLedTooltip(
     return locale === 'th'
       ? '🟢 อุณหภูมิบนหน้าจอมาจากแหล่งจริง — เลดาร์ชั่วคราวขัดข้อง (ไม่ใช่ DB ล่ม)'
       : '🟢 화면에 실측 온도가 있으면 클라이언트 날씨 경로는 정상 — 옴니 프로브만 일시 오류';
+  }
+  if (phase === 'ok' && bizAuditWarn) {
+    const tail = bizAuditHint?.trim()
+      ? ` — ${bizAuditHint.trim().slice(0, 140)}`
+      : locale === 'th'
+        ? ' — ดูที่ /admin/biz-audit'
+        : ' — /admin/biz-audit';
+    return locale === 'th'
+      ? `🟠 คิวตรวจสอบร้านเกาหลี: ข้อมูลสถานที่ค้างรอผู้ดูแล${tail}`
+      : `🟠 비즈니스 데이터 노후화: 한인 생활망 수정 제안이 쌓였습니다.${tail}`;
   }
   if (phase === 'ok' && schemaLayerWarn) {
     const tail =
@@ -226,7 +245,8 @@ export default function PortalWeatherWidget({
     dedupingInterval: 2000,
   });
 
-  const { omniPhase, omniErrors, degradedHints, chaosRadar, motherbrain, schemaLayer, seoIndexing } = useMemo(() => {
+  const { omniPhase, omniErrors, degradedHints, chaosRadar, motherbrain, schemaLayer, seoIndexing, bizAuditQueue } =
+    useMemo(() => {
     if (!omniPack) {
       return {
         omniPhase: 'neutral' as OmniLedPhase,
@@ -236,6 +256,7 @@ export default function PortalWeatherWidget({
         motherbrain: null as OmniMotherbrain | null,
         schemaLayer: null as OmniSchemaLayer | null,
         seoIndexing: null as OmniSeoIndexing | null,
+        bizAuditQueue: null as OmniBizAuditQueue | null,
       };
     }
     const { ok, status, json } = omniPack;
@@ -247,6 +268,7 @@ export default function PortalWeatherWidget({
               motherbrain?: OmniMotherbrain;
               schema_layer?: OmniSchemaLayer;
               seo_indexing?: OmniSeoIndexing;
+              biz_audit_queue?: OmniBizAuditQueue;
             };
           }).checks
         : undefined;
@@ -254,6 +276,7 @@ export default function PortalWeatherWidget({
     const motherbrain = checks?.motherbrain ?? null;
     const schemaLayer = checks?.schema_layer ?? null;
     const seoIndexing = checks?.seo_indexing ?? null;
+    const bizAuditQueue = checks?.biz_audit_queue ?? null;
 
     const statusStr =
       json && typeof json === 'object' && !Array.isArray(json)
@@ -277,6 +300,7 @@ export default function PortalWeatherWidget({
         motherbrain,
         schemaLayer,
         seoIndexing,
+        bizAuditQueue,
       };
     }
 
@@ -294,6 +318,7 @@ export default function PortalWeatherWidget({
         motherbrain,
         schemaLayer,
         seoIndexing,
+        bizAuditQueue,
       };
     }
 
@@ -305,6 +330,7 @@ export default function PortalWeatherWidget({
       motherbrain,
       schemaLayer,
       seoIndexing,
+      bizAuditQueue,
     };
   }, [omniPack]);
 
@@ -320,6 +346,10 @@ export default function PortalWeatherWidget({
     omniPhase === 'ok' &&
     schemaLayer != null &&
     (schemaLayer.warn === true || schemaLayer.ok === false);
+
+  const bizAuditWarn = omniPhase === 'ok' && isAdmin && bizAuditQueue?.warn === true;
+  const bizAuditHint =
+    bizAuditWarn && typeof bizAuditQueue?.hint === 'string' ? bizAuditQueue.hint : null;
 
   const seoIndexingSkippedEffective =
     seoIndexing?.skipped === true ||
@@ -385,7 +415,7 @@ export default function PortalWeatherWidget({
     : treatOmniAsHealthyLed
       ? seoIndexingRed
         ? styles.omniLedRed
-        : immuneTraining || schemaLayerWarn
+        : immuneTraining || schemaLayerWarn || bizAuditWarn
           ? styles.omniLedOrange
           : styles.omniLedGreen
       : omniPhase === 'neutral'
@@ -413,6 +443,8 @@ export default function PortalWeatherWidget({
         weatherSurfaceGreenTrust,
         zeroRedWeatherLed,
         degradedHints,
+        bizAuditWarn,
+        bizAuditHint,
       ),
     [
       omniPhase,
@@ -428,6 +460,8 @@ export default function PortalWeatherWidget({
       weatherSurfaceGreenTrust,
       zeroRedWeatherLed,
       degradedHints,
+      bizAuditWarn,
+      bizAuditHint,
     ],
   );
 
@@ -438,7 +472,9 @@ export default function PortalWeatherWidget({
     : treatOmniAsHealthyLed
       ? seoIndexingRed
         ? 'Google 인덱싱 배치 경고'
-        : schemaLayerWarn
+        : bizAuditWarn
+          ? '비즈니스 데이터 감사 큐'
+          : schemaLayerWarn
           ? '스키마 계약 불일치'
           : immuneTraining
             ? '자가 면역 훈련 중'

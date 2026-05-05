@@ -37,6 +37,7 @@ export const adminNavSections: AdminNavSection[] = [
       { href: '/admin/local-template', label: '로컬 미니홈 템플릿', icon: '✨' },
       { href: '/admin/local-showcase', label: '로컬 쇼케이스', icon: '🏪' },
       { href: '/admin/korean-biz-submissions', label: '한인 업소 제보', icon: '🏢' },
+      { href: '/admin/biz-audit', label: '한인망 감사·수정 제안', icon: '🛰️' },
     ],
   },
   {

@@ -161,6 +161,65 @@ export type Database = {
           },
         ]
       }
+      biz_update_proposals: {
+        Row: {
+          applied_at: string | null
+          applied_by_profile_id: string | null
+          audit_batch_id: string
+          created_at: string
+          current_value: string | null
+          id: string
+          korean_business_id: string
+          metadata: Json
+          proposal_kind: string
+          proposed_value: string | null
+          source: string
+          status: string
+          witty_headline: string | null
+          witty_sub: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by_profile_id?: string | null
+          audit_batch_id: string
+          created_at?: string
+          current_value?: string | null
+          id?: string
+          korean_business_id: string
+          metadata?: Json
+          proposal_kind: string
+          proposed_value?: string | null
+          source?: string
+          status?: string
+          witty_headline?: string | null
+          witty_sub?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by_profile_id?: string | null
+          audit_batch_id?: string
+          created_at?: string
+          current_value?: string | null
+          id?: string
+          korean_business_id?: string
+          metadata?: Json
+          proposal_kind?: string
+          proposed_value?: string | null
+          source?: string
+          status?: string
+          witty_headline?: string | null
+          witty_sub?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "biz_update_proposals_korean_business_id_fkey"
+            columns: ["korean_business_id"]
+            isOneToOne: false
+            referencedRelation: "korean_businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bot_actions: {
         Row: {
           action_type: string

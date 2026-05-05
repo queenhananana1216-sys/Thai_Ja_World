@@ -93,6 +93,85 @@ async function checkLiveSqlPing(): Promise<CheckDb> {
   }
 }
 
+type BizAuditQueueRadar = {
+  warn: boolean;
+  pending_count: number;
+  oldest_pending_hours: number | null;
+  hint: string | null;
+  skipped?: boolean;
+  error?: string;
+};
+
+/** 한인 생활망 감사 큐(`biz_update_proposals`) — pending 이 쌓이면 오너에게만 옴니 툴팁 경고 */
+async function checkBizAuditQueueRadar(): Promise<BizAuditQueueRadar> {
+  if (!isServiceRoleConfigured()) {
+    return {
+      warn: false,
+      pending_count: 0,
+      oldest_pending_hours: null,
+      hint: null,
+      skipped: true,
+      error: 'service_role_unconfigured',
+    };
+  }
+  try {
+    const sb = createServiceRoleClient();
+    const { count, error: cErr } = await sb
+      .from('biz_update_proposals')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+    if (cErr) {
+      return {
+        warn: false,
+        pending_count: 0,
+        oldest_pending_hours: null,
+        hint: null,
+        skipped: false,
+        error: cErr.message,
+      };
+    }
+    const pendingCount = typeof count === 'number' ? count : 0;
+
+    const { data: oldestRow, error: oErr } = await sb
+      .from('biz_update_proposals')
+      .select('created_at')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    let oldestHours: number | null = null;
+    if (!oErr && oldestRow?.created_at) {
+      const t = new Date(oldestRow.created_at).getTime();
+      if (Number.isFinite(t)) {
+        oldestHours = (Date.now() - t) / (1000 * 60 * 60);
+      }
+    }
+
+    const warn = pendingCount >= 5 || (oldestHours != null && oldestHours >= 72);
+    const hint = warn
+      ? `미처리 수정 제안 ${pendingCount}건 — /admin/biz-audit`
+      : pendingCount > 0
+        ? `수정 제안 대기 ${pendingCount}건(임계 미만)`
+        : null;
+
+    return {
+      warn,
+      pending_count: pendingCount,
+      oldest_pending_hours: oldestHours != null ? Math.round(oldestHours * 10) / 10 : null,
+      hint,
+    };
+  } catch (e) {
+    return {
+      warn: false,
+      pending_count: 0,
+      oldest_pending_hours: null,
+      hint: null,
+      error: e instanceof Error ? e.message : String(e),
+    };
+  }
+}
+
 async function checkCronRadar(): Promise<CheckCron> {
   try {
     const sb = createServiceRoleClient();
@@ -232,6 +311,7 @@ export async function GET(): Promise<NextResponse> {
     fortune_vitality,
     korean_living_grid,
     content_pipeline,
+    biz_audit_queue,
   ] = await Promise.all([
     checkLiveSqlPing(),
     checkWeatherPipeline(),
@@ -248,6 +328,7 @@ export async function GET(): Promise<NextResponse> {
     checkFortuneVitality(),
     checkKoreanLivingGridNonempty(),
     checkContentPipelineStress(),
+    checkBizAuditQueueRadar(),
   ]);
 
   const chaos_monkey = {
@@ -304,6 +385,7 @@ export async function GET(): Promise<NextResponse> {
     fortune_vitality,
     korean_living_grid,
     content_pipeline,
+    biz_audit_queue,
     motherbrain: {
       shield_pulse,
       all_green: healthy,

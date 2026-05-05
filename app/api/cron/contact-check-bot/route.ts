@@ -4,6 +4,7 @@
  */
 import { type NextRequest, NextResponse } from 'next/server';
 import { isCronAuthorized } from '@/lib/cronAuth';
+import { probeAndPersistKoreanBizContacts } from '@/lib/korean-biz/probeKoreanBizContactUrls';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -11,33 +12,6 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
 const BATCH = 48;
-const TIMEOUT_MS = 10_000;
-
-async function probeHttpOk(url: string): Promise<boolean> {
-  const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), TIMEOUT_MS);
-  try {
-    let res = await fetch(url, {
-      method: 'HEAD',
-      redirect: 'follow',
-      signal: ac.signal,
-      headers: { 'User-Agent': 'TaejaContactCheckBot/1.0' },
-    });
-    if (res.status === 405 || res.status === 501) {
-      res = await fetch(url, {
-        method: 'GET',
-        redirect: 'follow',
-        signal: ac.signal,
-        headers: { 'User-Agent': 'TaejaContactCheckBot/1.0', Range: 'bytes=0-0' },
-      });
-    }
-    return res.ok;
-  } catch {
-    return false;
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!isCronAuthorized(req.headers.get('authorization'))) {
@@ -85,20 +59,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const targets = [line, wa].filter((u) => /^https?:\/\//i.test(u));
     if (!targets.length) continue;
 
-    let ok = true;
-    for (const u of targets) {
-      const alive = await probeHttpOk(u);
-      if (!alive) {
-        ok = false;
-        break;
-      }
-    }
-
-    const { error: upErr } = await admin
-      .from('korean_businesses')
-      .update({ contact_link_ok: ok, contact_checked_at: now })
-      .eq('id', id);
-    if (!upErr) checked.push(id);
+    const ok = await probeAndPersistKoreanBizContacts(id);
+    if (ok) checked.push(id);
   }
 
   return NextResponse.json({

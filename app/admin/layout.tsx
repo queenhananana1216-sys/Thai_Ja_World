@@ -14,7 +14,8 @@ import { adminNavSections } from './adminNavConfig';
 import './admin-shell.css';
 
 export const metadata = {
-  title: '태국에, 살자 (Living in Thai) — 관리자',
+  /** 루트 layout 의 title.template(`%s | DB표시명`)에 섞이지 않도록 절대 타이틀 사용 */
+  title: { absolute: '태국에, 살자 (Living in Thai) — 관리자' },
   description: '「태국에, 살자」운영 콘솔 — 승인 큐·로컬·디자인',
 };
 

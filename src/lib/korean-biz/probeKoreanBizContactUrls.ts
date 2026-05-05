@@ -12,14 +12,14 @@ export async function probeHttpOk(url: string): Promise<boolean> {
       method: 'HEAD',
       redirect: 'follow',
       signal: ac.signal,
-      headers: { 'User-Agent': 'TaejaContactCheckBot/1.0' },
+      headers: { 'User-Agent': 'LivingInThaiContactProbeBot/1.0' },
     });
     if (res.status === 405 || res.status === 501) {
       res = await fetch(url, {
         method: 'GET',
         redirect: 'follow',
         signal: ac.signal,
-        headers: { 'User-Agent': 'TaejaContactCheckBot/1.0', Range: 'bytes=0-0' },
+        headers: { 'User-Agent': 'LivingInThaiContactProbeBot/1.0', Range: 'bytes=0-0' },
       });
     }
     return res.ok;

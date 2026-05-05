@@ -10,7 +10,7 @@ import {
   buildWhatsAppUrlFromPhone,
   isLikelySyntheticOrDemoPhone,
   isMaskedOrPlaceholderPhone,
-  isTaejaInternalDemoPlaceId,
+  isDemoKoreanBizPlaceId,
   normalizeExternalChatUrl,
 } from '@/lib/korean-biz/publicContact';
 import type { KoreanBizCategory, KoreanBizRow } from '@/lib/korean-biz/koreanBizTypes';
@@ -258,7 +258,7 @@ export default function KoreanBizHubClient({
       else if (r.contact_link_ok === true) s += 400;
       if (hasChat) s += 900;
       if (
-        (isLikelySyntheticOrDemoPhone(r.phone) || isTaejaInternalDemoPlaceId(r.google_place_id)) &&
+        (isLikelySyntheticOrDemoPhone(r.phone) || isDemoKoreanBizPlaceId(r.google_place_id)) &&
         !hasChat
       ) {
         s -= 300;
@@ -429,7 +429,7 @@ export default function KoreanBizHubClient({
           filtered.map((row) => {
             const catLabel = CATEGORY_LABEL[locale][row.category];
             const integrityPending =
-              isTaejaInternalDemoPlaceId(row.google_place_id) ||
+              isDemoKoreanBizPlaceId(row.google_place_id) ||
               isLikelySyntheticOrDemoPhone(row.phone);
             const lineU = integrityPending ? null : normalizeExternalChatUrl(row.line_url);
             const waStored = integrityPending ? null : normalizeExternalChatUrl(row.whatsapp_url);

@@ -37,13 +37,13 @@ export function isLikelySyntheticOrDemoPhone(phone: string | null | undefined): 
 }
 
 /** DB 시드·자가치유용 `google_place_id` — 실연락처로 취급하지 않음 */
-export function isTaejaInternalDemoPlaceId(googlePlaceId: string | null | undefined): boolean {
+export function isDemoKoreanBizPlaceId(googlePlaceId: string | null | undefined): boolean {
   const s = String(googlePlaceId ?? '').trim();
   return /^taeja_(seed|sh)_/i.test(s);
 }
 
 /** 시드용 LINE·웹 채널 URL(실제 업체 아님) */
-export function isTaejaPlaceholderChatUrl(url: string | null | undefined): boolean {
+export function isPlaceholderKoreanBizChatUrl(url: string | null | undefined): boolean {
   const u = String(url ?? '').trim().toLowerCase();
   if (!u) return false;
   return (
@@ -87,7 +87,7 @@ export function normalizeExternalChatUrl(raw: string | null | undefined): string
   const s = String(raw ?? '').trim();
   if (!s) return null;
   if (!/^https?:\/\//i.test(s)) return null;
-  if (isTaejaPlaceholderChatUrl(s)) return null;
+  if (isPlaceholderKoreanBizChatUrl(s)) return null;
   if (/wa\.me|whatsapp\.com/i.test(s) && isLikelySyntheticWhatsappHref(s)) return null;
   return s;
 }

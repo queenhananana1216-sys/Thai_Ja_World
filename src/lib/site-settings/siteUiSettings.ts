@@ -2,7 +2,7 @@ import 'server-only';
 
 import { unstable_cache } from 'next/cache';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { DEFAULT_SITE_DISPLAY_NAME } from '@/lib/site-brand/constants';
+import { DEFAULT_SITE_DISPLAY_NAME, normalizeSiteDisplayNameForUi } from '@/lib/site-brand/constants';
 
 export type TextScale = 'compact' | 'normal' | 'large';
 
@@ -44,10 +44,10 @@ function parseSiteDisplayNameFromMap(map: Map<string, unknown>): string {
   const raw = map.get('brand.site_display_name');
   if (typeof raw === 'string') {
     const t = raw.trim();
-    if (t.length > 0) return t.slice(0, 120);
+    if (t.length > 0) return normalizeSiteDisplayNameForUi(t);
   }
   const env = process.env.NEXT_PUBLIC_SITE_NAME?.trim();
-  if (env && env.length > 0) return env.slice(0, 120);
+  if (env && env.length > 0) return normalizeSiteDisplayNameForUi(env);
   return DEFAULT_SITE_DISPLAY_NAME;
 }
 

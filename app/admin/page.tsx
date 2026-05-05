@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AdminSystemHub from './_components/AdminSystemHub';
 import AdminQuickOpsPanel from './_components/AdminQuickOpsPanel';
 import ForceNewsIngestButton from './_components/ForceNewsIngestButton';
 import MainQrGenerator from './_components/MainQrGenerator';
@@ -126,10 +127,10 @@ export default async function AdminDashboardPage() {
   return (
     <main className="admin-page">
       <ForceNewsIngestButton />
-      <h1 className="admin-dash__title">관리자 개요</h1>
+      <h1 className="admin-dash__title">운영 허브</h1>
       <p className="admin-dash__lead">
-        「태국에, 살자」회원·접속·뉴스 초안 지표입니다. <strong>마지막 접속</strong>은 사이트 하트비트로 갱신되는{' '}
-        <code>profiles.last_seen_at</code> 기준이며, Supabase Auth의 “최종 로그인”과는 다를 수 있습니다.
+        「태국에, 살자」(Living in Thai) 한 화면 요약입니다. 회원·큐·옴니 레이더·봇 스트레스를 묶어 봅니다.{' '}
+        <strong>마지막 접속</strong>은 <code>profiles.last_seen_at</code> 하트비트 기준입니다.
       </p>
 
       <MainQrGenerator mainSiteUrl={mainSiteUrl} />
@@ -179,6 +180,12 @@ export default async function AdminDashboardPage() {
           </p>
         </article>
       </section>
+
+      <AdminSystemHub
+        draftNews={draftNews ?? 0}
+        draftKnowledge={draftKnowledge ?? 0}
+        botHealthLabel={botHealthLabel}
+      />
 
       <AdminQuickOpsPanel
         newsDraftCount={draftNews ?? 0}

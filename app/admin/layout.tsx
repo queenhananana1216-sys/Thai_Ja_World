@@ -14,7 +14,8 @@ import { adminNavSections } from './adminNavConfig';
 import './admin-shell.css';
 
 export const metadata = {
-  title: '태자 월드 — 2026 관리자',
+  title: '태국에, 살자 (Living in Thai) — 관리자',
+  description: '「태국에, 살자」운영 콘솔 — 승인 큐·로컬·디자인',
 };
 
 // 관리자 트리 전체는 동적 렌더 — Supabase service role 클라이언트가 빌드 시점에
@@ -31,10 +32,10 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     <div className="admin-shell admin-shell--dashboard">
       <aside className="admin-shell__sidebar" aria-label="관리자 사이드바">
         <Link prefetch={true} href="/admin" className="admin-shell__brand">
-          <span className="admin-shell__brand-mark">태</span>
+          <span className="admin-shell__brand-mark">살</span>
           <span>
-            <strong>태자 월드</strong>
-            <small>2026 관리자</small>
+            <strong>태국에, 살자</strong>
+            <small>Living in Thai · 운영</small>
           </span>
         </Link>
         <AdminSidebarNav sections={adminNavSections} />

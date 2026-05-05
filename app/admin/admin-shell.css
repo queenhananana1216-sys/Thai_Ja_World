@@ -721,3 +721,370 @@
   outline: none;
   border-color: rgba(167, 139, 250, 0.55);
 }
+
+/* ── 시스템 허브 (옴니·큐·봇) ─────────────────────────────────────────── */
+.admin-hub {
+  margin-bottom: 22px;
+}
+
+.admin-hub__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.admin-hub__card {
+  border-radius: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--admin-line);
+  background: linear-gradient(165deg, rgba(30, 41, 59, 0.55), rgba(15, 23, 42, 0.38));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.42);
+}
+
+.admin-hub__kicker {
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #93c5fd;
+}
+
+.admin-hub__pill {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-hub__pill--ok {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: #a7f3d0;
+}
+
+.admin-hub__pill--warn {
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  color: #fde68a;
+}
+
+.admin-hub__pill--bad {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(248, 113, 113, 0.42);
+  color: #fecaca;
+}
+
+.admin-hub__metric {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.admin-hub__metric strong {
+  color: #c4b5fd;
+}
+
+.admin-hub__meta {
+  margin: 0 0 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--admin-muted);
+}
+
+.admin-hub__link {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-link);
+  text-decoration: none;
+}
+
+.admin-hub__link:hover {
+  color: var(--admin-link-hover);
+  text-decoration: underline;
+}
+
+.admin-hub__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-hub__links a {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-link);
+  text-decoration: none;
+}
+
+.admin-hub__links a:hover {
+  text-decoration: underline;
+}
+
+/* ── 콘텐츠 큐 카드 (글래스) ───────────────────────────────────────────── */
+.admin-queue-card {
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid var(--admin-line);
+  background: linear-gradient(160deg, rgba(30, 41, 59, 0.58), rgba(15, 23, 42, 0.42));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 20px 48px rgba(2, 6, 23, 0.45);
+}
+
+.admin-queue-card__badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.28);
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  color: #e9d5ff;
+}
+
+.admin-queue-card__preview {
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(2, 6, 23, 0.35);
+}
+
+.admin-queue-card__preview-label {
+  margin: 0 0 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #93c5fd;
+}
+
+.admin-queue-card__preview-title {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #f8fafc;
+}
+
+.admin-queue-card__preview-body {
+  margin-bottom: 12px;
+}
+
+.admin-queue-card__preview-line {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #e2e8f0;
+}
+
+.admin-queue-card__preview-line.muted {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.admin-queue-card__preview-ops {
+  font-size: 12px;
+  line-height: 1.55;
+  color: #a5b4fc;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.admin-queue-card__preview-ops-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+  margin-bottom: 4px;
+}
+
+.admin-queue-card__stub {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  background: rgba(180, 83, 9, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  color: #fde68a;
+}
+
+.admin-queue-card__btn {
+  font: inherit;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.admin-queue-card__btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.admin-queue-card__btn--primary {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  color: #fff;
+}
+
+.admin-queue-card__btn--secondary {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  color: #fff;
+}
+
+.admin-queue-card__btn--danger {
+  margin-left: auto;
+  background: transparent;
+  color: #fca5a5;
+  text-decoration: underline;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.admin-queue-card__toggle {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a5b4fc;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.admin-queue-card__toggle.inner {
+  margin-top: 12px;
+  border-style: solid;
+}
+
+.admin-queue-card__advanced {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.admin-queue-card__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--admin-muted);
+  margin-bottom: 4px;
+  margin-top: 10px;
+}
+
+.admin-queue-card__input,
+.admin-queue-card__textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  border-radius: 10px;
+  border: 1px solid rgba(51, 65, 85, 0.75);
+  background: rgba(2, 6, 23, 0.55);
+  color: #f1f5f9;
+}
+
+.admin-queue-card__textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.admin-queue-card__meta-block {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.4);
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.admin-queue-card__meta-title {
+  margin: 0 0 6px;
+  font-weight: 800;
+  color: #93c5fd;
+}
+
+.admin-queue-card__meta-title.warn {
+  color: #fdba74;
+}
+
+.admin-queue-card__meta-list {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+.admin-queue-card__meta-list.warn {
+  color: #fdba74;
+}
+
+.admin-queue-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-queue-card__tag {
+  background: rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+.admin-queue-card__full-preview {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(6, 78, 59, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  font-size: 12px;
+  color: #a7f3d0;
+}
+
+.admin-queue-card__pre-wrap {
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.admin-queue-card__pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow: auto;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.admin-queue-card__hint {
+  margin: 10px 0 0;
+  font-weight: 700;
+}
+
+.admin-queue-card__hint.warn {
+  color: #fdba74;
+}
+
+.admin-queue-card__hint.ok {
+  color: #6ee7b7;
+}
+
+.admin-queue-card__foot {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--admin-muted);
+}

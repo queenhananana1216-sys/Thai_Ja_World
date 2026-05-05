@@ -15,7 +15,7 @@ async function tryOpenAiSpark(base: PortalDailySparkPayload): Promise<PortalDail
   if (!key) return null;
   const user = [
     `서울 기준 오늘 날짜: ${base.spark_date}`,
-    '태국 거주·여행 교민 커뮤니티 「태자 월드」 포털용 짧은 한국어 카피를 JSON 한 개로만 출력하세요.',
+    '태국 거주·여행 교민 커뮤니티 「태국에, 살자」(Living in Thai) 포털용 짧은 한국어 카피를 JSON 한 개로만 출력하세요.',
     '키: spark_date(문자열 동일), fortune_line(한 줄 42자 이내), fortune_detail(2~3문장 한국어만), mission_title(18자 이내), mission_body(2문장 한국어), mission_cta_href(경로 문자열, 보통 /community/boards 또는 /tips).',
     '태국 테마(방콕·날씨·먹거리·비자·안전·커뮤니티) 중 하나를 섞되, 과장·미신 표현 금지. 영어·태국어 문자열 금지.',
   ].join('\n');
@@ -65,7 +65,7 @@ async function tryGeminiSpark(base: PortalDailySparkPayload): Promise<PortalDail
   const model = process.env.GEMINI_MODEL?.trim() || 'gemini-2.0-flash';
   const user = [
     `서울 기준 오늘 날짜: ${base.spark_date}`,
-    '태국 거주·여행 교민 커뮤니티 「태자 월드」 포털용 짧은 한국어 카피를 JSON 한 개로만 출력하세요.',
+    '태국 거주·여행 교민 커뮤니티 「태국에, 살자」(Living in Thai) 포털용 짧은 한국어 카피를 JSON 한 개로만 출력하세요.',
     '키: spark_date(문자열 동일), fortune_line(한 줄 42자 이내), fortune_detail(2~3문장 한국어만), mission_title(18자 이내), mission_body(2문장 한국어), mission_cta_href(경로 문자열, 보통 /community/boards 또는 /tips).',
     '태국 테마(방콕·날씨·먹거리·비자·안전·커뮤니티) 중 하나를 섞되, 과장·미신 표현 금지. 영어·태국어 문자열 금지.',
   ].join('\n');

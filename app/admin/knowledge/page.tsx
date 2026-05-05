@@ -141,47 +141,16 @@ export default async function AdminKnowledgeQueuePage() {
   }
 
   return (
-    <div style={{ padding: '20px 24px', maxWidth: 960, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 18, margin: '0 0 8px', fontWeight: 700 }}>지식 초안 큐</h1>
-      <p style={{ margin: '0 0 12px', fontSize: 12 }}>
-        <Link href="/admin/publish" style={{ color: '#2563eb', fontWeight: 600 }}>
-          최종 승인·편집 가이드(한 페이지 요약) →
+    <div className="admin-page-narrow" style={{ padding: '20px 24px', maxWidth: 960, margin: '0 auto' }}>
+      <h1 className="admin-dash__title" style={{ fontSize: '1.25rem' }}>
+        꿀팁 · 지식 큐
+      </h1>
+      <p className="admin-dash__lead" style={{ maxWidth: '62ch' }}>
+        AI가 만든 <strong>컨셉 카드</strong>만 보고 <strong>게시하기</strong> 또는 <strong>AI 다시 가공</strong>을 쓰면 됩니다. 수동
+        편집은 카드 아래 「상세 편집」에서 엽니다.{' '}
+        <Link href="/admin/publish" style={{ color: 'var(--admin-link)' }}>
+          승인 허브 →
         </Link>
-      </p>
-      <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.55 }}>
-        <strong>기본(미설정)</strong>은 뉴스와 같이 초안만 쌓입니다. <code>KNOWLEDGE_PUBLISH_MODE=auto</code>를 넣은
-        경우에만 가공 직후 공개 경로를 탈 수 있어요(운영에서는 비권장).
-        <br />
-        <br />
-        <strong>보드에 게시</strong>는 <strong>최종 승인</strong>이에요. LLM 요약이 스텁(원문 비음)이면{' '}
-        <strong>「태국에, 살자 편집팀·이용자 안내」</strong>에 25자 이상만 적어도 승인할 수 있어요. 즉시 광장 정보 말머리에 올라가고, 비회원용{' '}
-        <Link href="/tips" style={{ color: '#2563eb' }}>
-          /tips
-        </Link>{' '}
-        꿀팁 허브에도 제목·짧은 요약(훅)이 노출됩니다. 전체 본문·체크리스트·출처 링크는 로그인 후 같은 글에서 열립니다.
-        초안만 저장하면 숨김 처리만 됩니다.
-        <br />
-        <br />
-        <strong>가공 파이프라인:</strong> RSS로는 본문이 비는 경우가 많아, 가공(크론) 시{' '}
-        <strong>출처 URL에서 본문을 자동으로 긁은 뒤</strong> LLM이 한·태 초안을 채웁니다.{' '}
-        <strong>스텁(«LLM 가공 전»)</strong>만 모아 재가공하는 크론(<code>/api/cron/knowledge-stubs</code>)도 돌도록
-        설정해 두었습니다 — 예전에는 processed 행이 있으면 일반 가공 크론이 <strong>영원히 건너뛰는 구조</strong>였습니다.
-        급하면 카드의 <strong>「원문 다시 불러와 LLM 재가공」</strong> 또는 목록 위 <strong>스텁 일괄 LLM</strong>을 눌러 주세요(배포에
-        LLM 키 필요). 비어 있으면{' '}
-        <Link href="/admin/bot-actions" style={{ color: '#2563eb' }}>
-          봇 기록
-        </Link>
-        ·지식 크론·LLM 키를 확인해 보세요.
-        <br />
-        <br />
-        <strong>SQL만 돌렸는데 비어 있나요?</strong> 이 목록은 <code>processed_knowledge</code> 중{' '}
-        <code>published=false</code> 만 보여 줍니다.         원문만 <code>raw_knowledge</code>에 있으면 지식 가공 크론이{' '}
-        <code>processed_knowledge</code> 행을 만들어야 합니다. 원문만 있으면 «승인 큐에 올리기»로 스텁 초안을 만들 수 있습니다.
-        <br />
-        <br />
-        <strong>오늘 제미나이·편집본을 한꺼번에 올릴 때:</strong> 아래 초록 칸에 JSON을 붙여 «초안으로 넣기» → 같은 페이지의{' '}
-        <strong>«꿀팁 한 스푼 초안 일괄 승인»</strong> 한 번이면 <code>/tips</code>·광장(정보)까지 반영됩니다(검증 실패 건은 목록에 남고
-        건너뜁니다).
       </p>
 
       <AdminKnowledgeImportClient />

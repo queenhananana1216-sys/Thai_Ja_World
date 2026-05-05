@@ -113,17 +113,17 @@ export default async function AdminNewsQueuePage() {
   const llmReady = isNewsSummaryLlmConfigured();
 
   return (
-    <div style={{ padding: '20px 24px', maxWidth: 920 }}>
-      <h1 style={{ fontSize: 18, margin: '0 0 8px' }}>뉴스 승인 큐</h1>
-      <p style={{ margin: '0 0 12px', fontSize: 12 }}>
-        <Link href="/admin/publish" style={{ color: '#2563eb', fontWeight: 600 }}>
-          콘텐츠 관제 허브 →
+    <div className="admin-page-narrow" style={{ padding: '20px 24px', maxWidth: 920, margin: '0 auto' }}>
+      <h1 className="admin-dash__title" style={{ fontSize: '1.25rem' }}>
+        뉴스 큐
+      </h1>
+      <p className="admin-dash__lead" style={{ maxWidth: '58ch' }}>
+        데스크 AI가 쓴 <strong>제목·3줄·대비책</strong>을 카드로 확인한 뒤 <strong>게시하기</strong>만 누르세요. 손으로 고치려면{' '}
+        「상세 편집」을 여세요.{' '}
+        <Link href="/admin/publish" style={{ color: 'var(--admin-link)' }}>
+          승인 허브 →
         </Link>
-      </p>
-      <p style={{ margin: 0, fontSize: 13, color: '#6b7280', lineHeight: 1.55 }}>
-        <strong>가공</strong>은 «AI 가공 실행»으로 원문→한국어 전용 초안을 만듭니다(승인 대기 유지).{' '}
-        <strong>게시</strong>는 «즉시 게시» 또는 하단 일괄 버튼입니다. 편집은 자동 저장됩니다.
-        {llmReady ? '' : ' LLM 키가 없으면 AI 가공 버튼이 비활성입니다.'}
+        {llmReady ? '' : ' · LLM 미설정이면 AI 버튼이 비활성입니다.'}
       </p>
       {error ? (
         <p style={{ color: '#b91c1c', marginTop: 16 }}>

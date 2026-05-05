@@ -487,6 +487,7 @@ function DraftCard({
   const router = useRouter();
   const [koTitle, setKoTitle] = useState(item.ko_title);
   const [koSummary, setKoSummary] = useState(item.ko_summary);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -508,6 +509,18 @@ function DraftCard({
     allowRawTitleFallback: true,
   });
   const publishErr = validateNewsPublishFields(koTitle, koSummary);
+
+  const summaryLines = (userView.summary ?? '')
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+  const opsBlurb =
+    userView.countermeasure?.trim() ||
+    userView.insightImpact?.trim() ||
+    userView.editorNote?.trim() ||
+    userView.blurb?.trim() ||
+    '데스크 LLM이 채운 대비책·한마디가 여기 표시됩니다. 비어 있으면 「AI 다시 가공」을 눌러 주세요.';
 
   useEffect(() => {
     if (!touched) return;
@@ -541,161 +554,73 @@ function DraftCard({
   }
 
   return (
-    <div
-      style={{
-        border: '1px solid #e5e7eb',
-        borderRadius: 12,
-        padding: 14,
-        background: '#fafafa',
-      }}
-    >
+    <div className="admin-queue-card">
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '0.04em',
-            padding: '3px 10px',
-            borderRadius: 999,
-            background: '#ede9fe',
-            color: '#5b21b6',
-          }}
-        >
-          승인 대기
-        </span>
+        <span className="admin-queue-card__badge">승인 대기</span>
         {!llmReady ? (
-          <span style={{ fontSize: 11, color: '#9ca3af' }}>LLM 미구성</span>
+          <span style={{ fontSize: 11, color: '#94a3b8' }}>LLM 미구성</span>
+        ) : publishErr ? (
+          <span style={{ fontSize: 11, color: '#fb923c' }}>가공·보강 권장</span>
         ) : (
-          <span style={{ fontSize: 11, color: '#059669' }}>AI 가공 가능</span>
+          <span style={{ fontSize: 11, color: '#34d399' }}>AI 가공 완료</span>
         )}
+        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>
+          {item.id.slice(0, 8)}… · {new Date(item.created_at).toLocaleString('ko-KR')}
+        </span>
       </div>
-      <p style={{ margin: '0 0 8px', fontSize: 12, color: '#9ca3af' }}>
-        <a href={item.raw_url} target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1' }}>
-          원문 링크
+      <p style={{ margin: '0 0 14px', fontSize: 12, color: '#94a3b8' }}>
+        <a href={item.raw_url} target="_blank" rel="noopener noreferrer" style={{ color: '#a5b4fc' }}>
+          원문
         </a>
-        <span style={{ margin: '0 6px', color: '#d1d5db' }}>·</span>
-        {item.raw_title.slice(0, 72)}
-        {item.raw_title.length > 72 ? '…' : ''}
+        <span style={{ margin: '0 6px', color: '#475569' }}>·</span>
+        <span style={{ color: '#cbd5e1' }}>
+          {item.raw_title.slice(0, 72)}
+          {item.raw_title.length > 72 ? '…' : ''}
+        </span>
       </p>
-      <p style={{ margin: '0 0 12px', fontSize: 11, color: '#9ca3af' }}>
-        {item.id.slice(0, 8)}… · {new Date(item.created_at).toLocaleString('ko-KR')}
-      </p>
-      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>한국어 제목</label>
-      <input
-        value={koTitle}
-        onChange={(e) => {
-          setTouched(true);
-          setKoTitle(e.target.value);
-        }}
-        style={{ width: '100%', marginBottom: 10, padding: 8, fontSize: 13 }}
-      />
-      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>한국어 본문·요약</label>
-      <textarea
-        value={koSummary}
-        onChange={(e) => {
-          setTouched(true);
-          setKoSummary(e.target.value);
-        }}
-        rows={6}
-        style={{ width: '100%', marginBottom: 12, padding: 8, fontSize: 13 }}
-      />
 
-      <button
-        type="button"
-        onClick={() => setShowPreview((v) => !v)}
-        style={{
-          fontSize: 12,
-          color: '#0369a1',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: 0,
-          marginBottom: 8,
-        }}
-      >
-        {showPreview ? '▲ 미리보기 접기' : '▼ 노출 미리보기'}
-      </button>
-      {showPreview ? (
-        <div
-          style={{
-            marginBottom: 12,
-            padding: 12,
-            borderRadius: 8,
-            background: '#f0f9ff',
-            border: '1px solid #bae6fd',
-            fontSize: 12,
-            lineHeight: 1.55,
-            color: '#0c4a6e',
-          }}
-        >
-          <p style={{ margin: '0 0 6px', fontWeight: 700 }}>제목</p>
-          <p style={{ margin: '0 0 10px' }}>{userView.title}</p>
-          {userView.blurb ? (
-            <>
-              <p style={{ margin: '0 0 6px', fontWeight: 700 }}>훅</p>
-              <p style={{ margin: '0 0 10px' }}>{userView.blurb}</p>
-            </>
-          ) : null}
-          <p style={{ margin: '0 0 6px', fontWeight: 700 }}>본문</p>
-          <p style={{ margin: '0 0 10px', whiteSpace: 'pre-wrap' }}>{userView.summary ?? '(없음)'}</p>
-          {userView.editorNote ? (
-            <>
-              <p style={{ margin: '0 0 6px', fontWeight: 700 }}>편집 노트</p>
-              <p style={{ margin: '0 0 10px', whiteSpace: 'pre-wrap' }}>{userView.editorNote}</p>
-            </>
-          ) : null}
-          {publishErr ? (
-            <p style={{ margin: 0, color: '#b45309', fontWeight: 600 }}>게시 불가: {publishErr}</p>
+      <div className="admin-queue-card__preview">
+        <p className="admin-queue-card__preview-label">AI 컨셉 프리뷰</p>
+        <h3 className="admin-queue-card__preview-title">{userView.title || item.raw_title}</h3>
+        <div className="admin-queue-card__preview-body">
+          {summaryLines.length ? (
+            summaryLines.map((line, i) => (
+              <p key={i} className="admin-queue-card__preview-line">
+                {line}
+              </p>
+            ))
           ) : (
-            <p style={{ margin: 0, color: '#059669', fontWeight: 600 }}>게시 검증 통과</p>
+            <p className="admin-queue-card__preview-line muted">요약이 짧습니다. 「AI 다시 가공」을 권장합니다.</p>
           )}
         </div>
-      ) : null}
+        <div className="admin-queue-card__preview-ops">
+          <span className="admin-queue-card__preview-ops-label">운영자 대비책 · 톤</span>
+          {opsBlurb}
+        </div>
+      </div>
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 16 }}>
+        <button
+          type="button"
+          disabled={busy || aiBusy}
+          onClick={() =>
+            void onSubmit(item.id, 'publish', {
+              ko_title: koTitle,
+              ko_summary: koSummary,
+            })
+          }
+          className="admin-queue-card__btn admin-queue-card__btn--primary"
+        >
+          {busy ? '처리 중…' : '게시하기'}
+        </button>
         <button
           type="button"
           disabled={busy || aiBusy || !llmReady}
           onClick={() => void runAiProcess()}
-          style={{
-            padding: '10px 16px',
-            background: 'linear-gradient(135deg,#0d9488,#0f766e)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            fontWeight: 800,
-            cursor: busy || aiBusy || !llmReady ? 'not-allowed' : 'pointer',
-            opacity: !llmReady ? 0.55 : 1,
-          }}
-          title={!llmReady ? 'LLM 환경 변수를 설정하세요' : '원문 기준 한국어 재가공 → 승인 대기'}
+          className="admin-queue-card__btn admin-queue-card__btn--secondary"
+          title={!llmReady ? 'LLM 환경 변수를 설정하세요' : '원문 기준 한국어 재가공'}
         >
-          {aiBusy ? '가공 중…' : 'AI 가공 실행'}
-        </button>
-        <button
-          type="button"
-          disabled={busy || aiBusy}
-          onClick={() => {
-            const err = validateNewsPublishFields(koTitle, koSummary);
-            if (err) {
-              window.alert(err);
-              return;
-            }
-            void onSubmit(item.id, 'publish', {
-              ko_title: koTitle,
-              ko_summary: koSummary,
-            });
-          }}
-          style={{
-            padding: '10px 16px',
-            background: '#7c3aed',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            fontWeight: 800,
-            cursor: busy || aiBusy ? 'wait' : 'pointer',
-          }}
-        >
-          즉시 게시
+          {aiBusy ? '가공 중…' : 'AI 다시 가공'}
         </button>
         <button
           type="button"
@@ -710,24 +635,67 @@ function DraftCard({
             }
             void onSubmit(item.id, 'delete', { ko_title: koTitle, ko_summary: koSummary });
           }}
-          style={{
-            padding: '8px 12px',
-            marginLeft: 'auto',
-            background: 'transparent',
-            color: '#b91c1c',
-            border: 'none',
-            textDecoration: 'underline',
-            cursor: busy || aiBusy ? 'wait' : 'pointer',
-            fontSize: 12,
-            fontWeight: 600,
-          }}
+          className="admin-queue-card__btn admin-queue-card__btn--danger"
         >
           삭제
         </button>
       </div>
-      <p style={{ margin: '10px 0 0', fontSize: 11, color: '#9ca3af' }}>
-        제목·본문을 고치면 잠시 후 자동 저장됩니다. 가공 후에는 항상 승인 대기로 둡니다.
-      </p>
+
+      <button type="button" className="admin-queue-card__toggle" onClick={() => setShowAdvanced((v) => !v)}>
+        {showAdvanced ? '▲ 상세 편집 닫기' : '▼ 상세 편집 · 노출 미리보기'}
+      </button>
+
+      {showAdvanced ? (
+        <div className="admin-queue-card__advanced">
+          <label className="admin-queue-card__label">한국어 제목</label>
+          <input
+            value={koTitle}
+            onChange={(e) => {
+              setTouched(true);
+              setKoTitle(e.target.value);
+            }}
+            className="admin-queue-card__input"
+          />
+          <label className="admin-queue-card__label">한국어 본문·요약</label>
+          <textarea
+            value={koSummary}
+            onChange={(e) => {
+              setTouched(true);
+              setKoSummary(e.target.value);
+            }}
+            rows={6}
+            className="admin-queue-card__textarea"
+          />
+
+          <button type="button" className="admin-queue-card__toggle inner" onClick={() => setShowPreview((v) => !v)}>
+            {showPreview ? '▲ 노출 미리보기 접기' : '▼ 노출 미리보기 (전체)'}
+          </button>
+          {showPreview ? (
+            <div className="admin-queue-card__full-preview">
+              {userView.blurb ? (
+                <>
+                  <p className="admin-queue-card__meta-title">훅</p>
+                  <p className="admin-queue-card__pre-wrap">{userView.blurb}</p>
+                </>
+              ) : null}
+              <p className="admin-queue-card__meta-title">본문</p>
+              <p className="admin-queue-card__pre-wrap">{userView.summary ?? '(없음)'}</p>
+              {userView.editorNote ? (
+                <>
+                  <p className="admin-queue-card__meta-title">편집 노트</p>
+                  <p className="admin-queue-card__pre-wrap">{userView.editorNote}</p>
+                </>
+              ) : null}
+              {publishErr ? (
+                <p className="admin-queue-card__hint warn">검증 메모: {publishErr} — 게시 시 서버가 자동 보정할 수 있습니다.</p>
+              ) : (
+                <p className="admin-queue-card__hint ok">로컬 검증 통과</p>
+              )}
+            </div>
+          ) : null}
+          <p className="admin-queue-card__foot">편집 내용은 잠시 후 자동 저장됩니다.</p>
+        </div>
+      ) : null}
     </div>
   );
 }

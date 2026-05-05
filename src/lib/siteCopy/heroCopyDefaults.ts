@@ -1,4 +1,5 @@
-import { getDictionary } from '@/i18n/dictionaries';
+import { dictionary as koDict } from '@/i18n/locales/ko';
+import { dictionary as thDict } from '@/i18n/locales/th';
 
 export const HERO_SITE_COPY_KEYS = [
   'home_hero_brand_tai',
@@ -89,8 +90,8 @@ export type MergedHeroSiteCopy = {
 };
 
 export function getMergedDefaultsFromI18n(): MergedHeroSiteCopy {
-  const ko = getDictionary('ko').home;
-  const th = getDictionary('th').home;
+  const ko = koDict.home;
+  const th = thDict.home;
   return {
     brandTai: '태',
     brandMid: '국에 살',

@@ -19,7 +19,7 @@ export default async function NewBoardPostPage({
   searchParams: Promise<{ cat?: string }>;
 }) {
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const sp = await searchParams;
   const defaultCategory = parseNewPostCategoryParam(
     typeof sp.cat === 'string' ? sp.cat : undefined,

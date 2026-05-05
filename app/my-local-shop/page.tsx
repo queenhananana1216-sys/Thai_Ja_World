@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default async function MyLocalShopPage() {
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const h = d.home;
 
   return (

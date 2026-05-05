@@ -29,7 +29,7 @@ type TipPostRow = {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { postId } = await params;
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const sb = createServerClient();
   const { data, error: metaErr } = await sb
     .from('posts')
@@ -71,7 +71,7 @@ export default async function TipsTeaserPage({ params }: PageProps) {
   if (!postId) notFound();
 
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const auth = await createServerSupabaseAuthClient();
   const { data: post, error } = await auth
     .from('posts')

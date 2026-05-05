@@ -1,6 +1,5 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { cookies } from 'next/headers';
 import AnalyticsTracker from './_components/AnalyticsTracker';
 import { IntentRoutePrefetch } from './_components/IntentRoutePrefetch';
 import GlobalToaster from './_components/GlobalToaster';
@@ -9,8 +8,10 @@ import MobileBottomNav from './_components/MobileBottomNav';
 import PortalActivityTicker from './_components/PortalActivityTicker';
 import ActivityBeaconClient from './_components/ActivityBeaconClient';
 import { SiteFooterFallback } from './_components/SiteFooterFallback';
-import { isLocale, LOCALE_COOKIE } from '@/i18n/types';
+import { GlobalLanguageProvider } from '@/contexts/GlobalLanguageContext';
 import { SiteBrandProvider } from '@/contexts/SiteBrandContext';
+import { getDictionary } from '@/i18n/dictionaries';
+import { getLocale } from '@/i18n/get-locale';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { getSiteBaseUrl } from '@/lib/seo/site';
 
@@ -70,14 +71,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: unknown }) {
-  const jar = await cookies();
-  const locRaw = jar.get(LOCALE_COOKIE)?.value ?? '';
-  const htmlLang: 'ko' | 'th' | 'en' | 'zh' = isLocale(locRaw) ? locRaw : 'ko';
+  const locale = await getLocale();
+  const initialDictionary = await getDictionary(locale);
   const ui = await loadSiteUiSettings();
 
   return (
     <html
-      lang={htmlLang}
+      lang={locale}
       className="overflow-x-hidden"
       data-tj-text-scale={ui.textScale}
     >
@@ -102,6 +102,7 @@ export default async function RootLayout({ children }: { children: unknown }) {
           }}
         />
         <SiteBrandProvider initialDisplayName={ui.siteDisplayName}>
+          <GlobalLanguageProvider initialLocale={locale} initialDictionary={initialDictionary}>
           <GlobalNav />
         {ui.healthSafeMode ? (
           <div
@@ -118,9 +119,10 @@ export default async function RootLayout({ children }: { children: unknown }) {
           {children as import('react').ReactNode}
         </main>
         <SiteFooterFallback siteDisplayName={ui.siteDisplayName} />
-        <PortalActivityTicker locale={htmlLang === 'th' ? 'th' : 'ko'} />
+        <PortalActivityTicker locale={locale === 'th' ? 'th' : 'ko'} />
         <MobileBottomNav />
         <ActivityBeaconClient />
+          </GlobalLanguageProvider>
         </SiteBrandProvider>
       </body>
     </html>

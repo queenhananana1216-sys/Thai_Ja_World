@@ -4,9 +4,26 @@ import { NextResponse } from 'next/server';
 import type { User } from '@supabase/supabase-js';
 import { isLocale, LOCALE_COOKIE, type Locale } from '@/i18n/types';
 
-function localeFromCookie(request: NextRequest): Locale {
+/** Accept-Language 첫 후보 중 지원 로케일 매핑 (쿠키 없을 때 엣지 추론) */
+function localeFromAcceptLanguage(header: string | null): Locale {
+  if (!header?.trim()) return 'ko';
+  const parts = header.split(',');
+  for (const part of parts) {
+    const tag = part.trim().split(';')[0]?.trim().toLowerCase() ?? '';
+    const primary = tag.split('-')[0] ?? '';
+    if (primary === 'th') return 'th';
+    if (primary === 'ko') return 'ko';
+    if (primary === 'zh' || primary === 'zho') return 'zh';
+    if (primary === 'en') return 'en';
+  }
+  return 'ko';
+}
+
+/** 쿠키 우선, 없으면 Accept-Language */
+function resolveRequestLocale(request: NextRequest): Locale {
   const raw = request.cookies.get(LOCALE_COOKIE)?.value ?? '';
-  return isLocale(raw) ? raw : 'ko';
+  if (isLocale(raw)) return raw;
+  return localeFromAcceptLanguage(request.headers.get('accept-language'));
 }
 
 function normalizePathname(pathname: string): string {
@@ -114,11 +131,20 @@ export async function middleware(request: NextRequest) {
     return redirect;
   }
 
-  const locale = localeFromCookie(request);
+  const locale = resolveRequestLocale(request);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-tj-locale', locale);
 
   const { response: res, user } = await updateSession(request, requestHeaders);
+
+  const cookieRaw = request.cookies.get(LOCALE_COOKIE)?.value ?? '';
+  if (!isLocale(cookieRaw)) {
+    res.cookies.set(LOCALE_COOKIE, locale, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    });
+  }
 
   if (minihomeManagementPath(url.pathname) && !user) {
     const loginUrl = request.nextUrl.clone();

@@ -18,12 +18,15 @@ function normalizeInternalHref(href: string): string | null {
 }
 
 /**
- * 포인터 호버 + 스크롤 시 뷰포트 근처의 내부 링크에 대해 `router.prefetch`로 RSC 페이로드를 선당김.
- * Next `<Link prefetch>`와 병행; `prefetch={false}` 링크도 의도가 있으면 미리 받을 수 있음.
+ * 포인터 호버(짧은 체류 후) + 스크롤 시 뷰포트 근처 링크에 `router.prefetch` — 의도 클릭 직전에 RSC 페이로드를 당김.
+ * Next `<Link prefetch>`와 병행.
  */
+const HOVER_PREFETCH_MS = 420;
+
 export function IntentRoutePrefetch() {
   const router = useRouter();
   const done = useRef(new Set<string>());
+  const hoverTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   useEffect(() => {
     const prefetch = (rawHref: string) => {
@@ -33,10 +36,34 @@ export function IntentRoutePrefetch() {
       void router.prefetch(path);
     };
 
+    const clearHover = (rawHref: string) => {
+      const path = normalizeInternalHref(rawHref);
+      if (!path) return;
+      const t = hoverTimers.current.get(path);
+      if (t) {
+        clearTimeout(t);
+        hoverTimers.current.delete(path);
+      }
+    };
+
     const onPointerOver = (e: PointerEvent) => {
       const el = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
       if (!el) return;
-      prefetch(el.getAttribute('href') ?? el.href);
+      const href = el.getAttribute('href') ?? el.href;
+      const path = normalizeInternalHref(href);
+      if (!path) return;
+      clearHover(href);
+      const t = setTimeout(() => {
+        hoverTimers.current.delete(path);
+        prefetch(href);
+      }, HOVER_PREFETCH_MS);
+      hoverTimers.current.set(path, t);
+    };
+
+    const onPointerOut = (e: PointerEvent) => {
+      const el = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+      if (!el) return;
+      clearHover(el.getAttribute('href') ?? el.href);
     };
 
     const nearViewportAnchors = () => {
@@ -59,13 +86,17 @@ export function IntentRoutePrefetch() {
     };
 
     document.addEventListener('pointerover', onPointerOver, { capture: true, passive: true });
+    document.addEventListener('pointerout', onPointerOut, { capture: true, passive: true });
     window.addEventListener('scroll', onScroll, { passive: true });
     nearViewportAnchors();
 
     return () => {
       document.removeEventListener('pointerover', onPointerOver, { capture: true } as AddEventListenerOptions);
+      document.removeEventListener('pointerout', onPointerOut, { capture: true } as AddEventListenerOptions);
       window.removeEventListener('scroll', onScroll);
       if (raf) cancelAnimationFrame(raf);
+      hoverTimers.current.forEach((t) => clearTimeout(t));
+      hoverTimers.current.clear();
     };
   }, [router]);
 

@@ -1,0 +1,73 @@
+import type { Dictionary } from '../dictionary-types';
+import { dictionary as ko } from './ko';
+
+export const dictionary: Dictionary = {
+  ...ko,
+  nav: {
+    ...ko.nav,
+    home: 'Home',
+    tips: 'Tips',
+    local: 'Local',
+    boards: 'Boards',
+    community: 'Plaza',
+    ilchon: 'Friends',
+    minihome: 'Minihome',
+    botConsole: 'Admin',
+    memberMinihome: 'My minihome',
+    memberNotesInbox: 'Requests & notes',
+    memberFriends: 'My friends',
+    memberQuickNavAria: 'Member quick links',
+    mainNavAria: 'Main menu',
+  },
+  lang: { ko: '한국어', th: 'ไทย', en: 'English', zh: '中文' },
+  brandSuffix: 'World',
+  brandLockup: 'Live Well in Thailand',
+  logoAria: 'Live Well in Thailand — Home',
+  footer:
+    '© 2026 Thai Ja World · thaijaworld.com | Community for life in Thailand — tips, boards, local spots & minihome',
+  footerNav: {
+    terms: 'Terms',
+    privacy: 'Privacy',
+    contact: 'Contact',
+    ads: 'Ads',
+  },
+  board: {
+    ...ko.board,
+    pageTitle: 'Community board',
+    newPost: 'New post',
+    login: 'Log in',
+    signup: 'Sign up',
+    logout: 'Log out',
+  },
+  search: {
+    ...ko.search,
+    ariaLabel: 'Search',
+    headerBarLabel: 'Search',
+    heroTitle: 'What are you looking for?',
+    placeholder: 'Search…',
+    noResults: 'No results found.',
+    quickHeading: 'Shortcuts',
+    sectionPages: 'Site pages',
+    sectionNews: 'News highlights',
+    badgeMember: 'Log in to participate',
+    badgePublic: 'Open',
+    searching: 'Searching…',
+  },
+  seo: {
+    ...ko.seo,
+    defaultTitle: 'Thai Ja World',
+    titleTemplate: '%s | Thai Ja World',
+    defaultDescription: 'Life in Thailand — community, news, local spots & minihome',
+    homeTitle: 'Home — Thai Ja World',
+    homeDescription: 'Tips, boards & local spots for living in Thailand',
+    boardsListDescription: 'Share life in Thailand — reviews, tips & marketplace notes',
+    tradeHubDescription: 'Flea market & jobs — share cautions and experiences',
+  },
+  home: {
+    ...ko.home,
+    tag: 'THAI JA WORLD · tips for life in Thailand',
+    title: 'Life in Thailand — figure it out together',
+    heroLead: 'Stuck? Start here',
+  },
+};
+

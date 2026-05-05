@@ -6,7 +6,7 @@ import { absoluteUrl } from '@/lib/seo/site';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const b = d.board;
   const title = b.tradeHubTitle;
   const description = d.seo.tradeHubDescription;
@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function TradeHubPage() {
   const locale = await getLocale();
-  const b = getDictionary(locale).board;
+  const b = (await getDictionary(locale)).board;
 
   return (
     <div className="page-body board-page">

@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   images: {
     formats: ['image/avif', 'image/webp'],
+    /** 엣지·브라우저 캐시 활용 — 동일 src 반복 요청 감소 */
+    minimumCacheTTL: 60 * 60 * 24 * 7,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
         protocol: 'https',
@@ -34,7 +38,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    // server-only 패키지 지원 (Next.js 13+에서 기본 활성화)
+    optimizePackageImports: ['lucide-react'],
   },
   /** 네트워크 드라이브 등에서 파일 감시가 안 되면 dev가 Starting에서 멈춘 것처럼 보일 수 있음 */
   webpack: (config, { dev }) => {

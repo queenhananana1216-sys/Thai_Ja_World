@@ -4,7 +4,7 @@ import { getLocale } from '@/i18n/get-locale';
 
 export default async function IlchonPage() {
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
 
   return (
     <div className="page-body board-page ilchon-page-wrap">

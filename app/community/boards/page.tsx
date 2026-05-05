@@ -15,7 +15,7 @@ import PostAuthorMenu from './_components/PostAuthorMenu';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const title = d.board.pageTitle;
   const description = d.seo.boardsListDescription;
   const url = absoluteUrl('/community/boards');
@@ -54,7 +54,7 @@ export default async function BoardsListPage({
   searchParams: Promise<{ cat?: string }>;
 }) {
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const sp = await searchParams;
   const catFilter = parseBoardListCategoryParam(
     typeof sp.cat === 'string' ? sp.cat : undefined,

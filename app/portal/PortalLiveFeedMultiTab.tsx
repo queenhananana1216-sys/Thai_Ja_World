@@ -3,8 +3,8 @@
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import GuestGateLink from '@app/_components/GuestGateLink';
+import type { Dictionary } from '@/i18n/dictionary-types';
 import type { Locale } from '@/i18n/types';
-import { getDictionary } from '@/i18n/dictionaries';
 import { localizeQuestFeedText } from '@/lib/quests/questFeedLocale';
 import { isQuestMissionNoiseTitle } from '../lib/home/portalLiveFeedTitle';
 import styles from './portal-2026.module.css';
@@ -106,6 +106,7 @@ type Props = {
   lines: PortalLiveFeedLine[];
   locale: Locale;
   isLoggedIn: boolean;
+  feedPhraseMap: Dictionary['quests']['feedPhraseMap'];
   emptyAll: string;
   emptyTab: string;
   tabAll: string;
@@ -118,6 +119,7 @@ export default function PortalLiveFeedMultiTab({
   lines,
   locale,
   isLoggedIn,
+  feedPhraseMap,
   emptyAll,
   emptyTab,
   tabAll,
@@ -126,8 +128,7 @@ export default function PortalLiveFeedMultiTab({
   tabFlea,
 }: Props) {
   const [active, setActive] = useState<LiveFeedTabId>('all');
-  const d = getDictionary(locale);
-  const phraseMap = d.quests.feedPhraseMap;
+  const phraseMap = feedPhraseMap;
 
   const tabs: { id: LiveFeedTabId; label: string }[] = [
     { id: 'all', label: tabAll },

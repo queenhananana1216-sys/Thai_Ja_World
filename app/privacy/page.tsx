@@ -4,7 +4,7 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const d = getDictionary(await getLocale());
+  const d = await getDictionary(await getLocale());
   const { title, body } = policyCopy(d, 'privacy');
   return {
     title,
@@ -14,6 +14,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PrivacyPage() {
-  const d = getDictionary(await getLocale());
+  const d = await getDictionary(await getLocale());
   return <PolicyArticle d={d} slug="privacy" />;
 }

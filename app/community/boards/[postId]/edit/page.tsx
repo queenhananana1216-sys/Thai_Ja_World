@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export default async function EditBoardPostPage({ params }: PageProps) {
   const { postId } = await params;
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const supabase = await createServerSupabaseAuthClient();
   const {
     data: { user },

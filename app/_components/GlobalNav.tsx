@@ -64,7 +64,7 @@ function headerExtraLabels(locale: Locale) {
 export default async function GlobalNav() {
   const locale = await getLocale();
   const siteUi = await loadSiteUiSettings();
-  const d = mergeDictionarySiteBrand(getDictionary(locale), siteUi.siteDisplayName);
+  const d = mergeDictionarySiteBrand(await getDictionary(locale), siteUi.siteDisplayName);
   const x = headerExtraLabels(locale);
 
   /** 비로그인이면 null — 버튼 미렌더. 로그인만 동일 Supabase(쿠키 JWT)로 슬러그 조회 (anon 분리 조회 금지). */

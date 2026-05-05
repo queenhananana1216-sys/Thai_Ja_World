@@ -6,7 +6,7 @@ import { createServerClient } from '@/lib/supabase/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const loc = await getLocale();
-  const d = getDictionary(loc);
+  const d = await getDictionary(loc);
   return {
     title: d.tips.pageTitle,
     description: d.tips.pageLead,
@@ -18,7 +18,7 @@ type TipRow = { id: string; title: string; excerpt: string; created_at: string }
 
 export default async function TipsHubPage() {
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const t = d.tips;
   const sb = createServerClient();
   const { data, error } = await sb.rpc('get_tips_public', { limit_n: 50 });

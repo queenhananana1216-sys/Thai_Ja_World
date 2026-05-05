@@ -10,6 +10,7 @@ import {
 } from '../lib/home/fetchPortalHomeFeed';
 import { fetchViewerTodayThaiHallStats } from '@/lib/home/viewerThaiRank';
 import { resolveAdminForUser } from '@/lib/admin/resolveAdminAccess';
+import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
@@ -19,6 +20,7 @@ import { loadPortalDailySpark } from '@/lib/portal/loadPortalDailySpark';
 /** 홈 SSR 페치 전용 — 부모 `Suspense`가 즉시 폴백을 보여준 뒤 이 컴포넌트가 치환 */
 export default async function PortalFeedSection() {
   const locale = await getLocale();
+  const dictionary = await getDictionary(locale);
   const siteUi = await loadSiteUiSettings();
   let isLoggedIn = false;
   let isAdmin = false;
@@ -61,6 +63,7 @@ export default async function PortalFeedSection() {
       <Portal2026View
         feed={feed}
         locale={locale}
+        dictionary={dictionary}
         siteUi={siteUi}
         isLoggedIn={isLoggedIn}
         isAdmin={isAdmin}
@@ -98,6 +101,7 @@ export default async function PortalFeedSection() {
       <Portal2026View
         feed={HONEST_EMPTY_PORTAL_HOME_FEED}
         locale={locale}
+        dictionary={dictionary}
         siteUi={siteUi}
         isLoggedIn={isLoggedIn}
         isAdmin={isAdmin}

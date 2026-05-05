@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import { getDictionary } from '@/i18n/dictionaries';
-import { readLocaleCookie } from '@/i18n/readLocaleCookie';
-import { TJ_LOCALE_CHANGE_EVENT, type Locale } from '@/i18n/types';
+import { useGlobalLanguage } from '@/contexts/GlobalLanguageContext';
 interface HeroSectionProps {
   memberCount?: number;
   /** 포털 히어로 우측: 집계 숫자(fetchLandingStatsSSR) */
@@ -32,23 +30,8 @@ export function HeroSection({
   portalStats,
   variant = 'default',
 }: HeroSectionProps) {
-  const [locale, setLocale] = useState<Locale>('ko');
-
-  useLayoutEffect(() => {
-    setLocale(readLocaleCookie());
-  }, []);
-
-  useEffect(() => {
-    function onLocaleChange(e: Event) {
-      const ce = e as CustomEvent<Locale>;
-      if (ce.detail === 'ko' || ce.detail === 'th') setLocale(ce.detail);
-    }
-    window.addEventListener(TJ_LOCALE_CHANGE_EVENT, onLocaleChange);
-    return () => window.removeEventListener(TJ_LOCALE_CHANGE_EVENT, onLocaleChange);
-  }, []);
-
-  const d = useMemo(() => getDictionary(locale), [locale]);
-  const h = d.home;
+  const { locale, dict } = useGlobalLanguage();
+  const h = dict.home;
   const hAny = h as typeof h & Record<string, string>;
   // 어느 하나라도 실제 텍스트가 비면 하드코딩 폴백을 써서 히어로가 "비어 보이는" 일을 막는다.
   const copyKicker = (h.heroKicker?.trim() || HARDCODED_KICKER_FALLBACK);

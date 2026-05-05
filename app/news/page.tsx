@@ -21,7 +21,7 @@ const NEWS_HUB_FETCH_CAP = 320;
 
 export async function generateMetadata(): Promise<Metadata> {
   const loc = await getLocale();
-  const d = getDictionary(loc);
+  const d = await getDictionary(loc);
   return {
     title: d.home.newsTitle,
     description: d.home.newsSub,
@@ -31,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function NewsHubPage() {
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const h = d.home;
   const locUi = locale === 'th' ? 'th' : 'ko';
 

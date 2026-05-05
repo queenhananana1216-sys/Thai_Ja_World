@@ -16,7 +16,7 @@ import type { CollaborativeMissionRow } from '../_components/home/home-queries';
 import type { PortalDailySparkPayload } from '@/lib/portal/portalDailySpark';
 import type { SiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { siteUiDefaults } from '@/lib/site-settings/siteUiSettings';
-import { getDictionary } from '@/i18n/dictionaries';
+import type { Dictionary } from '@/i18n/dictionary-types';
 import { getPortal2026Copy, type Portal2026Copy } from '@/i18n/portal2026Copy';
 import { localizeQuestFeedText, stripQuestFeedWeatherClutter } from '@/lib/quests/questFeedLocale';
 import { isQuestMissionNoiseTitle } from '../lib/home/portalLiveFeedTitle';
@@ -78,6 +78,8 @@ function formatPortalNewsAge(iso: string | null | undefined, locale: Locale): st
 export type Portal2026ViewProps = {
   feed: PortalHomeFeed;
   locale: Locale;
+  /** SSR에서 한 번만 로드한 언어 팩 — 클라 하위는 phraseMap만 전달 */
+  dictionary: Dictionary;
   siteUi?: SiteUiSettings;
   /** 홈 퍼널 — 비회원 클릭 시 토스트 후 /login */
   isLoggedIn: boolean;
@@ -319,15 +321,16 @@ function NewsDenseRowLink({
   locale,
   isLoggedIn,
   badgeCopy,
+  feedPhraseMap,
 }: {
   item: PortalFeedLine;
   locale: Locale;
   isLoggedIn: boolean;
   badgeCopy: Pick<Portal2026Copy, 'feedBadgeAiAnalyzed' | 'feedBadgeCountermeasure'>;
+  feedPhraseMap: Dictionary['quests']['feedPhraseMap'];
 }) {
   const href = item.href?.trim() ? item.href : '/news';
-  const d = getDictionary(locale);
-  const map = d.quests.feedPhraseMap;
+  const map = feedPhraseMap;
   const title = localizeQuestFeedText(item.title ?? '', locale, map);
   const summary = localizeQuestFeedText(item.subtitle?.trim() ?? '', locale, map);
   const age = formatPortalNewsAge(item.publishedAt ?? null, locale);
@@ -390,6 +393,7 @@ function FeedLineList({
   locale,
   newsHubMore,
   isLoggedIn,
+  feedPhraseMap,
 }: {
   lines: PortalFeedLine[];
   emptyMessage: string;
@@ -403,9 +407,9 @@ function FeedLineList({
   locale: Locale;
   newsHubMore: string;
   isLoggedIn: boolean;
+  feedPhraseMap: Dictionary['quests']['feedPhraseMap'];
 }) {
-  const d = getDictionary(locale);
-  const phraseMap = d.quests.feedPhraseMap;
+  const phraseMap = feedPhraseMap;
   const safe = normalizeLines(lines ?? []);
   if (safe.length === 0) {
     if (omitEmptyPlaceholder) {
@@ -434,6 +438,7 @@ function FeedLineList({
             locale={locale}
             isLoggedIn={isLoggedIn}
             badgeCopy={bc}
+            feedPhraseMap={phraseMap}
           />
         ))}
       </ul>
@@ -477,6 +482,7 @@ function FeedLineList({
 export default function Portal2026View({
   feed,
   locale,
+  dictionary,
   siteUi: siteUiProp,
   isLoggedIn,
   isAdmin = false,
@@ -488,6 +494,7 @@ export default function Portal2026View({
   dailySpark = null,
 }: Portal2026ViewProps) {
   const siteUi = siteUiProp ?? siteUiDefaults();
+  const feedPhraseMap = dictionary.quests.feedPhraseMap;
   const copy = getPortal2026Copy(locale, siteUi.siteDisplayName);
   const raw = safeFeed(feed);
 
@@ -754,6 +761,7 @@ export default function Portal2026View({
                     locale={locale}
                     newsHubMore={copy.newsHubMore}
                     isLoggedIn={isLoggedIn}
+                    feedPhraseMap={feedPhraseMap}
                   />
                 </article>
               );
@@ -779,6 +787,7 @@ export default function Portal2026View({
               lines={liveFeed ?? []}
               locale={locale}
               isLoggedIn={isLoggedIn}
+              feedPhraseMap={feedPhraseMap}
               emptyAll={copy.emptyLiveFeed}
               emptyTab={copy.emptyLiveFeedTab}
               tabAll={copy.liveFeedTabAll}
@@ -845,6 +854,7 @@ export default function Portal2026View({
                       locale={locale}
                       isLoggedIn={isLoggedIn}
                       badgeCopy={copy}
+                      feedPhraseMap={feedPhraseMap}
                     />
                   ))}
                 </ul>

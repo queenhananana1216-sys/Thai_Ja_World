@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { useGlobalLanguage } from '@/contexts/GlobalLanguageContext';
+import { preloadDictionary } from '@/i18n/dictionaries';
 import { readLocaleCookie } from '@/i18n/readLocaleCookie';
 import type { Locale } from '@/i18n/types';
-import { useGlobalLanguage } from '@/contexts/GlobalLanguageContext';
 
 type Props = {
   labels: { ko: string; th: string };
@@ -37,6 +38,7 @@ export default function LanguageSwitch({ labels }: Props) {
       <button
         type="button"
         className={'lang-switch__btn' + (active === 'ko' ? ' lang-switch__btn--active' : '')}
+        onMouseEnter={() => preloadDictionary('ko')}
         onClick={() => void setLocale('ko')}
       >
         {labels.ko}
@@ -44,6 +46,7 @@ export default function LanguageSwitch({ labels }: Props) {
       <button
         type="button"
         className={'lang-switch__btn' + (active === 'th' ? ' lang-switch__btn--active' : '')}
+        onMouseEnter={() => preloadDictionary('th')}
         onClick={() => void setLocale('th')}
       >
         {labels.th}

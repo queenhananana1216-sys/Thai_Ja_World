@@ -6,7 +6,7 @@
 import { NextResponse } from 'next/server';
 import { createModeratedNewsComment } from '@/lib/moderation/newsCommentSubmissionPipeline';
 import { boardModMessage } from '@/lib/community/moderationMessages';
-import { getDictionary } from '@/i18n/dictionaries';
+import { dictionary as koDictionary } from '@/i18n/locales/ko';
 import { recordQuestProgress } from '@/lib/quests/progress';
 import { createSupabaseWithUserJwt } from '@/lib/supabase/userJwtClient';
 
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  const labels = getDictionary('ko').board;
+  const labels = koDictionary.board;
   const message =
     result.message?.trim() ||
     (result.code ? boardModMessage(labels, result.code as Parameters<typeof boardModMessage>[1]) : undefined);

@@ -46,7 +46,7 @@ function shouldUseGracefulFallback(parts: {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const supabase = createServerClient();
   const { data: row, error: rowErr } = await supabase
     .from('processed_news')
@@ -116,7 +116,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function NewsStoryPage({ params }: PageProps) {
   const { id } = await params;
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const h = d.home;
   const authSb = await createServerSupabaseAuthClient();
   const {

@@ -5,7 +5,7 @@ import { getLocale } from '@/i18n/get-locale';
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   return {
     title: locale === 'th' ? 'ค้นหา' : '검색',
     description: d.search.placeholder,
@@ -18,7 +18,7 @@ type PageProps = {
 
 export default async function SiteSearchPage({ searchParams }: PageProps) {
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const sp = await searchParams;
   const raw = sp.q;
   const q = typeof raw === 'string' ? raw.trim() : '';

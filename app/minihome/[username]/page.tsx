@@ -15,7 +15,7 @@ type PageProps = {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username } = await params;
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
   const supabase = createServerClient();
   const { data } = await supabase
     .from('user_minihomes')
@@ -107,7 +107,7 @@ export default async function MinihomeByUsernamePage({ params }: PageProps) {
   ]);
 
   const locale = await getLocale();
-  const d = getDictionary(locale);
+  const d = await getDictionary(locale);
 
   return (
     <div className="page-body minihome-user-page">

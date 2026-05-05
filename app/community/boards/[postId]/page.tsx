@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { postId } = await params;
   const locale = await getLocale();
   const siteUi = await loadSiteUiSettings();
-  const d = mergeDictionarySiteBrand(getDictionary(locale), siteUi.siteDisplayName);
+  const d = mergeDictionarySiteBrand(await getDictionary(locale), siteUi.siteDisplayName);
   /** 크롤러·OG와 동일 경로: anon + 공개 행만 (쿠키 없는 봇과 일치) */
   const supabase = createServerClient();
   const { data: post, error: postMetaErr } = await supabase
@@ -114,7 +114,7 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
   const { postId } = await params;
   const locale = await getLocale();
   const siteUi = await loadSiteUiSettings();
-  const d = mergeDictionarySiteBrand(getDictionary(locale), siteUi.siteDisplayName);
+  const d = mergeDictionarySiteBrand(await getDictionary(locale), siteUi.siteDisplayName);
   const supabase = await createServerSupabaseAuthClient();
   const {
     data: { user: viewer },

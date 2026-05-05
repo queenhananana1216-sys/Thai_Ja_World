@@ -10,7 +10,8 @@
  *   - 과장("100% 보장" 등) 금지 — 불확실하면 confidence_level=low, cautions 강화
  *   - JSON 파싱 실패 시 해당 항목 실패 처리 + bot_actions 기록
  *
- * 환경 변수: NEWS_SUMMARY_PROVIDER / OPENAI_API_KEY / GEMINI_API_KEY / LOCAL_LLM_BASE_URL
+ * 환경 변수: NEWS_SUMMARY_PROVIDER / OPENAI_API_KEY / OPENAI_API_KEYS / GEMINI_API_KEY / GEMINI_API_KEYS / LOCAL_LLM_BASE_URL
+ *            (뉴스 파이프라인과 동일: HTTP 429·502·503·500 시 지수 백오프 재시도, NEWS_LLM_FETCH_RETRIES 등)
  *            KNOWLEDGE_PUBLISH_MODE = manual(기본) | auto
  *            KNOWLEDGE_LLM_FALLBACK_STUB — LLM 없음/행별 실패 시 원문 스텁 초안(published=false) 저장.
  *              1|true 켜기, 0|false 끔. 미설정 시 manual(또는 미설정)이면 켜짐, auto 면 끔(뉴스 NEWS_SUMMARY_FALLBACK_STUB 과 동일 패턴).
@@ -64,14 +65,36 @@ function normalizeProvider(): LlmProvider {
   return 'auto';
 }
 
+function parseCommaKeysKnowledgeEarly(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function openAiKeysKnowledgeEarly(): string[] {
+  const m = parseCommaKeysKnowledgeEarly(process.env.OPENAI_API_KEYS);
+  if (m.length) return m;
+  const one = process.env.OPENAI_API_KEY?.trim();
+  return one ? [one] : [];
+}
+
+function geminiKeysKnowledgeEarly(): string[] {
+  const m = parseCommaKeysKnowledgeEarly(process.env.GEMINI_API_KEYS);
+  if (m.length) return m;
+  const one = process.env.GEMINI_API_KEY?.trim();
+  return one ? [one] : [];
+}
+
 export function isKnowledgeLlmConfigured(): boolean {
   const p = normalizeProvider();
-  if (p === 'openai') return Boolean(process.env.OPENAI_API_KEY?.trim());
-  if (p === 'gemini') return Boolean(process.env.GEMINI_API_KEY?.trim());
+  if (p === 'openai') return openAiKeysKnowledgeEarly().length > 0;
+  if (p === 'gemini') return geminiKeysKnowledgeEarly().length > 0;
   if (p === 'local') return Boolean(process.env.LOCAL_LLM_BASE_URL?.trim());
   return (
-    Boolean(process.env.OPENAI_API_KEY?.trim()) ||
-    Boolean(process.env.GEMINI_API_KEY?.trim()) ||
+    openAiKeysKnowledgeEarly().length > 0 ||
+    geminiKeysKnowledgeEarly().length > 0 ||
     Boolean(process.env.LOCAL_LLM_BASE_URL?.trim())
   );
 }
@@ -157,6 +180,45 @@ function localHostLabel(url: string): string {
   }
 }
 
+function sleepMsKnowledge(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function knowledgeLlmMaxAttempts(): number {
+  const legacy = process.env.NEWS_LLM_FETCH_RETRIES?.trim();
+  const nLegacy = legacy ? Number(legacy) : NaN;
+  if (Number.isFinite(nLegacy) && nLegacy >= 1) return Math.min(12, Math.floor(nLegacy));
+  const raw = process.env.NEWS_LLM_MAX_ATTEMPTS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  if (Number.isFinite(n) && n >= 1) return Math.min(12, Math.floor(n));
+  return 5;
+}
+
+function parseRetryAfterMsKnowledge(headerVal: string | null): number | null {
+  if (!headerVal?.trim()) return null;
+  const s = headerVal.trim();
+  const sec = Number(s);
+  if (Number.isFinite(sec) && sec >= 0) return Math.min(120_000, Math.floor(sec * 1000));
+  const d = Date.parse(s);
+  if (!Number.isNaN(d)) {
+    const delta = d - Date.now();
+    return delta > 0 ? Math.min(120_000, delta) : null;
+  }
+  return null;
+}
+
+function computeBackoffKnowledge(attemptIndex: number, retryAfterMs: number | null): number {
+  const cap = 90_000;
+  const fromHeader = retryAfterMs && retryAfterMs > 0 ? retryAfterMs : 0;
+  const exp = Math.floor(1000 * 2 ** (attemptIndex - 1));
+  const jitter = Math.floor(Math.random() * 400);
+  return Math.min(cap, Math.max(fromHeader, exp + jitter));
+}
+
+function isRetriableKnowledgeHttp(status: number): boolean {
+  return status === 429 || status === 503 || status === 502 || status === 500;
+}
+
 async function ensureLocalKnowledgeLlmReachable(baseUrl: string): Promise<void> {
   const cached = localKnowledgeLlmReachability.get(baseUrl);
   if (cached === true) return;
@@ -182,16 +244,19 @@ async function ensureLocalKnowledgeLlmReachable(baseUrl: string): Promise<void> 
 async function callLlm(params: {
   baseUrl: string;
   model: string;
-  apiKey: string | undefined;
+  apiKey?: string | undefined;
+  apiKeyCandidates?: string[];
   messages: Array<{ role: string; content: string }>;
   jsonObjectMode: boolean;
 }): Promise<string> {
   const url = chatCompletionsUrl(params.baseUrl);
   const timeoutMs = llmTimeoutMsForBaseUrl(params.baseUrl);
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (params.apiKey?.trim()) {
-    headers.Authorization = `Bearer ${params.apiKey.trim()}`;
-  }
+  const keyPool =
+    params.apiKeyCandidates && params.apiKeyCandidates.length > 0
+      ? params.apiKeyCandidates.map((k) => k.trim()).filter(Boolean)
+      : params.apiKey?.trim()
+        ? [params.apiKey.trim()]
+        : [];
 
   const body: Record<string, unknown> = {
     model: params.model,
@@ -203,35 +268,57 @@ async function callLlm(params: {
     body.response_format = { type: 'json_object' };
   }
 
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-      signal: ctrl.signal,
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (msg.toLowerCase().includes('aborted')) {
-      throw new Error(`${timeoutMs}ms LLM 타임아웃`);
-    }
-    throw e;
-  } finally {
-    clearTimeout(timer);
-  }
+  const maxAttempts = knowledgeLlmMaxAttempts();
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const keyForAttempt =
+      keyPool.length > 0 ? keyPool[(attempt - 1) % keyPool.length] : undefined;
+    if (keyForAttempt) headers.Authorization = `Bearer ${keyForAttempt}`;
 
-  if (!res.ok) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+    } catch (e) {
+      clearTimeout(timer);
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.toLowerCase().includes('aborted')) {
+        throw new Error(`${timeoutMs}ms LLM 타임아웃`);
+      }
+      if (attempt >= maxAttempts) throw e;
+      const bo = computeBackoffKnowledge(attempt, null);
+      console.warn(`[KnowledgeLLM] fetch 재시도 ${attempt + 1}/${maxAttempts} ${bo}ms 후: ${msg.slice(0, 140)}`);
+      await sleepMsKnowledge(bo);
+      continue;
+    }
+
+    if (res.ok) {
+      const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+      const content = data.choices?.[0]?.message?.content;
+      if (!content?.trim()) throw new Error('LLM 응답 본문이 비어 있습니다.');
+      return content;
+    }
+
     const t = await res.text();
+    const ra = parseRetryAfterMsKnowledge(res.headers.get('retry-after'));
+    if (isRetriableKnowledgeHttp(res.status) && attempt < maxAttempts) {
+      const bo = computeBackoffKnowledge(attempt, ra);
+      console.warn(
+        `[KnowledgeLLM] HTTP ${res.status} → ${bo}ms 후 재시도 ${attempt + 1}/${maxAttempts}. ${t.slice(0, 180)}`,
+      );
+      await sleepMsKnowledge(bo);
+      continue;
+    }
     throw new HttpCompletionError(res.status, `LLM HTTP ${res.status}: ${t.slice(0, 400)}`);
   }
-
-  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  const content = data.choices?.[0]?.message?.content;
-  if (!content?.trim()) throw new Error('LLM 응답 본문이 비어 있습니다.');
-  return content;
+  throw new Error('LLM 호출 실패');
 }
 
 function shouldFallback(err: unknown): boolean {
@@ -243,8 +330,8 @@ function shouldFallback(err: unknown): boolean {
 
 // ── 시스템 프롬프트 ───────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are a pragmatic knowledge curator for "Thai Ja World" (Thailand–Korea community).
-Persona: **태국 현지에 오래 묻어 있는 한인 운영자** — 적당히 위트 있되 냉철한 중립. 단순 번역·불릿 나열이 아니라 "내가 동네에서 이렇게 한다" 식 **실전 스텝**을 checklist에 쪼개 담는다. 사건·절차에서 배울 점과 대비책을 cautions에도 녹인다.
+const SYSTEM_PROMPT = `You are NOT a generic chatbot here — you write as the **human operator / knowledge curator** of 「태국에, 살자」(Thai Ja World).
+Persona: **태국 현지 사정에 밝은 위트 있는 한국인 운영자** — 적당히 위트 있되 냉철한 중립. 단순 번역·불릿 나열이 아니라 "내가 동네에서 이렇게 한다" 식 **실전 스텝**을 checklist에 쪼개 담는다. 사건·절차에서 배울 점과 대비책을 cautions에도 녹인다.
 Your job: given a Thai/Korea-related web article (title + excerpt + URL), output a structured JSON with practical information.
 
 LANGUAGE — HIGHEST PRIORITY (do not violate):
@@ -278,8 +365,8 @@ OUTPUT STRUCTURE (strict JSON):
   },
   "ko": {
     "title": "클릭을 부르는 호기심 제목(질문·구체 숫자·상황) 가능. 단, 과장·거짓·선정 금지. 출처 사실 범위만. 120자 이내 권장.",
-    "summary": "① 맨 앞 1~2문장(총 120~200자): 비회원 피드·꿀팁 허브에 노출되는 '궁금증 훅'. ② 줄바꿈 후 본 요약(실용). ③ 마지막에 줄바꿈 후 반드시 한 줄 헤더 **[AI의 대비책]** 를 넣고, 그 아래 '운영자 실전 스텝' 톤으로 2~4문장(오늘·이번 주 행동). 상세 번호 스텝은 checklist에 이어짐. 총 300~800자. 불확실하면 '보도에 따르면/공식 확인 필요'.",
-    "checklist": ["[AI의 대비책] 본문과 맞닿는 실행 스텝(①②③ 순서). PII 금지"],
+    "summary": "① 맨 앞 1~2문장(총 120~200자): 비회원 피드·꿀팁 허브에 노출되는 '궁금증 훅'. ② 줄바꿈 후 본 요약(실용). ③ 마지막에 줄바꿈 후 반드시 한 줄 헤더 **[운영자의 대비책]** 를 넣고, 그 아래 '운영자 실전 스텝' 톤으로 2~4문장(오늘·이번 주 행동). 상세 번호 스텝은 checklist에 이어짐. 총 300~800자. 불확실하면 '보도에 따르면/공식 확인 필요'.",
+    "checklist": ["[운영자의 대비책] 본문과 맞닿는 실행 스텝(①②③ 순서). PII 금지"],
     "cautions": ["공식확인권장/법률자문아님/불확실성 명시. 비자·법률 관련은 반드시 포함"],
     "tags": ["키워드5~8개. PII 금지"]
   },
@@ -320,8 +407,8 @@ const KNOWLEDGE_LLM_LOCALE_RETRY_USER = [
 const HANGUL_SYLLABLE_RE = /[\uAC00-\uD7AF]/g;
 const THAI_LETTER_RE = /[\u0E00-\u0E7F]/g;
 
-const KNOWLEDGE_KO_CM_HEADER = '**[AI의 대비책]**';
-const KNOWLEDGE_TH_CM_HEADER = '**[แผนรับมือจาก AI]**';
+const KNOWLEDGE_KO_CM_HEADER = '**[운영자의 대비책]**';
+const KNOWLEDGE_TH_CM_HEADER = '**[แผนรับมือจากทีม 운영]**';
 
 function countermeasureStepsFromChecklist(items: string[], max: number): string {
   return items
@@ -331,12 +418,14 @@ function countermeasureStepsFromChecklist(items: string[], max: number): string 
     .join('\n');
 }
 
-/** 요약 본문 하단에 **[AI의 대비책]** 고정 — LLM 누락 시에도 UI·SEO 결속 */
+/** 요약 본문 하단에 **[운영자의 대비책]** 고정 — LLM 누락 시에도 UI·SEO 결속 (구버전 [AI의 대비책] 도 인정) */
 function enforceKnowledgeCountermeasureInSummary(llm: KnowledgeLlmOutput): KnowledgeLlmOutput {
   const koSteps = countermeasureStepsFromChecklist(llm.ko.checklist, 5);
   const thSteps = countermeasureStepsFromChecklist(llm.th.checklist, 5);
   let koSum = llm.ko.summary.trim();
-  if (!koSum.includes('[AI의 대비책]')) {
+  const koHasCm =
+    koSum.includes('[운영자의 대비책]') || koSum.includes('[AI의 대비책]');
+  if (!koHasCm) {
     const tail =
       koSteps.trim().length > 0
         ? `(운영자 실전 스텝)\n${koSteps}`
@@ -344,7 +433,9 @@ function enforceKnowledgeCountermeasureInSummary(llm: KnowledgeLlmOutput): Knowl
     koSum = `${koSum}\n\n${KNOWLEDGE_KO_CM_HEADER}\n${tail}`;
   }
   let thSum = llm.th.summary.trim();
-  if (!thSum.includes('แผนรับมือจาก AI')) {
+  const thHasCm =
+    thSum.includes('แผนรับมือจากทีม 운영') || thSum.includes('แผนรับมือจาก AI');
+  if (!thHasCm) {
     const tail =
       thSteps.trim().length > 0
         ? thSteps
@@ -529,9 +620,9 @@ function finishKnowledgeLlmParse(content: string, label: string): KnowledgeLlmOu
 
 async function routeKnowledgeLlmWithMessages(messages: KnowledgeChatMessage[]): Promise<KnowledgeLlmOutput> {
   const provider = normalizeProvider();
-  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  const openaiKeys = openAiKeysKnowledgeEarly();
   const openaiModel = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
-  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  const geminiKeys = geminiKeysKnowledgeEarly();
   const geminiBase = process.env.GEMINI_OPENAI_BASE_URL?.trim() || 'https://generativelanguage.googleapis.com/v1beta/openai';
   const geminiModel = process.env.GEMINI_MODEL?.trim() || 'gemini-2.0-flash';
   const localBase = process.env.LOCAL_LLM_BASE_URL?.trim();
@@ -552,11 +643,11 @@ async function routeKnowledgeLlmWithMessages(messages: KnowledgeChatMessage[]): 
   };
 
   const runOpenAi = async (): Promise<KnowledgeLlmOutput> => {
-    if (!openaiKey) throw new Error('OPENAI_API_KEY 미설정');
+    if (!openaiKeys.length) throw new Error('OPENAI_API_KEY(또는 OPENAI_API_KEYS) 미설정');
     const content = await callLlm({
       baseUrl: 'https://api.openai.com/v1',
       model: openaiModel,
-      apiKey: openaiKey,
+      apiKeyCandidates: openaiKeys,
       messages,
       jsonObjectMode: true,
     });
@@ -564,11 +655,11 @@ async function routeKnowledgeLlmWithMessages(messages: KnowledgeChatMessage[]): 
   };
 
   const runGemini = async (): Promise<KnowledgeLlmOutput> => {
-    if (!geminiKey) throw new Error('GEMINI_API_KEY 미설정');
+    if (!geminiKeys.length) throw new Error('GEMINI_API_KEY(또는 GEMINI_API_KEYS) 미설정');
     const content = await callLlm({
       baseUrl: geminiBase,
       model: geminiModel,
-      apiKey: geminiKey,
+      apiKeyCandidates: geminiKeys,
       messages,
       jsonObjectMode: false,
     });
@@ -580,12 +671,12 @@ async function routeKnowledgeLlmWithMessages(messages: KnowledgeChatMessage[]): 
   if (provider === 'openai') return runOpenAi();
 
   // auto: OpenAI → Gemini → Local 폴백
-  if (openaiKey) {
+  if (openaiKeys.length > 0) {
     try {
       return await runOpenAi();
     } catch (e) {
       if (shouldFallback(e)) {
-        if (geminiKey) {
+        if (geminiKeys.length > 0) {
           try {
             return await runGemini();
           } catch (e2) {
@@ -600,7 +691,7 @@ async function routeKnowledgeLlmWithMessages(messages: KnowledgeChatMessage[]): 
       throw e;
     }
   }
-  if (geminiKey) return runGemini();
+  if (geminiKeys.length > 0) return runGemini();
   if (localBase) return runLocal();
 
   throw new Error('LLM 미설정 — OPENAI_API_KEY, GEMINI_API_KEY, LOCAL_LLM_BASE_URL 중 하나 필요');

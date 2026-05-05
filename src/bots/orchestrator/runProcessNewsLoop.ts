@@ -31,7 +31,7 @@ export async function runProcessNewsLoop(
 ): Promise<RunProcessNewsResult> {
   const { idempotencyKey, limit: limitOpt } = options;
   const envBatch = Number(process.env.NEWS_SUMMARIZE_BATCH_SIZE);
-  const defaultLimit = Number.isFinite(envBatch) && envBatch >= 1 ? Math.min(envBatch, 30) : 8;
+  const defaultLimit = Number.isFinite(envBatch) && envBatch >= 1 ? Math.min(envBatch, 30) : 6;
   const limit = limitOpt ?? defaultLimit;
   const run_id = randomUUID();
 

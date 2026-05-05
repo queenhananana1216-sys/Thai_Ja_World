@@ -74,12 +74,18 @@ function withAiCountermeasureHeader(text: string, lang: 'ko' | 'th'): string {
   const t = text.trim();
   if (!t) {
     return lang === 'ko'
-      ? '**[AI의 대비책]**\n· 공식 경로만으로 확인하고, 불확실하면 저장·차단 후 신고 채널을 이용합니다.'
-      : '**[แผนรับมือจาก AI]**\n· ตรวจสอบผ่านช่องทางราชการเท่านั้น — หากไม่แน่ใจให้หยุดและรอข้อมูล';
+      ? '**[운영자의 대비책]**\n· 공식 경로만으로 확인하고, 불확실하면 저장·차단 후 신고 채널을 이용합니다.'
+      : '**[แผนรับมือจากทีม 운영]**\n· ตรวจสอบผ่านช่องทางราชการเท่านั้น — หากไม่แน่ใจให้หยุดและรอข้อมูล';
   }
-  if (lang === 'ko' && t.includes('[AI의 대비책]')) return t;
-  if (lang === 'th' && (t.includes('แผนรับมือจาก AI') || t.includes('[แผนรับมือจาก AI]'))) return t;
-  return lang === 'ko' ? `**[AI의 대비책]**\n${t}` : `**[แผนรับมือจาก AI]**\n${t}`;
+  if (lang === 'ko' && (t.includes('[운영자의 대비책]') || t.includes('[AI의 대비책]'))) return t;
+  if (
+    lang === 'th' &&
+    (t.includes('แผนรับมือจากทีม 운영') ||
+      t.includes('แผนรับมือจาก AI') ||
+      t.includes('[แผนรับมือจาก AI]'))
+  )
+    return t;
+  return lang === 'ko' ? `**[운영자의 대비책]**\n${t}` : `**[แผนรับมือจากทีม 운영]**\n${t}`;
 }
 
 function buildAiInsightPayload(raw: PostInsightRawLlm): PostAiInsightV1 {
@@ -125,7 +131,7 @@ const COMMUNITY_INSIGHT_SYSTEM = [
   'Meanings:',
   '- *_ai_summary: one tight "AI 한마디" line for that language (not a recap of the post).',
   '- *_insight_impact: how this topic may affect readers in Thailand (generic, no names).',
-  '- *_countermeasure: 1~3 concrete prudent steps (verify official sources, stay alert, etc.). JSON 문자열 안에는 헤더 없이 본문만 — 시스템이 **[AI의 대비책]** / **[แผนรับมือจาก AI]** 접두를 붙인다.',
+  '- *_countermeasure: 1~3 concrete prudent steps (verify official sources, stay alert, etc.). JSON 문자열 안에는 헤더 없이 본문만 — 시스템이 **[운영자의 대비책]** / **[แผนรับมือจากทีม 운영]** 접두를 붙인다.',
   '- feed_warning_*: empty string "" usually; short line if incident_attention is elevated/high.',
   '- seo_keywords: exactly five comma-separated Korean/Thai mixed phrases, no numbering.',
 ].join('\n');

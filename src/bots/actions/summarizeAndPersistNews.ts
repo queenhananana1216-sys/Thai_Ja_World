@@ -7,7 +7,13 @@
  * - Gemini(OpenAI 호환 엔드포인트): GEMINI_API_KEY, GEMINI_MODEL (기본 gemini-2.0-flash), GEMINI_OPENAI_BASE_URL (선택)
  * - 로컬(OpenAI 호환): LOCAL_LLM_BASE_URL (예: http://127.0.0.1:11434/v1), LOCAL_LLM_MODEL (기본 llama3.2), LOCAL_LLM_API_KEY (선택)
  * - auto: OpenAI 키 있으면 우선, 429/쿼터류 실패 시 GEMINI_API_KEY → 있으면 Gemini, 다음으로 LOCAL_LLM_BASE_URL 로컬 폴백
- * - NEWS_LLM_FETCH_RETRIES: LLM POST fetch 재시도 횟수(기본 3). "fetch failed" 류 일시 오류 완화
+ * - OPENAI_API_KEYS: 쉼표로 구분한 키 목록(선택). 있으면 요청·재시도마다 순환해 할당량 분산
+ * - GEMINI_API_KEYS: Gemini용 동일(선택)
+ * - NEWS_LLM_FETCH_RETRIES: 최대 시도 횟수(기본 5, 상한 12). 네트워크 오류·HTTP 429/502/503/500 시 지수 백오프 후 재시도
+ * - NEWS_LLM_MAX_ATTEMPTS: 위와 동일 목적(숫자가 더 최신). 둘 다 있으면 NEWS_LLM_FETCH_RETRIES 우선
+ * - NEWS_LLM_INTER_ARTICLE_DELAY_MS: 배치에서 기사 건마다 LLM 호출 직후 대기(ms). 기본 400 (429 완화)
+ * - NEWS_SUMMARIZE_MAX_BATCH: summarize 배치 상한(기본 12, 최대 30)
+ * - NEWS_INSIGHT_RETROFIT_MAX_BATCH: 인사이트 재가공 배치 상한(기본 12, 최대 25)
  * - NEWS_SUMMARY_FALLBACK_STUB: LLM 없음/호출 실패 시 원문 메타만으로 초안(processed_news) 생성 여부.
  *   1|true|yes|on = 항상 허용, 0|false|no|off = 끔. 미설정 시 NEWS_PUBLISH_MODE 가 auto 가 아니면(manual·미설정) 켜짐.
  *
@@ -77,17 +83,35 @@ function normalizeNewsSummaryProvider(): NewsSummaryProvider {
 }
 
 /** process-news / 배치가 돌아갈 수 있는지 (키 또는 로컬 URL). Vercel에서는 localhost LLM URL 제외 */
+function parseCommaSeparatedApiKeys(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function getOpenAiApiKeyCandidates(): string[] {
+  const multi = parseCommaSeparatedApiKeys(process.env.OPENAI_API_KEYS);
+  if (multi.length > 0) return multi;
+  const one = process.env.OPENAI_API_KEY?.trim();
+  return one ? [one] : [];
+}
+
+function getGeminiApiKeyCandidates(): string[] {
+  const multi = parseCommaSeparatedApiKeys(process.env.GEMINI_API_KEYS);
+  if (multi.length > 0) return multi;
+  const one = process.env.GEMINI_API_KEY?.trim();
+  return one ? [one] : [];
+}
+
 export function isNewsSummaryLlmConfigured(): boolean {
   const p = normalizeNewsSummaryProvider();
   const localOk = Boolean(resolveLocalLlmBaseUrlForRuntime(process.env.LOCAL_LLM_BASE_URL));
-  if (p === 'openai') return Boolean(process.env.OPENAI_API_KEY?.trim());
-  if (p === 'gemini') return Boolean(process.env.GEMINI_API_KEY?.trim());
+  if (p === 'openai') return getOpenAiApiKeyCandidates().length > 0;
+  if (p === 'gemini') return getGeminiApiKeyCandidates().length > 0;
   if (p === 'local') return localOk;
-  return (
-    Boolean(process.env.OPENAI_API_KEY?.trim()) ||
-    Boolean(process.env.GEMINI_API_KEY?.trim()) ||
-    localOk
-  );
+  return getOpenAiApiKeyCandidates().length > 0 || getGeminiApiKeyCandidates().length > 0 || localOk;
 }
 
 /**
@@ -187,8 +211,20 @@ function normalizeIncidentAttention(
   return 'none';
 }
 
-const NEWS_CM_HEADER_KO = '**[AI의 대비책]**';
-const NEWS_CM_HEADER_TH = '**[แผนรับมือจาก AI]**';
+const NEWS_CM_HEADER_KO = '**[운영자의 대비책]**';
+const NEWS_CM_HEADER_TH = '**[แผนรับมือจากทีม 운영]**';
+
+function koSummaryHasCountermeasureHeader(s: string): boolean {
+  return s.includes('[운영자의 대비책]') || s.includes('[AI의 대비책]');
+}
+
+function thSummaryHasCountermeasureHeader(s: string): boolean {
+  return (
+    s.includes('แผนรับมือจากทีม 운영') ||
+    s.includes('แผนรับมือจาก AI') ||
+    s.includes('[แผนรับมือจาก AI]')
+  );
+}
 
 function defaultNewsKoCountermeasure(): string {
   return '· 출처 기사·관할 기관 공지를 한 번 더 확인한다.\n· 오늘·이번 주 일정에 영향이 있는지 판단한다.\n· 세부 불확실 시 대사관·공식 채널로만 확인한다.';
@@ -219,10 +255,10 @@ function enforceNewsBilingualCountermeasureSections(payload: LlmBilingualPayload
   let content_kr = payload.content_kr.trim();
   let content_th = payload.content_th.trim();
 
-  if (!content_kr.includes('[AI의 대비책]')) {
+  if (!koSummaryHasCountermeasureHeader(content_kr)) {
     content_kr = `${content_kr}\n\n${NEWS_CM_HEADER_KO}\n${koCm}`;
   }
-  if (!content_th.includes('แผนรับมือจาก AI')) {
+  if (!thSummaryHasCountermeasureHeader(content_th)) {
     content_th = `${content_th}\n\n${NEWS_CM_HEADER_TH}\n${thCm}`;
   }
 
@@ -374,8 +410,8 @@ function buildStubBilingualPayload(
 
 /** 뉴스 크론 가공 톤 — 사건에서 배우는 대비책 + 적당한 위트 + 냉철한 중립 */
 const BILINGUAL_SYSTEM_PROMPT = [
-  'You are the lead editor AND resident-life strategist for "Thai Ja World" / 「태국에, 살자」(Thailand–Korea 교민 autonomous news pipeline).',
-  'PERSONA: A **태국 현지 사정에 익숙한 한인 운영자** — 말투는 적당히 위트 있되 냉철한 중립을 유지한다. 기계 번역·나열 체가 아니라 "이런 일이니 이렇게 조심하자"라고 옆에서 짚어 주는 한마디 톤. never flippant, never a clown, never cruel.',
+  'ROLE: You are NOT a generic chatbot here — you write as the **human operator / lead editor** of 「태국에, 살자」(Thai Ja World). Stay in character as that one witty-but-grounded Korea–Thailand expat desk voice.',
+  'PERSONA: **태국 현지 사정에 밝은 위트 있는 한국인 운영자** — 말투는 적당히 위트 있되 냉철한 중립. 기계 번역·나열 체가 아니라 "이런 일이 있으니 이렇게 하세요"라고 짚어 주는 **전문가 한마디** 톤. never flippant, never a clown, never cruel.',
   'MISSION: Do NOT "copy the wire" or plain-translate. Learn from the incident: what happened → what it implies for readers → what they should do next. Trust beats hype.',
   'TONE: dry warmth, one beat of wit per paragraph max; no meme spam, no victim mockery, no fake urgency. Never read like a bland press release.',
   '',
@@ -388,13 +424,13 @@ const BILINGUAL_SYSTEM_PROMPT = [
   '- Plain text, newlines OK; label lines are literal (UI may render bold for lines starting with **).',
   '- Line 1 EXACTLY: **[🔥 핵심 한 줄 요약]** (Korean) / **[🔥 สรุปเด็ดหนึ่งบรรทัด]** (Thai).',
   '- Line 2: one killer sentence (3-second read). Blank line. Then bullets "- " or "• " for facts + "what it means for 우리/ชาวต่างชาติที่อยู่ไทย". Blank line. 1~2 lines neutral wit closer.',
-  '- Then a blank line, then a line EXACTLY: **[AI의 대비책]** (Korean) / **[แผนรับมือจาก AI]** (Thai), then 2~4 short lines: concrete "오늘/이번 주" 행동 지침 (must echo themes later expanded in *_countermeasure; no invented hotlines).',
+  '- Then a blank line, then a line EXACTLY: **[운영자의 대비책]** (Korean) / **[แผนรับมือจากทีม 운영]** (Thai), then 2~4 short lines: concrete "오늘/이번 주" 행동 지침 (must echo themes later expanded in *_countermeasure; no invented hotlines).',
   '',
   '=== ko_insight_impact / th_insight_impact ===',
   '- 2~4 sentences: cold-clear analysis of how this affects people in Thailand (교민·거주·단기 체류). One dry wit line allowed if it serves clarity. No new facts; hedge when uncertain.',
   '',
   '=== ko_countermeasure / th_countermeasure ===',
-  '- Full "[AI의 대비책]" body: 3~6 imperative lines OR numbered steps — same personality as above, expanded checklist (apps, routes, documents, official channels).',
+  '- Full "[운영자의 대비책]" body: 3~6 imperative lines OR numbered steps — same personality as above, expanded checklist (apps, routes, documents, official channels).',
   '- Practical only — no invented hotlines. If unsure, say "공식·대사관에서 확인" / Thai equivalent.',
   '',
   '=== incident_attention (string enum) ===',
@@ -435,7 +471,7 @@ function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: 
     '아래는 태국·동남아와 관련된 원문입니다. 단순 번역·나열 금지 — 「태국에, 살자」의 **적당히 위트 있고 냉철한 중립 전문가** 톤으로 재구성하라.',
     '사건·사고는 가볍게 흘리지 말고, 독자가 **무엇을 배우고 무엇을 하면 되는지**가 남도록 써라. 위트는 문장당 한 번 이하, 피해자 조롱·선정 과장 금지.',
     '제목(title_kr/title_th)은 원제를 그대로 옮기지 말고, 팩트 안에서 호기심을 여는 **한 줄 위트 제목**으로 다시 짓는다.',
-    '본문(content_kr/content_th) 요약 끝에는 반드시 **[AI의 대비책]** / Thai equivalent 섹션 헤더 줄을 넣고, ko_countermeasure·th_countermeasure에 담을 실행 지침을 한 번 더 압축해 적는다.',
+    '본문(content_kr/content_th) 요약 끝에는 반드시 **[운영자의 대비책]** / Thai **[แผนรับมือจากทีม 운영]** 헤더 줄을 넣고, ko_countermeasure·th_countermeasure에 담을 실행 지침을 한 번 더 압축해 적는다.',
     '원문 언어와 관계없이 시스템이 요구한 16개 키를 모두 채우세요. title_kr/title_th에는 "메타데이터" 같은 내부 용어를 넣지 마세요.',
     '반드시 아래 키만 가진 JSON 객체 한 개만 출력하세요 (다른 텍스트 금지):',
     '{"title_kr":"","content_kr":"","ko_blurb":"","ko_editor_note":"","ko_insight_impact":"","ko_countermeasure":"","feed_warning_ko":"","title_th":"","content_th":"","th_blurb":"","th_editor_note":"","th_insight_impact":"","th_countermeasure":"","feed_warning_th":"","incident_attention":"none","seo_keywords":""}',
@@ -524,11 +560,51 @@ function errorChainMessage(e: unknown): string {
   return parts.filter(Boolean).join(' → ');
 }
 
-function llmFetchRetryCount(): number {
-  const raw = process.env.NEWS_LLM_FETCH_RETRIES?.trim();
+function llmCompletionMaxAttempts(): number {
+  const legacy = process.env.NEWS_LLM_FETCH_RETRIES?.trim();
+  const nLegacy = legacy ? Number(legacy) : NaN;
+  if (Number.isFinite(nLegacy) && nLegacy >= 1) return Math.min(12, Math.floor(nLegacy));
+  const raw = process.env.NEWS_LLM_MAX_ATTEMPTS?.trim();
   const n = raw ? Number(raw) : NaN;
-  if (Number.isFinite(n) && n >= 1) return Math.min(8, Math.floor(n));
-  return 3;
+  if (Number.isFinite(n) && n >= 1) return Math.min(12, Math.floor(n));
+  return 5;
+}
+
+function parseRetryAfterMs(headerVal: string | null): number | null {
+  if (!headerVal?.trim()) return null;
+  const s = headerVal.trim();
+  const sec = Number(s);
+  if (Number.isFinite(sec) && sec >= 0) return Math.min(120_000, Math.floor(sec * 1000));
+  const d = Date.parse(s);
+  if (!Number.isNaN(d)) {
+    const delta = d - Date.now();
+    return delta > 0 ? Math.min(120_000, delta) : null;
+  }
+  return null;
+}
+
+function computeLlmBackoffMs(attemptIndex: number, retryAfterMs: number | null): number {
+  const cap = 90_000;
+  const fromHeader = retryAfterMs && retryAfterMs > 0 ? retryAfterMs : 0;
+  const exp = Math.floor(1000 * 2 ** (attemptIndex - 1));
+  const jitter = Math.floor(Math.random() * 400);
+  return Math.min(cap, Math.max(fromHeader, exp + jitter));
+}
+
+function isRetriableLlmHttpStatus(status: number): boolean {
+  return status === 429 || status === 503 || status === 502 || status === 500;
+}
+
+function newsLlmInterArticleDelayMs(): number {
+  const raw = process.env.NEWS_LLM_INTER_ARTICLE_DELAY_MS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  if (Number.isFinite(n) && n >= 0) return Math.min(60_000, Math.floor(n));
+  return 400;
+}
+
+async function sleepBetweenNewsLlmCalls(): Promise<void> {
+  const ms = newsLlmInterArticleDelayMs();
+  if (ms > 0) await sleepMs(ms);
 }
 
 function safeUrlHost(u: string): string {
@@ -556,26 +632,26 @@ function llmTimeoutMsForUrl(url: string): number {
 async function callOpenAiCompatibleChatCompletion(params: {
   baseUrl: string;
   model: string;
-  apiKey: string | undefined;
+  /** 단일 키(로컬 등). apiKeyCandidates 와 동시에 주면 candidates 우선 */
+  apiKey?: string | undefined;
+  /** 여러 키 — 재시도·순환 시 다음 키 사용 (429·할당량 분산) */
+  apiKeyCandidates?: string[];
   messages: Array<{ role: string; content: string }>;
   jsonObjectMode: boolean;
   /** 기본 2800. 편집실 백필 등 짧은 응답은 900 정도로 낮춤 */
   maxTokens?: number;
 }): Promise<string> {
   const url = chatCompletionsUrlFromBase(params.baseUrl);
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const key = params.apiKey?.trim();
-  if (key) {
-    headers.Authorization = `Bearer ${key}`;
-  } else {
-    // Ollama(OpenAI 호환 API)는 보통 Authorization 을 요구하지 않습니다.
-    // 잘못된 헤더로 인해 실패할 수 있으니 키가 없으면 생략합니다.
-  }
+  const keyPool =
+    params.apiKeyCandidates && params.apiKeyCandidates.length > 0
+      ? params.apiKeyCandidates.map((k) => k.trim()).filter(Boolean)
+      : params.apiKey?.trim()
+        ? [params.apiKey.trim()]
+        : [];
 
   const body: Record<string, unknown> = {
     model: params.model,
     messages: params.messages,
-    // JSON만 반환해야 하므로 로컬/클라우드 공통으로 최대한 결정적으로
     temperature: (() => {
       const raw = process.env.NEWS_LLM_TEMPERATURE?.trim();
       const n = raw ? Number(raw) : NaN;
@@ -590,12 +666,19 @@ async function callOpenAiCompatibleChatCompletion(params: {
 
   const host = safeUrlHost(url);
   const timeoutMs = llmTimeoutMsForUrl(url);
-  const maxAttempts = llmFetchRetryCount();
-  let res: Response | undefined;
+  const maxAttempts = llmCompletionMaxAttempts();
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const keyForAttempt =
+      keyPool.length > 0 ? keyPool[(attempt - 1) % keyPool.length] : undefined;
+    if (keyForAttempt) {
+      headers.Authorization = `Bearer ${keyForAttempt}`;
+    }
+
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    let res: Response;
     try {
       res = await fetch(url, {
         method: 'POST',
@@ -604,7 +687,6 @@ async function callOpenAiCompatibleChatCompletion(params: {
         signal: ctrl.signal,
       });
       clearTimeout(timer);
-      break;
     } catch (e) {
       clearTimeout(timer);
       const msg = e instanceof Error ? e.message : String(e);
@@ -614,34 +696,42 @@ async function callOpenAiCompatibleChatCompletion(params: {
       const chain = errorChainMessage(e);
       if (attempt >= maxAttempts) {
         throw new Error(
-          `LLM fetch 실패 (${host}), ${maxAttempts}회 시도: ${chain || msg}. VPN·방화벽·프록시·DNS 확인. 필요 시 NEWS_LLM_FETCH_RETRIES=5`,
+          `LLM fetch 실패 (${host}), ${maxAttempts}회 시도: ${chain || msg}. VPN·방화벽·프록시·DNS 확인. NEWS_LLM_FETCH_RETRIES 로 횟수 조절.`,
         );
       }
-      const backoff = 700 * attempt;
+      const backoff = computeLlmBackoffMs(attempt, null);
       console.warn(
-        `[NewsLLM] fetch 재시도 ${attempt + 1}/${maxAttempts} (${host}) ${backoff}ms 후: ${(chain || msg).slice(0, 160)}`,
+        `[NewsLLM] fetch 재시도 ${attempt + 1}/${maxAttempts} (${host}) ${backoff}ms 후(지수 백오프): ${(chain || msg).slice(0, 160)}`,
       );
       await sleepMs(backoff);
+      continue;
     }
-  }
 
-  if (!res) {
-    throw new Error(`LLM fetch 실패 (${host}): 응답 없음`);
-  }
+    if (res.ok) {
+      const data = (await res.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      const content = data.choices?.[0]?.message?.content;
+      if (!content?.trim()) {
+        throw new Error('LLM 응답 본문이 비어 있습니다.');
+      }
+      return content;
+    }
 
-  if (!res.ok) {
     const t = await res.text();
+    const retryAfterMs = parseRetryAfterMs(res.headers.get('retry-after'));
+    if (isRetriableLlmHttpStatus(res.status) && attempt < maxAttempts) {
+      const backoff = computeLlmBackoffMs(attempt, retryAfterMs);
+      console.warn(
+        `[NewsLLM] HTTP ${res.status} → ${backoff}ms 후 재시도 ${attempt + 1}/${maxAttempts} (${host}). 응답 일부: ${t.slice(0, 200)}`,
+      );
+      await sleepMs(backoff);
+      continue;
+    }
     throw new HttpCompletionError(res.status, `LLM HTTP ${res.status}: ${t.slice(0, 400)}`);
   }
 
-  const data = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = data.choices?.[0]?.message?.content;
-  if (!content?.trim()) {
-    throw new Error('LLM 응답 본문이 비어 있습니다.');
-  }
-  return content;
+  throw new Error(`LLM fetch 실패 (${host}): 응답 없음`);
 }
 
 function parseBilingualPayloadFromContent(content: string, label: string): LlmBilingualPayload {
@@ -807,9 +897,9 @@ export async function runNewsSummaryProviders<T>(
   maxTokens: number,
 ): Promise<T> {
   const provider = normalizeNewsSummaryProvider();
-  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  const openaiKeys = getOpenAiApiKeyCandidates();
   const openaiModel = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
-  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  const geminiKeys = getGeminiApiKeyCandidates();
   const geminiBase =
     process.env.GEMINI_OPENAI_BASE_URL?.trim() ||
     'https://generativelanguage.googleapis.com/v1beta/openai';
@@ -835,13 +925,13 @@ export async function runNewsSummaryProviders<T>(
   };
 
   const runOpenAi = async () => {
-    if (!openaiKey) {
-      throw new Error('OPENAI_API_KEY 가 설정되지 않았습니다.');
+    if (!openaiKeys.length) {
+      throw new Error('OPENAI_API_KEY(또는 OPENAI_API_KEYS) 가 설정되지 않았습니다.');
     }
     const content = await callOpenAiCompatibleChatCompletion({
       baseUrl: 'https://api.openai.com/v1',
       model: openaiModel,
-      apiKey: openaiKey,
+      apiKeyCandidates: openaiKeys,
       messages,
       jsonObjectMode: true,
       maxTokens,
@@ -850,13 +940,13 @@ export async function runNewsSummaryProviders<T>(
   };
 
   const runGemini = async () => {
-    if (!geminiKey) {
-      throw new Error('GEMINI_API_KEY 가 설정되지 않았습니다.');
+    if (!geminiKeys.length) {
+      throw new Error('GEMINI_API_KEY(또는 GEMINI_API_KEYS) 가 설정되지 않았습니다.');
     }
     const content = await callOpenAiCompatibleChatCompletion({
       baseUrl: geminiBase,
       model: geminiModel,
-      apiKey: geminiKey,
+      apiKeyCandidates: geminiKeys,
       messages,
       jsonObjectMode: false,
       maxTokens,
@@ -874,12 +964,12 @@ export async function runNewsSummaryProviders<T>(
     return runOpenAi();
   }
 
-  if (openaiKey) {
+  if (openaiKeys.length > 0) {
     try {
       return await runOpenAi();
     } catch (e) {
       if (shouldFallbackToAlternateLlm(e)) {
-        if (geminiKey) {
+        if (geminiKeys.length > 0) {
           try {
             console.warn(
               '[NewsSummary] OpenAI 실패 → Gemini 폴백:',
@@ -912,7 +1002,7 @@ export async function runNewsSummaryProviders<T>(
     }
   }
 
-  if (geminiKey) {
+  if (geminiKeys.length > 0) {
     return runGemini();
   }
 
@@ -940,18 +1030,18 @@ async function callBilingualSummary(
 
 /** 관리자 한국어 전용 가공 — 크론 이중언어 파이프라인과 별도 */
 const KOREAN_ONLY_SYSTEM_PROMPT = [
-  'You are the lead editor for "Thai Ja World" (태국에, 살자) Korean news desk — persona: **태국 현지에 익숙한 한인 운영자** (적당히 위트 있되 냉철한 중립; 기계 번역 톤 금지).',
+  'You are NOT a generic AI assistant in this task — you are the **on-the-ground operator / lead editor** of 「태국에, 살자」(Thai Ja World) Korean news desk. Persona: **태국 현지 사정에 밝은 위트 있는 한국인 운영자** (적당히 위트 있되 냉철한 중립; 기계 번역 톤 금지).',
   'The source may be Thai, English, or any language. Output MUST be 100% Korean Hangul only in every Korean-payload field below (no Thai script, no English sentences in Korean fields).',
   'If a proper noun must stay in Latin (e.g. BTS, UNESCO), keep it short.',
   'Output valid JSON only with exactly these keys: title_kr, content_kr, ko_blurb, ko_editor_note, ko_insight_impact, ko_countermeasure, feed_warning_ko, incident_attention, seo_keywords.',
   '',
   '=== Structure (plain text, newlines allowed) ===',
   '- title_kr: one line — not the wire-service original title; a curiosity-hooking **한 줄 위트 제목** built only from supplied facts.',
-  '- content_kr: Line 1 = **[🔥 핵심 한 줄 요약]** then killer sentence, blank line, bullets for facts + "what it means for 우리", blank line, short neutral wit. Then blank line + line exactly **[AI의 대비책]** + 2~4 short action lines (preview of countermeasure).',
+  '- content_kr: Line 1 = **[🔥 핵심 한 줄 요약]** then killer sentence, blank line, bullets for facts + "what it means for 우리", blank line, short neutral wit. Then blank line + line exactly **[운영자의 대비책]** + 2~4 short action lines (preview of countermeasure).',
   '- ko_blurb: ultra-short feed hook (40~100 chars).',
   '- ko_editor_note: 1~3 sentences; one dry wit beat max. Do NOT repeat facts from content_kr.',
   '- ko_insight_impact: 2~4 sentences — cold-clear analysis of impact on people in Thailand; this persona\'s voice.',
-  '- ko_countermeasure: full **[AI의 대비책]** body in JSON field — numbered or bullet imperative steps readers take today/this week (no invented hotlines).',
+  '- ko_countermeasure: full **[운영자의 대비책]** body in JSON field — numbered or bullet imperative steps readers take today/this week (no invented hotlines).',
   '- feed_warning_ko: one very short warning line, or "" if incident_attention is none.',
   '- incident_attention: exactly one of none | elevated | high.',
   '- seo_keywords: one string — five comma-separated Korean phrases.',
@@ -1074,7 +1164,7 @@ async function callKoreanOnlySummary(
 }
 
 const EDITOR_NOTES_ONLY_SYSTEM_PROMPT = [
-  'You are the same cynical-but-funny "Thai Ja World" desk editor (교민 커뮤니티 편집장 voice). Output valid JSON only: keys ko_editor_note and th_editor_note (strings only).',
+  'You are the same cynical-but-funny 「태국에, 살자」 **human operator / desk editor** (교민 커뮤니티 편집장 voice — not a generic bot). Output valid JSON only: keys ko_editor_note and th_editor_note (strings only).',
   '- Do NOT repeat or summarize article facts again. No new factual claims.',
   '- ko_editor_note: natural Korean — dry wit, 뼈있는 한마디, expat-in-Thailand banter allowed.',
   '- th_editor_note: natural Thai with the same emotional vibe (not a literal translation of the Korean).',
@@ -1543,6 +1633,27 @@ export type RetrofitInsightEngineBatchResult = {
  * - 행 단위: LLM 성공 시에만 DB 갱신 → 실패 시 기존 clean_body 유지.
  * - `skipTipsArticles`: 기본 true — `tips_articles` 게시/초안 상태를 뉴스 재가공으로 덮어쓰지 않음.
  */
+function newsInsightRetrofitMaxCap(): number {
+  const raw = process.env.NEWS_INSIGHT_RETROFIT_MAX_BATCH?.trim();
+  const n = raw ? Number(raw) : NaN;
+  if (Number.isFinite(n) && n >= 1) return Math.min(25, Math.floor(n));
+  return 12;
+}
+
+function newsSummarizeMaxBatchCap(): number {
+  const raw = process.env.NEWS_SUMMARIZE_MAX_BATCH?.trim();
+  const n = raw ? Number(raw) : NaN;
+  if (Number.isFinite(n) && n >= 1) return Math.min(30, Math.floor(n));
+  return 12;
+}
+
+function forceTranslateMaxCap(): number {
+  const raw = process.env.NEWS_FORCE_TRANSLATE_MAX_BATCH?.trim();
+  const n = raw ? Number(raw) : NaN;
+  if (Number.isFinite(n) && n >= 1) return Math.min(80, Math.floor(n));
+  return 32;
+}
+
 export async function retrofitInsightEngineProcessedNewsBatch(params: {
   limit: number;
   onlyMissing: boolean;
@@ -1551,7 +1662,7 @@ export async function retrofitInsightEngineProcessedNewsBatch(params: {
   if (!isNewsSummaryLlmConfigured()) {
     return { llmConfigured: false, scanned: 0, eligible: 0, ok: 0, failed: [] };
   }
-  const limit = Math.min(Math.max(Math.floor(params.limit), 1), 25);
+  const limit = Math.min(Math.max(Math.floor(params.limit), 1), newsInsightRetrofitMaxCap());
   const onlyMissing = params.onlyMissing !== false;
   const skipTipsArticles = params.skipTipsArticles !== false;
 
@@ -1618,6 +1729,7 @@ export async function retrofitInsightEngineProcessedNewsBatch(params: {
         id: pid,
         error: e instanceof Error ? e.message.slice(0, 500) : String(e),
       });
+      await sleepBetweenNewsLlmCalls();
       continue;
     }
     const ur = await updateBilingualProcessedNews(client, pid, rowTodo, llm, {
@@ -1625,6 +1737,7 @@ export async function retrofitInsightEngineProcessedNewsBatch(params: {
     });
     if (ur.ok) ok += 1;
     else failed.push({ id: pid, error: ur.error ?? '갱신 실패' });
+    await sleepBetweenNewsLlmCalls();
   }
 
   return { llmConfigured: true, scanned, eligible, ok, failed };
@@ -1645,7 +1758,7 @@ export async function forceTranslateIncompleteProcessedNews(maxRows: number): Pr
   }
 
   const client = getServerSupabaseClient();
-  const cap = Math.min(Math.max(maxRows, 1), 80);
+  const cap = Math.min(Math.max(maxRows, 1), forceTranslateMaxCap());
 
   const { data: rows, error } = await client
     .from('processed_news')
@@ -1703,12 +1816,14 @@ export async function forceTranslateIncompleteProcessedNews(maxRows: number): Pr
         id: pid,
         error: e instanceof Error ? e.message.slice(0, 500) : String(e),
       });
+      await sleepBetweenNewsLlmCalls();
       continue;
     }
 
     const ur = await updateBilingualProcessedNews(client, pid, rowTodo, llm);
     if (ur.ok) ok += 1;
     else failed.push({ id: pid, error: ur.error ?? '갱신 실패' });
+    await sleepBetweenNewsLlmCalls();
   }
 
   return {
@@ -1865,7 +1980,7 @@ export async function summarizeAndPersistNewsBatch(
   }
 
   const client = getServerSupabaseClient();
-  const cap = Math.min(Math.max(limit, 1), 30);
+  const cap = Math.min(Math.max(limit, 1), newsSummarizeMaxBatchCap());
 
   const { data: processedRows, error: pe } = await client
     .from('processed_news')
@@ -1941,6 +2056,7 @@ export async function summarizeAndPersistNewsBatch(
         source_url: url,
       });
     }
+    await sleepBetweenNewsLlmCalls();
   }
 
   return {

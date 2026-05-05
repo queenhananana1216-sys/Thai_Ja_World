@@ -19,6 +19,8 @@
     "pipeline:content-ui": "npm run news:ingest && npm run knowledge:ingest && npm run home-copy:refresh",
     "news:backfill-editor-notes": "tsx scripts/run-backfill-editor-notes-once.ts",
     "zero-raw:bulk-publish": "tsx scripts/zero-raw-bulk-publish-once.ts",
+    "verify:grand-launch": "tsx scripts/grand-launch-verify.ts",
+    "verify:grand-launch:watch": "tsx scripts/grand-launch-watch.ts",
     "bot:knowledge:daemon": "node scripts/run-knowledge-cron-daemon.mjs",
     "bot:knowledge:daemon:direct": "tsx scripts/run-knowledge-daemon-direct.ts",
     "ops:check-local-minihome": "tsx scripts/check-local-minihome-readiness.ts",

@@ -6,6 +6,7 @@
  *   /news 배포 전: npx tsx scripts/smoke-public-routes.ts --skip-news
  */
 import { canonicalPublicBaseUrl } from './canonicalPublicBaseUrl';
+import { PUBLIC_SMOKE_PATHS } from './publicSmokePaths';
 
 const rawBase = process.env.BASE_URL ?? 'http://127.0.0.1:3000';
 const base =
@@ -13,19 +14,8 @@ const base =
     ? rawBase.replace(/\/$/, '')
     : canonicalPublicBaseUrl(rawBase);
 
-const ALL_PATHS = [
-  '/',
-  '/news',
-  '/weather',
-  '/tips',
-  '/local',
-  '/contact',
-  '/terms',
-  '/privacy',
-] as const;
-
 const skipNews = process.argv.includes('--skip-news') || process.env.SMOKE_SKIP_NEWS === '1';
-const paths = skipNews ? ALL_PATHS.filter((p) => p !== '/news') : [...ALL_PATHS];
+const paths = skipNews ? PUBLIC_SMOKE_PATHS.filter((p) => p !== '/news') : [...PUBLIC_SMOKE_PATHS];
 
 async function main() {
   if (skipNews) {
@@ -46,7 +36,7 @@ async function main() {
     console.error('[smoke-public-routes] 실패:\n', failures.join('\n'));
     process.exit(1);
   }
-  console.log(`[smoke-public-routes] OK (${paths.length} path(s)) @ ${base}`);
+  console.log(`[smoke-public-routes] OK (${paths.length} path(s), 총 ${PUBLIC_SMOKE_PATHS.length} 정의) @ ${base}`);
 }
 
 void main();

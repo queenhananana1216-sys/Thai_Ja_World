@@ -3,6 +3,8 @@ import 'server-only';
 import Stripe from 'stripe';
 import type { PremiumPlanId } from '@/lib/payments/premiumPlans';
 import { PREMIUM_PLANS } from '@/lib/payments/premiumPlans';
+import type { ThaiTopupId } from '@/lib/payments/thaiPackages';
+import { THAI_TOPUP_PACKS } from '@/lib/payments/thaiPackages';
 
 let stripeClient: Stripe | null = null;
 
@@ -17,6 +19,53 @@ export function getStripeClient(): Stripe {
     });
   }
   return stripeClient;
+}
+
+/** 소비자 타이(THAI) 포인트 충전 — 일회 결제(THB). 웹훅 메타데이터로 금액·크레딧 검증 */
+export async function createThaiTopupCheckoutSession(input: {
+  profileId: string;
+  packId: ThaiTopupId;
+  successUrl: string;
+  cancelUrl: string;
+  customerEmail?: string;
+  idempotencyKey?: string;
+}) {
+  const pack = THAI_TOPUP_PACKS[input.packId];
+  const stripe = getStripeClient();
+  const meta = {
+    tjw_thai_topup: '1',
+    profileId: input.profileId,
+    thai_pack: pack.id,
+    thaiCredits: String(pack.thaiCredits),
+    priceThb: String(pack.amountThb),
+  } as const;
+  return stripe.checkout.sessions.create(
+    {
+      mode: 'payment',
+      client_reference_id: input.profileId,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'thb',
+            unit_amount: Math.round(pack.amountThb * 100),
+            product_data: {
+              name: `살자 타이(THAI) 충전 · ${pack.label}`,
+              description: `+${pack.thaiCredits.toLocaleString()} 타이 크레딧 (${pack.tagline})`,
+            },
+          },
+        },
+      ],
+      success_url: input.successUrl,
+      cancel_url: input.cancelUrl,
+      customer_email: input.customerEmail?.trim() || undefined,
+      metadata: { ...meta },
+      payment_intent_data: {
+        metadata: { ...meta },
+      },
+    },
+    input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined,
+  );
 }
 
 export async function createStripeCheckoutSession(input: {

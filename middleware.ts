@@ -38,6 +38,12 @@ function minihomeManagementPath(pathname: string): boolean {
   return false;
 }
 
+/** 타이 충전 등 지갑·결제 허브 — 로그인 필수 */
+function walletAuthRequiredPath(pathname: string): boolean {
+  const p = normalizePathname(pathname);
+  return p.startsWith('/wallet/');
+}
+
 /**
  * Supabase SSR 세션 갱신: 모든 매칭 페이지에서 최우선 실행해 refresh 토큰·쿠키가 응답에 실리도록 한다.
  * (공개 경로라도 건너뛰면 커뮤니티 글쓰기 등에서 세션이 박살 난다.)
@@ -146,7 +152,7 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  if (minihomeManagementPath(url.pathname) && !user) {
+  if ((minihomeManagementPath(url.pathname) || walletAuthRequiredPath(url.pathname)) && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/auth/login';
     loginUrl.searchParams.set('next', `${url.pathname}${url.search}`);

@@ -199,6 +199,28 @@ export default function MinihomeStyleShopClient() {
       </div>
 
       <p className="thai-shop-lead">{m.styleShopLead}</p>
+      <div
+        style={{
+          margin: '0.75rem 0 0',
+          padding: '0.65rem 0.75rem',
+          borderRadius: 12,
+          border: '1px solid var(--tj-line)',
+          background: 'linear-gradient(135deg, rgba(14,165,233,0.07), rgba(139,92,246,0.06))',
+          fontSize: '0.85rem',
+          lineHeight: 1.45,
+        }}
+      >
+        <strong style={{ display: 'block', marginBottom: '0.35rem' }}>살자 수익형 게이트웨이</strong>
+        타이가 부족하면 카드로 충전하고, 미니홈 특전은 프리미엄과 함께 보세요.
+        <span style={{ display: 'block', marginTop: '0.45rem' }}>
+          <Link href="/wallet/topup" style={{ color: 'var(--tj-link, #0ea5e9)', fontWeight: 700, marginRight: '1rem' }}>
+            타이(THAI) 카드 충전 →
+          </Link>
+          <Link href="/premium" style={{ color: 'var(--tj-link, #a78bfa)', fontWeight: 700 }}>
+            프리미엄 구독 →
+          </Link>
+        </span>
+      </div>
       <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem' }}>
         <Link href="/shop" style={{ color: 'var(--tj-link, #7c3aed)', fontWeight: 700 }}>
           {m.styleShopPremiumBoutiqueLink}

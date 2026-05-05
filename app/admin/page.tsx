@@ -272,6 +272,18 @@ export default async function AdminDashboardPage() {
 
       <ul className="admin-dash__links">
         <li>
+          <Link href="/wallet/topup">
+            수익형 게이트웨이(오너 뷰) — 타이 충전
+            <span>Stripe THB 일회 결제 미리보기. 실제 과금은 Vercel·Stripe 테스트/라이브 키로 확인</span>
+          </Link>
+        </li>
+        <li>
+          <Link href="/premium">
+            프리미엄 라운지(오너 뷰)
+            <span>월 구독 Checkout 링크 — 사용자 페이지와 동일 플로우</span>
+          </Link>
+        </li>
+        <li>
           <Link href="/admin/home-hero">
             홈 메인 문구
             <span>히어로·비회원 안내·한 줄 제보 띠 — 한·태 각각 수정</span>

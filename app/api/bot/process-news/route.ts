@@ -97,7 +97,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         {
           status:
             result.error ===
-              'LLM not configured (OPENAI_API_KEY, GEMINI_API_KEY, or LOCAL_LLM_BASE_URL)' ||
+              'LLM not configured (OPENAI_API_KEY, GEMINI_API_KEY, GROQ_API_KEY, or reachable LOCAL_LLM_BASE_URL)' ||
             result.error === 'OPENAI_API_KEY not configured'
               ? 503
               : 500,

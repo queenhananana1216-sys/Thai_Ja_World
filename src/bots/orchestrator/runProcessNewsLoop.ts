@@ -91,7 +91,8 @@ export async function runProcessNewsLoop(
       run_id,
       skipped: false,
       success: false,
-      error: 'LLM not configured (OPENAI_API_KEY, GEMINI_API_KEY, or LOCAL_LLM_BASE_URL)',
+      error:
+        'LLM not configured (OPENAI_API_KEY, GEMINI_API_KEY, GROQ_API_KEY, or reachable LOCAL_LLM_BASE_URL)',
       output: { batch: batch.results },
     };
   }

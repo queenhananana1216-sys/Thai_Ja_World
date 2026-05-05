@@ -10,7 +10,8 @@
  *   - 과장("100% 보장" 등) 금지 — 불확실하면 confidence_level=low, cautions 강화
  *   - JSON 파싱 실패 시 해당 항목 실패 처리 + bot_actions 기록
  *
- * 환경 변수: NEWS_SUMMARY_PROVIDER / OPENAI_API_KEY / OPENAI_API_KEYS / GEMINI_API_KEY / GEMINI_API_KEYS / LOCAL_LLM_BASE_URL
+ * 환경 변수: NEWS_SUMMARY_PROVIDER / OPENAI_API_KEY / OPENAI_API_KEYS / GEMINI_API_KEY / GEMINI_API_KEYS /
+ *            GROQ_API_KEY / GROQ_API_KEYS / GROQ_MODEL / LOCAL_LLM_BASE_URL
  *            (뉴스 파이프라인과 동일: HTTP 429·502·503·500 시 지수 백오프 재시도, NEWS_LLM_FETCH_RETRIES 등)
  *            KNOWLEDGE_PUBLISH_MODE = manual(기본) | auto
  *            KNOWLEDGE_LLM_FALLBACK_STUB — LLM 없음/행별 실패 시 원문 스텁 초안(published=false) 저장.
@@ -88,6 +89,13 @@ function geminiKeysKnowledgeEarly(): string[] {
   return one ? [one] : [];
 }
 
+function groqKeysKnowledgeEarly(): string[] {
+  const m = parseCommaKeysKnowledgeEarly(process.env.GROQ_API_KEYS);
+  if (m.length) return m;
+  const one = process.env.GROQ_API_KEY?.trim();
+  return one ? [one] : [];
+}
+
 export function isKnowledgeLlmConfigured(): boolean {
   const p = normalizeProvider();
   if (p === 'openai') return openAiKeysKnowledgeEarly().length > 0;
@@ -96,6 +104,7 @@ export function isKnowledgeLlmConfigured(): boolean {
   return (
     openAiKeysKnowledgeEarly().length > 0 ||
     geminiKeysKnowledgeEarly().length > 0 ||
+    groqKeysKnowledgeEarly().length > 0 ||
     Boolean(process.env.LOCAL_LLM_BASE_URL?.trim())
   );
 }
@@ -270,10 +279,11 @@ async function callLlm(params: {
   }
 
   const maxAttempts = knowledgeLlmMaxAttempts();
+  let keyCursor = 0;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     const keyForAttempt =
-      keyPool.length > 0 ? keyPool[(attempt - 1) % keyPool.length] : undefined;
+      keyPool.length > 0 ? keyPool[keyCursor % keyPool.length] : undefined;
     if (keyForAttempt) headers.Authorization = `Bearer ${keyForAttempt}`;
 
     const ctrl = new AbortController();
@@ -310,6 +320,9 @@ async function callLlm(params: {
     const t = await res.text();
     const ra = parseRetryAfterMsKnowledge(res.headers.get('retry-after'));
     if (isRetriableKnowledgeHttp(res.status) && attempt < maxAttempts) {
+      if (res.status === 429 && keyPool.length > 1) {
+        keyCursor += 1;
+      }
       const bo = computeBackoffKnowledge(attempt, ra);
       console.warn(
         `[KnowledgeLLM] HTTP ${res.status} → ${bo}ms 후 재시도 ${attempt + 1}/${maxAttempts}. ${t.slice(0, 180)}`,
@@ -341,6 +354,7 @@ function shouldFallback(err: unknown): boolean {
 
 const SYSTEM_PROMPT = `You are NOT a generic chatbot here — you write as the **human operator / knowledge curator** of 「태국에, 살자」(Thai Ja World).
 Persona: **태국 현지 사정에 밝은 위트 있는 한국인 운영자** — 적당히 위트 있되 냉철한 중립. 단순 번역·불릿 나열이 아니라 "내가 동네에서 이렇게 한다" 식 **실전 스텝**을 checklist에 쪼개 담는다. 사건·절차에서 배울 점과 대비책을 cautions에도 녹인다.
+CONTINUITY: Night or day, every article hears the **same single curator voice** — do not drift into anonymous third-person bureaucracy.
 Your job: given a Thai/Korea-related web article (title + excerpt + URL), output a structured JSON with practical information.
 
 LANGUAGE — HIGHEST PRIORITY (do not violate):
@@ -634,6 +648,8 @@ async function routeKnowledgeLlmWithMessages(messages: KnowledgeChatMessage[]): 
   const geminiKeys = geminiKeysKnowledgeEarly();
   const geminiBase = process.env.GEMINI_OPENAI_BASE_URL?.trim() || 'https://generativelanguage.googleapis.com/v1beta/openai';
   const geminiModel = process.env.GEMINI_MODEL?.trim() || 'gemini-2.0-flash';
+  const groqKeys = groqKeysKnowledgeEarly();
+  const groqModel = process.env.GROQ_MODEL?.trim() || 'llama-3.3-70b-versatile';
   const localBase = process.env.LOCAL_LLM_BASE_URL?.trim();
   const localModel = process.env.LOCAL_LLM_MODEL?.trim() || 'llama3.2';
   const localKey = process.env.LOCAL_LLM_API_KEY?.trim();
@@ -675,35 +691,80 @@ async function routeKnowledgeLlmWithMessages(messages: KnowledgeChatMessage[]): 
     return finishKnowledgeLlmParse(content, 'Gemini');
   };
 
+  const runGroq = async (): Promise<KnowledgeLlmOutput> => {
+    if (!groqKeys.length) throw new Error('GROQ_API_KEY(또는 GROQ_API_KEYS) 미설정');
+    const content = await callLlm({
+      baseUrl: 'https://api.groq.com/openai/v1',
+      model: groqModel,
+      apiKeyCandidates: groqKeys,
+      messages,
+      jsonObjectMode: true,
+    });
+    return finishKnowledgeLlmParse(content, 'Groq');
+  };
+
+  const recoverAfterGemini = async (): Promise<KnowledgeLlmOutput> => {
+    if (groqKeys.length > 0) {
+      try {
+        return await runGroq();
+      } catch (eG) {
+        if (shouldFallback(eG) && localBase) return runLocal();
+        throw eG;
+      }
+    }
+    if (localBase) return runLocal();
+    throw new Error('Gemini 실패 — GROQ_API_KEY 또는 LOCAL_LLM_BASE_URL 로 폴백할 수 없습니다.');
+  };
+
   if (provider === 'local') return runLocal();
-  if (provider === 'gemini') return runGemini();
+  if (provider === 'gemini') {
+    try {
+      return await runGemini();
+    } catch (e) {
+      if (!shouldFallback(e)) throw e;
+      return recoverAfterGemini();
+    }
+  }
   if (provider === 'openai') return runOpenAi();
 
-  // auto: OpenAI → Gemini → Local 폴백
+  // auto: OpenAI → Gemini → Groq → Local
   if (openaiKeys.length > 0) {
     try {
       return await runOpenAi();
     } catch (e) {
-      if (shouldFallback(e)) {
-        if (geminiKeys.length > 0) {
-          try {
-            return await runGemini();
-          } catch (e2) {
-            if (localBase) {
-              return runLocal();
-            }
-            throw e2;
-          }
+      if (!shouldFallback(e)) throw e;
+      if (geminiKeys.length > 0) {
+        try {
+          return await runGemini();
+        } catch (e2) {
+          if (!shouldFallback(e2)) throw e2;
+          return recoverAfterGemini();
         }
-        if (localBase) return runLocal();
       }
+      if (groqKeys.length > 0) {
+        try {
+          return await runGroq();
+        } catch (eG) {
+          if (shouldFallback(eG) && localBase) return runLocal();
+          throw eG;
+        }
+      }
+      if (localBase) return runLocal();
       throw e;
     }
   }
-  if (geminiKeys.length > 0) return runGemini();
+  if (geminiKeys.length > 0) {
+    try {
+      return await runGemini();
+    } catch (e) {
+      if (!shouldFallback(e)) throw e;
+      return recoverAfterGemini();
+    }
+  }
+  if (groqKeys.length > 0) return runGroq();
   if (localBase) return runLocal();
 
-  throw new Error('LLM 미설정 — OPENAI_API_KEY, GEMINI_API_KEY, LOCAL_LLM_BASE_URL 중 하나 필요');
+  throw new Error('LLM 미설정 — OPENAI_API_KEY, GEMINI_API_KEY, GROQ_API_KEY, LOCAL_LLM_BASE_URL 중 하나 필요');
 }
 
 async function callKnowledgeLlm(

@@ -2,7 +2,12 @@ import { randomUUID } from 'crypto';
 import { NextResponse } from 'next/server';
 import { createCoinbaseCharge } from '@/lib/payments/crypto';
 import { isPremiumPlanId } from '@/lib/payments/premiumPlans';
-import { createPremiumSubscriptionCheckoutSession, createStripeCheckoutSession } from '@/lib/payments/stripe';
+import {
+  createPremiumSubscriptionCheckoutSession,
+  createStripeCheckoutSession,
+  createThaiTopupCheckoutSession,
+} from '@/lib/payments/stripe';
+import { isThaiTopupId } from '@/lib/payments/thaiPackages';
 import { featureFlags } from '@/lib/flags';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
@@ -12,6 +17,8 @@ type CheckoutBody = {
   orderId?: string;
   /** 소비자 프리미엄 월 구독 — 지정 시 orderId와 함께 보내면 안 됨 */
   premiumPlan?: string;
+  /** 타이(THAI) 포인트 충전 패키지 id — premiumPlan·orderId 와 동시 불가 */
+  thaiPackage?: string;
   method?: 'card' | 'crypto';
   successUrl?: string;
   cancelUrl?: string;
@@ -40,9 +47,11 @@ export async function POST(request: Request) {
 
   const orderId = typeof body.orderId === 'string' ? body.orderId.trim() : '';
   const premiumRaw = typeof body.premiumPlan === 'string' ? body.premiumPlan.trim().toLowerCase() : '';
+  const thaiPackRaw = typeof body.thaiPackage === 'string' ? body.thaiPackage.trim().toLowerCase() : '';
 
-  if (premiumRaw && orderId) {
-    return NextResponse.json({ error: 'premium_and_order_mutually_exclusive' }, { status: 400 });
+  const checkoutLaneCount = [Boolean(premiumRaw), Boolean(orderId), Boolean(thaiPackRaw)].filter(Boolean).length;
+  if (checkoutLaneCount > 1) {
+    return NextResponse.json({ error: 'checkout_payload_mutually_exclusive' }, { status: 400 });
   }
 
   if (premiumRaw) {
@@ -85,6 +94,50 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'stripe_premium_checkout_failed';
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  }
+
+  if (thaiPackRaw) {
+    if (!featureFlags.thaiTopupStripeV1) {
+      return NextResponse.json({ error: 'thai_topup_disabled' }, { status: 503 });
+    }
+    if (!isThaiTopupId(thaiPackRaw)) {
+      return NextResponse.json({ error: 'invalid_thai_package' }, { status: 400 });
+    }
+
+    const sbThai = await createServerSupabaseAuthClient();
+    const {
+      data: { user: thaiUser },
+    } = await sbThai.auth.getUser();
+    if (!thaiUser) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
+    const baseThai = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'http://127.0.0.1:3000';
+    const thaiSuccessFallback = `${baseThai}/wallet/topup?checkout=success`;
+    const thaiCancelFallback = `${baseThai}/wallet/topup?checkout=cancel`;
+    const thaiSuccessUrl = resolveCheckoutUrl(body.successUrl, thaiSuccessFallback, baseThai);
+    const thaiCancelUrl = resolveCheckoutUrl(body.cancelUrl, thaiCancelFallback, baseThai);
+
+    try {
+      const session = await createThaiTopupCheckoutSession({
+        profileId: thaiUser.id,
+        packId: thaiPackRaw,
+        successUrl: thaiSuccessUrl,
+        cancelUrl: thaiCancelUrl,
+        customerEmail: thaiUser.email ?? undefined,
+        idempotencyKey: `thai_topup:${thaiUser.id}:${thaiPackRaw}:${randomUUID()}`,
+      });
+      return NextResponse.json({
+        ok: true,
+        provider: 'stripe',
+        kind: 'thai_topup',
+        checkoutUrl: session.url,
+        sessionId: session.id,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'stripe_thai_topup_failed';
       return NextResponse.json({ error: message }, { status: 500 });
     }
   }

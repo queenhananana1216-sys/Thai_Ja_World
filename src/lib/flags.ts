@@ -14,6 +14,8 @@ export const featureFlags = {
   cryptoPaymentsV1: envBool(process.env.NEXT_PUBLIC_FF_CRYPTO_PAYMENTS_V1, false),
   /** 소비자 프리미엄 월 구독(Stripe Checkout). 테스트 시 기본 on — 프로덕션에서 끄려면 false */
   premiumSubscriptionsV1: envBool(process.env.NEXT_PUBLIC_FF_PREMIUM_SUBSCRIPTIONS_V1, true),
+  /** 타이(THAI) 포인트 카드 충전(Stripe Checkout 일회 결제, THB) */
+  thaiTopupStripeV1: envBool(process.env.NEXT_PUBLIC_FF_THAI_TOPUP_STRIPE_V1, true),
 } as const;
 
 export type FeatureFlagName = keyof typeof featureFlags;

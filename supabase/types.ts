@@ -4691,6 +4691,17 @@ export type Database = {
         }
         Returns: Json
       }
+      apply_stripe_thai_topup_credit: {
+        Args: {
+          p_amount_thb: number
+          p_checkout_session_id: string
+          p_credits: number
+          p_pack: string
+          p_profile_id: string
+          p_stripe_event_id: string
+        }
+        Returns: Json
+      }
       dotori_daily_checkin: { Args: never; Returns: Json }
       dotori_expire_items: { Args: never; Returns: number }
       dotori_recalc_activity_grades: { Args: never; Returns: number }

@@ -6,9 +6,10 @@
  * - OpenAI: OPENAI_API_KEY, OPENAI_MODEL (기본 gpt-4o-mini)
  * - Gemini(OpenAI 호환 엔드포인트): GEMINI_API_KEY, GEMINI_MODEL (기본 gemini-2.0-flash), GEMINI_OPENAI_BASE_URL (선택)
  * - 로컬(OpenAI 호환): LOCAL_LLM_BASE_URL (예: http://127.0.0.1:11434/v1), LOCAL_LLM_MODEL (기본 llama3.2), LOCAL_LLM_API_KEY (선택)
- * - auto: OpenAI 키 있으면 우선, 429/쿼터류 실패 시 GEMINI_API_KEY → 있으면 Gemini, 다음으로 LOCAL_LLM_BASE_URL 로컬 폴백
+ * - Groq(무료 티어 폴백): GROQ_API_KEY, GROQ_API_KEYS(쉼표), GROQ_MODEL(기본 llama-3.3-70b-versatile)
+ * - auto: OpenAI 선호 → 429/쿼터류 시 Gemini → Groq → 로컬(Ollama 등) 순 폴백 (키가 있는 경로만)
  * - OPENAI_API_KEYS: 쉼표로 구분한 키 목록(선택). 있으면 요청·재시도마다 순환해 할당량 분산
- * - GEMINI_API_KEYS: Gemini용 동일(선택)
+ * - GEMINI_API_KEYS: Gemini용 동일(선택). HTTP 429 시 키 커서를 즉시 밀어 다음 키로 스위칭
  * - NEWS_LLM_FETCH_RETRIES: 최대 시도 횟수(기본 5, 상한 12). 네트워크 오류·HTTP 429/502/503/500 시 지수 백오프 후 재시도
  * - NEWS_LLM_MAX_ATTEMPTS: 위와 동일 목적(숫자가 더 최신). 둘 다 있으면 NEWS_LLM_FETCH_RETRIES 우선
  * - NEWS_LLM_INTER_ARTICLE_DELAY_MS: 배치에서 기사 건마다 LLM 호출 직후 대기(ms). 기본 400 (429 완화)
@@ -106,13 +107,25 @@ function getGeminiApiKeyCandidates(): string[] {
   return one ? [one] : [];
 }
 
+function getGroqApiKeyCandidates(): string[] {
+  const multi = parseCommaSeparatedApiKeys(process.env.GROQ_API_KEYS);
+  if (multi.length > 0) return multi;
+  const one = process.env.GROQ_API_KEY?.trim();
+  return one ? [one] : [];
+}
+
 export function isNewsSummaryLlmConfigured(): boolean {
   const p = normalizeNewsSummaryProvider();
   const localOk = Boolean(resolveLocalLlmBaseUrlForRuntime(process.env.LOCAL_LLM_BASE_URL));
   if (p === 'openai') return getOpenAiApiKeyCandidates().length > 0;
   if (p === 'gemini') return getGeminiApiKeyCandidates().length > 0;
   if (p === 'local') return localOk;
-  return getOpenAiApiKeyCandidates().length > 0 || getGeminiApiKeyCandidates().length > 0 || localOk;
+  return (
+    getOpenAiApiKeyCandidates().length > 0 ||
+    getGeminiApiKeyCandidates().length > 0 ||
+    getGroqApiKeyCandidates().length > 0 ||
+    localOk
+  );
 }
 
 /**
@@ -413,6 +426,7 @@ function buildStubBilingualPayload(
 const BILINGUAL_SYSTEM_PROMPT = [
   'ROLE: You are NOT a generic chatbot here — you write as the **human operator / lead editor** of 「태국에, 살자」(Thai Ja World). Stay in character as that one witty-but-grounded Korea–Thailand expat desk voice.',
   'PERSONA: **태국 현지 사정에 밝은 위트 있는 한국인 운영자** — 말투는 적당히 위트 있되 냉철한 중립. 기계 번역·나열 체가 아니라 "이런 일이 있으니 이렇게 하세요"라고 짚어 주는 **전문가 한마디** 톤. never flippant, never a clown, never cruel.',
+  'CONTINUITY: Day or night, breaking or slow news — you are the **same** single operator voice for this site. No "as an AI", no shifting personality between articles.',
   'MISSION: Do NOT "copy the wire" or plain-translate. Learn from the incident: what happened → what it implies for readers → what they should do next. Trust beats hype.',
   'TONE: dry warmth, one beat of wit per paragraph max; no meme spam, no victim mockery, no fake urgency. Never read like a bland press release.',
   '',
@@ -669,10 +683,11 @@ async function callOpenAiCompatibleChatCompletion(params: {
   const timeoutMs = llmTimeoutMsForUrl(url);
   const maxAttempts = llmCompletionMaxAttempts();
 
+  let keyCursor = 0;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     const keyForAttempt =
-      keyPool.length > 0 ? keyPool[(attempt - 1) % keyPool.length] : undefined;
+      keyPool.length > 0 ? keyPool[keyCursor % keyPool.length] : undefined;
     if (keyForAttempt) {
       headers.Authorization = `Bearer ${keyForAttempt}`;
     }
@@ -722,6 +737,9 @@ async function callOpenAiCompatibleChatCompletion(params: {
     const t = await res.text();
     const retryAfterMs = parseRetryAfterMs(res.headers.get('retry-after'));
     if (isRetriableLlmHttpStatus(res.status) && attempt < maxAttempts) {
+      if (res.status === 429 && keyPool.length > 1) {
+        keyCursor += 1;
+      }
       const backoff = computeLlmBackoffMs(attempt, retryAfterMs);
       console.warn(
         `[NewsLLM] HTTP ${res.status} → ${backoff}ms 후 재시도 ${attempt + 1}/${maxAttempts} (${host}). 응답 일부: ${t.slice(0, 200)}`,
@@ -913,6 +931,8 @@ export async function runNewsSummaryProviders<T>(
     process.env.GEMINI_OPENAI_BASE_URL?.trim() ||
     'https://generativelanguage.googleapis.com/v1beta/openai';
   const geminiModel = process.env.GEMINI_MODEL?.trim() || 'gemini-2.0-flash';
+  const groqKeys = getGroqApiKeyCandidates();
+  const groqModel = process.env.GROQ_MODEL?.trim() || 'llama-3.3-70b-versatile';
   const localBase = resolveLocalLlmBaseUrlForRuntime(process.env.LOCAL_LLM_BASE_URL);
   const localModel = process.env.LOCAL_LLM_MODEL?.trim() || 'llama3.2';
   const localKey = process.env.LOCAL_LLM_API_KEY?.trim();
@@ -963,6 +983,46 @@ export async function runNewsSummaryProviders<T>(
     return parseFromContent(content, 'Gemini');
   };
 
+  const runGroq = async () => {
+    if (!groqKeys.length) {
+      throw new Error('GROQ_API_KEY(또는 GROQ_API_KEYS) 가 설정되지 않았습니다.');
+    }
+    const content = await callOpenAiCompatibleChatCompletion({
+      baseUrl: 'https://api.groq.com/openai/v1',
+      model: groqModel,
+      apiKeyCandidates: groqKeys,
+      messages,
+      jsonObjectMode: true,
+      maxTokens,
+    });
+    return parseFromContent(content, 'Groq');
+  };
+
+  const recoverAfterGeminiFails = async (): Promise<T> => {
+    if (groqKeys.length > 0) {
+      try {
+        console.warn('[NewsSummary] Gemini 경로 실패 → Groq 폴백 시도');
+        return await runGroq();
+      } catch (eG) {
+        if (shouldFallbackToAlternateLlm(eG) && localBase) {
+          console.warn(
+            '[NewsSummary] Groq 실패 → 로컬 LLM 폴백:',
+            eG instanceof Error ? eG.message.slice(0, 220) : String(eG),
+          );
+          return runLocal();
+        }
+        throw eG;
+      }
+    }
+    if (localBase) {
+      console.warn('[NewsSummary] Gemini 실패 → 로컬 LLM (Groq 미설정)');
+      return runLocal();
+    }
+    throw new Error(
+      'Gemini 할당량 한도 — GROQ_API_KEY 또는 프로덕션에서 접근 가능한 LOCAL_LLM_BASE_URL 을 추가하면 폴백됩니다.',
+    );
+  };
+
   if (provider === 'local') {
     return runLocal();
   }
@@ -986,14 +1046,30 @@ export async function runNewsSummaryProviders<T>(
             );
             return await runGemini();
           } catch (e2) {
-            if (shouldFallbackToAlternateLlm(e2) && localBase) {
+            if (!shouldFallbackToAlternateLlm(e2)) throw e2;
+            console.warn(
+              '[NewsSummary] Gemini 실패 후 Groq·로컬 순으로 복구:',
+              e2 instanceof Error ? e2.message.slice(0, 220) : String(e2),
+            );
+            return recoverAfterGeminiFails();
+          }
+        }
+        if (groqKeys.length > 0) {
+          try {
+            console.warn(
+              '[NewsSummary] OpenAI 실패 → Groq 폴백:',
+              e instanceof Error ? e.message.slice(0, 220) : String(e),
+            );
+            return await runGroq();
+          } catch (eG) {
+            if (shouldFallbackToAlternateLlm(eG) && localBase) {
               console.warn(
-                '[NewsSummary] Gemini 실패 → 로컬 LLM 폴백:',
-                e2 instanceof Error ? e2.message.slice(0, 220) : String(e2),
+                '[NewsSummary] Groq 실패 → 로컬 LLM:',
+                eG instanceof Error ? eG.message.slice(0, 220) : String(eG),
               );
               return runLocal();
             }
-            throw e2;
+            throw eG;
           }
         }
         if (localBase) {
@@ -1004,7 +1080,7 @@ export async function runNewsSummaryProviders<T>(
           return runLocal();
         }
         throw new Error(
-          `OpenAI 연결 실패: ${errorChainMessage(e).slice(0, 280)}. Vercel Production에 GEMINI_API_KEY 를 추가하거나 OPENAI 쪽 네트워크를 확인하세요. .env 의 LOCAL_LLM_BASE_URL(127.0.0.1 등)은 배포 서버에서 동작하지 않습니다.`,
+          `OpenAI 연결 실패: ${errorChainMessage(e).slice(0, 280)}. GEMINI_API_KEY·GROQ_API_KEY·LOCAL_LLM(배포망 접근 가능) 중 폴백을 구성하세요.`,
         );
       }
       throw e;
@@ -1012,7 +1088,20 @@ export async function runNewsSummaryProviders<T>(
   }
 
   if (geminiKeys.length > 0) {
-    return runGemini();
+    try {
+      return await runGemini();
+    } catch (e) {
+      if (!shouldFallbackToAlternateLlm(e)) throw e;
+      console.warn(
+        '[NewsSummary] Gemini 단독 경로 실패 → Groq·로컬:',
+        e instanceof Error ? e.message.slice(0, 220) : String(e),
+      );
+      return recoverAfterGeminiFails();
+    }
+  }
+
+  if (groqKeys.length > 0) {
+    return runGroq();
   }
 
   if (localBase) {
@@ -1020,7 +1109,7 @@ export async function runNewsSummaryProviders<T>(
   }
 
   throw new Error(
-    'NEWS_SUMMARY_PROVIDER=auto 일 때 OPENAI_API_KEY, GEMINI_API_KEY, LOCAL_LLM_BASE_URL 중 하나 이상이 필요합니다.',
+    'NEWS_SUMMARY_PROVIDER=auto 일 때 OPENAI_API_KEY, GEMINI_API_KEY, GROQ_API_KEY, LOCAL_LLM_BASE_URL 중 하나 이상이 필요합니다.',
   );
 }
 
@@ -1040,6 +1129,7 @@ async function callBilingualSummary(
 /** 관리자 한국어 전용 가공 — 크론 이중언어 파이프라인과 별도 */
 const KOREAN_ONLY_SYSTEM_PROMPT = [
   'You are NOT a generic AI assistant in this task — you are the **on-the-ground operator / lead editor** of 「태국에, 살자」(Thai Ja World) Korean news desk. Persona: **태국 현지 사정에 밝은 위트 있는 한국인 운영자** (적당히 위트 있되 냉철한 중립; 기계 번역 톤 금지).',
+  'CONTINUITY: You are the **same** 「태국에, 살자」 한국 데스크 목소리 24시간 내내 — 기사마다 다른 캐릭터처럼 말하지 말 것.',
   'The source may be Thai, English, or any language. Output MUST be 100% Korean Hangul only in every Korean-payload field below (no Thai script, no English sentences in Korean fields).',
   'If a proper noun must stay in Latin (e.g. BTS, UNESCO), keep it short.',
   'Output valid JSON only with exactly these keys: title_kr, content_kr, ko_blurb, ko_editor_note, ko_insight_impact, ko_countermeasure, feed_warning_ko, incident_attention, seo_keywords.',
@@ -1974,6 +2064,41 @@ export async function ensureNewsDraftFromRawNewsId(
   };
 }
 
+/** 재난·교통 마비 등 키워드로 우선 처리 순서 결정 — 한 배치 안에서 스마트 큐 역할 */
+function computeRawNewsPipelinePriority(title: string, rawBody: string | null): number {
+  const hay = `${title ?? ''}\n${rawBody ?? ''}`.toLowerCase();
+  let score = 0;
+  for (const n of [
+    'earthquake',
+    'tsunami',
+    'flood',
+    'wildfire',
+    'blast',
+    'shooting',
+    'terror',
+    'emergency',
+    'evacuat',
+    'curfew',
+    'protest',
+    'crackdown',
+    'blackout',
+    'แผ่นดินไหว',
+    'สึนามิ',
+    'น้ำท่วม',
+    'ไฟไหม้',
+    'ระเบิด',
+    'ปิดถนน',
+    'ปิดสถานี',
+    'สถานการณ์ฉุกเฉิน',
+  ]) {
+    if (hay.includes(n)) score += 22;
+  }
+  for (const n of ['쓰나미', '지진', '태풍', '홍수', '산불', '폭발', '총격', '비상', '대피', '통금', '소요', '테러', '정전']) {
+    if (hay.includes(n)) score += 22;
+  }
+  return score;
+}
+
 /**
  * 아직 processed_news 가 없는 raw_news 최대 `limit`건에 대해 한국어·태국어 요약 후 저장합니다.
  * 수동 게시 모드에서는 LLM 미설정·오류 시에도 원문 메타 스텁으로 초안을 넣어 승인 큐가 비지 않게 합니다.
@@ -2005,7 +2130,7 @@ export async function summarizeAndPersistNewsBatch(
 
   const { data: rawRows, error: re } = await client
     .from('raw_news')
-    .select('id,title,raw_body,external_url')
+    .select('id,title,raw_body,external_url,fetched_at')
     .order('fetched_at', { ascending: false })
     .limit(200);
 
@@ -2019,7 +2144,16 @@ export async function summarizeAndPersistNewsBatch(
     return { results: [], llmConfigured: effectiveLlmFlag, openaiConfigured: effectiveLlmFlag };
   }
 
-  const todo = rawRows.filter((r) => !done.has(r.id)).slice(0, cap);
+  const pending = rawRows.filter((r) => !done.has(r.id));
+  pending.sort((a, b) => {
+    const pa = computeRawNewsPipelinePriority(a.title ?? '', a.raw_body ?? null);
+    const pb = computeRawNewsPipelinePriority(b.title ?? '', b.raw_body ?? null);
+    if (pb !== pa) return pb - pa;
+    const fa = new Date((a as { fetched_at?: string }).fetched_at ?? 0).getTime();
+    const fb = new Date((b as { fetched_at?: string }).fetched_at ?? 0).getTime();
+    return fb - fa;
+  });
+  const todo = pending.slice(0, cap);
   const results: SummarizeRowResult[] = [];
   const slackDigest: NewsSlackDigestItem[] = [];
 

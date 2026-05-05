@@ -6,6 +6,12 @@ import {
   mapStripeSubscriptionToLocalStatus,
   premiumSubscriptionIsPaying,
 } from '@/lib/payments/stripe';
+import { isPremiumPlanId, PREMIUM_PLANS } from '@/lib/payments/premiumPlans';
+import { isThaiTopupId, THAI_TOPUP_PACKS } from '@/lib/payments/thaiPackages';
+import {
+  insertPremiumWelcomePersonaNotification,
+  insertThaiTopupPersonaNotification,
+} from '@/lib/billing/stripePersonaNotifications';
 
 export const runtime = 'nodejs';
 
@@ -103,6 +109,51 @@ async function syncPremiumSubscriptionDeleted(sub: Stripe.Subscription) {
     .eq('premium_stripe_subscription_id', sub.id);
 
   if (error) throw new Error(error.message);
+}
+
+async function personaNotifyPremiumFromCheckout(session: Stripe.Checkout.Session): Promise<void> {
+  if (session.mode !== 'subscription' || session.metadata?.tjw_premium !== '1') return;
+
+  const profileId = session.metadata?.profileId?.trim();
+  const planSlug = session.metadata?.premiumPlan?.trim().toLowerCase();
+  const subRef = session.subscription;
+  const subId = typeof subRef === 'string' ? subRef : subRef?.id;
+  if (!profileId || !planSlug || !subId || !isPremiumPlanId(planSlug)) return;
+
+  const admin = createServiceRoleClient();
+  await insertPremiumWelcomePersonaNotification(admin, profileId, PREMIUM_PLANS[planSlug].label);
+}
+
+async function syncThaiTopupPaidCheckout(session: Stripe.Checkout.Session, eventId: string): Promise<void> {
+  if (session.mode !== 'payment' || session.metadata?.tjw_thai_topup !== '1') return;
+  if (session.payment_status !== 'paid') return;
+
+  const profileId = session.metadata?.profileId?.trim();
+  const packSlug = session.metadata?.thai_pack?.trim().toLowerCase();
+  if (!profileId || !packSlug || !isThaiTopupId(packSlug)) return;
+
+  const pack = THAI_TOPUP_PACKS[packSlug];
+  const metaCredits = Number(session.metadata?.thaiCredits ?? '');
+  const metaThb = Number(session.metadata?.priceThb ?? '');
+  if (!Number.isFinite(metaCredits) || metaCredits !== pack.thaiCredits || !Number.isFinite(metaThb) || metaThb !== pack.amountThb) {
+    throw new Error('thai_topup_metadata_invalid');
+  }
+
+  const admin = createServiceRoleClient();
+  const { data, error } = await admin.rpc('apply_stripe_thai_topup_credit', {
+    p_checkout_session_id: session.id,
+    p_stripe_event_id: eventId,
+    p_profile_id: profileId,
+    p_pack: packSlug,
+    p_credits: pack.thaiCredits,
+    p_amount_thb: pack.amountThb,
+  });
+  if (error) throw new Error(error.message);
+
+  const payload = data as { duplicate?: boolean } | null;
+  if (!payload?.duplicate) {
+    await insertThaiTopupPersonaNotification(admin, profileId, pack.thaiCredits);
+  }
 }
 
 async function syncLocalSpotSubscriptionRows(sub: Stripe.Subscription) {
@@ -211,7 +262,9 @@ export async function POST(request: Request) {
       }
       if (session.mode === 'subscription' && session.metadata?.tjw_premium === '1') {
         await syncPremiumProfileFromCheckout(session);
+        await personaNotifyPremiumFromCheckout(session);
       }
+      await syncThaiTopupPaidCheckout(session, event.id);
       const orderId = session.metadata?.orderId;
       if (orderId && session.payment_status === 'paid') {
         await syncOrderStatus({
@@ -226,7 +279,9 @@ export async function POST(request: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.mode === 'subscription' && session.metadata?.tjw_premium === '1') {
         await syncPremiumProfileFromCheckout(session);
+        await personaNotifyPremiumFromCheckout(session);
       }
+      await syncThaiTopupPaidCheckout(session, event.id);
       const orderId = session.metadata?.orderId;
       if (orderId) {
         await syncOrderStatus({

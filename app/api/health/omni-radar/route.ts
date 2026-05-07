@@ -63,6 +63,19 @@ type WeatherPipelineRadar = {
   scanned: boolean;
 };
 type CheckRuntime = { ok: boolean; heap_used_mb?: number; error?: string };
+type LiveIntegrityRadar = {
+  ok: boolean;
+  status: 'healthy' | 'degraded' | 'error' | 'unknown';
+  scanned: boolean;
+  last_checked_at?: string | null;
+  slow_api_count?: number;
+  cookie_fail_count?: number;
+  write_fail_count?: number;
+  route_fail_count?: number;
+  auto_heal_triggered?: boolean;
+  auto_heal_note?: string | null;
+  error?: string;
+};
 
 /** PostgREST RPC `omni_radar_live_ping` → SELECT 1; 없으면 `profiles` 1행 조회로 연결만 검증 (publish_logs 미사용). */
 async function checkLiveSqlPing(): Promise<CheckDb> {
@@ -278,6 +291,40 @@ async function scanRecentWeatherPipelineErrors(): Promise<WeatherPipelineRadar> 
   }
 }
 
+async function scanRecentLiveIntegrity(): Promise<LiveIntegrityRadar> {
+  if (!isServiceRoleConfigured()) {
+    return { ok: true, status: 'unknown', scanned: false, error: 'service_role_unconfigured' };
+  }
+  try {
+    const sb = createServiceRoleClient();
+    const { data, error } = await sb
+      .from('live_integrity_scan_events')
+      .select(
+        'status, created_at, slow_api_count, cookie_fail_count, write_fail_count, route_fail_count, auto_heal_triggered, auto_heal_note',
+      )
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return { ok: false, status: 'unknown', scanned: true, error: error.message };
+    if (!data) return { ok: true, status: 'unknown', scanned: true, error: 'no_live_scan_row' };
+    const status = String(data.status ?? 'unknown') as LiveIntegrityRadar['status'];
+    return {
+      ok: status === 'healthy',
+      status,
+      scanned: true,
+      last_checked_at: data.created_at ?? null,
+      slow_api_count: Number(data.slow_api_count ?? 0),
+      cookie_fail_count: Number(data.cookie_fail_count ?? 0),
+      write_fail_count: Number(data.write_fail_count ?? 0),
+      route_fail_count: Number(data.route_fail_count ?? 0),
+      auto_heal_triggered: Boolean(data.auto_heal_triggered),
+      auto_heal_note: (data.auto_heal_note as string | null) ?? null,
+    };
+  } catch (e) {
+    return { ok: false, status: 'unknown', scanned: true, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 function checkRuntimeResources(): CheckRuntime {
   try {
     const mu = process.memoryUsage();
@@ -312,6 +359,7 @@ export async function GET(): Promise<NextResponse> {
     korean_living_grid,
     content_pipeline,
     biz_audit_queue,
+    live_integrity,
   ] = await Promise.all([
     checkLiveSqlPing(),
     checkWeatherPipeline(),
@@ -329,6 +377,7 @@ export async function GET(): Promise<NextResponse> {
     checkKoreanLivingGridNonempty(),
     checkContentPipelineStress(),
     checkBizAuditQueueRadar(),
+    scanRecentLiveIntegrity(),
   ]);
 
   const chaos_monkey = {
@@ -342,8 +391,10 @@ export async function GET(): Promise<NextResponse> {
 
   const core_ok = database.ok && weather.ok;
   const extended_ok = extendedVitalityAllOk(fortune_vitality, korean_living_grid, content_pipeline);
-  const healthy = core_ok && extended_ok;
-  const radar_status: 'healthy' | 'degraded' | 'error' = !core_ok ? 'error' : extended_ok ? 'healthy' : 'degraded';
+  const live_integrity_ok = live_integrity.status === 'healthy' || live_integrity.status === 'unknown';
+  const healthy = core_ok && extended_ok && live_integrity_ok;
+  const radar_status: 'healthy' | 'degraded' | 'error' =
+    !core_ok || live_integrity.status === 'error' ? 'error' : extended_ok && live_integrity_ok ? 'healthy' : 'degraded';
 
   const shield_pulse = Boolean(core_ok && extended_ok && chaos_monkey.shield_pulse);
 
@@ -368,6 +419,11 @@ export async function GET(): Promise<NextResponse> {
     if (!content_pipeline.skipped && !content_pipeline.ok) {
       degradation_errors.push(`content_pipeline: ${content_pipeline.error ?? 'fail'}`);
     }
+    if (live_integrity.status !== 'healthy' && live_integrity.status !== 'unknown') {
+      degradation_errors.push(
+        `live_integrity: slow=${live_integrity.slow_api_count ?? 0}, cookie=${live_integrity.cookie_fail_count ?? 0}, write=${live_integrity.write_fail_count ?? 0}, route=${live_integrity.route_fail_count ?? 0}`,
+      );
+    }
   }
 
   const checks = {
@@ -386,19 +442,24 @@ export async function GET(): Promise<NextResponse> {
     korean_living_grid,
     content_pipeline,
     biz_audit_queue,
+    live_integrity,
     motherbrain: {
       shield_pulse,
       all_green: healthy,
       radar_status,
       core_ok,
       extended_ok,
+      live_integrity_ok,
       health_basis: (radar_status === 'error'
         ? 'database_or_weather_down'
         : extended_ok
-          ? 'database_weather_fortune_korean_news'
+          ? live_integrity_ok
+            ? 'database_weather_fortune_korean_news'
+            : 'live_integrity_degraded'
           : 'core_ok_extended_degraded') as
         | 'database_or_weather_down'
         | 'database_weather_fortune_korean_news'
+        | 'live_integrity_degraded'
         | 'core_ok_extended_degraded',
       defense_success_rate: chaos_monkey.defense_success_rate ?? null,
       chaos_skipped: chaos_monkey.skipped === true,
@@ -436,6 +497,11 @@ export async function GET(): Promise<NextResponse> {
   const errors: string[] = [];
   if (!database.ok) errors.push(`database: ${database.error ?? 'unknown'}`);
   if (!weather.ok) errors.push(`weather: ${weather.error ?? 'unknown'}`);
+  if (live_integrity.status === 'error') {
+    errors.push(
+      `live_integrity: slow=${live_integrity.slow_api_count ?? 0}, cookie=${live_integrity.cookie_fail_count ?? 0}, write=${live_integrity.write_fail_count ?? 0}, route=${live_integrity.route_fail_count ?? 0}, heal=${live_integrity.auto_heal_note ?? 'n/a'}`,
+    );
+  }
 
   return NextResponse.json(
     {

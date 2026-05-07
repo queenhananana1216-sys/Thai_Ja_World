@@ -15,6 +15,7 @@ import {
 } from '@/lib/korean-biz/publicContact';
 import type { KoreanBizCategory, KoreanBizRow } from '@/lib/korean-biz/koreanBizTypes';
 import { getKoreanBizDisplayViews, koreanBizCommunityWhisper } from '@/lib/korean-biz/koreanBizVitality';
+import { TjBrandElephantMark } from '@/components/brand/TjBrandElephantMark';
 
 export type { KoreanBizCategory, KoreanBizRow } from '@/lib/korean-biz/koreanBizTypes';
 
@@ -181,8 +182,8 @@ function GlobalRadarPlaceholder() {
           aria-hidden
         />
         <div className="relative flex flex-col items-center text-center">
-          <span className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-3xl shadow-inner backdrop-blur-md">
-            🤖
+          <span className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 shadow-inner backdrop-blur-md">
+            <TjBrandElephantMark size={46} animate="breathe" />
           </span>
           <p className="text-lg font-semibold leading-relaxed tracking-tight text-white/95 md:text-xl">
             AI 레이더가 태국 전역의 한인 생활·레저 업소 정보를 실시간으로 수집하고 검증 중입니다...

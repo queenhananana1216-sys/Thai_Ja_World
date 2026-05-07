@@ -4982,3 +4982,33 @@ a.ilchon-btn {
     transition: transform 0.05s ease-out;
   }
 }
+
+/* 브랜드 코끼리 로딩 — `TjBrandElephantMark` */
+@keyframes tj-brand-ele-breathe-kf {
+  0%,
+  100% {
+    opacity: 0.88;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.045);
+  }
+}
+@keyframes tj-brand-ele-wobble-kf {
+  0%,
+  100% {
+    transform: rotate(-3.5deg);
+  }
+  50% {
+    transform: rotate(3.5deg);
+  }
+}
+.tj-brand-ele-breathe {
+  animation: tj-brand-ele-breathe-kf 2.2s ease-in-out infinite;
+  transform-origin: 50% 55%;
+}
+.tj-brand-ele-wobble {
+  animation: tj-brand-ele-wobble-kf 2.8s ease-in-out infinite;
+  transform-origin: 50% 55%;
+}

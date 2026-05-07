@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { TjBrandElephantMark } from '@/components/brand/TjBrandElephantMark';
 
 type ForceNewsResponse = {
   status?: string;
@@ -98,10 +99,7 @@ export default function ForceNewsIngestButton() {
         >
           {busy ? (
             <>
-              <span
-                className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/35 border-t-white"
-                aria-hidden
-              />
+              <TjBrandElephantMark size={20} animate="breathe" className="shrink-0" />
               <span>실행 중…</span>
             </>
           ) : (

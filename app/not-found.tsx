@@ -6,6 +6,7 @@
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { TjBrandElephantMark } from '@/components/brand/TjBrandElephantMark';
 
 type RadarPhase = 'scanning' | 'redirecting' | 'processing' | 'idle';
 
@@ -107,24 +108,17 @@ export default function NotFound() {
             width: '100%',
             borderRadius: 20,
             border: '1px solid rgba(196,181,253,0.35)',
-            background: 'rgba(15,17,40,0.92)',
+            background: 'rgba(15,17,40,0.88)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 24px 60px rgba(0,0,0,0.45)',
             padding: '32px 26px',
             textAlign: 'center',
           }}
         >
-          <div
-            className="radar-pulse"
-            style={{
-              margin: '0 auto 18px',
-              width: 52,
-              height: 52,
-              borderRadius: '50%',
-              border: '3px solid rgba(196,181,253,0.45)',
-              borderTopColor: '#c4b5fd',
-              animation: 'tj-radar-spin 0.9s linear infinite',
-            }}
-          />
-          <style>{`@keyframes tj-radar-spin { to { transform: rotate(360deg); } }`}</style>
+          <div style={{ margin: '0 auto 18px', display: 'flex', justifyContent: 'center' }}>
+            <TjBrandElephantMark size={52} animate="breathe" />
+          </div>
           <p style={{ margin: 0, fontSize: 15, lineHeight: 1.65, color: '#e2e8f0' }}>{processingMessage}</p>
           <p style={{ margin: '14px 0 0', fontSize: 12, color: '#94a3b8' }}>
             새로고침하면 준비된 페이지로 이동할 수 있어요.
@@ -189,11 +183,19 @@ export default function NotFound() {
           width: '100%',
           borderRadius: 20,
           border: '1px solid rgba(255,255,255,0.12)',
-          background: 'rgba(15,17,40,0.85)',
+          background: 'rgba(15,17,40,0.82)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 20px 50px rgba(0,0,0,0.4)',
           padding: '28px 24px',
           textAlign: 'center',
         }}
       >
+        {showRadarHint ? (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+            <TjBrandElephantMark size={44} animate="wobble" />
+          </div>
+        ) : null}
         <p
           style={{
             margin: 0,
@@ -207,7 +209,7 @@ export default function NotFound() {
             letterSpacing: '0.08em',
           }}
         >
-          {showRadarHint ? 'RADAR · 탐색 중' : 'NOT FOUND'}
+          {showRadarHint ? '경로 확인 중' : 'NOT FOUND'}
         </p>
         <h1 style={{ margin: '14px 0 0', fontSize: 24, fontWeight: 800 }}>
           {showRadarHint ? '주소를 바로잡는 중이에요…' : '찾으시는 페이지가 없습니다'}

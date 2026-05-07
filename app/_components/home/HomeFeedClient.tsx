@@ -11,6 +11,7 @@ import { formatDate } from '@/lib/utils/formatDate';
 import { getPerceivedViewCount } from '@/lib/utils';
 import styles from './home-hub.module.css';
 import { HomeGlassEmptyState } from './HomeGlassEmptyState';
+import { TjBrandElephantMark } from '@/components/brand/TjBrandElephantMark';
 import { normalizeContainerText } from '@/lib/text/normalizeDisplayText';
 
 const MAX_BATCHES = 8;
@@ -151,10 +152,12 @@ export function HomeFeedClient({
                 />
               ) : (
                 <div
-                  className={styles.thumbPh}
+                  className={`${styles.thumbPh} flex items-center justify-center overflow-hidden`}
                   style={{ background: thumbGradientForId(`${p.kind}-${p.id}`) }}
                   aria-hidden
-                />
+                >
+                  <TjBrandElephantMark size={22} animate="none" className="opacity-45" />
+                </div>
               )}
               <div className="min-w-0 space-y-1.5">
                 <div className="min-w-0 truncate">
@@ -180,7 +183,15 @@ export function HomeFeedClient({
       ) : null}
 
       <div className={styles.loadMore} ref={sentinelRef} role="status" aria-busy={loading}>
-        {batches >= MAX_BATCHES ? '—' : loading ? '…' : '\u00a0'}
+        {batches >= MAX_BATCHES ? (
+          '—'
+        ) : loading ? (
+          <span className="inline-flex justify-center py-1">
+            <TjBrandElephantMark size={26} animate="breathe" />
+          </span>
+        ) : (
+          '\u00a0'
+        )}
       </div>
     </section>
   );

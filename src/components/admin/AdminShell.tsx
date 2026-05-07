@@ -10,7 +10,7 @@ import {
   Brain,
   Store,
   Image,
-  Bot,
+  Sparkles,
   Newspaper,
   Megaphone,
   Activity,
@@ -29,7 +29,7 @@ const NAV_ITEMS = [
   { href: '/admin/local-spots', icon: Store, label: 'Local Spots' },
   { href: '/admin/home-hero', icon: Image, label: 'Hero' },
   { href: '/admin/premium-banners', icon: Image, label: 'Banners' },
-  { href: '/admin/bot-actions', icon: Bot, label: 'Bot Actions' },
+  { href: '/admin/bot-actions', icon: Sparkles, label: 'Bot Actions' },
   { href: '/admin/ux-bot', icon: Activity, label: 'UX Bot' },
   { href: '/admin/ops-center', icon: Gauge, label: 'Ops Center' },
 ];

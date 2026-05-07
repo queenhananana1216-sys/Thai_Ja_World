@@ -8,6 +8,7 @@ import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import { usePublicWeatherSwr } from '@/lib/hooks/usePublicWeatherSwr';
 import { isThailandWeatherSnapshotComplete } from '@/lib/weather/thailandWeatherSnapshot';
 import styles from './portal-2026.module.css';
+import { TjBrandElephantMark } from '@/components/brand/TjBrandElephantMark';
 
 /** 라이브 레이더 — 포커스·마운트 시 즉시 재검증 + 주기 폴링 */
 const OMNI_RADAR_INTERVAL_MS = 10_000;
@@ -500,7 +501,11 @@ export default function PortalWeatherWidget({
     >
       <div className="flex min-w-0 items-center gap-2.5">
         <span className={`${styles.weatherIconWrap} flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/35 bg-slate-950/40 text-2xl leading-none shadow-inner`}>
-          <span aria-hidden>{icon}</span>
+          {busy ? (
+            <TjBrandElephantMark size={36} animate="breathe" />
+          ) : (
+            <span aria-hidden>{icon}</span>
+          )}
           <span
             className={`${styles.omniLed} ${ledClass}`}
             title={ledTitle}

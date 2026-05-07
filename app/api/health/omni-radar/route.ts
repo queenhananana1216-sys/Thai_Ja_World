@@ -26,6 +26,7 @@ import {
 } from '@/lib/weather/fetchThailandCitiesWeather';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 import { checkSeoIndexingRadar } from '@/lib/seo/seoIndexingRadar';
+import { checkPublicHtmlShellRadar } from '@/lib/health/pageShellRenderRadar';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -360,6 +361,7 @@ export async function GET(): Promise<NextResponse> {
     content_pipeline,
     biz_audit_queue,
     live_integrity,
+    page_shell_render,
   ] = await Promise.all([
     checkLiveSqlPing(),
     checkWeatherPipeline(),
@@ -378,6 +380,7 @@ export async function GET(): Promise<NextResponse> {
     checkContentPipelineStress(),
     checkBizAuditQueueRadar(),
     scanRecentLiveIntegrity(),
+    checkPublicHtmlShellRadar(),
   ]);
 
   const chaos_monkey = {
@@ -392,11 +395,25 @@ export async function GET(): Promise<NextResponse> {
   const core_ok = database.ok && weather.ok;
   const extended_ok = extendedVitalityAllOk(fortune_vitality, korean_living_grid, content_pipeline);
   const live_integrity_ok = live_integrity.status === 'healthy' || live_integrity.status === 'unknown';
-  const healthy = core_ok && extended_ok && live_integrity_ok;
-  const radar_status: 'healthy' | 'degraded' | 'error' =
-    !core_ok || live_integrity.status === 'error' ? 'error' : extended_ok && live_integrity_ok ? 'healthy' : 'degraded';
+  const page_shell_ok = page_shell_render.skipped === true || page_shell_render.ok === true;
+  /** 자기 호스트 실측 — HTTP 200·DB 녹 표시등만으로 「살았다」고 보지 않음 */
+  const page_shell_hard_fail =
+    page_shell_render.skipped !== true && page_shell_render.ok !== true;
 
-  const shield_pulse = Boolean(core_ok && extended_ok && chaos_monkey.shield_pulse);
+  let radar_status: 'healthy' | 'degraded' | 'error';
+  if (!core_ok || live_integrity.status === 'error') {
+    radar_status = 'error';
+  } else if (page_shell_hard_fail) {
+    radar_status = 'error';
+  } else if (extended_ok && live_integrity_ok) {
+    radar_status = 'healthy';
+  } else {
+    radar_status = 'degraded';
+  }
+
+  const healthy = radar_status === 'healthy';
+
+  const shield_pulse = Boolean(core_ok && extended_ok && page_shell_ok && chaos_monkey.shield_pulse);
 
   const legacy_secondary_ok =
     database.ok &&
@@ -426,6 +443,26 @@ export async function GET(): Promise<NextResponse> {
     }
   }
 
+  const motherbrain_health_basis = (radar_status !== 'error'
+    ? extended_ok && live_integrity_ok
+      ? ('database_weather_pages_ok' as const)
+      : !extended_ok
+        ? ('core_ok_extended_degraded' as const)
+        : ('live_integrity_degraded' as const)
+    : !database.ok || !weather.ok
+      ? ('database_or_weather_down' as const)
+      : live_integrity.status === 'error'
+        ? ('live_integrity_fatal' as const)
+        : ('page_shell_render_failed' as const)) as
+    | 'database_or_weather_down'
+    | 'live_integrity_fatal'
+    | 'page_shell_render_failed'
+    | 'database_weather_pages_ok'
+    | 'core_ok_extended_degraded'
+    | 'live_integrity_degraded'
+    /** @deprecated 과거 문자열 호환 — 클라 대시보드가 아직 참조하면 유지 */
+    | 'database_weather_fortune_korean_news';
+
   const checks = {
     database,
     weather,
@@ -443,6 +480,7 @@ export async function GET(): Promise<NextResponse> {
     content_pipeline,
     biz_audit_queue,
     live_integrity,
+    page_shell_render,
     motherbrain: {
       shield_pulse,
       all_green: healthy,
@@ -450,17 +488,11 @@ export async function GET(): Promise<NextResponse> {
       core_ok,
       extended_ok,
       live_integrity_ok,
-      health_basis: (radar_status === 'error'
-        ? 'database_or_weather_down'
-        : extended_ok
-          ? live_integrity_ok
-            ? 'database_weather_fortune_korean_news'
-            : 'live_integrity_degraded'
-          : 'core_ok_extended_degraded') as
-        | 'database_or_weather_down'
-        | 'database_weather_fortune_korean_news'
-        | 'live_integrity_degraded'
-        | 'core_ok_extended_degraded',
+      page_shell_ok,
+      health_basis:
+        motherbrain_health_basis === 'database_weather_pages_ok'
+          ? 'database_weather_fortune_korean_news'
+          : motherbrain_health_basis,
       defense_success_rate: chaos_monkey.defense_success_rate ?? null,
       chaos_skipped: chaos_monkey.skipped === true,
       shadow_write_ok,
@@ -501,6 +533,9 @@ export async function GET(): Promise<NextResponse> {
     errors.push(
       `live_integrity: slow=${live_integrity.slow_api_count ?? 0}, cookie=${live_integrity.cookie_fail_count ?? 0}, write=${live_integrity.write_fail_count ?? 0}, route=${live_integrity.route_fail_count ?? 0}, heal=${live_integrity.auto_heal_note ?? 'n/a'}`,
     );
+  }
+  if (!page_shell_ok && page_shell_render.skipped !== true) {
+    errors.push(`page_shell_render: ${page_shell_render.error ?? 'probe_failed'}`);
   }
 
   return NextResponse.json(

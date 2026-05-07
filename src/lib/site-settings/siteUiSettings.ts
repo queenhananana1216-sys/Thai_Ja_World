@@ -2,6 +2,10 @@ import 'server-only';
 
 import { unstable_cache } from 'next/cache';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import {
+  SITE_SETTINGS_FETCH_TIMEOUT_MS,
+  fetchWithTimeout,
+} from '@/lib/supabase/fetchWithTimeout';
 import { DEFAULT_SITE_DISPLAY_NAME, normalizeSiteDisplayNameForUi } from '@/lib/site-brand/constants';
 
 export type TextScale = 'compact' | 'normal' | 'large';
@@ -28,7 +32,10 @@ function createReadonlyAnon(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (!url || !key) return null;
-  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { fetch: fetchWithTimeout(SITE_SETTINGS_FETCH_TIMEOUT_MS) },
+  });
 }
 
 function parseTextScale(v: unknown): TextScale {

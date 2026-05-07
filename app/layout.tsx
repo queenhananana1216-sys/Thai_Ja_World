@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import AnalyticsTracker from './_components/AnalyticsTracker';
 import { IntentRoutePrefetch } from './_components/IntentRoutePrefetch';
 import GlobalToaster from './_components/GlobalToaster';
@@ -14,6 +15,7 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { getSiteBaseUrl } from '@/lib/seo/site';
+import { TjRouteSuspenseFallback } from './_components/TjRouteSuspenseFallback';
 
 /** Vercel·CDN이 예전 HTML/헤더를 붙잡지 않도록 루트 세그먼트 전체 동적 렌더 */
 export const dynamic = 'force-dynamic';
@@ -116,7 +118,7 @@ export default async function RootLayout({ children }: { children: unknown }) {
         <IntentRoutePrefetch />
         <GlobalToaster />
         <main className="relative z-0 min-h-[45vh] w-full flex-1 overflow-x-hidden pb-[calc(8.75rem+env(safe-area-inset-bottom,0px))] md:pb-0">
-          {children as import('react').ReactNode}
+          <Suspense fallback={<TjRouteSuspenseFallback />}>{children as import('react').ReactNode}</Suspense>
         </main>
         <SiteFooterFallback siteDisplayName={ui.siteDisplayName} />
         <PortalActivityTicker locale={locale === 'th' ? 'th' : 'ko'} />

@@ -6,8 +6,11 @@ import { createServerClient } from '@/lib/supabase/server';
 import { absoluteUrl } from '@/lib/seo/site';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { ensureKoreanBizMinimumRows } from '@/lib/korean-biz/ensureKoreanBizMinimumRows';
-import { fetchKoreanBusinessesForPublicPage } from '@/lib/korean-biz/fetchKoreanBusinesses';
-import type { KoreanBizRow } from '@/lib/korean-biz/koreanBizTypes';
+import {
+  fetchKoreanBusinessesForPublicPageResilient,
+  fetchKoreanBusinessesViaServiceRole,
+} from '@/lib/korean-biz/fetchKoreanBusinesses';
+import { getKoreanBizStaleSnapshotCached } from '@/lib/korean-biz/koreanBizPublicSnapshotCache';
 import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
 
 export const dynamic = 'force-dynamic';
@@ -37,13 +40,34 @@ export default async function KoreanBizPage() {
   noStore();
   const locale = await getLocale();
   const sb = createServerClient();
-  let { rows, error } = await fetchKoreanBusinessesForPublicPage(sb);
+  let { rows, error } = await fetchKoreanBusinessesForPublicPageResilient(sb, { retries: 4 });
+  let fromStaleSnapshot = false;
+
   const needSelfHeal = rows.length === 0 || Boolean(error) || rows.length < 10;
   if (needSelfHeal) {
     await ensureKoreanBizMinimumRows();
-    const second = await fetchKoreanBusinessesForPublicPage(sb);
+    const second = await fetchKoreanBusinessesForPublicPageResilient(sb, { retries: 4 });
     rows = second.rows;
     error = second.error;
+  }
+
+  if (rows.length === 0) {
+    const stale = await getKoreanBizStaleSnapshotCached();
+    if (stale.length > 0) {
+      rows = stale;
+      error = null;
+      fromStaleSnapshot = true;
+    }
+  }
+
+  if (rows.length === 0) {
+    const svc = await fetchKoreanBusinessesViaServiceRole();
+    if (svc.rows.length > 0) {
+      rows = svc.rows;
+      error = null;
+    } else if (svc.error) {
+      error = svc.error;
+    }
   }
 
   if (rows.length === 0 && error) {
@@ -51,7 +75,7 @@ export default async function KoreanBizPage() {
       scope: 'public/korean-biz',
       reasonCode: 'korean_biz_page_empty_after_self_heal',
       messageExcerpt: error.message,
-      meta: { code: error.code ?? null },
+      meta: { code: error.code ?? null, from_stale_snapshot: fromStaleSnapshot },
     });
   }
 

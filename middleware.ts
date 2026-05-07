@@ -1,3 +1,9 @@
+/**
+ * 무한 리다이렉트 방지 요약:
+ * - `lang` 쿼리 한 번 처리 후 제거하여 언어 변경 루프 없음.
+ * - `LOCALE_COOKIE` 무효일 때만 쿠키 보정(Set) — 같은 경로로 다시 들어오는 리다이렉트 트리거 없음.
+ * - 세션 필요 경로는 `/auth/login?next=` 단발 리다이렉트만.
+ */
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';

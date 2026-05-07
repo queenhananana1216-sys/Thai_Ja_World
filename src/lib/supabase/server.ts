@@ -10,15 +10,12 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { createDummySupabaseClient } from './dummy';
+import {
+  DEFAULT_SUPABASE_FETCH_TIMEOUT_MS,
+  fetchWithTimeout as boundedFetch,
+} from '@/lib/supabase/fetchWithTimeout';
 
-/** Supabase가 응답 없이 걸리면(방화벽·일시 DNS·프로젝트 중지 등) 홈 SSR이 무한 로딩되므로 상한 둠 */
-const SERVER_FETCH_TIMEOUT_MS = 10_000;
-
-function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), SERVER_FETCH_TIMEOUT_MS);
-  return fetch(input, { ...init, signal: ctrl.signal }).finally(() => clearTimeout(tid));
-}
+const boundedServerFetch = boundedFetch(DEFAULT_SUPABASE_FETCH_TIMEOUT_MS);
 
 export function createServerClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -36,6 +33,6 @@ export function createServerClient() {
 
   return createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
-    global: { fetch: fetchWithTimeout },
+    global: { fetch: boundedServerFetch },
   });
 }

@@ -118,12 +118,12 @@ export default async function AdminNewsQueuePage() {
         뉴스 큐
       </h1>
       <p className="admin-dash__lead" style={{ maxWidth: '58ch' }}>
-        데스크 AI가 쓴 <strong>제목·3줄·대비책</strong>을 카드로 확인한 뒤 <strong>게시하기</strong>만 누르세요. 손으로 고치려면{' '}
+        운영 데스크가 정리한 <strong>제목·3줄·대비책</strong>을 카드로 확인한 뒤 <strong>게시하기</strong>만 누르세요. 손으로 고치려면{' '}
         「상세 편집」을 여세요.{' '}
         <Link href="/admin/publish" style={{ color: 'var(--admin-link)' }}>
           승인 허브 →
         </Link>
-        {llmReady ? '' : ' · LLM 미설정이면 AI 버튼이 비활성입니다.'}
+        {llmReady ? '' : ' · LLM 미설정이면 자동 가공 버튼이 비활성입니다.'}
       </p>
       {error ? (
         <p style={{ color: '#b91c1c', marginTop: 16 }}>

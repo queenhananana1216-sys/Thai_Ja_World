@@ -178,7 +178,7 @@ function NewsCardCompact({ item }: { item: NewsItem }) {
             </span>
           ) : item.newsAiBadge === 'analyzed' ? (
             <span className="inline-flex rounded border border-sky-500/35 bg-slate-900/80 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-100">
-              AI 분석 완료
+              운영자 팩트체크
             </span>
           ) : null}
           {showIncident ? (

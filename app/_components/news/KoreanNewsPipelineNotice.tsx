@@ -2,7 +2,7 @@ import { TjBrandElephantMark } from '@/components/brand/TjBrandElephantMark';
 import styles from '../../portal/portal-2026.module.css';
 
 const DEFAULT_MESSAGE =
-  '현재 태국 현지 뉴스를 한국어로 번역 및 요약하고 있습니다. 잠시 후 업데이트됩니다.';
+  '현지 리포터가 소식을 정리 중입니다. 운영팀이 팩트체크 후 업로드 예정입니다.';
 
 type Props = {
   message?: string;

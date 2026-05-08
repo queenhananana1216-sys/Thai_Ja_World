@@ -595,7 +595,7 @@ export default function LocalDigitalMenuClient(props: {
       if (data.name && data.description) {
         setEditNames(data.name);
         setEditDescs(data.description);
-        notify('✨ AI가 4개 언어로 메뉴명·설명을 채웠습니다.');
+        notify('✨ 운영 도우미가 4개 언어 메뉴명·설명 초안을 채웠습니다.');
       }
     } catch (e) {
       notify(e instanceof Error ? e.message : '번역 실패');
@@ -627,7 +627,7 @@ export default function LocalDigitalMenuClient(props: {
       if (data.name && data.description) {
         setNewNames(data.name);
         setNewDescs(data.description);
-        notify('✨ AI가 4개 언어로 메뉴명·설명을 채웠습니다.');
+        notify('✨ 운영 도우미가 4개 언어 메뉴명·설명 초안을 채웠습니다.');
       }
     } catch (e) {
       notify(e instanceof Error ? e.message : '번역 실패');
@@ -1106,7 +1106,7 @@ export default function LocalDigitalMenuClient(props: {
             <div className="mt-6 border-t border-white/10 pt-5">
               <h3 className="text-sm font-bold text-white">스마트 메뉴 추가</h3>
               <p className="mt-1 text-[11px] text-white/50">
-                원문 언어·메뉴명을 입력한 뒤 포커스를 빼면 AI가 4개 언어를 채웁니다. 세부 수정 후 등록하세요.
+                원문 언어·메뉴명을 입력한 뒤 포커스를 빼면 운영 도우미가 4개 언어 초안을 채웁니다. 세부 수정 후 등록하세요.
               </p>
               <div className="mt-3 space-y-3">
                 <div className="flex flex-wrap items-center gap-2">

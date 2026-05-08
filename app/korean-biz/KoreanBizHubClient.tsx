@@ -186,7 +186,7 @@ function GlobalRadarPlaceholder() {
             <TjBrandElephantMark size={46} animate="breathe" />
           </span>
           <p className="text-lg font-semibold leading-relaxed tracking-tight text-white/95 md:text-xl">
-            AI 레이더가 태국 전역의 한인 생활·레저 업소 정보를 실시간으로 수집하고 검증 중입니다...
+            현지 제보와 운영팀 교차 확인으로 태국 전역의 한인 생활·레저 업소 정보를 실시간 정리 중입니다...
           </p>
           <p className="mt-4 max-w-md text-sm leading-relaxed text-gray-400">
             곧 이 화면이 최신 연락처로 채워집니다. 잠시만 기다려 주세요.
@@ -208,7 +208,7 @@ export default function KoreanBizHubClient({
 }: {
   rows: KoreanBizRow[];
   locale?: Locale;
-  /** 0건일 때만 AI 레이더 플레이스홀더 — 행이 있으면 즉시 리스트 */
+  /** 0건일 때만 레이더 플레이스홀더 — 행이 있으면 즉시 리스트 */
   globalEmpty?: boolean;
   /** Supabase 조회 에러(데이터는 없음): 플레이스홀더와 동일 처리 가능 */
   fetchError?: boolean;
@@ -312,7 +312,7 @@ export default function KoreanBizHubClient({
   const verifiedLine = (iso: string | null) =>
     locale === 'th'
       ? `✅ ตรวจสอบล่าสุดโดย AI: ${formatVerifiedAt(iso, locale)}`
-      : `✅ AI가 최근 검증함: ${formatVerifiedAt(iso, locale)}`;
+      : `✅ 운영팀 최근 검증: ${formatVerifiedAt(iso, locale)}`;
 
   if (globalEmpty) {
     return (

@@ -402,7 +402,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
         {user && useGracefulFallback ? (
           <div className={`${portalStyles.glassBlue} mt-8 p-4 sm:p-6`}>
             <p className="text-base leading-relaxed text-slate-100">
-              💡 현재 AI가 최신 정보를 정밀하게 번역 및 요약하고 있습니다. 아래 버튼을 통해 원문 기사를 먼저 확인해 주세요.
+              💡 현지 리포터가 소식을 정리 중입니다. 운영팀 팩트체크가 끝나면 본문이 자동으로 반영됩니다. 급한 내용은 아래 원문 링크를 먼저 확인해 주세요.
             </p>
           </div>
         ) : null}

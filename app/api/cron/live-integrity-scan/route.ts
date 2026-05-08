@@ -16,6 +16,13 @@ type PageProbe = {
   error?: string;
 };
 
+type NewsFreshnessProbe = {
+  newest_ko_created_at: string | null;
+  stale_hours: number;
+  stale_threshold_hours: number;
+  stale_detected: boolean;
+};
+
 const PAGE_TARGETS = [
   '/',
   '/news',
@@ -122,6 +129,23 @@ async function triggerSelfHeal(reason: string, details: Record<string, unknown>)
   }
 }
 
+async function triggerNewsRelief(reason: string): Promise<{ triggered: boolean; note: string }> {
+  const secret = process.env.CRON_SECRET?.trim() || process.env.BOT_CRON_SECRET?.trim();
+  if (!secret) return { triggered: false, note: 'cron_secret_missing' };
+  try {
+    const base = siteBase();
+    const res = await fetch(`${base}/api/cron/news-stagnation-relief?staleHours=24&targetPublished=129`, {
+      headers: {
+        authorization: `Bearer ${secret}`,
+      },
+      cache: 'no-store',
+    });
+    return { triggered: res.ok, note: `${reason}:news_stagnation_relief_http_${res.status}` };
+  } catch (e) {
+    return { triggered: false, note: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!isCronAuthorized(req.headers.get('authorization'))) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
@@ -167,6 +191,45 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   let autoHealTriggered = false;
   let autoHealNote: string | null = null;
+  let newsReliefTriggered = false;
+  let newsReliefNote: string | null = null;
+  let newsFreshness: NewsFreshnessProbe = {
+    newest_ko_created_at: null,
+    stale_hours: 999,
+    stale_threshold_hours: 24,
+    stale_detected: false,
+  };
+
+  if (isServiceRoleConfigured()) {
+    try {
+      const sb = createServiceRoleClient();
+      const { data: newestKo } = await sb
+        .from('processed_news')
+        .select('created_at')
+        .eq('published', true)
+        .eq('language', 'ko')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const newestIso = newestKo?.created_at ? String(newestKo.created_at) : null;
+      const newestTs = newestIso ? new Date(newestIso).getTime() : Number.NaN;
+      const staleHours = Number.isFinite(newestTs) ? (Date.now() - newestTs) / 3_600_000 : 999;
+      const staleDetected = !Number.isFinite(newestTs) || staleHours >= 24;
+      newsFreshness = {
+        newest_ko_created_at: newestIso,
+        stale_hours: Math.round(staleHours * 10) / 10,
+        stale_threshold_hours: 24,
+        stale_detected: staleDetected,
+      };
+      if (staleDetected) {
+        const relief = await triggerNewsRelief('live_integrity_scan_news_stale');
+        newsReliefTriggered = relief.triggered;
+        newsReliefNote = relief.note;
+      }
+    } catch (e) {
+      newsReliefNote = e instanceof Error ? e.message : String(e);
+    }
+  }
   if (status !== 'healthy') {
     const heal = await triggerSelfHeal('live_integrity_scan_detected_issue', {
       slowApiCount,
@@ -186,6 +249,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       meta: {
         auto_heal_triggered: autoHealTriggered,
         auto_heal_note: autoHealNote ?? '',
+        news_relief_triggered: newsReliefTriggered,
+        news_relief_note: newsReliefNote ?? null,
+        news_freshness: JSON.stringify(newsFreshness),
       },
     });
 
@@ -210,6 +276,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           detail:
             `길목 스캔: ${status}. slow_api=${slowApiCount} route_fail=${routeFailCount} write_fail=${writeFailCount} cookie_fail=${cookieFailCount}. ` +
             `heal=${autoHealTriggered} ${autoHealNote ?? ''}. ` +
+            `news_stale=${newsFreshness.stale_detected}(${newsFreshness.stale_hours}h), relief=${newsReliefTriggered} ${newsReliefNote ?? ''}. ` +
             `샘플: ${detailLines.slice(0, 900)}`,
         });
       } catch (e) {
@@ -230,8 +297,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         route_fail_count: routeFailCount,
         auto_heal_triggered: autoHealTriggered,
         auto_heal_note: autoHealNote,
+        news_relief_triggered: newsReliefTriggered,
+        news_relief_note: newsReliefNote,
         details: {
           pages: pageResults,
+          news_freshness: newsFreshness,
           auth_probe: {
             status: authProbe.status,
             latency_ms: authProbe.latencyMs,
@@ -257,6 +327,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       route_fail_count: routeFailCount,
       auto_heal_triggered: autoHealTriggered,
       auto_heal_note: autoHealNote,
+      news_relief_triggered: newsReliefTriggered,
+      news_relief_note: newsReliefNote,
+      news_freshness: newsFreshness,
     },
     pages: pageResults,
   };

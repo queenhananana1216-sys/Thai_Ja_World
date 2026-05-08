@@ -146,7 +146,7 @@ export default async function AdminKnowledgeQueuePage() {
         꿀팁 · 지식 큐
       </h1>
       <p className="admin-dash__lead" style={{ maxWidth: '62ch' }}>
-        AI가 만든 <strong>컨셉 카드</strong>만 보고 <strong>게시하기</strong> 또는 <strong>AI 다시 가공</strong>을 쓰면 됩니다. 수동
+        운영팀 가공 결과 <strong>컨셉 카드</strong>를 확인하고 <strong>게시하기</strong> 또는 <strong>다시 가공</strong>을 쓰면 됩니다. 수동
         편집은 카드 아래 「상세 편집」에서 엽니다.{' '}
         <Link href="/admin/publish" style={{ color: 'var(--admin-link)' }}>
           승인 허브 →

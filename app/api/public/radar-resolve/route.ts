@@ -51,7 +51,7 @@ export async function GET(req: Request) {
       }
       return NextResponse.json({
         status: 'processing' as const,
-        message: 'AI가 기사를 한국어로 가공하고 있습니다. 잠시만 기다려주세요.',
+        message: '현지 리포터가 소식을 정리 중입니다. 운영팀 팩트체크 후 곧 게시됩니다.',
       });
     }
   }

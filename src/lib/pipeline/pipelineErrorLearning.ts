@@ -1,4 +1,10 @@
-import 'server-only';
+try {
+  // Allow Node CLI/tsx maintenance scripts to reuse this module.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- optional in non-Next runtimes
+  require('server-only');
+} catch {
+  // no-op outside Next.js server component boundary checks
+}
 
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 

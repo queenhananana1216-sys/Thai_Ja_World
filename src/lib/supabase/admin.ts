@@ -1,4 +1,10 @@
-import 'server-only';
+try {
+  // Allow Node CLI/tsx maintenance scripts to reuse this module.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- optional in non-Next runtimes
+  require('server-only');
+} catch {
+  // no-op outside Next.js server component boundary checks
+}
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 /** 크론·봇·관리 쓰기 — 반드시 이 env 이름만 사용 (anon / NEXT_PUBLIC_ANON 금지). */

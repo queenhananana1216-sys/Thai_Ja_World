@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { createClient } from '@supabase/supabase-js';
+import { bannerIntentRankingScore, type SponsorSignals } from '@/lib/banners/sponsorIntentSignals';
 import {
   BANNER_PLACEMENTS,
   BANNER_ROUTE_GROUPS,
@@ -76,6 +77,8 @@ export type ListBannersOptions = {
   routeGroups: BannerRouteGroup[];
   /** 슬롯별 최대 노출 개수 (기본 8). 너무 많으면 레이아웃이 늘어진다. */
   limitPerPlacement?: number;
+  /** 사용자 관심사 쿠키 기반 타겟 정렬(extra.target_intents) */
+  sponsorSignals?: SponsorSignals;
 };
 
 /**
@@ -86,6 +89,7 @@ export async function listPremiumBanners({
   placements,
   routeGroups,
   limitPerPlacement = 8,
+  sponsorSignals,
 }: ListBannersOptions): Promise<Record<BannerPlacement, PublicBanner[]>> {
   const empty: Record<BannerPlacement, PublicBanner[]> = {
     top_bar: [],
@@ -94,6 +98,8 @@ export async function listPremiumBanners({
     wing_right: [],
     header_side: [],
     in_content: [],
+    portal_quick_1: [],
+    portal_quick_7: [],
   };
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -124,10 +130,23 @@ export async function listPremiumBanners({
       const pub = rowToPublic(raw);
       if (!pub) continue;
       if (!placements.includes(pub.placement)) continue;
-      const bucket = byPlacement[pub.placement];
-      if (bucket.length >= limitPerPlacement) continue;
-      bucket.push(pub);
+      byPlacement[pub.placement].push(pub);
     }
+
+    const hasWeights = sponsorSignals && Object.keys(sponsorSignals).length > 0;
+    for (const pl of placements) {
+      let arr = byPlacement[pl];
+      if (!arr.length) continue;
+      if (hasWeights) {
+        arr = [...arr].sort(
+          (a, b) => bannerIntentRankingScore(b, sponsorSignals!) - bannerIntentRankingScore(a, sponsorSignals!),
+        );
+      } else {
+        arr = [...arr].sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+      }
+      byPlacement[pl] = arr.slice(0, limitPerPlacement);
+    }
+
     return byPlacement;
   } catch {
     return empty;

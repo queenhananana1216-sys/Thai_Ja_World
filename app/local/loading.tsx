@@ -1,3 +1,4 @@
+import { RouteLoadingBrandRibbon } from '../_components/RouteLoadingBrandRibbon';
 import { SITE_ROUTE_LOADING_PULSE } from '../_components/siteRouteLoadingPulse';
 
 /**
@@ -8,6 +9,7 @@ export default function LocalLoading() {
   return (
     <div className="site-container min-h-[min(68vh,680px)] px-4 py-6" role="status" aria-live="polite">
       <p className="sr-only">로컬 가게 정보를 불러오는 중입니다.</p>
+      <RouteLoadingBrandRibbon />
       <div className={`${b} mb-2 h-8 w-40 max-w-[90%]`} />
       <div className={`${b} mb-8 h-4 w-72 max-w-[95%]`} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
-import { BannerCard } from './BannerCard';
-import type { PublicBanner } from '@/lib/banners/types';
+import { BannerCardWithTracking } from './BannerCardWithTracking';
+import type { BannerPlacement, PublicBanner } from '@/lib/banners/types';
 
 type Props = {
   /** 'left' | 'right' — aria-label 과 grid area 에 사용 */
@@ -23,6 +23,8 @@ const ASIDE_STYLE_BASE: CSSProperties = {
 export function WingBanners({ side, banners, hideWhenEmpty = true, sticky = true }: Props) {
   if (hideWhenEmpty && banners.length === 0) return null;
 
+  const placement: BannerPlacement = side === 'left' ? 'wing_left' : 'wing_right';
+
   return (
     <aside
       aria-label={side === 'left' ? '좌측 스폰서 배너' : '우측 스폰서 배너'}
@@ -35,7 +37,13 @@ export function WingBanners({ side, banners, hideWhenEmpty = true, sticky = true
       }}
     >
       {banners.map((b) => (
-        <BannerCard key={b.id} banner={b} />
+        <BannerCardWithTracking
+          key={b.id}
+          banner={b}
+          placement={placement}
+          trackingRoute="__sponsor_wing__"
+          trackImpression
+        />
       ))}
     </aside>
   );

@@ -16,6 +16,12 @@ import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { ensurePersonalMissionToday } from '@/lib/missions/ensurePersonalMissionToday';
 import { loadPortalDailySpark } from '@/lib/portal/loadPortalDailySpark';
+import { cookies } from 'next/headers';
+import { listPremiumBanners } from '@/lib/banners/listPremiumBanners';
+import {
+  parseSponsorSignalsCookie,
+  TJ_SPONSOR_SIGNALS_COOKIE,
+} from '@/lib/banners/sponsorIntentSignals';
 
 /** 홈 SSR 페치 전용 — 부모 `Suspense`가 즉시 폴백을 보여준 뒤 이 컴포넌트가 치환 */
 export default async function PortalFeedSection() {
@@ -46,18 +52,35 @@ export default async function PortalFeedSection() {
   }
 
   try {
-    const [todayRankRes, feed, viewerHall, collabRes, personalRes, dailySpark] = await Promise.all([
-      fetchHomeTodayThaiEarnRanking(5),
-      fetchPortalHomeFeed(),
-      authSb && viewerProfileId
-        ? fetchViewerTodayThaiHallStats(authSb, viewerProfileId)
-        : Promise.resolve(null),
-      fetchCollaborativeMissionsActive(),
-      authSb && viewerProfileId
-        ? ensurePersonalMissionToday(authSb, viewerProfileId)
-        : Promise.resolve({ row: null, error: null as string | null }),
-      loadPortalDailySpark(),
-    ]);
+    const cookieStore = await cookies();
+    const sponsorSignals = parseSponsorSignalsCookie(
+      cookieStore.get(TJ_SPONSOR_SIGNALS_COOKIE)?.value ?? null,
+    );
+
+    const [todayRankRes, feed, viewerHall, collabRes, personalRes, dailySpark, pqBanners] =
+      await Promise.all([
+        fetchHomeTodayThaiEarnRanking(5),
+        fetchPortalHomeFeed(),
+        authSb && viewerProfileId
+          ? fetchViewerTodayThaiHallStats(authSb, viewerProfileId)
+          : Promise.resolve(null),
+        fetchCollaborativeMissionsActive(),
+        authSb && viewerProfileId
+          ? ensurePersonalMissionToday(authSb, viewerProfileId)
+          : Promise.resolve({ row: null, error: null as string | null }),
+        loadPortalDailySpark(),
+        listPremiumBanners({
+          placements: ['portal_quick_1', 'portal_quick_7'],
+          routeGroups: ['home'],
+          limitPerPlacement: 1,
+          sponsorSignals,
+        }),
+      ]);
+
+    const portalQuickBanners = {
+      tile1: pqBanners.portal_quick_1[0] ?? null,
+      tile7: pqBanners.portal_quick_7[0] ?? null,
+    };
 
     return (
       <Portal2026View
@@ -73,6 +96,7 @@ export default async function PortalFeedSection() {
         collaborativeMissions={collabRes.rows}
         personalMission={personalRes.row}
         dailySpark={dailySpark}
+        portalQuickBanners={portalQuickBanners}
       />
     );
   } catch {
@@ -100,6 +124,7 @@ export default async function PortalFeedSection() {
     return (
       <Portal2026View
         feed={HONEST_EMPTY_PORTAL_HOME_FEED}
+        portalQuickBanners={{ tile1: null, tile7: null }}
         locale={locale}
         dictionary={dictionary}
         siteUi={siteUi}

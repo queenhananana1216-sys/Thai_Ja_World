@@ -10,6 +10,10 @@ export const BANNER_PLACEMENTS = [
   'wing_right',
   'header_side',
   'in_content',
+  /** 포털 홈 퀵메뉴 그리드 1번 칸 — 제보 바로 옆 시작 슬롯 */
+  'portal_quick_1',
+  /** 포털 홈 퀵메뉴 그리드 7번 칸 — 꿀팁 타일 자리 */
+  'portal_quick_7',
 ] as const;
 
 export type BannerPlacement = (typeof BANNER_PLACEMENTS)[number];

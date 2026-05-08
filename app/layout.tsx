@@ -84,7 +84,7 @@ export default async function RootLayout({ children }: { children: unknown }) {
       data-tj-text-scale={ui.textScale}
     >
       <body
-        className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-base text-gray-100 antialiased"
+        className="flex min-h-screen flex-col overflow-x-hidden bg-[#0B0F19] text-gray-100 antialiased"
         style={{
           margin: 0,
           minHeight: '100vh',

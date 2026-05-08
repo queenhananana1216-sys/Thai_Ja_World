@@ -5,8 +5,9 @@ import { requestMotherbrainHeal } from '@/lib/client/motherbrainHeal';
 import { reportUiIncident } from '@/lib/client/reportUiIncident';
 import { SystemRecoveringSurface } from '@/components/system/SystemRecoveringSurface';
 
-const MOTHERBRAIN_AUTO_RETRY_MS = 1000;
-const MOTHERBRAIN_AUTO_RETRY_MAX = 3;
+/** 길목 혼잡(Error Surface) 직후 — 오너 클릭 전에 재검증·ISR 힐을 빠르게 여러 번 시도 */
+const MOTHERBRAIN_AUTO_RETRY_MS = 320;
+const MOTHERBRAIN_AUTO_RETRY_MAX = 5;
 
 type Source =
   | 'error'
@@ -21,7 +22,7 @@ export function SystemRecoveringErrorView({
   reset,
   variant,
   source,
-  healInitialDelayMs = 0,
+  healInitialDelayMs = 60,
   healRetryDelayMs,
   healRetryMax,
 }: {

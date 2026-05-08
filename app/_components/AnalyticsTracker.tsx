@@ -3,6 +3,13 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
+import {
+  bumpSponsorSignalsForPath,
+  bumpSponsorSignalsFromDwell,
+  parseSponsorSignalsCookie,
+  TJ_SPONSOR_SIGNALS_COOKIE,
+} from '@/lib/banners/sponsorIntentSignals';
+
 function getSessionId(): string {
   try {
     const k = 'tj_analytics_sid';
@@ -18,6 +25,24 @@ function getSessionId(): string {
   } catch {
     return `anon-${Date.now()}`;
   }
+}
+
+function readSignalsFromDocument() {
+  const key = `${TJ_SPONSOR_SIGNALS_COOKIE}=`;
+  const chip =
+    typeof document !== 'undefined'
+      ? document.cookie
+          .split(';')
+          .map((x) => x.trim())
+          .find((x) => x.startsWith(key))
+      : '';
+  const raw = chip ? decodeURIComponent(chip.slice(key.length)) : '';
+  return parseSponsorSignalsCookie(raw || null);
+}
+
+function persistSignalsCookie(next: ReturnType<typeof parseSponsorSignalsCookie>) {
+  const value = encodeURIComponent(JSON.stringify(next));
+  document.cookie = `${TJ_SPONSOR_SIGNALS_COOKIE}=${value};path=/;max-age=${86400 * 180};SameSite=Lax`;
 }
 
 async function sendEvents(sessionId: string, events: { kind: 'view' | 'click' | 'dwell'; route: string; dwell_ms?: number; ts: number }[]) {
@@ -48,18 +73,35 @@ export default function AnalyticsTracker() {
     const sid = getSessionId();
     const now = Date.now();
 
-    const flushDwellFor = (route: string, startMs: number) => {
+    const flushDwellFor = (route: string, startMs: number): number => {
       const ms = Date.now() - startMs;
-      if (ms < 800) return;
+      if (ms < 800) return ms;
       void sendEvents(sid, [{ kind: 'dwell', route, dwell_ms: ms, ts: now }]);
+      return ms;
     };
 
     if (prevPathRef.current !== null && prevPathRef.current !== pathname) {
-      flushDwellFor(prevPathRef.current, segmentStartRef.current);
+      const prevRoute = prevPathRef.current;
+      const dwellMs = flushDwellFor(prevRoute, segmentStartRef.current);
+      try {
+        if (dwellMs >= 10_000) {
+          const prevSig = readSignalsFromDocument();
+          persistSignalsCookie(bumpSponsorSignalsFromDwell(prevSig, prevRoute, dwellMs));
+        }
+      } catch {
+        /* 쿠키 실패 무시 */
+      }
       segmentStartRef.current = Date.now();
     }
 
     prevPathRef.current = pathname;
+    try {
+      const prevSig = readSignalsFromDocument();
+      persistSignalsCookie(bumpSponsorSignalsForPath(prevSig, pathname));
+    } catch {
+      /* 쿠키 실패 무시 — 배너는 sort_order 폴백 */
+    }
+
     void sendEvents(sid, [{ kind: 'view', route: pathname, ts: now }]);
   }, [pathname]);
 
@@ -105,11 +147,18 @@ export default function AnalyticsTracker() {
     const onVis = () => {
       if (document.visibilityState === 'hidden' && prevPathRef.current) {
         const sid = getSessionId();
+        const routeVis = prevPathRef.current;
         const ms = Date.now() - segmentStartRef.current;
         if (ms >= 800) {
-          void sendEvents(sid, [
-            { kind: 'dwell', route: prevPathRef.current, dwell_ms: ms, ts: Date.now() },
-          ]);
+          void sendEvents(sid, [{ kind: 'dwell', route: routeVis, dwell_ms: ms, ts: Date.now() }]);
+        }
+        try {
+          if (ms >= 10_000) {
+            const prevSig = readSignalsFromDocument();
+            persistSignalsCookie(bumpSponsorSignalsFromDwell(prevSig, routeVis, ms));
+          }
+        } catch {
+          /* noop */
         }
       }
     };

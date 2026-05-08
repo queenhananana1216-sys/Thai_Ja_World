@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import "@fontsource/pretendard/400.css";
+@import "@fontsource/pretendard/500.css";
+@import "@fontsource/pretendard/600.css";
+@import "@fontsource/pretendard/700.css";
 /* Docker·오프라인 빌드: Google Fonts 네트워크 없이 Nunito 번들 (@fontsource-variable) */
 @import "@fontsource-variable/nunito/wght.css";
 
@@ -50,18 +54,49 @@
 
 body {
   margin: 0;
-  font-family: var(--font-noto-kr, 'Noto Sans KR'), var(--font-noto-th, 'Noto Sans Thai'),
+  font-family: Pretendard, var(--font-noto-kr, 'Noto Sans KR'), var(--font-noto-th, 'Noto Sans Thai'),
     'Apple SD Gothic Neo', 'Malgun Gothic', 'Sukhumvit Set', 'Leelawadee UI', system-ui,
     -apple-system, sans-serif;
   min-height: 100vh;
   background: #151921;
-  /* 본문 최소 16px · 글라스/다크 배경 위 고대비 본문색 */
-  font-size: 1rem;
+  /* 2026 가독성: 모바일 16px·데스크톱 17px · 행간 1.6 */
+  font-size: 16px;
   color: #f1f5f9;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.55;
+  line-height: 1.6;
   overflow-x: hidden;
+}
+
+@media (min-width: 769px) {
+  body {
+    font-size: 17px;
+  }
+}
+
+/* 포털(관리자 제외)·엄지 영역 버튼·링크 패딩 */
+@media (max-width: 768px) {
+  body:not(:has(.admin-shell)) button,
+  body:not(:has(.admin-shell)) [role='button'],
+  body:not(:has(.admin-shell)) input[type='submit'],
+  body:not(:has(.admin-shell)) textarea,
+  body:not(:has(.admin-shell)) select {
+    min-height: 44px;
+  }
+
+  body:not(:has(.admin-shell)) input[type='text'],
+  body:not(:has(.admin-shell)) input[type='search'],
+  body:not(:has(.admin-shell)) input[type='email'],
+  body:not(:has(.admin-shell)) input[type='password'] {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  body:not(:has(.admin-shell)) nav[aria-label='모바일 하단 메뉴'] a {
+    min-height: 44px;
+    box-sizing: border-box;
+    align-items: center;
+  }
 }
 
 html {
@@ -77,7 +112,8 @@ html[data-tj-text-scale='large'] {
 }
 
 html[lang='th'] body {
-  font-family: var(--font-noto-th, 'Noto Sans Thai'), var(--font-noto-kr, 'Noto Sans KR'),
+  /* 태국어 우선이되 UI 라틴/숫자 가독성은 Pretendard 유지 */
+  font-family: Pretendard, var(--font-noto-th, 'Noto Sans Thai'), var(--font-noto-kr, 'Noto Sans KR'),
     'Sukhumvit Set', 'Leelawadee UI', system-ui, -apple-system, sans-serif;
 }
 
@@ -101,11 +137,12 @@ a:hover {
 /* ── 글로벌 헤더 (미니홈 감성 — 남색 금지) ──────────────────────────────── */
 
 .global-header {
-  background: linear-gradient(180deg, rgba(2, 6, 23, 0.92) 0%, rgba(2, 6, 23, 0.78) 100%);
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.88) 0%, rgba(2, 6, 23, 0.72) 100%);
   color: #f8f8fa;
-  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.5);
-  backdrop-filter: blur(12px) saturate(1.1);
-  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  box-shadow: 0 8px 28px rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(16px) saturate(1.25);
+  -webkit-backdrop-filter: blur(16px) saturate(1.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
   z-index: 1;
 }

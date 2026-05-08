@@ -1,3 +1,4 @@
+import { RouteLoadingBrandRibbon } from './_components/RouteLoadingBrandRibbon';
 import { SITE_ROUTE_LOADING_PULSE } from './_components/siteRouteLoadingPulse';
 
 /**
@@ -8,6 +9,7 @@ export default function Loading() {
   return (
     <div className="site-container min-h-[min(72vh,720px)] px-4 py-6" role="status" aria-live="polite">
       <p className="sr-only">태국에, 살자 포털을 불러오는 중입니다.</p>
+      <RouteLoadingBrandRibbon />
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
         <aside className="hidden min-w-0 shrink-0 flex-col gap-3 min-[1181px]:flex min-[1181px]:w-54">
           <div className={`${b} h-24 w-full`} />

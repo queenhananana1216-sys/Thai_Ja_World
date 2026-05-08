@@ -1,6 +1,6 @@
 'use client';
 
-import { Toaster } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 
 /** `/boards` 레이아웃 전용 — 중앙 토스트 */
 export function BoardsToaster() {

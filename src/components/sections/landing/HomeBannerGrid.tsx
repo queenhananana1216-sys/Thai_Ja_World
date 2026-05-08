@@ -1,6 +1,11 @@
-import { BannerCard } from '@/components/banners/BannerCard';
+import { BannerCardWithTracking } from '@/components/banners/BannerCardWithTracking';
 import { listPremiumBanners } from '@/lib/banners/listPremiumBanners';
+import {
+  parseSponsorSignalsCookie,
+  TJ_SPONSOR_SIGNALS_COOKIE,
+} from '@/lib/banners/sponsorIntentSignals';
 import type { Locale } from '@/i18n/types';
+import { cookies } from 'next/headers';
 
 /**
  * 홈 "파트너·스폰서 그리드" — Philgo 메인의 2×3 광고 배너에 대응.
@@ -17,10 +22,16 @@ import type { Locale } from '@/i18n/types';
 type Props = { locale: Locale; /** 포털 라이트 배경(기본 다크) */ variant?: 'dark' | 'light' };
 
 export async function HomeBannerGrid({ locale, variant = 'dark' }: Props) {
+  const cookieStore = await cookies();
+  const sponsorSignals = parseSponsorSignalsCookie(
+    cookieStore.get(TJ_SPONSOR_SIGNALS_COOKIE)?.value ?? null,
+  );
+
   const byPlacement = await listPremiumBanners({
     placements: ['home_strip'],
     routeGroups: ['home'],
     limitPerPlacement: 12,
+    sponsorSignals,
   });
   const items = byPlacement.home_strip;
   if (!items.length) return null;
@@ -115,7 +126,15 @@ export async function HomeBannerGrid({ locale, variant = 'dark' }: Props) {
 
       <div className="tj-home-banner-grid">
         {items.map((b) => (
-          <BannerCard key={b.id} banner={b} fallbackAspect="4 / 3" maxWidth={999} />
+          <BannerCardWithTracking
+            key={b.id}
+            banner={b}
+            placement="home_strip"
+            trackingRoute="/"
+            fallbackAspect="4 / 3"
+            maxWidth={999}
+            trackImpression
+          />
         ))}
       </div>
     </section>

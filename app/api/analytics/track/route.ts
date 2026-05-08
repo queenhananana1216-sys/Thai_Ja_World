@@ -15,6 +15,7 @@ type IncomingEvent = {
   route?: unknown;
   dwell_ms?: unknown;
   ts?: unknown;
+  meta?: unknown;
 };
 
 export async function POST(req: Request): Promise<NextResponse> {
@@ -57,12 +58,22 @@ export async function POST(req: Request): Promise<NextResponse> {
     if (kind === 'dwell' && typeof ev.dwell_ms === 'number' && Number.isFinite(ev.dwell_ms)) {
       dwell_ms = Math.min(Math.max(Math.floor(ev.dwell_ms), 0), 86_400_000);
     }
+    const extraMeta =
+      ev.meta !== null &&
+      typeof ev.meta === 'object' &&
+      !Array.isArray(ev.meta) &&
+      !(ev.meta instanceof Date)
+        ? (ev.meta as Record<string, unknown>)
+        : {};
     rows.push({
       kind,
       route,
       dwell_ms,
       session_id: sessionId,
-      meta: typeof ev.ts === 'number' ? { ts: ev.ts } : {},
+      meta:
+        typeof ev.ts === 'number'
+          ? { ts: ev.ts, ...extraMeta }
+          : { ...extraMeta },
     });
   }
 

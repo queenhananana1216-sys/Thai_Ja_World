@@ -33,6 +33,8 @@ import PortalThailandPhotoStrip from './PortalThailandPhotoStrip';
 import PortalTrendingTicker from './PortalTrendingTicker';
 import PortalDailyFortune from './PortalDailyFortune';
 import { ThbKrwQuickMenuTile } from '@app/_components/ThbKrwBottomSheet';
+import { PortalWingSponsorTrackedLink } from './PortalWingSponsorTrackedLink';
+import type { PublicBanner } from '@/lib/banners/types';
 import styles from './portal-2026.module.css';
 
 /** 통합 피드 id 접두(`post-uuid` 등)·순수 UUID 기본 상세 경로 — href 누락 시 허브(`/boards`)로 잘못 가는 것 방지 */
@@ -93,6 +95,8 @@ export type Portal2026ViewProps = {
   collaborativeMissions?: CollaborativeMissionRow[];
   /** `site_settings` 일일 스파크 — 운세 테마 + 추천 미션 폴백 */
   dailySpark?: PortalDailySparkPayload | null;
+  /** 퀵메뉴 1·7번 스폰서 타일 — `listPremiumBanners` + `tj_sponsor_signals` */
+  portalQuickBanners?: { tile1: PublicBanner | null; tile7: PublicBanner | null };
 };
 
 function safeFeed(input: PortalHomeFeed | null | undefined): PortalHomeFeed {
@@ -492,6 +496,7 @@ export default function Portal2026View({
   personalMission = null,
   collaborativeMissions = [],
   dailySpark = null,
+  portalQuickBanners,
 }: Portal2026ViewProps) {
   const siteUi = siteUiProp ?? siteUiDefaults();
   const feedPhraseMap = dictionary.quests.feedPhraseMap;
@@ -603,9 +608,11 @@ export default function Portal2026View({
                     const href = b?.href?.trim() ? String(b.href) : '/ads';
                     return (
                       <li key={bid} className="min-w-0 overflow-hidden">
-                        <Link
-                          prefetch={true}
+                        <PortalWingSponsorTrackedLink
+                          bannerId={bid}
                           href={href}
+                          titleSlice={title}
+                          prefetch={true}
                           className="flex min-h-11 min-w-0 flex-col justify-center overflow-hidden rounded-lg border border-white/5 bg-slate-950/30 p-2 text-base leading-snug hover:border-amber-300/30"
                         >
                           <span className="line-clamp-2 break-words font-semibold text-white">{title}</span>
@@ -614,7 +621,7 @@ export default function Portal2026View({
                               {String(b.subtitle)}
                             </span>
                           ) : null}
-                        </Link>
+                        </PortalWingSponsorTrackedLink>
                       </li>
                     );
                   })}
@@ -682,6 +689,7 @@ export default function Portal2026View({
             locale={locale}
             isLoggedIn={isLoggedIn}
             thaiBalance={viewerThaiHall?.balance ?? null}
+            portalQuickBanners={portalQuickBanners}
           />
           <PortalMissionHub
             locale={locale}

@@ -1,6 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
+import { TjBrandElephantMark } from '@/components/brand/TjBrandElephantMark';
 import { getClientSiteDisplayName } from '@/lib/site-brand/resolveSiteDisplayName';
 
 const shell: CSSProperties = {
@@ -78,7 +79,7 @@ export function SystemRecoveringSurface({ variant, error, onRetry }: Props) {
       <div style={shell}>
         <div style={glass}>
           <div style={badge}>
-            <span aria-hidden>◆</span>
+            <TjBrandElephantMark size={14} animate="breathe" />
             시스템 복구 중
           </div>
           <h1 style={{ margin: '16px 0 10px', fontSize: '1.35rem', fontWeight: 800, color: '#f8fafc' }}>
@@ -139,7 +140,7 @@ export function SystemRecoveringSurface({ variant, error, onRetry }: Props) {
         <button
           type="button"
           onClick={() => onRetry()}
-          className="mt-8 rounded-full border border-sky-400/45 bg-linear-to-b from-sky-500/35 to-blue-600/20 px-8 py-3 text-sm font-bold text-sky-100 transition hover:from-sky-500/45"
+          className="mt-8 min-h-[44px] rounded-full border border-sky-400/45 bg-linear-to-b from-sky-500/35 to-blue-600/20 px-8 py-3 text-sm font-bold text-sky-100 transition hover:from-sky-500/45"
         >
           다시 시도
         </button>

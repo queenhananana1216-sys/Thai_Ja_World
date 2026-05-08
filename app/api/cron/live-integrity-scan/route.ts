@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { isCronAuthorized } from '@/lib/cronAuth';
 import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
+import { notifyOwnerOmniCritical } from '@/lib/ops/ownerOmniHotline';
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -15,8 +16,20 @@ type PageProbe = {
   error?: string;
 };
 
-const PAGE_TARGETS = ['/', '/news', '/tips', '/korean-biz', '/community/boards', '/auth/login'] as const;
-const SLOW_API_MS = 3000;
+const PAGE_TARGETS = [
+  '/',
+  '/news',
+  '/tips',
+  '/korean-biz',
+  '/community/boards',
+  '/boards',
+  '/local',
+  '/shop',
+  '/minihome',
+  '/auth/login',
+] as const;
+/** 길목 혼잡 감지 민감도 상향 — 과부하 신호 시 곧바로 degraded·힐 루트 */
+const SLOW_API_MS = 2600;
 
 function siteBase(): string {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'http://127.0.0.1:3000';
@@ -175,6 +188,34 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         auto_heal_note: autoHealNote ?? '',
       },
     });
+
+    const notifyWorthy =
+      status === 'error' ||
+      routeFailCount > 0 ||
+      writeFailCount > 0 ||
+      cookieFailCount > 0 ||
+      slowApiCount >= 3;
+    if (notifyWorthy) {
+      const failing = pageResults.filter((p) => !p.ok || p.latency_ms > SLOW_API_MS);
+      const detailLines = failing
+        .slice(0, 12)
+        .map((p) => `${p.path} status=${String(p.status)} ${p.latency_ms}ms ${p.error ?? ''}`.trim())
+        .join(' | ');
+      const fpBase = `e2e:${status}:${failing.map((p) => `${p.path}:${p.status ?? 'x'}`).join(';')}`;
+      const fingerprint = fpBase.length > 240 ? fpBase.slice(0, 240) : fpBase;
+      try {
+        await notifyOwnerOmniCritical({
+          kind: 'e2e_integrity',
+          fingerprint,
+          detail:
+            `길목 스캔: ${status}. slow_api=${slowApiCount} route_fail=${routeFailCount} write_fail=${writeFailCount} cookie_fail=${cookieFailCount}. ` +
+            `heal=${autoHealTriggered} ${autoHealNote ?? ''}. ` +
+            `샘플: ${detailLines.slice(0, 900)}`,
+        });
+      } catch (e) {
+        console.warn('[live-integrity-scan] owner notify failed:', e);
+      }
+    }
   }
 
   if (isServiceRoleConfigured()) {

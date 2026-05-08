@@ -1,6 +1,9 @@
+'use client';
+
 /**
  * Tailwind·CSS 청크 실패와 무관하게 보이도록 인라인 스타일만 사용 (첫 페인트 보험)
  */
+import { TjBrandElephantMark } from '@/components/brand/TjBrandElephantMark';
 import { getClientSiteDisplayName } from '@/lib/site-brand/resolveSiteDisplayName';
 
 export default function PortalHomeSuspenseFallback() {
@@ -30,8 +33,8 @@ export default function PortalHomeSuspenseFallback() {
           color: '#f8fafc',
         }}
       >
-        <span style={{ fontSize: '1.85rem', lineHeight: 1 }} aria-hidden>
-          🐘
+        <span style={{ display: 'inline-flex', flexShrink: 0 }} aria-hidden>
+          <TjBrandElephantMark size={32} animate="breathe" />
         </span>
         <span
           style={{

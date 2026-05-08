@@ -114,7 +114,7 @@ export default function MobileBottomNav() {
                 prefetch={true}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex min-w-0 max-w-[20%] flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 py-1 text-center text-[10px] font-semibold leading-tight transition-colors',
+                  'flex min-h-[44px] min-w-0 max-w-[20%] flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 py-1 text-center text-[10px] font-semibold leading-tight transition-colors',
                   active ? 'text-emerald-400' : 'text-gray-400 active:text-gray-200',
                 )}
               >

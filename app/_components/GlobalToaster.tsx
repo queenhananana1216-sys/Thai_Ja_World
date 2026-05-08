@@ -1,6 +1,6 @@
 'use client';
 
-import { Toaster } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 
 /** 홈·포털 등 `/boards` 바깥에서도 동일 토스트 UX */
 export default function GlobalToaster() {

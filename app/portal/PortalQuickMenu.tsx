@@ -2,6 +2,8 @@ import GuestGateLink from '@app/_components/GuestGateLink';
 import ThaiQuickWalletStrip from '@app/_components/ThaiQuickWalletStrip';
 import { ReportQuickMenuTile } from '@app/_components/ReportModal';
 import { ThbKrwQuickMenuTile } from '@app/_components/ThbKrwBottomSheet';
+import { SponsorQuickMenuTile } from '@/components/banners/SponsorQuickMenuTile';
+import type { PublicBanner } from '@/lib/banners/types';
 import type { Locale } from '@/i18n/types';
 import { getPortal2026Copy } from '@/i18n/portal2026Copy';
 import styles from './portal-2026.module.css';
@@ -57,9 +59,16 @@ type PortalQuickMenuProps = {
   isLoggedIn: boolean;
   /** 로그인 시 헤더와 동일 계열 — 보유 타이 THAI(SSR 스냅샷) */
   thaiBalance?: number | null;
+  /** 쿠키 기반 타겟 정렬 후 1번·7번 퀵 칸 매출 타일 (`premium_banners` placement) */
+  portalQuickBanners?: { tile1: PublicBanner | null; tile7: PublicBanner | null };
 };
 
-export default function PortalQuickMenu({ locale, isLoggedIn, thaiBalance = null }: PortalQuickMenuProps) {
+export default function PortalQuickMenu({
+  locale,
+  isLoggedIn,
+  thaiBalance = null,
+  portalQuickBanners,
+}: PortalQuickMenuProps) {
   const copy = getPortal2026Copy(locale);
   const aria =
     locale === 'th' ? 'เมนูด่วนโพร์ทัล' : locale === 'ko' ? '포털 퀵 메뉴' : 'Portal quick menu';
@@ -74,7 +83,32 @@ export default function PortalQuickMenu({ locale, isLoggedIn, thaiBalance = null
           <ThaiQuickWalletStrip locale={locale} initialBalance={thaiBalance ?? null} />
         ) : null}
         <ul className="grid grid-cols-4 gap-2 md:grid-cols-5 md:gap-2.5">
-          {orderedQuickColumns(copy).map((board) => {
+          {orderedQuickColumns(copy).map((board, idx) => {
+            const gridPos = idx + 1;
+            if (gridPos === 1 && portalQuickBanners?.tile1) {
+              return (
+                <li key={`tj-pq-slot-1-${portalQuickBanners.tile1.id}`} className="min-w-0">
+                  <SponsorQuickMenuTile
+                    banner={portalQuickBanners.tile1}
+                    placement="portal_quick_1"
+                    locale={locale}
+                    isLoggedIn={isLoggedIn}
+                  />
+                </li>
+              );
+            }
+            if (gridPos === 7 && portalQuickBanners?.tile7) {
+              return (
+                <li key={`tj-pq-slot-7-${portalQuickBanners.tile7.id}`} className="min-w-0">
+                  <SponsorQuickMenuTile
+                    banner={portalQuickBanners.tile7}
+                    placement="portal_quick_7"
+                    locale={locale}
+                    isLoggedIn={isLoggedIn}
+                  />
+                </li>
+              );
+            }
             if (board.key === 'fxRate') {
               const label = quickMenuLabel(locale, board.key, board.title);
               return <ThbKrwQuickMenuTile key={board.key} locale={locale} label={label} />;

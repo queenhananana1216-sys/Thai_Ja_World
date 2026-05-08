@@ -25,7 +25,9 @@ export const adminNavSections: AdminNavSection[] = [
       { href: '/admin/local-template', label: '미니홈 템플릿', icon: '✨' },
       { href: '/admin/local-showcase', label: '로컬 쇼케이스', icon: '🏪' },
       { href: '/admin/korean-biz-submissions', label: '한인 업소 제보', icon: '🏢' },
+      { href: '/admin/biz-management', label: '생활망 마스터', icon: '🧭' },
       { href: '/admin/biz-audit', label: '한인망 감사', icon: '🛰️' },
+      { href: '/admin/advertiser-insights', label: '광고 인사이트', icon: '📈' },
     ],
   },
   {

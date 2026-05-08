@@ -37,6 +37,8 @@ const PLACEMENT_OPTIONS: { v: BannerPlacement; l: string }[] = [
   { v: 'wing_right', l: '우측 윙 (≥1024px)' },
   { v: 'header_side', l: '헤더 옆 (검색 옆)' },
   { v: 'in_content', l: '본문 사이' },
+  { v: 'portal_quick_1', l: '포털 퀵메뉴 1번 타일' },
+  { v: 'portal_quick_7', l: '포털 퀵메뉴 7번 타일' },
 ];
 
 const ROUTE_GROUP_OPTIONS: { v: BannerRouteGroup; l: string }[] = [
@@ -628,7 +630,7 @@ export default function PremiumBannersClient({ rows }: { rows: PremiumBannerRow[
             </div>
 
             <label style={fieldStyle}>
-              <span style={labelSpan}>확장 JSON (선택 · campaign_id / alt_ko / alt_th)</span>
+              <span style={labelSpan}>확장 JSON (타겟: target_intents + campaign 등)</span>
               <textarea
                 value={form.extra_json}
                 onChange={(e) => setForm({ ...form, extra_json: e.target.value })}
@@ -639,6 +641,10 @@ export default function PremiumBannersClient({ rows }: { rows: PremiumBannerRow[
                   fontSize: 12,
                 }}
               />
+              <span style={{ ...labelSpan, fontWeight: 500, opacity: 0.78 }}>
+                예: <code style={{ fontSize: 11 }}>{`{"target_intents":["real_estate","news"]}`}</code> — 방문
+                패턴 쿠키와 맞을수록 홈 스트립·윙에서 우선 노출됩니다.
+              </span>
             </label>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>

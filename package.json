@@ -34,6 +34,7 @@
   },
   "dependencies": {
     "@fontsource-variable/nunito": "^5.2.7",
+    "@fontsource/pretendard": "^5.2.5",
     "@github/copilot-sdk": "^0.2.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@react-google-maps/api": "^2.20.8",

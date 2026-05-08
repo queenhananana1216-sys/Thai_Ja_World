@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { fetchHomeLeftRailBanners } from './home-queries';
+import { LeftRailBannerItem } from './LeftRailBannerItem';
 import styles from './home-hub.module.css';
 import { normalizeContainerText } from '@/lib/text/normalizeDisplayText';
 
@@ -32,9 +32,15 @@ export async function HomeLeftRailBanners() {
             );
           }
           return (
-            <Link key={b.id} href={href} className={styles.leftRailCard} target="_blank" rel="noopener noreferrer">
+            <LeftRailBannerItem
+              key={b.id}
+              bannerId={b.id}
+              bannerTitle={normalizeContainerText(b.title, 80)}
+              href={href}
+              className={styles.leftRailCard}
+            >
               {inner}
-            </Link>
+            </LeftRailBannerItem>
           );
         })}
       </nav>

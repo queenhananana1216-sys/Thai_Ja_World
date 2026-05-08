@@ -6,9 +6,12 @@ import { sendLineNotifyMessage } from '@/lib/orders/lineNotify';
 const DEDUPE_MS = 120_000;
 const HOTLINE_TARGET_ID = '00000000-0000-0000-0000-000000000001';
 
-export const OWNER_OMNI_CRITICAL_PREFIX = '🚨 [긴급] 글쓰기 로직 뻗음! 즉시 복구 요망!';
+const BRAND = '태국에, 살자';
 
-export type OwnerOmniHotlineKind = 'shadow_qa' | 'ui_render';
+export type OwnerOmniHotlineKind = 'shadow_qa' | 'ui_render' | 'e2e_integrity';
+
+/** 하위 호환 — 문구만 브랜드 톤으로 교체됨 */
+export const OWNER_OMNI_CRITICAL_PREFIX = `🐘 [${BRAND}] 커뮤니티 흐름에 잠시 걸림이 있어요. 곧 다시 편안한 화면으로 돌아옵니다.`;
 
 async function recentDuplicateAlert(fingerprint: string): Promise<boolean> {
   const admin = createServiceRoleClient();
@@ -51,7 +54,9 @@ async function sendSlack(text: string): Promise<void> {
     await fetch(webhook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: `*[Living in Thai Omni]*\n${text.slice(0, 3500)}` }),
+      body: JSON.stringify({
+        text: `*[${BRAND} · 요새 소식]* 🐘\n${text.slice(0, 3500)}`,
+      }),
     });
   } catch (e) {
     console.warn('[ownerOmniHotline] slack failed:', e);
@@ -59,7 +64,7 @@ async function sendSlack(text: string): Promise<void> {
 }
 
 /**
- * 쉐도우 QA 실패·UI 렌더 실패 시 오너 LINE(및 Slack) 핫라인. 2분 내 동일 fingerprint 는 중복 전송 안 함.
+ * 광장·화면 이슈 시 오너 LINE/Slack — 기계어 대신 생활 포털 톤, 2분 내 동일 지문은 생략.
  */
 export async function notifyOwnerOmniCritical(params: {
   kind: OwnerOmniHotlineKind;
@@ -76,17 +81,25 @@ export async function notifyOwnerOmniCritical(params: {
     return;
   }
 
+  const headline =
+    kind === 'e2e_integrity'
+      ? `🐘 [${BRAND}] 길목이 한때 붐볐어요 · 순찰이 지켜본 내용입니다`
+      : OWNER_OMNI_CRITICAL_PREFIX;
+
   const kindLabel =
     kind === 'shadow_qa'
-      ? '쉐도우 QA(board_posts·프론트 순찰)'
-      : 'UI 렌더링(클라이언트 Error Boundary)';
+      ? '광장 순찰(글과 화면이 잘 연결되는지)'
+      : kind === 'e2e_integrity'
+        ? '한 시간마다 도는 라이브 순찰(느린 길·끊긴 페이지)'
+        : '화면 복구(Error Boundary 가 포착한 내용)';
+
   const body = [
-    OWNER_OMNI_CRITICAL_PREFIX,
+    headline,
     '',
-    `유형: ${kindLabel}`,
-    `상세: ${detail.slice(0, 500)}`,
+    `무슨 일이었나요: ${kindLabel}`,
+    `자세히: ${detail.slice(0, 500)}`,
     '',
-    `시각(UTC): ${new Date().toISOString()}`,
+    `(UTC) ${new Date().toISOString()}`,
   ].join('\n');
 
   const parallel: Promise<unknown>[] = [sendSlack(body)];

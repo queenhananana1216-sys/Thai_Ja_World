@@ -1,6 +1,11 @@
 import type { ReactNode } from 'react';
+import { cookies } from 'next/headers';
 import { WingBanners } from './WingBanners';
 import { listPremiumBanners } from '@/lib/banners/listPremiumBanners';
+import {
+  parseSponsorSignalsCookie,
+  TJ_SPONSOR_SIGNALS_COOKIE,
+} from '@/lib/banners/sponsorIntentSignals';
 import type { BannerRouteGroup } from '@/lib/banners/types';
 
 type Props = {
@@ -20,10 +25,16 @@ type Props = {
  * - 서버 컴포넌트 → 런타임 JS 없이 동작
  */
 export async function PortalShell({ children, routeGroup, mainMaxWidth = 768 }: Props) {
+  const cookieStore = await cookies();
+  const sponsorSignals = parseSponsorSignalsCookie(
+    cookieStore.get(TJ_SPONSOR_SIGNALS_COOKIE)?.value ?? null,
+  );
+
   const banners = await listPremiumBanners({
     placements: ['wing_left', 'wing_right'],
     routeGroups: [routeGroup],
     limitPerPlacement: 8,
+    sponsorSignals,
   });
 
   const left = banners.wing_left;

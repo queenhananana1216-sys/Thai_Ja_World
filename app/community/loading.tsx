@@ -1,3 +1,4 @@
+import { RouteLoadingBrandRibbon } from '../_components/RouteLoadingBrandRibbon';
 import { SITE_ROUTE_LOADING_PULSE } from '../_components/siteRouteLoadingPulse';
 
 /**
@@ -8,6 +9,7 @@ export default function CommunityLoading() {
   return (
     <div className="site-container min-h-[min(68vh,680px)] px-4 py-5" role="status" aria-live="polite">
       <p className="sr-only">커뮤니티 콘텐츠를 불러오는 중입니다.</p>
+      <RouteLoadingBrandRibbon />
       <div className={`${b} mb-4 h-14 w-full max-w-3xl`} />
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1 space-y-2.5">

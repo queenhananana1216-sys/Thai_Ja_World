@@ -51,6 +51,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       message: message || '(empty)',
       digest,
       pathname,
+      incident_kind: typeof o.incident_kind === 'string' ? o.incident_kind.slice(0, 64) : null,
       at: new Date().toISOString(),
     },
   });

@@ -104,6 +104,10 @@ export type Portal2026Copy = {
   fortuneFetchingWittyC: string;
   fortuneRetryCta: string;
   fortuneTransientHint: string;
+  /** 캐시된 오늘 카드 표시 중 백그라운드 재검증 */
+  fortuneStaleRevalidateNote: string;
+  /** 실패 시 자동 재시도 중 안내(수동 재시도 없이) */
+  fortuneAutoRetryNote: string;
   /** 개인화·공동 미션 허브 */
   missionHubPersonalTitle: string;
   missionHubPersonalLoginHint: string;
@@ -206,6 +210,9 @@ const ko: Portal2026Copy = {
   fortuneRetryCta: '다시 받아보기',
   fortuneTransientHint:
     '잠깐 길목이 혼잡했어요. 아래 버튼으로 재시도하거나, 조금 뒤에 다시 열어 보세요.',
+  fortuneStaleRevalidateNote:
+    '이전에 받은 오늘의 카드를 보여 드려요. 서버가 곧 따라올 때까지 그대로 두었어요.',
+  fortuneAutoRetryNote: '연결을 자동으로 다시 시도 중이에요. 잠시만 기다려 주세요.',
   missionHubPersonalTitle: '오늘 나만의 미션',
   missionHubPersonalLoginHint: '로그인하면 활동 기반 맞춤 미션이 매일 표시됩니다.',
   missionHubPersonalEmpty: '오늘 미션을 준비하는 중이에요. 잠시 후 새로고침해 보세요.',
@@ -305,6 +312,9 @@ const th: Portal2026Copy = {
   fortuneFetchingWittyC: '📡 กำลังเช็คเวลาไทยกับเซิร์ฟเวอร์เพื่อเช็คอินรายวัน!',
   fortuneRetryCta: 'ลองอีกครั้ง',
   fortuneTransientHint: 'ตอนนี้คิวหน่วงนิดหน่อย แตะลองใหม่ หรือกลับมาใหม่ในอึดใจ',
+  fortuneStaleRevalidateNote:
+    'แสดงการ์ดวันนี้ที่เคยได้รับไว้ — ระบบจะซิงก์เซิร์ฟเวอร์ให้เอง',
+  fortuneAutoRetryNote: 'กำลังลองเชื่อมต่อใหม่อัตโนมัติ รอสักครู่นะคะ',
   missionHubPersonalTitle: 'ภารกิจวันนี้ของคุณ',
   missionHubPersonalLoginHint: 'ล็อกอินเพื่อรับภารกิจรายวันตามพฤติกรรม',
   missionHubPersonalEmpty: 'กำลังเตรียมภารกิจ — ลองรีเฟรชอีกครั้ง',

@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import type { Locale } from '@/i18n/types';
@@ -11,7 +11,72 @@ import type { PortalDailySparkPayload } from '@/lib/portal/portalDailySpark';
 import { normalizeFortuneRpcPayload } from '@/lib/fortune/fortuneRpcPayload';
 import styles from './portal-2026.module.css';
 
-const FETCH_TRIES = 3;
+const FETCH_TRIES = 5;
+const AUTO_RETRY_MS = 26_000;
+const FORTUNE_LS = 'tj.portalDailyFortune.v2';
+
+type FortuneCacheV2 = {
+  v: 2;
+  dateKey: string;
+  locale: string;
+  tipBody: string;
+  tipHref: string | null;
+  rewardAmount: number;
+};
+
+function bangkokDateKey(): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+function readFortuneCache(locale: string): FortuneCacheV2 | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(FORTUNE_LS);
+    if (!raw) return null;
+    const j = JSON.parse(raw) as FortuneCacheV2;
+    if (j?.v !== 2 || typeof j.tipBody !== 'string' || !j.tipBody.trim()) return null;
+    if (j.dateKey !== bangkokDateKey()) return null;
+    if (j.locale !== locale) return null;
+    return j;
+  } catch {
+    return null;
+  }
+}
+
+function writeFortuneCache(locale: string, payload: Omit<FortuneCacheV2, 'v' | 'dateKey' | 'locale'>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const row: FortuneCacheV2 = {
+      v: 2,
+      dateKey: bangkokDateKey(),
+      locale,
+      ...payload,
+    };
+    localStorage.setItem(FORTUNE_LS, JSON.stringify(row));
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+function reportFortunePathCongestion(pathname: string): void {
+  void fetch('/api/health/report-ui-error', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      source: 'fortune_path_congestion',
+      incident_kind: 'fortune_path_congestion',
+      message:
+        'Daily fortune: retries exhausted, no Bangkok-date cache — user-facing congestion state.',
+      digest: 'fortune_path_congestion:v2',
+      pathname,
+    }),
+  }).catch(() => {});
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -52,8 +117,10 @@ export default function PortalDailyFortune({
   dailySpark?: PortalDailySparkPayload | null;
 }) {
   const router = useRouter();
+  const pathname = usePathname() ?? '/';
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [revalidating, setRevalidating] = useState(false);
   const [tipBody, setTipBody] = useState<string | null>(null);
   const [rewardAmount, setRewardAmount] = useState<number | null>(null);
   const [showRewardAnim, setShowRewardAnim] = useState(false);
@@ -61,6 +128,7 @@ export default function PortalDailyFortune({
   const [tipHref, setTipHref] = useState<string | null>(null);
   const [needsRetryUi, setNeedsRetryUi] = useState(false);
   const [witIdx, setWitIdx] = useState(0);
+  const incidentSentRef = useRef(false);
 
   const wittyLines = useMemo(
     () => [copy.fortuneFetchingWittyA, copy.fortuneFetchingWittyB, copy.fortuneFetchingWittyC],
@@ -74,7 +142,9 @@ export default function PortalDailyFortune({
     setAlreadyMode(false);
     setTipHref(null);
     setNeedsRetryUi(false);
+    setRevalidating(false);
     setWitIdx(0);
+    incidentSentRef.current = false;
   }, []);
 
   const shutAndReset = useCallback(() => {
@@ -92,137 +162,196 @@ export default function PortalDailyFortune({
     return () => clearInterval(id);
   }, [busy, open, wittyLines.length]);
 
-  const runFortune = useCallback(async () => {
-    setBusy(true);
-    setNeedsRetryUi(false);
-    resetModal();
+  /** 백그라운드 자동 재시도 — 수동「다시 받아보기」없이 복구 시도 */
+  useEffect(() => {
+    if (!open || !needsRetryUi) return;
+    const id = setInterval(() => {
+      void runFortuneRef.current?.();
+    }, AUTO_RETRY_MS);
+    return () => clearInterval(id);
+  }, [open, needsRetryUi]);
 
-    try {
-      attemptLoop: for (let attempt = 0; attempt < FETCH_TRIES; attempt++) {
-        let res: Response;
-        try {
-          res = await fetch('/api/fortune/daily', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ locale }),
-            signal: AbortSignal.timeout(26000),
-          });
-        } catch {
-          if (attempt < FETCH_TRIES - 1) {
-            await sleep(380 * (attempt + 1));
-            continue;
-          }
-          toast.error(copy.fortuneErrorNetwork, { position: 'top-center' });
-          setNeedsRetryUi(true);
-          break attemptLoop;
-        }
+  const runFortuneRef = useRef<
+    ((opts?: { bootstrapCache?: FortuneCacheV2 | null }) => Promise<void>) | undefined
+  >(undefined);
 
-        const text = await res.text();
-        let parsed: unknown = null;
-        try {
-          parsed = text ? (JSON.parse(text) as unknown) : null;
-        } catch {
-          parsed = null;
-        }
-        const norm = normalizeFortuneRpcPayload(parsed);
+  const runFortune = useCallback(
+    async (opts?: { bootstrapCache?: FortuneCacheV2 | null }) => {
+      const bootstrap = opts?.bootstrapCache ?? null;
+      const hadBootstrap = Boolean(bootstrap);
+      const silent = hadBootstrap;
 
-        if (!res.ok && norm && norm.ok === false && norm.reason === 'NOT_AUTHENTICATED') {
-          toast.error(copy.fortuneLoginToast, { position: 'top-center' });
-          shutAndReset();
-          router.push('/login');
-          return;
-        }
-
-        if (!res.ok) {
-          const failReason =
-            norm && norm.ok === false && typeof norm.reason === 'string' ? norm.reason : '';
-          const transient = isTransientFortuneFailure(res, norm, text);
-          if (transient && attempt < FETCH_TRIES - 1) {
-            await sleep(380 * (attempt + 1));
-            continue;
-          }
-          if (
-            failReason === 'RPC_ERROR' ||
-            failReason === 'TIMEOUT' ||
-            failReason === 'EMPTY_RESPONSE' ||
-            failReason === 'PARSE_ERROR' ||
-            failReason === 'EMPTY_OR_SHAPE'
-          ) {
-            toast.error(copy.fortuneErrorServer, { position: 'top-center' });
-            setNeedsRetryUi(true);
-            break attemptLoop;
-          }
-          if (!text.trim() || parsed === null) {
-            toast.error(copy.fortuneErrorNetwork, { position: 'top-center' });
-            setNeedsRetryUi(true);
-            break attemptLoop;
-          }
-          toast.error(copy.fortuneErrorGeneric, { position: 'top-center' });
-          setNeedsRetryUi(true);
-          break attemptLoop;
-        }
-
-        if (!norm) {
-          if (attempt < FETCH_TRIES - 1 && isTransientFortuneFailure(res, norm, text)) {
-            await sleep(380 * (attempt + 1));
-            continue;
-          }
-          toast.error(copy.fortuneErrorServer, { position: 'top-center' });
-          setNeedsRetryUi(true);
-          break attemptLoop;
-        }
-
-        if (norm.ok === true) {
-          const tipRaw = norm.tip;
-          const body = typeof tipRaw?.body === 'string' ? tipRaw.body.trim() : '';
-          const amt = typeof norm.amount === 'number' && Number.isFinite(norm.amount) ? norm.amount : 0;
-          const sid = typeof tipRaw?.sourcePostId === 'string' ? tipRaw.sourcePostId.trim() : '';
-          if (!body && !sid) {
-            toast.error(copy.fortuneErrorServer, { position: 'top-center' });
-            setNeedsRetryUi(true);
-            break attemptLoop;
-          }
-          setTipBody(body || copy.fortuneTipFallback);
-          setRewardAmount(amt);
-          setTipHref(sid ? `/tips/${encodeURIComponent(sid)}` : null);
-          requestAnimationFrame(() => {
-            setShowRewardAnim(true);
-          });
-          break attemptLoop;
-        }
-
-        const reason = norm.reason;
-        if (reason === 'ALREADY_CLAIMED') {
-          setAlreadyMode(true);
-          break attemptLoop;
-        }
-        if (reason === 'NO_TIPS') {
-          toast.error(copy.fortuneNoTips, { position: 'top-center' });
-          shutAndReset();
-          break attemptLoop;
-        }
-        if (reason === 'CONFIG_INVALID') {
-          toast.error(copy.fortuneConfigError, { position: 'top-center' });
-          shutAndReset();
-          break attemptLoop;
-        }
-        if (reason === 'PROFILE_NOT_FOUND') {
-          toast.error(copy.fortuneErrorGeneric, { position: 'top-center' });
-          shutAndReset();
-          break attemptLoop;
-        }
-        toast.error(copy.fortuneErrorGeneric, { position: 'top-center' });
-        setNeedsRetryUi(true);
-        break attemptLoop;
+      if (hadBootstrap) {
+        setRevalidating(true);
+      } else {
+        setBusy(true);
+        setNeedsRetryUi(false);
+        setTipBody(null);
+        setTipHref(null);
+        setRewardAmount(null);
       }
-    } catch {
-      toast.error(copy.fortuneErrorGeneric, { position: 'top-center' });
+
+      let claimSucceeded = false;
+      let sawAlreadyClaimed = false;
+      let abortedToLogin = false;
+
+      try {
+        attemptLoop: for (let attempt = 0; attempt < FETCH_TRIES; attempt++) {
+          let res: Response;
+          try {
+            res = await fetch('/api/fortune/daily', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ locale }),
+              signal: AbortSignal.timeout(26000),
+            });
+          } catch {
+            if (attempt < FETCH_TRIES - 1) {
+              await sleep(380 * (attempt + 1));
+              continue;
+            }
+            if (!silent) {
+              toast.error(copy.fortuneErrorNetwork, { position: 'top-center' });
+            }
+            break attemptLoop;
+          }
+
+          const text = await res.text();
+          let parsed: unknown = null;
+          try {
+            parsed = text ? (JSON.parse(text) as unknown) : null;
+          } catch {
+            parsed = null;
+          }
+          const norm = normalizeFortuneRpcPayload(parsed);
+
+          if (!res.ok && norm && norm.ok === false && norm.reason === 'NOT_AUTHENTICATED') {
+            if (!silent) toast.error(copy.fortuneLoginToast, { position: 'top-center' });
+            shutAndReset();
+            router.push('/login');
+            abortedToLogin = true;
+            break attemptLoop;
+          }
+
+          if (!res.ok) {
+            const failReason =
+              norm && norm.ok === false && typeof norm.reason === 'string' ? norm.reason : '';
+            const transient = isTransientFortuneFailure(res, norm, text);
+            if (transient && attempt < FETCH_TRIES - 1) {
+              await sleep(380 * (attempt + 1));
+              continue;
+            }
+            if (
+              failReason === 'RPC_ERROR' ||
+              failReason === 'TIMEOUT' ||
+              failReason === 'EMPTY_RESPONSE' ||
+              failReason === 'PARSE_ERROR' ||
+              failReason === 'EMPTY_OR_SHAPE'
+            ) {
+              if (!silent) toast.error(copy.fortuneErrorServer, { position: 'top-center' });
+              break attemptLoop;
+            }
+            if (!text.trim() || parsed === null) {
+              if (!silent) toast.error(copy.fortuneErrorNetwork, { position: 'top-center' });
+              break attemptLoop;
+            }
+            if (!silent) toast.error(copy.fortuneErrorGeneric, { position: 'top-center' });
+            break attemptLoop;
+          }
+
+          if (!norm) {
+            if (attempt < FETCH_TRIES - 1 && isTransientFortuneFailure(res, norm, text)) {
+              await sleep(380 * (attempt + 1));
+              continue;
+            }
+            if (!silent) toast.error(copy.fortuneErrorServer, { position: 'top-center' });
+            break attemptLoop;
+          }
+
+          if (norm.ok === true) {
+            const tipRaw = norm.tip;
+            const body = typeof tipRaw?.body === 'string' ? tipRaw.body.trim() : '';
+            const amt = typeof norm.amount === 'number' && Number.isFinite(norm.amount) ? norm.amount : 0;
+            const sid = typeof tipRaw?.sourcePostId === 'string' ? tipRaw.sourcePostId.trim() : '';
+            if (!body && !sid) {
+              if (!silent) toast.error(copy.fortuneErrorServer, { position: 'top-center' });
+              break attemptLoop;
+            }
+            setTipBody(body || copy.fortuneTipFallback);
+            setRewardAmount(amt);
+            setTipHref(sid ? `/tips/${encodeURIComponent(sid)}` : null);
+            writeFortuneCache(locale, {
+              tipBody: body || copy.fortuneTipFallback,
+              tipHref: sid ? `/tips/${encodeURIComponent(sid)}` : null,
+              rewardAmount: amt,
+            });
+            requestAnimationFrame(() => {
+              setShowRewardAnim(true);
+            });
+            claimSucceeded = true;
+            break attemptLoop;
+          }
+
+          const reason = norm.reason;
+          if (reason === 'ALREADY_CLAIMED') {
+            setAlreadyMode(true);
+            sawAlreadyClaimed = true;
+            break attemptLoop;
+          }
+          if (reason === 'NO_TIPS') {
+            if (!silent) toast.error(copy.fortuneNoTips, { position: 'top-center' });
+            shutAndReset();
+            break attemptLoop;
+          }
+          if (reason === 'CONFIG_INVALID') {
+            if (!silent) toast.error(copy.fortuneConfigError, { position: 'top-center' });
+            shutAndReset();
+            break attemptLoop;
+          }
+          if (reason === 'PROFILE_NOT_FOUND') {
+            if (!silent) toast.error(copy.fortuneErrorGeneric, { position: 'top-center' });
+            shutAndReset();
+            break attemptLoop;
+          }
+          if (!silent) toast.error(copy.fortuneErrorGeneric, { position: 'top-center' });
+          break attemptLoop;
+        }
+      } catch {
+        if (!silent) toast.error(copy.fortuneErrorGeneric, { position: 'top-center' });
+      } finally {
+        setBusy(false);
+        setRevalidating(false);
+      }
+
+      if (abortedToLogin) return;
+
+      if (claimSucceeded || sawAlreadyClaimed) {
+        setNeedsRetryUi(false);
+        incidentSentRef.current = false;
+        return;
+      }
+
+      const diskCache = readFortuneCache(locale);
+      if (diskCache?.tipBody?.trim()) {
+        setTipBody(diskCache.tipBody);
+        setTipHref(diskCache.tipHref);
+        setRewardAmount(diskCache.rewardAmount);
+        setNeedsRetryUi(false);
+        incidentSentRef.current = false;
+        return;
+      }
+
       setNeedsRetryUi(true);
-    } finally {
-      setBusy(false);
-    }
-  }, [locale, router, copy, resetModal, shutAndReset]);
+      if (!incidentSentRef.current) {
+        incidentSentRef.current = true;
+        reportFortunePathCongestion(pathname);
+      }
+    },
+    [locale, router, copy, shutAndReset, pathname],
+  );
+
+  runFortuneRef.current = runFortune;
 
   const onOpenClick = useCallback(() => {
     if (!isLoggedIn) {
@@ -230,9 +359,23 @@ export default function PortalDailyFortune({
       router.push('/login');
       return;
     }
+    const cached = readFortuneCache(locale);
+    if (cached) {
+      setTipBody(cached.tipBody);
+      setTipHref(cached.tipHref);
+      setRewardAmount(cached.rewardAmount);
+      setNeedsRetryUi(false);
+      setAlreadyMode(false);
+      setShowRewardAnim(false);
+      incidentSentRef.current = false;
+    } else {
+      resetModal();
+    }
     setOpen(true);
-    void runFortune();
-  }, [isLoggedIn, router, copy.fortuneLoginToast, runFortune]);
+    void runFortune({ bootstrapCache: cached });
+  }, [isLoggedIn, router, copy.fortuneLoginToast, locale, resetModal, runFortune]);
+
+  const hasContentShell = Boolean(tipBody?.trim()) || Boolean(tipHref) || rewardAmount != null;
 
   const modal =
     open && typeof document !== 'undefined'
@@ -241,7 +384,7 @@ export default function PortalDailyFortune({
             className={styles.fortuneBackdrop}
             role="presentation"
             onClick={(e) => {
-              if (e.target === e.currentTarget && !busy) close();
+              if (e.target === e.currentTarget && !busy && !revalidating) close();
             }}
           >
             <div
@@ -255,28 +398,24 @@ export default function PortalDailyFortune({
                 {copy.fortuneModalTitle}
               </h3>
 
-              {busy ? (
+              {busy && !hasContentShell ? (
                 <div className={styles.fortuneSkeletonWrap}>
                   <p className={styles.fortuneMuted}>{wittyLines[witIdx % wittyLines.length]}</p>
                   <div className={styles.fortuneShimmerBar} aria-hidden />
                   <div className={styles.fortuneShimmerBarShort} aria-hidden />
                 </div>
-              ) : needsRetryUi ? (
+              ) : needsRetryUi && !hasContentShell ? (
                 <div className={styles.fortuneRetryGlass}>
                   <p>{copy.fortuneTransientHint}</p>
-                  <button
-                    type="button"
-                    className={styles.fortuneRetryBtn}
-                    onClick={() => void runFortune()}
-                    disabled={busy}
-                  >
-                    {copy.fortuneRetryCta}
-                  </button>
+                  <p className={styles.fortuneMuted}>{copy.fortuneAutoRetryNote}</p>
                 </div>
               ) : alreadyMode ? (
                 <p className={styles.fortuneAlready}>{copy.fortuneAlreadyClaimed}</p>
               ) : (
                 <>
+                  {revalidating ? (
+                    <p className={`${styles.fortuneMuted} text-xs mb-2`}>{copy.fortuneStaleRevalidateNote}</p>
+                  ) : null}
                   <div className={styles.fortuneCookie}>
                     <p className={styles.fortuneTipLabel}>{copy.fortuneTipLead}</p>
                     <p className={styles.fortuneTipBody}>{tipBody}</p>
@@ -295,6 +434,9 @@ export default function PortalDailyFortune({
                     >
                       {attendanceLine(locale, rewardAmount)}
                     </p>
+                  ) : null}
+                  {needsRetryUi && hasContentShell ? (
+                    <p className={`${styles.fortuneMuted} text-xs mt-2`}>{copy.fortuneAutoRetryNote}</p>
                   ) : null}
                 </>
               )}

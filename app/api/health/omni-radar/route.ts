@@ -16,6 +16,7 @@ import {
   checkContentPipelineStress,
   checkFortuneVitality,
   checkKoreanLivingGridNonempty,
+  checkPortalHotIssueFreshness,
   extendedVitalityAllOk,
 } from '@/lib/health/serviceVitalityProbes';
 import { checkPostsSchemaLayerRadar } from '@/lib/health/schemaLayerRadar';
@@ -27,6 +28,7 @@ import {
 import { createServiceRoleClient, isServiceRoleConfigured } from '@/lib/supabase/admin';
 import { checkSeoIndexingRadar } from '@/lib/seo/seoIndexingRadar';
 import { checkPublicHtmlShellRadar } from '@/lib/health/pageShellRenderRadar';
+import { maybeWakeUnifiedPipelineForStaleFeed } from '@/lib/health/omniPipelineWake';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -359,6 +361,7 @@ export async function GET(): Promise<NextResponse> {
     fortune_vitality,
     korean_living_grid,
     content_pipeline,
+    hot_issue_freshness,
     biz_audit_queue,
     live_integrity,
     page_shell_render,
@@ -378,10 +381,15 @@ export async function GET(): Promise<NextResponse> {
     checkFortuneVitality(),
     checkKoreanLivingGridNonempty(),
     checkContentPipelineStress(),
+    checkPortalHotIssueFreshness(),
     checkBizAuditQueueRadar(),
     scanRecentLiveIntegrity(),
     checkPublicHtmlShellRadar(),
   ]);
+
+  if (!hot_issue_freshness.skipped && !hot_issue_freshness.ok) {
+    maybeWakeUnifiedPipelineForStaleFeed(hot_issue_freshness.error ?? 'hot_issue_stale');
+  }
 
   const chaos_monkey = {
     ...chaos_base,
@@ -393,17 +401,25 @@ export async function GET(): Promise<NextResponse> {
   const shadow_write_ok = shadow_qa.skipped === true || shadow_qa.ok;
 
   const core_ok = database.ok && weather.ok;
-  const extended_ok = extendedVitalityAllOk(fortune_vitality, korean_living_grid, content_pipeline);
-  const live_integrity_ok = live_integrity.status === 'healthy' || live_integrity.status === 'unknown';
+  const extended_ok = extendedVitalityAllOk(
+    fortune_vitality,
+    korean_living_grid,
+    content_pipeline,
+    hot_issue_freshness,
+  );
+  const live_integrity_ok =
+    live_integrity.status === 'healthy' ||
+    (!live_integrity.scanned && live_integrity.status === 'unknown');
+  const ux_path_critical = !ui_surface.ok;
   const page_shell_ok = page_shell_render.skipped === true || page_shell_render.ok === true;
-  /** 자기 호스트 실측 — HTTP 200·DB 녹 표시등만으로 「살았다」고 보지 않음 */
+  /** 포춘·길목 혼잡 등 클라에서 보고된 UX 사고 — 최근 미해결 시 가짜 Healthy 금지 */
   const page_shell_hard_fail =
     page_shell_render.skipped !== true && page_shell_render.ok !== true;
 
   let radar_status: 'healthy' | 'degraded' | 'error';
   if (!core_ok || live_integrity.status === 'error') {
     radar_status = 'error';
-  } else if (page_shell_hard_fail) {
+  } else if (page_shell_hard_fail || ux_path_critical) {
     radar_status = 'error';
   } else if (extended_ok && live_integrity_ok) {
     radar_status = 'healthy';
@@ -436,6 +452,14 @@ export async function GET(): Promise<NextResponse> {
     if (!content_pipeline.skipped && !content_pipeline.ok) {
       degradation_errors.push(`content_pipeline: ${content_pipeline.error ?? 'fail'}`);
     }
+    if (!hot_issue_freshness.skipped && !hot_issue_freshness.ok) {
+      degradation_errors.push(`hot_issue_freshness: ${hot_issue_freshness.error ?? 'stale'}`);
+    }
+    if (live_integrity.scanned && live_integrity.status === 'unknown') {
+      degradation_errors.push(
+        `live_integrity: status=unknown (last=${live_integrity.last_checked_at ?? 'n/a'})`,
+      );
+    }
     if (live_integrity.status !== 'healthy' && live_integrity.status !== 'unknown') {
       degradation_errors.push(
         `live_integrity: slow=${live_integrity.slow_api_count ?? 0}, cookie=${live_integrity.cookie_fail_count ?? 0}, write=${live_integrity.write_fail_count ?? 0}, route=${live_integrity.route_fail_count ?? 0}`,
@@ -453,10 +477,13 @@ export async function GET(): Promise<NextResponse> {
       ? ('database_or_weather_down' as const)
       : live_integrity.status === 'error'
         ? ('live_integrity_fatal' as const)
-        : ('page_shell_render_failed' as const)) as
+        : ux_path_critical
+          ? ('ux_path_incident' as const)
+          : ('page_shell_render_failed' as const)) as
     | 'database_or_weather_down'
     | 'live_integrity_fatal'
     | 'page_shell_render_failed'
+    | 'ux_path_incident'
     | 'database_weather_pages_ok'
     | 'core_ok_extended_degraded'
     | 'live_integrity_degraded'
@@ -478,6 +505,7 @@ export async function GET(): Promise<NextResponse> {
     fortune_vitality,
     korean_living_grid,
     content_pipeline,
+    hot_issue_freshness,
     biz_audit_queue,
     live_integrity,
     page_shell_render,
@@ -533,6 +561,9 @@ export async function GET(): Promise<NextResponse> {
     errors.push(
       `live_integrity: slow=${live_integrity.slow_api_count ?? 0}, cookie=${live_integrity.cookie_fail_count ?? 0}, write=${live_integrity.write_fail_count ?? 0}, route=${live_integrity.route_fail_count ?? 0}, heal=${live_integrity.auto_heal_note ?? 'n/a'}`,
     );
+  }
+  if (ux_path_critical) {
+    errors.push(`ui_surface: ${ui_surface.error ?? 'ux_incident'}`);
   }
   if (!page_shell_ok && page_shell_render.skipped !== true) {
     errors.push(`page_shell_render: ${page_shell_render.error ?? 'probe_failed'}`);

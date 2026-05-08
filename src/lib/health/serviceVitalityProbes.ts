@@ -63,6 +63,57 @@ export async function checkKoreanLivingGridNonempty(): Promise<ServiceVitalityRe
   }
 }
 
+const HOT_ISSUE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * 포털「오늘의 핫이슈」용 공개 한국어 뉴스(processed_news) 최신 created_at 이
+ * 24시간을 넘기면 Degraded 근거 (콘텐츠 신선도).
+ */
+export async function checkPortalHotIssueFreshness(): Promise<
+  ServiceVitalityResult & { latest_created_at?: string | null; age_hours?: number }
+> {
+  if (!isServiceRoleConfigured()) {
+    return { ok: true, skipped: true, error: 'service_role_missing' };
+  }
+  try {
+    const sb = createServiceRoleClient();
+    const { data, error } = await sb
+      .from('processed_news')
+      .select('created_at')
+      .eq('published', true)
+      .eq('language', 'ko')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    const iso = data?.created_at ?? null;
+    if (!iso) {
+      return { ok: false, latest_created_at: null, error: 'no_published_ko_news' };
+    }
+    const t = new Date(iso).getTime();
+    if (!Number.isFinite(t)) {
+      return { ok: false, latest_created_at: iso, error: 'invalid_latest_timestamp' };
+    }
+    const age = Date.now() - t;
+    const age_hours = age / (1000 * 60 * 60);
+    if (age > HOT_ISSUE_MAX_AGE_MS) {
+      return {
+        ok: false,
+        latest_created_at: iso,
+        age_hours: Math.round(age_hours * 10) / 10,
+        error: `hot_issue_stale_>${Math.round(HOT_ISSUE_MAX_AGE_MS / 3600000)}h`,
+      };
+    }
+    return {
+      ok: true,
+      latest_created_at: iso,
+      age_hours: Math.round(age_hours * 10) / 10,
+    };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 /**
  * 최근 파이프라인 오류 로그(LLM 쿼터·뉴스/지식 등) 스캔.
  * 과도한 실패 또는 429/쿼터 패턴이 있으면 관제 주황( degraded ) 근거로 사용.
@@ -124,9 +175,11 @@ export function extendedVitalityAllOk(
   fortune: ServiceVitalityResult,
   korean: ServiceVitalityResult,
   content: ServiceVitalityResult,
+  hotIssue?: ServiceVitalityResult,
 ): boolean {
   const f = fortune.skipped === true || fortune.ok;
   const k = korean.skipped === true || korean.ok;
   const c = content.skipped === true || content.ok;
-  return f && k && c;
+  const h = !hotIssue || hotIssue.skipped === true || hotIssue.ok;
+  return f && k && c && h;
 }

@@ -5,7 +5,9 @@ import PostComments, { type CommentRow } from '../../community/boards/_component
 import PostReactionsPanel from '../../community/boards/_components/PostReactionsPanel';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
+import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { trimForMetaDescription } from '@/lib/seo/site';
 
 type PageProps = { params: Promise<{ postId: string }> };
@@ -41,6 +43,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: row.title,
     description: desc,
     robots: { index: true, follow: true },
+    alternates: buildHreflangAlternates(`/tips/${postId}`),
   };
 }
 
@@ -70,7 +73,8 @@ export default async function TipsTeaserPage({ params }: PageProps) {
   }
 
   const tipRow = post as TipPostRow;
-  const { data: commentsRaw } = await auth
+  const admin = createServiceRoleClient();
+  const { data: commentsRaw } = await admin
     .from('comments')
     .select('id,content,created_at,author_id')
     .eq('post_id', postId)

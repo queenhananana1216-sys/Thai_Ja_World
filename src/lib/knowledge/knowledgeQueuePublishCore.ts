@@ -8,6 +8,7 @@ import {
   parseKnowledgeCleanBody,
   validateKnowledgePublish,
 } from '@/lib/knowledge/knowledgePostBodyShared';
+import { absoluteUrl } from '@/lib/seo/site';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 type AdminClient = ReturnType<typeof createServiceRoleClient>;
@@ -29,6 +30,8 @@ export type ProcessedKnowledgeRow = {
   post_id: string | null;
   board_target: string;
   raw_knowledge: { external_url?: string } | null;
+  /** 승인 시 도토리 보상 수령 프로필(선택) */
+  contributor_profile_id?: string | null;
 };
 
 /** clean_body JSON 에서 ko/th title·summary 만 덮어쓰기 */
@@ -118,6 +121,7 @@ export async function executeKnowledgePublishOrDraft(
 ): Promise<{ ok: true; published: boolean } | { ok: false; error: string; status: number }> {
   const { row, authorId, action, fieldPatch, skipRevalidate } = params;
   const id = row.id;
+  const wasPublished = row.published === true;
   const willPublish = action === 'publish';
   const moderationStatus = willPublish ? 'safe' : 'hidden';
 
@@ -233,6 +237,34 @@ export async function executeKnowledgePublishOrDraft(
       revalidatePath(`/community/boards/${boardPostIdForRevalidate}`);
       revalidatePath(`/tips/${boardPostIdForRevalidate}`);
     }
+  }
+
+  if (willPublish && !wasPublished) {
+    const recipient = row.contributor_profile_id ? String(row.contributor_profile_id).trim() : '';
+    if (recipient) {
+      const { data: dot, error: dotErr } = await admin.rpc('dotori_reward_activity', {
+        p_profile_id: recipient,
+        p_event_type: 'content_approval',
+        p_amount: 12,
+      });
+      if (dotErr) {
+        console.warn('[dotori] content_approval RPC', dotErr.message, id);
+      } else {
+        const ok = dot && typeof dot === 'object' && 'ok' in dot && (dot as { ok?: boolean }).ok === true;
+        if (!ok) {
+          console.warn('[dotori] content_approval declined', dot, id, recipient);
+        }
+      }
+    }
+  }
+
+  if (willPublish && boardPostIdForRevalidate) {
+    const pid = boardPostIdForRevalidate;
+    const path =
+      boardTarget === 'tips_board' ? `/tips/${pid}` : `/community/boards/${pid}`;
+    void import('@/lib/seo/googleIndexing')
+      .then(({ requestGoogleIndexing }) => requestGoogleIndexing(absoluteUrl(path)))
+      .catch((e) => console.warn('[googleIndexing] knowledge publish', e));
   }
 
   return { ok: true, published: willPublish };

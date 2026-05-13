@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { titleAndSummaryFromProcessed } from '@/lib/news/processedNewsDisplay';
 import { createServerClient } from '@/lib/supabase/server';
 import { extractHostname, formatDate } from '@/lib/utils/formatDate';
@@ -15,6 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: d.home.newsTitle,
     description: d.home.newsSub,
     robots: { index: true, follow: true },
+    alternates: buildHreflangAlternates('/news'),
   };
 }
 

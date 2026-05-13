@@ -5,10 +5,12 @@ import PostAuthorMenu from '../_components/PostAuthorMenu';
 import PostComments, { type CommentRow } from '../_components/PostComments';
 import PostReactionsPanel from '../_components/PostReactionsPanel';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
+import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { categoryLabel } from '@/lib/community/postCategories';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import JsonLd from '@/lib/seo/JsonLd';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { formatDate } from '@/lib/utils/formatDate';
 
@@ -40,7 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: titleStr,
     description,
-    alternates: { canonical: url },
+    alternates: buildHreflangAlternates(`/community/boards/${postId}`),
     openGraph: {
       title: titleStr,
       description,
@@ -91,7 +93,8 @@ export default async function BoardPostDetailPage({ params }: PageProps) {
 
   const authorName = (authorRow?.display_name as string) || 'member';
 
-  const { data: rawComments } = await supabase
+  const admin = createServiceRoleClient();
+  const { data: rawComments } = await admin
     .from('comments')
     .select('id, content, created_at, author_id')
     .eq('post_id', postId)

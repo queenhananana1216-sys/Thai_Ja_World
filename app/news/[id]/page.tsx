@@ -6,8 +6,9 @@ import { createServerClient } from '@/lib/supabase/server';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
-import { newsDetailFromProcessed } from '@/lib/news/processedNewsDisplay';
+import { newsDetailFromProcessed, newsMetaDescriptionForLocale } from '@/lib/news/processedNewsDisplay';
 import JsonLd from '@/lib/seo/JsonLd';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { extractHostname, formatDate } from '@/lib/utils/formatDate';
 
@@ -49,16 +50,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     locale,
   );
 
-  const description = trimForMetaDescription(
-    [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
-  );
+  const description = newsMetaDescriptionForLocale(row.clean_body as string | null, locale, detail);
   const url = absoluteUrl(`/news/${id}`);
   const datePublished = rn?.published_at ?? (row.created_at as string);
 
   return {
     title: detail.title,
     description,
-    alternates: { canonical: url },
+    alternates: buildHreflangAlternates(`/news/${id}`),
     openGraph: {
       title: detail.title,
       description,

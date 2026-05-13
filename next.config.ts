@@ -1,7 +1,23 @@
+import fs from 'node:fs';
 import path from 'node:path';
+import { config as loadMasterEnv } from 'dotenv';
 import type { NextConfig } from 'next';
 
+const MASTER_ENV_CANDIDATES = [
+  process.env.SUPABASE_MASTER_ENV_PATH?.trim(),
+  'F:/02_Master_Keys/API_JSON/.env.docker',
+  path.join(process.env.USERPROFILE || '', '02_Master_Keys/API_JSON/.env.docker'),
+].filter((p): p is string => Boolean(p));
+
+for (const p of MASTER_ENV_CANDIDATES) {
+  if (fs.existsSync(p)) {
+    loadMasterEnv({ path: p, override: true });
+    break;
+  }
+}
+
 const nextConfig: NextConfig = {
+  output: 'standalone',
   /** 상위 폴더에 다른 package-lock 이 있을 때 추적 루트를 이 앱으로 고정 (Vercel/빌드 경고 제거) */
   outputFileTracingRoot: path.resolve(process.cwd()),
   /**
@@ -10,7 +26,6 @@ const nextConfig: NextConfig = {
    */
   outputFileTracingExcludes: {
     '*': [
-      'bestvip77/**/*',
       'my-project/**/*',
       'my-workflow-app/**/*',
       'Thai_Ja_World/**/*',

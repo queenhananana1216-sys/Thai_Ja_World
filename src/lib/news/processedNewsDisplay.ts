@@ -3,19 +3,32 @@
  */
 
 import type { Locale } from '@/i18n/types';
+import { trimForMetaDescription } from '@/lib/seo/site';
 
 export type LangBlock = {
   title?: string;
+  /** 한국어 표기 제목(쿼드 인덱싱·SEO 보조, 구 기사에는 없을 수 있음) */
+  title_kr?: string;
   summary?: string;
   blurb?: string;
+  insight_impact?: string;
+  countermeasure?: string;
   /** 편집실 한마디(요약 아래 표시). 구 기사에는 없을 수 있음 */
   editor_note?: string;
+};
+
+export type NewsSeoMeta = {
+  meta_description_ko?: string;
+  meta_description_th?: string;
+  meta_description_en?: string;
+  meta_description_zh_cn?: string;
 };
 
 export type ParsedCleanBody = {
   ko?: LangBlock;
   th?: LangBlock;
   source_url?: string;
+  seo?: NewsSeoMeta;
 };
 
 function parseCleanBodyFull(cleanBody: string | null | undefined): ParsedCleanBody {
@@ -179,4 +192,21 @@ export function newsDetailFromProcessed(
     editorNote: editorRaw,
     sourceUrl,
   };
+}
+
+/** clean_body.seo 와 로케일에 맞는 메타 description (없으면 blurb+요약 폴백). */
+export function newsMetaDescriptionForLocale(
+  cleanBody: string | null | undefined,
+  locale: Locale,
+  detail: NewsDetailParts,
+): string {
+  const parsed = parseCleanBodyFull(cleanBody);
+  const seo = parsed.seo;
+  const fb = trimForMetaDescription(
+    [detail.blurb, detail.summary].filter(Boolean).join(' ') || detail.title,
+  );
+  if (locale === 'th') {
+    return trimForMetaDescription(seo?.meta_description_th?.trim() || fb);
+  }
+  return trimForMetaDescription(seo?.meta_description_ko?.trim() || fb);
 }

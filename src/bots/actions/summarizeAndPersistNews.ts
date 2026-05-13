@@ -8,14 +8,16 @@
  * - 로컬(OpenAI 호환): LOCAL_LLM_BASE_URL (예: http://127.0.0.1:11434/v1), LOCAL_LLM_MODEL (기본 llama3.2), LOCAL_LLM_API_KEY (선택)
  * - auto: OpenAI 키 있으면 우선, 429/쿼터류 실패 시 GEMINI_API_KEY → 있으면 Gemini, 다음으로 LOCAL_LLM_BASE_URL 로컬 폴백
  * - NEWS_LLM_FETCH_RETRIES: LLM POST fetch 재시도 횟수(기본 3). "fetch failed" 류 일시 오류 완화
+ * - NEWS_LLM_JSON_RETRIES: JSON 필수 필드 누락·무의미 placeholder 시 LLM 응답 전체 재시도(기본 6, 최대 6)
  * - NEWS_SUMMARY_FALLBACK_STUB: LLM 없음/호출 실패 시 원문 메타만으로 초안(processed_news) 생성 여부.
  *   1|true|yes|on = 항상 허용, 0|false|no|off = 끔. 미설정 시 NEWS_PUBLISH_MODE 가 auto 가 아니면(manual·미설정) 켜짐.
  *
- * processed_news.clean_body: { ko: {title,summary,blurb,editor_note}, th: {...}, source_url }
+ * processed_news.clean_body: { ko: {...}, th: {...}, source_url, seo?: { meta_description_ko, ... } }
  */
 
 import { getServerSupabaseClient } from '../adapters/supabaseClient';
 import { newsInsertAsPublished } from '@/lib/news/newsPublishMode';
+import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 
 export type NewsSummaryProvider = 'openai' | 'gemini' | 'local' | 'auto';
 
@@ -112,29 +114,128 @@ function batchReadyPartial(dbError: string): SummarizeBatchResult {
   };
 }
 
+/** JSON 파싱 실패 시 내부 마커(저장 금지) — 재시도 루프에서만 사용 */
+export const NEWS_SCHEMA_EMPTY_PLACEHOLDER = 'empty-placeholder';
+
+function forbiddenNewsCopy(s: string): boolean {
+  const t = s.trim().toLowerCase();
+  if (!t) return true;
+  if (t.includes(NEWS_SCHEMA_EMPTY_PLACEHOLDER)) return true;
+  if (t.includes('내용 준비 중')) return true;
+  if (t.includes('준비 중입니다')) return true;
+  if (t === 'tbd' || t === 'n/a' || t === 'na') return true;
+  return false;
+}
+
+/** 스텁 복붙·짧은 한마디 수준의 insight/counter 는 재시도 유도 */
+function shallowKoInsightOrCountermeasure(insight: string, counter: string): boolean {
+  const i = insight.trim();
+  const c = counter.trim();
+  if (i.length < 40 || c.length < 40) return true;
+  if (i === c) return true;
+  if (i.includes('«뉴스 한 줄»') && i.includes('교민 입장에선')) return true;
+  if (c.includes('대사관·이민국·은행 공지로 교차 확인') && c.includes('아직 확정이 아닌 말은 단정하지 말고')) {
+    return true;
+  }
+  return false;
+}
+
 interface LlmBilingualPayload {
+  /** 한국어 헤드라인(표기용, ko.title 과 동기) */
+  title_kr: string;
   ko_title: string;
   ko_summary: string;
   ko_blurb: string;
+  /** 왜 중요한지·영향(한국어, 1~2문장) */
+  ko_insight_impact: string;
+  /** 이용자 관점 대응·완충(한국어, 1~2문장) */
+  ko_countermeasure: string;
   /** 편집실 톤 한마디(팩트 반복 금지). 비어 있으면 UI에 안 씀 */
   ko_editor_note: string;
   th_title: string;
   th_summary: string;
   th_blurb: string;
   th_editor_note: string;
+  /** SEO meta (optional from LLM; persist fills fallbacks) */
+  meta_description_ko?: string;
+  meta_description_th?: string;
+  meta_description_en?: string;
+  meta_description_zh_cn?: string;
 }
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0;
 }
 
+function pickSeoMetaField(o: Record<string, unknown>, key: string): string | undefined {
+  const v = o[key];
+  if (!isNonEmptyString(v)) return undefined;
+  const t = trimForMetaDescription(v.trim(), 155);
+  if (forbiddenNewsCopy(t)) return undefined;
+  return t;
+}
+
+function reKeyQuoted(key: string): string {
+  return key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** [SCHEMA REPAIRED] 깨진 JSON 본문에서 따옴표 문자열 값만 끌어옵니다. */
+function regexExtractQuoted(haystack: string, keys: string[]): string | null {
+  for (const k of keys) {
+    const re = new RegExp(`"${reKeyQuoted(k)}"\\s*:\\s*"([\\s\\S]*?)"`, 'im');
+    const m = re.exec(haystack);
+    if (m && typeof m[1] === 'string') {
+      return m[1]
+        .replace(/\\n/g, '\n')
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, '\\')
+        .trim();
+    }
+  }
+  return null;
+}
+
+function schemaRepairedFlatMap(haystack: string): Record<string, string> {
+  const g = (keys: string[]) => regexExtractQuoted(haystack, keys);
+  return {
+    title_kr: g(['title_kr', 'titleKr', 'ko_title', 'kotitle']) ?? '',
+    ko_title: g(['ko_title', 'title_kr', 'kotitle']) ?? '',
+    ko_summary: g(['ko_summary', 'summary_ko', 'koSummary']) ?? '',
+    ko_blurb: g(['ko_blurb', 'blurb_ko', 'koBlurb']) ?? '',
+    ko_insight_impact: g(['ko_insight_impact', 'insight_impact', 'koInsightImpact', 'insight']) ?? '',
+    ko_countermeasure: g(['ko_countermeasure', 'countermeasure', 'koCountermeasure', 'counter_measure']) ?? '',
+    ko_editor_note: g(['ko_editor_note', 'editor_note_ko']) ?? '',
+    th_title: g(['th_title', 'title_th']) ?? '',
+    th_summary: g(['th_summary', 'summary_th']) ?? '',
+    th_blurb: g(['th_blurb', 'blurb_th']) ?? '',
+    th_editor_note: g(['th_editor_note', 'editor_note_th']) ?? '',
+    meta_description_ko: g(['meta_description_ko', 'metaDescriptionKo']) ?? '',
+    meta_description_th: g(['meta_description_th', 'metaDescriptionTh']) ?? '',
+    meta_description_en: g(['meta_description_en', 'metaDescriptionEn']) ?? '',
+    meta_description_zh_cn: g(['meta_description_zh_cn', 'metaDescriptionZhCn', 'meta_description_zh-CN']) ?? '',
+  };
+}
+
 function parseLlmPayload(raw: unknown): LlmBilingualPayload | null {
   if (raw === null || typeof raw !== 'object') return null;
   const o = raw as Record<string, unknown>;
+  const titleKrRaw = isNonEmptyString(o.title_kr)
+    ? o.title_kr.trim()
+    : isNonEmptyString(o.ko_title)
+      ? o.ko_title.trim()
+      : '';
+  const koTitleRaw = isNonEmptyString(o.ko_title)
+    ? o.ko_title.trim()
+    : isNonEmptyString(o.title_kr)
+      ? o.title_kr.trim()
+      : '';
   if (
-    !isNonEmptyString(o.ko_title) ||
+    !titleKrRaw ||
+    !koTitleRaw ||
     !isNonEmptyString(o.ko_summary) ||
     !isNonEmptyString(o.ko_blurb) ||
+    !isNonEmptyString(o.ko_insight_impact) ||
+    !isNonEmptyString(o.ko_countermeasure) ||
     !isNonEmptyString(o.th_title) ||
     !isNonEmptyString(o.th_summary) ||
     !isNonEmptyString(o.th_blurb)
@@ -148,16 +249,43 @@ function parseLlmPayload(raw: unknown): LlmBilingualPayload | null {
   const editorClamp = 300;
   const koEd = isNonEmptyString(o.ko_editor_note) ? clamp(String(o.ko_editor_note), editorClamp) : '';
   const thEd = isNonEmptyString(o.th_editor_note) ? clamp(String(o.th_editor_note), editorClamp) : '';
-  return {
-    ko_title: o.ko_title.trim(),
+  const head = clampPlainText(titleKrRaw || koTitleRaw, 200);
+  const out: LlmBilingualPayload = {
+    title_kr: head,
+    ko_title: head,
     ko_summary: o.ko_summary.trim(),
     ko_blurb: clamp(String(o.ko_blurb), 160),
+    ko_insight_impact: clamp(String(o.ko_insight_impact), 420),
+    ko_countermeasure: clamp(String(o.ko_countermeasure), 420),
     ko_editor_note: koEd,
     th_title: o.th_title.trim(),
     th_summary: o.th_summary.trim(),
     th_blurb: clamp(String(o.th_blurb), 160),
     th_editor_note: thEd,
   };
+  if (
+    forbiddenNewsCopy(out.title_kr) ||
+    forbiddenNewsCopy(out.ko_blurb) ||
+    forbiddenNewsCopy(out.ko_insight_impact) ||
+    forbiddenNewsCopy(out.ko_countermeasure)
+  ) {
+    return null;
+  }
+  if (shallowKoInsightOrCountermeasure(out.ko_insight_impact, out.ko_countermeasure)) {
+    return null;
+  }
+  const mKo = pickSeoMetaField(o, 'meta_description_ko');
+  const mTh = pickSeoMetaField(o, 'meta_description_th');
+  const mEn = pickSeoMetaField(o, 'meta_description_en');
+  const mZh = pickSeoMetaField(o, 'meta_description_zh_cn');
+  if (!mKo || !mTh || !mEn || !mZh) {
+    return null;
+  }
+  out.meta_description_ko = mKo;
+  out.meta_description_th = mTh;
+  out.meta_description_en = mEn;
+  out.meta_description_zh_cn = mZh;
+  return out;
 }
 
 function clampPlainText(s: string, max: number): string {
@@ -180,10 +308,16 @@ function buildStubBilingualPayload(
     ? `${excerpt}\n\n—\n(자동 초안: 원문 발췌. LLM 요약 전이거나 실패했습니다. 승인 전에 다듬어 주세요.)`
     : `원문 본문이 비어 있거나 매우 짧습니다. 아래 출처를 확인한 뒤 제목·요약을 작성해 주세요.\n${sourceUrl}`;
   const errTail = llmErrorHint ? ` (${clampPlainText(llmErrorHint, 140)})` : '';
+  const stubHead = clampPlainText(head, 200);
   return {
-    ko_title: clampPlainText(head, 200),
+    title_kr: stubHead,
+    ko_title: stubHead,
     ko_summary,
     ko_blurb: clampPlainText(head, 100),
+    ko_insight_impact:
+      '교민 입장에선 «뉴스 한 줄»보다 비자·TM30·세금·환율에 닿는지가 핵심이에요. 원문·공지를 열어 실제로 바뀐 조항·날짜·대상만 짚어 적어 주세요.',
+    ko_countermeasure:
+      '아직 확정이 아닌 말은 단정하지 말고, 대사관·이민국·은행 공지로 교차 확인하는 루틴을 안내해 주세요. 급하면 현지 변호사·세무사 한 번은 기본값이에요.',
     ko_editor_note: `LLM 없음·오류로 원문 제목·발췌만으로 초안을 만들었어요.${errTail}`,
     th_title: clampPlainText(head, 200),
     th_summary:
@@ -192,11 +326,37 @@ function buildStubBilingualPayload(
         : '(อัตโนมัติ) ยังไม่มีเนื้อหาเพียงพอ — โปรดแก้ไขก่อนเผยแพร่',
     th_blurb: clampPlainText(head, 100),
     th_editor_note: 'ร่างอัตโนมัติ — แก้ภาษาไทยก่อนเผยแพร่',
+    meta_description_ko: trimForMetaDescription(`${stubHead} 태국 교민 비자 TM30 바트 환율 꿀팁`, 155),
+    meta_description_th: trimForMetaDescription(`${stubHead} ไทย วีซ่า TM30 บาท`, 155),
+    meta_description_en: trimForMetaDescription(`Thailand news draft: ${stubHead} visa TM30 baht`, 155),
+    meta_description_zh_cn: trimForMetaDescription(`泰国资讯草稿: ${stubHead} 签证 泰铢`, 155),
   };
 }
 
 const BILINGUAL_SYSTEM_PROMPT =
-  'You are a news editor for a Thailand–Korea bilingual community site "Thai Ja World". Output valid JSON only.\n\nRequired keys: ko_title, ko_summary, ko_blurb, ko_editor_note, th_title, th_summary, th_blurb, th_editor_note.\n\nRules for title/summary/blurb:\n- Do NOT invent facts. Use only what is present in the provided title/body and keep it consistent with the source URL.\n- Avoid defamation: never state uncertain allegations as confirmed facts.\n- Avoid identifying private individuals; if names are not clearly provided in the input, use neutral wording.\n- Blurbs are click-worthy but responsible: short, attention-grabbing first lines without offensive, hateful, or political persuasion content.\n\nRules for ko_editor_note and th_editor_note (VERY IMPORTANT):\n- Write AFTER the factual work is done: these are informal "desk notes" from the site editor, NOT a second summary.\n- Do NOT repeat or paraphrase ko_summary/th_summary. No new facts; reactions and tone only.\n- Korean note in natural Korean; Thai note in natural Thai (same vibe).\n- 1~3 short sentences (or one wry paragraph). Self-deprecating humor is welcome (e.g. sharing your take costs everyone a minute—only if you feel like it).\n- Gently invite conversation or a reaction; never hard-sell, no "sign up / subscribe / click now", no ads, no political rallying, no guilt-tripping.\n- Warm, human, slightly witty; avoid corporate marketing tone.\n\nOutput only the JSON object with the eight string fields.';
+  'You are a 20-year Thailand-resident Korean diaspora veteran for "Living in Thai" (Thai Ja World): visas, TM30 headaches, baht FX swings, condo rules, school runs, and "how locals actually work around it" — sharp, witty, never flippant about facts. Output valid JSON only.\n\n' +
+  'Required keys: title_kr, ko_title, ko_summary, ko_blurb, ko_insight_impact, ko_countermeasure, ko_editor_note, th_title, th_summary, th_blurb, th_editor_note, meta_description_ko, meta_description_th, meta_description_en, meta_description_zh_cn.\n\n' +
+  'Voice:\n' +
+  '- Not a wire-service rewrite: sharpen how this hits a Korean resident’s wallet, visa status, commute, school run, or peace of mind.\n' +
+  '- Wit is welcome, but never at the cost of accuracy; hedge when the source hedges.\n\n' +
+  'Rules:\n' +
+  '- title_kr and ko_title must be the same Korean headline (non-empty, no internal jargon like "metadata").\n' +
+  '- ko_insight_impact: 2 Korean sentences max, MUST tie to THIS story (fees, deadlines, enforcement tone, who gets caught first). Ban generic "life tips" that could apply to any article. No new unverified facts.\n' +
+  '- ko_countermeasure: 2 Korean sentences max, concrete next checks (which office/site/document, what to screenshot, what to ask in Thai/Korean) grounded in the source. Ban copy-paste boilerplate that could fit any headline.\n' +
+  '- ko_blurb: punchy card hook (~40–90 Korean characters vibe) that still respects defamation/safety norms.\n' +
+  '- meta_description_*: each <=155 chars, natural language, include high-intent keywords (Korean: 태국 교민 비자 TM30 바트 환율; Thai: ไทย วีซ่า TM30 บาท; English: Thailand expat visa TM30 baht FX; zh_cn: 泰国 签证 TM30 泰铢) without stuffing or false claims.\n' +
+  '- NEVER output placeholder fluff such as "내용 준비 중", "TBD", "N/A", or the literal token "' +
+  NEWS_SCHEMA_EMPTY_PLACEHOLDER +
+  '" in any field.\n' +
+  '- Do NOT invent facts. Use only what is present in the provided title/body and keep it consistent with the source URL.\n' +
+  '- Avoid defamation: never state uncertain allegations as confirmed facts.\n' +
+  '- Avoid identifying private individuals; if names are not clearly provided in the input, use neutral wording.\n\n' +
+  'Rules for ko_editor_note and th_editor_note (VERY IMPORTANT):\n' +
+  '- Desk voice AFTER facts: informal editor notes, NOT a second summary.\n' +
+  '- Do NOT repeat or paraphrase ko_summary/th_summary. No new facts.\n' +
+  '- Korean note in natural Korean; Thai note in natural Thai (same vibe).\n' +
+  '- 1~3 short sentences; warm, slightly witty; no hard-sell, no political rallying.\n\n' +
+  'Output only the JSON object with the fifteen string fields.';
 
 function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: string): string {
   return [
@@ -204,17 +364,24 @@ function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: 
     `원문 본문(없으면 빈 값): ${body?.trim() || '(없음)'}`,
     `출처 URL: ${sourceUrl}`,
     '',
-    '아래는 태국·동남아 지역과 관련된 원문 제목·본문 발췌·출처입니다. 사람이 읽기 좋은 헤드라인과 요약으로 다듬어 주세요.',
-    '원문 언어와 관계없이 아래 여덟 필드를 모두 채우세요. ko_title에는 "메타데이터" 같은 내부 용어를 넣지 마세요.',
+    '아래는 태국에 사는 한국인·교민에게 실제로 닿는 뉴스/공지 원문입니다. 20년 차 현지 생존자의 시선으로, 비자·TM30·세금·바트·안전 중 무엇에 꽂히는지부터 짚어 주세요.',
+    '원문 언어와 관계없이 아래 열다섯 필드를 모두 채우세요. title_kr·ko_title에는 "메타데이터" 같은 내부 용어를 넣지 마세요.',
+    '「내용 준비 중», "TBD", "N/A", "' + NEWS_SCHEMA_EMPTY_PLACEHOLDER + '" 같은 무의미 문자열은 절대 넣지 마세요. 모르면 원문 범위 안에서만 완충 표현을 쓰세요.',
     '반드시 아래 키만 가진 JSON 객체 한 개만 출력하세요 (다른 텍스트 금지):',
-    '{"ko_title":"","ko_summary":"","ko_blurb":"","ko_editor_note":"","th_title":"","th_summary":"","th_blurb":"","th_editor_note":""}',
-    '- ko_title: 한국어 한 줄 헤드라인(팩트 기반, 제공된 제목/본문/출처 범위 내에서만). 영어 원문 제목을 그대로 복사하지 말고 한국어로 재작성.',
+    '{"title_kr":"","ko_title":"","ko_summary":"","ko_blurb":"","ko_insight_impact":"","ko_countermeasure":"","ko_editor_note":"","th_title":"","th_summary":"","th_blurb":"","th_editor_note":"","meta_description_ko":"","meta_description_th":"","meta_description_en":"","meta_description_zh_cn":""}',
+    '- title_kr, ko_title: 동일한 한국어 한 줄 헤드라인(팩트 기반, 제공된 제목/본문/출처 범위 내에서만). 영어 원문 제목을 그대로 복사하지 말고 한국어로 재작성.',
     '- ko_summary: 한국어 2~4문장 요약. 반드시 첫 문장부터 “클릭을 부르는 훅”이 되게 작성하되, 검증되지 않은 내용(예: 확정된 범죄 여부, 특정 개인 신상, 확실하지 않은 수사 결과)은 절대 단정하지 말 것. 원문에 근거가 없으면 “보도에 따르면/관계자는/현지 매체는” 같은 완충 표현을 사용.',
     '- ko_blurb: 피드 카드에 쓰는 1문장(짧은 첫줄) 훅. 40~90자 내외. 자극적이어도 되지만 과장/허위/명예훼손/혐오/정치 선동 금지. “보도에 따르면” 같은 근거 표현을 우선.',
+    '- ko_insight_impact: 반드시 «이 기사»의 주제·주체·기한·금액·지역 중 무엇이 교민의 비자·통장·통학·출퇴근에 닿는지 구체적으로. 뉴스 한 줄과 무관한 일반론·훈계 금지.',
+    '- ko_countermeasure: 오늘·이번 주에 할 체크리스트 형태(어느 사이트/창구, 어떤 서류, 어떤 질문을 태국어로 던질지). 다른 기사에도 그대로 붙일 수 있는 상투문 금지.',
     '- ko_editor_note: 위 요약과 별개로, 운영 편집실이 남기는 짧은 한마디. 뉴스 팩트를 다시 말하지 말 것. 부담 없이 감상·댓글을 권하는 느낌 + 가벼운 위트(“생각 쓰면 서로 시간 뺏는 거 아시죠” 같은 톤도 OK). 홍보·가입 독려·무거운 설교 금지.',
     '- th_title, th_summary: 자연스러운 태국어(공손한 뉴스 톤).',
     '- th_blurb: 태국어로 같은 뉘앙스의 짧은 한마디(길이는 한국어 blurb 와 비슷하게).',
     '- th_editor_note: 태국어로 ko_editor_note 와 같은 역할·톤. 요약(th_summary) 내용을 반복하지 말 것.',
+    '- meta_description_ko: 한국어, 155자 이내, 태국 체류·비자·TM30·바트·환율 등 검색 의도 키워드를 자연스럽게 포함.',
+    '- meta_description_th: 태국어, 155자 이내, 동일 키워드 뉘앙스(วีซ่า TM30 เงินบาท 등).',
+    '- meta_description_en: English, <=155 chars, Thailand expat / visa / TM30 / baht FX angle, no fabricated facts.',
+    '- meta_description_zh_cn: Simplified Chinese, <=155 chars, 泰国生活 / 签证 / TM30 / 泰铢 등 자연스러운 표현.',
   ].join('\n');
 }
 
@@ -378,6 +545,17 @@ async function callOpenAiCompatibleChatCompletion(params: {
   return content;
 }
 
+function mergeFlatStringsIntoRecord(
+  base: Record<string, unknown>,
+  flat: Record<string, string>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...base };
+  for (const [k, v] of Object.entries(flat)) {
+    if (v && !isNonEmptyString(out[k])) out[k] = v;
+  }
+  return out;
+}
+
 function parseBilingualPayloadFromContent(content: string, label: string): LlmBilingualPayload {
   const raw = stripMarkdownJsonFence(content);
 
@@ -386,59 +564,59 @@ function parseBilingualPayloadFromContent(content: string, label: string): LlmBi
 
   const repairJson = (s: string): string => {
     let out = s.trim();
-    // 흔한 JSON 파손 패턴 완화(트레일링 콤마 등)
     out = out.replace(/,\s*([}\]])/g, '$1');
     return out;
   };
 
-  // LLM 응답이 JSON 외 텍스트를 섞는 경우가 있어,
-  // 첫 번째 JSON 객체({ ... })만 찾아서 파싱하도록 완충 처리합니다.
+  const tryFromObject = (obj: unknown, sourceTag: string): LlmBilingualPayload | null => {
+    if (obj === null || typeof obj !== 'object') return null;
+    const o0 = obj as Record<string, unknown>;
+    let pay = parseLlmPayload(o0);
+    if (pay) return pay;
+    const merged = mergeFlatStringsIntoRecord(o0, schemaRepairedFlatMap(raw));
+    pay = parseLlmPayload(merged);
+    if (pay) {
+      console.warn(`[NewsSummary] ${label}: [SCHEMA REPAIRED] ${sourceTag} — 누락 키 RegEx 보강`);
+      return pay;
+    }
+    return null;
+  };
+
   try {
     const parsed = JSON.parse(raw) as unknown;
-    const payload = parseLlmPayload(parsed);
-    if (!payload) {
-      throw new Error(`${label} JSON 스키마 불일치 (ko_/th_ 제목·요약·블러브 필수, editor_note는 선택)`);
-    }
-    return payload;
+    const ok = tryFromObject(parsed, 'flat-json');
+    if (ok) return ok;
   } catch {
-    // 1) JSON 블록이 코드펜스 밖에 섞여 있는 경우
-    // non-greedy로 첫 JSON 객체만 잡는다(평평한 flat object만 기대).
-    const m = raw.match(/\{[\s\S]*?\}/m);
+    /* fall through */
+  }
 
-    // 2) 혹시 non-greedy가 너무 일찍 끝났거나 trailing/leading 문자가 섞인 경우 대비:
-    // raw 중 첫 '{'부터 마지막 '}'까지를 통째로 한 번 더 시도.
-    const first = raw.indexOf('{');
-    const last = raw.lastIndexOf('}');
+  const m = raw.match(/\{[\s\S]*?\}/m);
+  const first = raw.indexOf('{');
+  const last = raw.lastIndexOf('}');
 
-    const candidates: string[] = [];
-    if (m?.[0]) candidates.push(m[0]);
-    if (first >= 0 && last > first) candidates.push(raw.slice(first, last + 1));
+  const candidates: string[] = [];
+  if (m?.[0]) candidates.push(m[0]);
+  if (first >= 0 && last > first) candidates.push(raw.slice(first, last + 1));
 
+  for (const c of candidates) {
     let parsed: unknown | null = null;
-    for (const c of candidates) {
+    try {
+      parsed = JSON.parse(c) as unknown;
+    } catch {
       try {
-        parsed = JSON.parse(c) as unknown;
-        break;
+        parsed = JSON.parse(repairJson(c)) as unknown;
       } catch {
-        try {
-          parsed = JSON.parse(repairJson(c)) as unknown;
-          break;
-        } catch {
-          parsed = null;
-        }
+        parsed = null;
       }
     }
-
-    if (!parsed) {
-      throw new Error(`${label} JSON 파싱 실패: ${truncateForError(raw)}`);
-    }
-
-    const payload = parseLlmPayload(parsed);
-    if (!payload) {
-      throw new Error(`${label} JSON 스키마 불일치 (ko_/th_ 제목·요약·블러브 필수, editor_note는 선택)`);
-    }
-    return payload;
+    if (!parsed) continue;
+    const ok = tryFromObject(parsed, 'extracted-json');
+    if (ok) return ok;
   }
+
+  throw new Error(
+    `${label} JSON 파싱·필수 필드 복구 실패(무의미 placeholder 저장 안 함): ${truncateForError(raw)}`,
+  );
 }
 
 /** OpenAI 429·쿼터 한도 시 다른 프로바이더(Gemini·로컬)로 넘길지 */
@@ -487,9 +665,11 @@ function resolveLocalLlmBaseUrlForRuntime(raw: string | undefined): string | und
     const u = new URL(normalized);
     const h = u.hostname.toLowerCase();
     if (h === 'localhost' || h === '127.0.0.1' || h === '::1' || h === '0.0.0.0') {
-      console.warn(
-        '[NewsLLM] Vercel: LOCAL_LLM_BASE_URL 이 로컬호스트라 무시합니다. Production에 OPENAI_API_KEY 또는 GEMINI_API_KEY 를 넣으세요.',
-      );
+      if (process.env.NEXT_PHASE !== 'phase-production-build') {
+        console.warn(
+          '[NewsLLM] Vercel: LOCAL_LLM_BASE_URL 이 로컬호스트라 무시합니다. Production에 OPENAI_API_KEY 또는 GEMINI_API_KEY 를 넣으세요.',
+        );
+      }
       return undefined;
     }
   } catch {
@@ -659,12 +839,33 @@ async function callBilingualSummary(
   body: string | null,
   sourceUrl: string,
 ): Promise<LlmBilingualPayload> {
-  const userBlock = buildBilingualUserBlock(title, body, sourceUrl);
-  const messages: Array<{ role: string; content: string }> = [
-    { role: 'system', content: BILINGUAL_SYSTEM_PROMPT },
-    { role: 'user', content: userBlock },
-  ];
-  return runNewsSummaryProviders(messages, parseBilingualPayloadFromContent, 2800);
+  const parseRetriesRaw = process.env.NEWS_LLM_JSON_RETRIES?.trim();
+  const parseRetriesParsed = parseRetriesRaw ? Number(parseRetriesRaw) : NaN;
+  const maxAttempts =
+    Number.isFinite(parseRetriesParsed) && parseRetriesParsed >= 1
+      ? Math.min(6, Math.floor(parseRetriesParsed))
+      : 6;
+
+  let lastErr: unknown = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const userBlock = buildBilingualUserBlock(title, body, sourceUrl);
+    const messages: Array<{ role: string; content: string }> = [
+      { role: 'system', content: BILINGUAL_SYSTEM_PROMPT },
+      { role: 'user', content: userBlock },
+    ];
+    try {
+      return await runNewsSummaryProviders(messages, parseBilingualPayloadFromContent, 2800);
+    } catch (e) {
+      lastErr = e;
+      if (attempt >= maxAttempts) break;
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(
+        `[NewsSummary] JSON 파싱·필수필드 실패 → LLM 재시도 ${attempt + 1}/${maxAttempts}: ${msg.slice(0, 220)}`,
+      );
+      await sleepMs(650 * attempt);
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
 const EDITOR_NOTES_ONLY_SYSTEM_PROMPT =
@@ -921,6 +1122,35 @@ type RawNewsTodoRow = {
   external_url: string | null;
 };
 
+function newsSeoFromPayload(llm: LlmBilingualPayload): {
+  meta_description_ko: string;
+  meta_description_th: string;
+  meta_description_en: string;
+  meta_description_zh_cn: string;
+} {
+  const koFb = trimForMetaDescription(`${llm.ko_blurb} 태국 교민 비자 TM30 바트 환율 Living in Thai`, 155);
+  const thFb = trimForMetaDescription(`${llm.th_blurb} ไทย วีซ่า TM30 เงินบาท`, 155);
+  const enFb = trimForMetaDescription(
+    `Thailand expat: ${llm.ko_blurb.slice(0, 72)} visa · TM30 · baht FX`,
+    155,
+  );
+  const zhFb = trimForMetaDescription(`泰国生活: ${llm.ko_blurb.slice(0, 72)} 签证 TM30 泰铢`, 155);
+  return {
+    meta_description_ko: llm.meta_description_ko?.trim()
+      ? trimForMetaDescription(llm.meta_description_ko.trim(), 155)
+      : koFb,
+    meta_description_th: llm.meta_description_th?.trim()
+      ? trimForMetaDescription(llm.meta_description_th.trim(), 155)
+      : thFb,
+    meta_description_en: llm.meta_description_en?.trim()
+      ? trimForMetaDescription(llm.meta_description_en.trim(), 155)
+      : enFb,
+    meta_description_zh_cn: llm.meta_description_zh_cn?.trim()
+      ? trimForMetaDescription(llm.meta_description_zh_cn.trim(), 155)
+      : zhFb,
+  };
+}
+
 async function persistBilingualProcessedNews(
   client: ReturnType<typeof getServerSupabaseClient>,
   row: RawNewsTodoRow,
@@ -931,9 +1161,12 @@ async function persistBilingualProcessedNews(
   const url = row.external_url ?? '';
   const cleanBody = JSON.stringify({
     ko: {
-      title: llm.ko_title,
+      title: llm.title_kr,
+      title_kr: llm.title_kr,
       summary: llm.ko_summary,
       blurb: llm.ko_blurb,
+      insight_impact: llm.ko_insight_impact,
+      countermeasure: llm.ko_countermeasure,
       ...(llm.ko_editor_note ? { editor_note: llm.ko_editor_note } : {}),
     },
     th: {
@@ -943,6 +1176,7 @@ async function persistBilingualProcessedNews(
       ...(llm.th_editor_note ? { editor_note: llm.th_editor_note } : {}),
     },
     source_url: url,
+    seo: newsSeoFromPayload(llm),
   });
 
   const publishedFlag =
@@ -987,6 +1221,12 @@ async function persistBilingualProcessedNews(
 
   if (sTh) {
     return { raw_news_id: row.id, ok: false, error: sTh.message };
+  }
+
+  if (publishedFlag) {
+    void import('@/lib/seo/googleIndexing')
+      .then(({ requestGoogleIndexing }) => requestGoogleIndexing(absoluteUrl(`/news/${pid}`)))
+      .catch((err) => console.warn('[googleIndexing] news insert', err));
   }
 
   return { raw_news_id: row.id, ok: true };

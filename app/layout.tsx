@@ -7,13 +7,12 @@ import VercelSpeedInsights from './_components/VercelSpeedInsights';
 import GlobalNav from './_components/GlobalNav';
 import PremiumTopBanner from './_components/PremiumTopBanner';
 import Providers from './_components/Providers';
-import { SiteFooter } from '@/components/shell/SiteFooter';
 import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { fetchMergedHeroSiteCopy } from '@/lib/siteCopy/heroCopy';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { FX_SNAPSHOT_FALLBACK } from '@/lib/fx/fetchUsdFx';
-import { getActiveUxFlagsServer } from '@/lib/ux/flagsServer';
 import './globals.css';
 
 const notoSansKr = Noto_Sans_KR({
@@ -41,16 +40,13 @@ export async function generateMetadata(): Promise<Metadata> {
       template: d.seo.titleTemplate,
     },
     description: d.seo.defaultDescription,
-    /** 탭·검색 결과 파비콘 — app/icon.svg (피그마 PNG로 바꿀 땐 app/icon.png 권장, 48×48 이상) */
-    icons: {
-      icon: [{ url: '/icon.svg', type: 'image/svg+xml', sizes: '48x48' }],
-    },
     /** 네이버 서치어드바이저 — HTML 태그 방식 소유확인 */
     verification: {
       other: {
-        'naver-site-verification': 'a5e68e7ff5120e3afa1c6c2c5c49d59e193760bb',
+        'naver-site-verification': '9242e16d7b7d2e8a177c9b1dbe89409aaa4a4f76',
       },
     },
+    alternates: buildHreflangAlternates('/'),
   };
 }
 
@@ -61,20 +57,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();
   const d = getDictionary(locale);
-  const uxFlags = await getActiveUxFlagsServer();
   const adminSession = await resolveAdminAccess();
   const heroSiteCopy = await fetchMergedHeroSiteCopy();
-  const noteLabelOverride =
-    locale === 'th'
-      ? (uxFlags['nav.member_notes_label']?.th as string | undefined)
-      : (uxFlags['nav.member_notes_label']?.ko as string | undefined);
-  const navForHeader = {
-    ...d.nav,
-    memberNotesInbox:
-      typeof noteLabelOverride === 'string' && noteLabelOverride.trim()
-        ? noteLabelOverride.trim()
-        : d.nav.memberNotesInbox,
-  };
 
   /** Vercel 빌드 시 커밋 SHA — 페이지 소스에서 배포가 최신인지 확인용 */
   const deploySha = process.env.VERCEL_GIT_COMMIT_SHA ?? '';
@@ -86,7 +70,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <GlobalNav
             showAdminConsole={!!adminSession}
             dict={{
-              nav: navForHeader,
+              nav: d.nav,
               brandSuffix: d.brandSuffix,
               logoAria: d.logoAria,
               lang: d.lang,
@@ -96,7 +80,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           />
           <PremiumTopBanner />
           {children}
-          <SiteFooter />
           <FxRemoteWidget
             locale={locale}
             initial={{ ...FX_SNAPSHOT_FALLBACK, dateISO: new Date().toISOString() }}

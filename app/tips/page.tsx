@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { createServerClient } from '@/lib/supabase/server';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -11,6 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: d.tips.pageTitle,
     description: d.tips.pageLead,
     robots: { index: true, follow: true },
+    alternates: buildHreflangAlternates('/tips'),
   };
 }
 
@@ -40,7 +42,10 @@ export default async function TipsHubPage() {
 
       {error ? (
         <p className="auth-inline-error" style={{ fontSize: '0.88rem' }}>
-          {error.message}
+          {t.listLoadError}
+          <span style={{ display: 'block', marginTop: 6, color: 'var(--tj-muted)', fontSize: '0.82rem' }}>
+            ({error.message})
+          </span>
         </p>
       ) : null}
 

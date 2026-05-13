@@ -9,6 +9,7 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { formatDate } from '@/lib/utils/formatDate';
 import { absoluteUrl } from '@/lib/seo/site';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import PostAuthorMenu from './_components/PostAuthorMenu';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -20,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title,
     description,
-    alternates: { canonical: url },
+    alternates: buildHreflangAlternates('/community/boards'),
     openGraph: {
       title,
       description,

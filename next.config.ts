@@ -1,5 +1,27 @@
+import fs from 'node:fs';
 import path from 'node:path';
+import { config as loadEnv } from 'dotenv';
 import type { NextConfig } from 'next';
+
+/** 로컬·Docker 빌드에서 마스터 키 파일을 우선 로드(Vercel 등에는 파일이 없으면 무시) */
+const masterEnvCandidates = [
+  process.env.SUPABASE_MASTER_ENV_PATH,
+  'F:/02_Master_Keys/API_JSON/.env.docker',
+  process.env.USERPROFILE
+    ? path.join(process.env.USERPROFILE, 'Desktop', '02_Master_Keys', 'API_JSON', '.env.docker')
+    : undefined,
+].filter((p): p is string => Boolean(p));
+
+for (const envPath of masterEnvCandidates) {
+  try {
+    if (fs.existsSync(envPath)) {
+      loadEnv({ path: path.resolve(envPath), override: true });
+      break;
+    }
+  } catch {
+    /* ignore */
+  }
+}
 
 // CACHE_BUSTER: 2026-05-01-FORCE-DEPLOY — Vercel 이전 빌드 산출물 재사용 회피(설정 해시 변경)
 

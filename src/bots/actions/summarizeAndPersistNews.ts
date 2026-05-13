@@ -31,6 +31,8 @@ import {
   sanitizeKoreanCommunityText,
 } from '@/lib/text/normalizeDisplayText';
 import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
+import { requestGoogleIndexing } from '@/lib/seo/googleIndexing';
+import { absoluteUrl } from '@/lib/seo/site';
 
 export type NewsSummaryProvider = 'openai' | 'gemini' | 'local' | 'auto';
 
@@ -1600,6 +1602,10 @@ async function persistBilingualProcessedNews(
   );
   if (tipUpsertError) {
     return { raw_news_id: row.id, ok: false, error: tipUpsertError.message };
+  }
+
+  if (publishedFlag) {
+    void requestGoogleIndexing(absoluteUrl(`/news/${pid}`));
   }
 
   return { raw_news_id: row.id, ok: true };

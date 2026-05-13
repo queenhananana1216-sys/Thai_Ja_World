@@ -7,6 +7,7 @@ import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerClient } from '@/lib/supabase/server';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { parsePostAiInsightV1 } from '@/lib/community/postAiInsightDisplay';
 import PostAiInsightSection from '../../community/boards/_components/PostAiInsightSection';
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: titleOut,
     description: desc,
     robots: { index: true, follow: true },
-    alternates: { canonical: absoluteUrl(`/tips/${encodeURIComponent(postId)}`) },
+    alternates: buildHreflangAlternates(`/tips/${encodeURIComponent(postId)}`),
   };
 }
 

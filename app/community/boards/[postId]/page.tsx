@@ -13,6 +13,7 @@ import { getLocale } from '@/i18n/get-locale';
 import { mergeDictionarySiteBrand } from '@/lib/site-brand/mergeDictionaryBrand';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
 import JsonLd from '@/lib/seo/JsonLd';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { parsePostAiInsightV1 } from '@/lib/community/postAiInsightDisplay';
 import { formatDate } from '@/lib/utils/formatDate';
@@ -90,7 +91,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: titleStr,
     description,
     keywords,
-    alternates: { canonical: url },
+    alternates: buildHreflangAlternates(`/community/boards/${postId}`),
     openGraph: {
       title: titleStr,
       description,

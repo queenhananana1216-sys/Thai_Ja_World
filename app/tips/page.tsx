@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { createServerClient } from '@/lib/supabase/server';
@@ -10,6 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: d.tips.pageTitle,
     description: d.tips.pageLead,
+    alternates: buildHreflangAlternates('/tips'),
     robots: { index: true, follow: true },
   };
 }

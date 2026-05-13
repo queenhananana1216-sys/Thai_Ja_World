@@ -10,6 +10,7 @@ import {
   newsDetailFromProcessed,
   passesKoPublicGate,
 } from '@/lib/news/processedNewsDisplay';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { createServerClient } from '@/lib/supabase/server';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
@@ -25,6 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: d.home.newsTitle,
     description: d.home.newsSub,
+    alternates: buildHreflangAlternates('/news'),
     robots: { index: true, follow: true },
   };
 }

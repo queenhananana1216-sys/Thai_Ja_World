@@ -14,6 +14,7 @@ import { SiteBrandProvider } from '@/contexts/SiteBrandContext';
 import { getDictionary } from '@/i18n/dictionaries';
 import { getLocale } from '@/i18n/get-locale';
 import { loadSiteUiSettings } from '@/lib/site-settings/siteUiSettings';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { getSiteBaseUrl } from '@/lib/seo/site';
 import { TjRouteSuspenseFallback } from './_components/TjRouteSuspenseFallback';
 
@@ -47,7 +48,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'Thailand',
       'Korean in Thailand',
     ],
-    alternates: { canonical: '/' },
+    alternates: buildHreflangAlternates('/'),
     openGraph: {
       type: 'website',
       locale: 'ko_KR',

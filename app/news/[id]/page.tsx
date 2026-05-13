@@ -17,6 +17,7 @@ import {
   passesPublishedNewsSearchGate,
 } from '@/lib/news/processedNewsDisplay';
 import JsonLd from '@/lib/seo/JsonLd';
+import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
 import { extractHostname, formatDate } from '@/lib/utils/formatDate';
 
@@ -98,7 +99,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: detail.title,
     description,
     ...(seoKw.length > 0 ? { keywords: seoKw } : {}),
-    alternates: { canonical: url },
+    alternates: buildHreflangAlternates(`/news/${id}`),
     openGraph: {
       title: detail.title,
       description,

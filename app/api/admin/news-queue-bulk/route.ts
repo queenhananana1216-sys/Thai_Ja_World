@@ -6,6 +6,8 @@ import {
   isNewsSummaryLlmConfigured,
 } from '@/bots/actions/summarizeAndPersistNews';
 import { validateProcessedNewsRowForPublish } from '@/lib/news/validateNewsPublish';
+import { requestGoogleIndexing } from '@/lib/seo/googleIndexing';
+import { absoluteUrl } from '@/lib/seo/site';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { createServerSupabaseAuthClient } from '@/lib/supabase/serverAuthCookies';
 
@@ -97,6 +99,9 @@ export async function POST(req: Request) {
 
   revalidatePath('/', 'layout');
   revalidatePath('/news');
+  for (const id of toPublish) {
+    void requestGoogleIndexing(absoluteUrl(`/news/${id}`));
+  }
   return NextResponse.json({
     ok: true,
     updated: toPublish.length,

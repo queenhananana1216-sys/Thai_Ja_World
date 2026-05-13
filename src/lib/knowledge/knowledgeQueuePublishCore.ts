@@ -8,6 +8,8 @@ import {
   parseKnowledgeCleanBody,
   validateKnowledgePublish,
 } from '@/lib/knowledge/knowledgePostBodyShared';
+import { requestGoogleIndexing } from '@/lib/seo/googleIndexing';
+import { absoluteUrl } from '@/lib/seo/site';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 type AdminClient = ReturnType<typeof createServiceRoleClient>;
@@ -252,6 +254,14 @@ export async function executeKnowledgePublishOrDraft(
       revalidatePath(`/community/boards/${boardPostIdForRevalidate}`);
       revalidatePath(`/tips/${boardPostIdForRevalidate}`);
     }
+  }
+
+  if (willPublish && boardPostIdForRevalidate) {
+    const publicPath =
+      boardTarget === 'tips_board'
+        ? `/tips/${boardPostIdForRevalidate}`
+        : `/community/boards/${boardPostIdForRevalidate}`;
+    void requestGoogleIndexing(absoluteUrl(publicPath));
   }
 
   return { ok: true, published: willPublish };

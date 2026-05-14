@@ -10,5 +10,13 @@ export function isCronAuthorized(authHeader: string | null): boolean {
   const secret =
     process.env.CRON_SECRET?.trim() || process.env.BOT_CRON_SECRET?.trim();
   if (!secret) return true;
-  return authHeader === `Bearer ${secret}`;
+
+  const raw = authHeader?.trim();
+  if (!raw) return false;
+
+  const m = /^Bearer\s+(.+)$/i.exec(raw);
+  if (!m?.[1]) return false;
+
+  const token = m[1].trim();
+  return token === secret;
 }

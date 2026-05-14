@@ -13,6 +13,7 @@
  * - NEWS_LLM_FETCH_RETRIES: 최대 시도 횟수(기본 5, 상한 12). 네트워크 오류·HTTP 429/502/503/500 시 지수 백오프 후 재시도
  * - NEWS_LLM_MAX_ATTEMPTS: 위와 동일 목적(숫자가 더 최신). 둘 다 있으면 NEWS_LLM_FETCH_RETRIES 우선
  * - NEWS_LLM_INTER_ARTICLE_DELAY_MS: 배치에서 기사 건마다 LLM 호출 직후 대기(ms). 기본 400 (429 완화)
+ * - NEWS_LLM_JSON_RETRIES: 이중언어 뉴스 JSON 품질 재생성 상한 — **코드에서 6회로 고정**(이 이름의 env는 무시). title_kr·ko_blurb·ko_insight_impact·ko_countermeasure 에 스텁/과도하게 짧은 문장이 있으면 동일 LLM 파이프라인으로 재호출.
  * - NEWS_SUMMARIZE_MAX_BATCH: summarize 배치 상한(기본 12, 최대 30)
  * - NEWS_INSIGHT_RETROFIT_MAX_BATCH: 인사이트 재가공 배치 상한(기본 12, 최대 25)
  * - NEWS_SUMMARY_FALLBACK_STUB: LLM 없음/호출 실패 시 원문 메타만으로 초안(processed_news) 생성 여부.
@@ -427,6 +428,7 @@ function buildStubBilingualPayload(
 /** 뉴스 크론 가공 톤 — 사건에서 배우는 대비책 + 적당한 위트 + 냉철한 중립 */
 const BILINGUAL_SYSTEM_PROMPT = [
   'ROLE: You are NOT a generic chatbot here — you write as the **human operator / lead editor** of 「태국에, 살자」(Thai Ja World). Stay in character as that one witty-but-grounded Korea–Thailand expat desk voice.',
+  'PERSONA ANCHOR: You MUST write as a **태국에서 20년째 살아온 베테랑 교민** — 비자·세무·교통·치안·소비자 분쟁까지 “현장에서 굴러먹은” 경험을 바탕으로 말한다. (환각 금지: 원문에 없는 사실·번호·기관명을 지어내지 말 것.)',
   'PERSONA: **태국 현지 사정에 밝은 위트 있는 한국인 운영자** — 말투는 적당히 위트 있되 냉철한 중립. 기계 번역·나열 체가 아니라 "이런 일이 있으니 이렇게 하세요"라고 짚어 주는 **전문가 한마디** 톤. never flippant, never a clown, never cruel.',
   'CONTINUITY: Day or night, breaking or slow news — you are the **same** single operator voice for this site. No "as an AI", no shifting personality between articles.',
   'MISSION: Do NOT "copy the wire" or plain-translate. Learn from the incident: what happened → what it implies for readers → what they should do next. Trust beats hype.',
@@ -491,6 +493,7 @@ function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: 
     '제목(title_kr/title_th)은 원제를 그대로 옮기지 말고, 팩트 안에서 호기심을 여는 **한 줄 위트 제목**으로 다시 짓는다.',
     '본문(content_kr/content_th) 요약 끝에는 반드시 **[운영자의 대비책]** / Thai **[แผนรับมือจากทีม 운영]** 헤더 줄을 넣고, ko_countermeasure·th_countermeasure에 담을 실행 지침을 한 번 더 압축해 적는다.',
     '원문 언어와 관계없이 시스템이 요구한 16개 키를 모두 채우세요. title_kr/title_th에는 "메타데이터" 같은 내부 용어를 넣지 마세요.',
+    '**절대 금지:** "내용 준비 중", "가공 전", "TBD", "placeholder", 빈 문장, 원문만 복붙 수준의 title_kr·ko_blurb·ko_insight_impact·ko_countermeasure.',
     '반드시 아래 키만 가진 JSON 객체 한 개만 출력하세요 (다른 텍스트 금지):',
     '{"title_kr":"","content_kr":"","ko_blurb":"","ko_editor_note":"","ko_insight_impact":"","ko_countermeasure":"","feed_warning_ko":"","title_th":"","content_th":"","th_blurb":"","th_editor_note":"","th_insight_impact":"","th_countermeasure":"","feed_warning_th":"","incident_attention":"none","seo_keywords":""}',
     '- title_kr / title_th: 사실 안에서 도는 ‘한 줄 기사’ 톤. 지루한 헤드라인 금지.',
@@ -1116,6 +1119,27 @@ export async function runNewsSummaryProviders<T>(
   );
 }
 
+/** NEWS_LLM_JSON_RETRIES: env 무시, 이중언어 JSON 품질 재생성 상한 6회 고정 */
+function newsLlmJsonQualityMaxAttempts(): number {
+  return 6;
+}
+
+const NEWS_KO_PLACEHOLDER_PHRASE_RE =
+  /내용\s*준비|준비\s*중\s*입니다|가공\s*전|가공전|placeholder|TBD|작성\s*예정|추후\s*공개|coming\s*soon|\(제목\s*없음\)|여기에\s*입력|메타데이터|원문만으로는|LLM\s*없음/i;
+
+function newsBilingualPayloadNeedsJsonRetry(sanitized: LlmBilingualPayload): boolean {
+  const titleKr = (sanitized.title_kr ?? '').trim();
+  const blurb = (sanitized.ko_blurb ?? '').trim();
+  const insight = (sanitized.ko_insight_impact ?? '').trim();
+  const counter = (sanitized.ko_countermeasure ?? '').trim();
+  const parts = [titleKr, blurb, insight, counter];
+  if (parts.some((t) => !t || t.length < 4)) return true;
+  if (insight.length < 24) return true;
+  if (counter.length < 40) return true;
+  if (parts.some((t) => NEWS_KO_PLACEHOLDER_PHRASE_RE.test(t))) return true;
+  return false;
+}
+
 async function callBilingualSummary(
   title: string,
   body: string | null,
@@ -1126,7 +1150,35 @@ async function callBilingualSummary(
     { role: 'system', content: BILINGUAL_SYSTEM_PROMPT },
     { role: 'user', content: userBlock },
   ];
-  return runNewsSummaryProviders(messages, parseBilingualPayloadFromContent, 3800);
+  const maxJson = newsLlmJsonQualityMaxAttempts();
+  for (let attempt = 1; attempt <= maxJson; attempt++) {
+    let llm: LlmBilingualPayload;
+    try {
+      llm = await runNewsSummaryProviders(messages, parseBilingualPayloadFromContent, 3800);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (attempt >= maxJson) throw e;
+      console.warn(`[NewsLLM] JSON/LLM 예외 → ${attempt + 1}/${maxJson} 재시도: ${msg.slice(0, 220)}`);
+      await sleepMs(350 * attempt);
+      continue;
+    }
+    const sanitized = sanitizeNewsPayloadTone(enforceNewsBilingualCountermeasureSections(llm));
+    if (!newsBilingualPayloadNeedsJsonRetry(sanitized)) {
+      if (attempt > 1) {
+        console.warn(
+          `[NewsLLM] title_kr·ko_blurb·ko_insight_impact·ko_countermeasure 품질 검사 통과 (${attempt}/${maxJson})`,
+        );
+      }
+      return llm;
+    }
+    console.warn(
+      `[NewsLLM] 한국어 품질/placeholder 감지 → JSON 재생성 ${attempt}/${maxJson} (title_kr·ko_blurb·ko_insight_impact·ko_countermeasure)`,
+    );
+    await sleepMs(400 * attempt);
+  }
+  throw new Error(
+    `[NewsLLM] 이중언어 JSON 품질 재시도 ${maxJson}회 초과: title_kr·ko_blurb·ko_insight_impact·ko_countermeasure`,
+  );
 }
 
 /** 관리자 한국어 전용 가공 — 크론 이중언어 파이프라인과 별도 */

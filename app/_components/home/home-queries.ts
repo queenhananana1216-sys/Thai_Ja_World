@@ -131,6 +131,12 @@ export type UxTotalsPublic = {
   avg_dwell_seconds?: number;
 };
 
+/** 홈 통합 피드·게시 폴백에서 숨길 저품질 스텁(제목·발췌·본문) */
+function isStubHomePortalText(title: string, excerpt?: string | null, content?: string | null): boolean {
+  const blob = `${title}\n${excerpt ?? ''}\n${content ?? ''}`;
+  return /내용\s*준비\s*중|내용\s*준비중|가공\s*전|가공전|placeholder/i.test(blob);
+}
+
 function mapUnifiedRpcRow(r: Record<string, unknown>): HomeUnifiedFeedItem {
   const k = r.kind;
   const kind: HomeUnifiedFeedItem['kind'] =
@@ -1077,17 +1083,19 @@ export async function fetchHomeFeedPosts(
   const { data, error } = await q;
   if (error) return { rows: [], error: error.message };
 
-  const rows = (data ?? []).map((row) => ({
-    id: String(row.id),
-    title: String(row.title ?? ''),
-    excerpt: row.excerpt != null ? String(row.excerpt) : null,
-    content: row.content != null ? String(row.content) : null,
-    category: String(row.category ?? ''),
-    created_at: String(row.created_at ?? ''),
-    comment_count: row.comment_count != null ? Number(row.comment_count) : null,
-    view_count: row.view_count != null ? Number(row.view_count) : null,
-    image_urls: Array.isArray(row.image_urls) ? (row.image_urls as string[]) : null,
-  }));
+  const rows = (data ?? [])
+    .map((row) => ({
+      id: String(row.id),
+      title: String(row.title ?? ''),
+      excerpt: row.excerpt != null ? String(row.excerpt) : null,
+      content: row.content != null ? String(row.content) : null,
+      category: String(row.category ?? ''),
+      created_at: String(row.created_at ?? ''),
+      comment_count: row.comment_count != null ? Number(row.comment_count) : null,
+      view_count: row.view_count != null ? Number(row.view_count) : null,
+      image_urls: Array.isArray(row.image_urls) ? (row.image_urls as string[]) : null,
+    }))
+    .filter((row) => !isStubHomePortalText(row.title, row.excerpt, row.content));
 
   return { rows, error: null };
 }
@@ -1113,11 +1121,18 @@ export async function fetchHomeUnifiedFeed(
     }
     const fb = await fetchHomeFeedPosts(limit, { beforeIso: cursor?.createdAt ?? null, sb });
     if (fb.error) return { rows: [], error: fb.error };
-    return { rows: fb.rows.map(mapPortalRowToUnified), error: null };
+    return {
+      rows: fb.rows
+        .filter((p) => !isStubHomePortalText(p.title, p.excerpt, p.content))
+        .map(mapPortalRowToUnified),
+      error: null,
+    };
   }
 
   const raw = (data ?? []) as Record<string, unknown>[];
-  const rows = raw.map((r) => mapUnifiedRpcRow(r));
+  const rows = raw
+    .map((r) => mapUnifiedRpcRow(r))
+    .filter((row) => !isStubHomePortalText(row.title, row.excerpt, null));
   return { rows, error: null };
 }
 

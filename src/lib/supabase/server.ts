@@ -9,6 +9,7 @@
  * `NEXT_PUBLIC_SUPABASE_URL` 로 쓰는 것을 권장(직접 연결 포화 완화).
  */
 import { createClient } from '@supabase/supabase-js';
+import { getPublicSupabaseAnonKey, getPublicSupabaseUrl } from '@/lib/env';
 import { createDummySupabaseClient } from './dummy';
 import {
   DEFAULT_SUPABASE_FETCH_TIMEOUT_MS,
@@ -18,8 +19,8 @@ import {
 const boundedServerFetch = boundedFetch(DEFAULT_SUPABASE_FETCH_TIMEOUT_MS);
 
 export function createServerClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = getPublicSupabaseUrl();
+  const key = getPublicSupabaseAnonKey();
 
   if (!url || !key) {
     /** Dockerfile `next build` 단계에서만 스팸 방지 — 런타임은 그대로 경고 */

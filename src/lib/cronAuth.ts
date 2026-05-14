@@ -6,17 +6,47 @@ import 'server-only';
  * 로컬에서 둘 다 없으면 검증 생략(개발 편의).
  * 시크릿 교체 시: Vercel·로컬 `.env.local` 저장 후 재배포(또는 `next dev` 재시작)하면 `process.env`에 즉시 반영됩니다.
  */
-export function isCronAuthorized(authHeader: string | null): boolean {
-  const secret =
+
+function stripEnvNoise(s: string): string {
+  return s
+    .replace(/^\uFEFF/, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim();
+}
+
+/** Dotenv/Vercel UI에서 값 전체가 따옴표로 감싸진 경우 한 겹만 제거 */
+function stripOptionalOuterQuotes(s: string): string {
+  if (s.length < 2) return s;
+  const a = s[0];
+  const b = s[s.length - 1];
+  if ((a === '"' && b === '"') || (a === "'" && b === "'")) {
+    return stripEnvNoise(s.slice(1, -1));
+  }
+  return s;
+}
+
+function normalizeCronSecret(): string | null {
+  const raw =
     process.env.CRON_SECRET?.trim() || process.env.BOT_CRON_SECRET?.trim();
+  if (!raw) return null;
+  const cleaned = stripOptionalOuterQuotes(stripEnvNoise(raw));
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+function normalizeBearerToken(authHeader: string | null): string | null {
+  const raw = stripEnvNoise(authHeader ?? '');
+  if (!raw) return null;
+  const m = /^Bearer\s+([\s\S]+)$/i.exec(raw);
+  if (!m?.[1]) return null;
+  return stripOptionalOuterQuotes(stripEnvNoise(m[1]));
+}
+
+export function isCronAuthorized(authHeader: string | null): boolean {
+  const secret = normalizeCronSecret();
   if (!secret) return true;
 
-  const raw = authHeader?.trim();
-  if (!raw) return false;
+  const token = normalizeBearerToken(authHeader);
+  if (!token) return false;
 
-  const m = /^Bearer\s+(.+)$/i.exec(raw);
-  if (!m?.[1]) return false;
-
-  const token = m[1].trim();
   return token === secret;
 }

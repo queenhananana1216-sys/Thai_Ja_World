@@ -2,12 +2,13 @@
  * summarizeAndPersistNews.ts — raw_news → LLM 가공 → processed_news / summaries (크론: 이중언어, 관리자 재가공: 한국어 전용 API)
  *
  * 환경 변수:
- * - NEWS_SUMMARY_PROVIDER: openai | gemini | local | auto (기본 auto)
+ * - NEWS_SUMMARY_PROVIDER: openai | gemini | local | ollama | auto (기본 auto). `ollama` 는 `local` 과 동일(Ollama OpenAI 호환 API).
  * - OpenAI: OPENAI_API_KEY, OPENAI_MODEL (기본 gpt-4o-mini)
  * - Gemini(OpenAI 호환 엔드포인트): GEMINI_API_KEY, GEMINI_MODEL (기본 gemini-2.0-flash), GEMINI_OPENAI_BASE_URL (선택)
  * - 로컬(OpenAI 호환): LOCAL_LLM_BASE_URL (예: http://127.0.0.1:11434/v1), LOCAL_LLM_MODEL (기본 llama3.2), LOCAL_LLM_API_KEY (선택)
  * - Groq(무료 티어 폴백): GROQ_API_KEY, GROQ_API_KEYS(쉼표), GROQ_MODEL(기본 llama-3.3-70b-versatile)
- * - auto: OpenAI 선호 → 429/쿼터류 시 Gemini → Groq → 로컬(Ollama 등) 순 폴백 (키가 있는 경로만)
+ * - auto: 기본은 **클라우드 우선**. 비-Vercel 런타임에서 `LOCAL_LLM_BASE_URL` 이 잡히면 `NEWS_SUMMARY_CLOUD_FIRST=1` 이 **아닐 때만** Ollama(로컬)를 **먼저** 시도한 뒤 실패 시 OpenAI→Gemini→Groq 순으로 폴백합니다.
+ * - `MASTER_ENV_DOCKER_PATH`: 비프로덕션에서만 사용. 미설정 시 `F:/02_Master_Keys/API_JSON/.env.docker` 가 있으면 `override:false` 로 dotenv 로드(이미 설정된 `process.env` 는 덮어쓰지 않음).
  * - OPENAI_API_KEYS: 쉼표로 구분한 키 목록(선택). 있으면 요청·재시도마다 순환해 할당량 분산
  * - GEMINI_API_KEYS: Gemini용 동일(선택). HTTP 429 시 키 커서를 즉시 밀어 다음 키로 스위칭
  * - NEWS_LLM_FETCH_RETRIES: 최대 시도 횟수(기본 5, 상한 12). 네트워크 오류·HTTP 429/502/503/500 시 지수 백오프 후 재시도
@@ -23,6 +24,8 @@
  * 가공 톤은 `BILINGUAL_SYSTEM_PROMPT`(교민 커뮤니티 편집장 페르소나·불릿 썰·핵심 한 줄 레이블) — 뉴스 크론 요약의 단일 소스.
  */
 
+import { existsSync } from 'node:fs';
+import { config as dotenvConfig } from 'dotenv';
 import { getServerSupabaseClient } from '../adapters/supabaseClient';
 import { passesKoPublicGate } from '@/lib/news/processedNewsDisplay';
 import { newsInsertAsPublished } from '@/lib/news/newsPublishMode';
@@ -35,7 +38,7 @@ import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
 import { requestGoogleIndexing } from '@/lib/seo/googleIndexing';
 import { absoluteUrl } from '@/lib/seo/site';
 
-export type NewsSummaryProvider = 'openai' | 'gemini' | 'local' | 'auto';
+export type NewsSummaryProvider = 'openai' | 'gemini' | 'local' | 'ollama' | 'auto';
 
 export interface SummarizeRowResult {
   raw_news_id: string;
@@ -81,10 +84,41 @@ const LLM_TIMEOUT_MS = (() => {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 120_000;
 })();
 
-function normalizeNewsSummaryProvider(): NewsSummaryProvider {
-  const v = (process.env.NEWS_SUMMARY_PROVIDER || 'auto').trim().toLowerCase();
+function normalizeNewsSummaryProvider(): 'openai' | 'gemini' | 'local' | 'auto' {
+  loadMasterDockerEnvOnce();
+  const raw = (process.env.NEWS_SUMMARY_PROVIDER || 'auto').trim().toLowerCase();
+  if (raw === 'ollama') return 'local';
+  const v = raw;
   if (v === 'openai' || v === 'gemini' || v === 'local' || v === 'auto') return v;
   return 'auto';
+}
+
+let masterDockerEnvMerged = false;
+
+/** 로컬 워크스테이션: 마스터 `.env.docker` 에서 누락된 LLM 키만 보강 (프로덕션·Vercel 에서는 무시). */
+function loadMasterDockerEnvOnce(): void {
+  if (masterDockerEnvMerged) return;
+  masterDockerEnvMerged = true;
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) return;
+  const path =
+    process.env.MASTER_ENV_DOCKER_PATH?.trim() || 'F:/02_Master_Keys/API_JSON/.env.docker';
+  try {
+    if (!existsSync(path)) return;
+    dotenvConfig({ path, override: false });
+  } catch {
+    // no-op: 로컬 경로 없거나 읽기 실패 시 클라우드 env 만 사용
+  }
+}
+
+/** 비-Vercel + 로컬 LLM URL 이 있으면 auto 경로에서 Ollama 를 먼저 시도(클라우드 우선 복구: NEWS_SUMMARY_CLOUD_FIRST=1). */
+function shouldTryLocalLlmFirstInAuto(localBase: string | undefined): boolean {
+  if (!localBase) return false;
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) return false;
+  const forceCloud = String(process.env.NEWS_SUMMARY_CLOUD_FIRST ?? '')
+    .trim()
+    .toLowerCase();
+  if (forceCloud === '1' || forceCloud === 'true' || forceCloud === 'yes') return false;
+  return true;
 }
 
 /** process-news / 배치가 돌아갈 수 있는지 (키 또는 로컬 URL). Vercel에서는 localhost LLM URL 제외 */
@@ -474,6 +508,13 @@ const BILINGUAL_SYSTEM_PROMPT = [
   '- ONLY supplied title/body/source_url. No hallucinated names, numbers, charges, verdicts.',
   '- No hate, harassment, political rallying, or sensationalism beyond facts.',
   '',
+  '=== [Language Filter] (mandatory) ===',
+  '- Korean-facing fields (title_kr, content_kr, ko_blurb, ko_editor_note, ko_insight_impact, ko_countermeasure, feed_warning_ko, seo_keywords) must stay **Korean-first**: do NOT paste Thai script (ก–ฮ range) into those fields except unavoidable proper nouns ≤12 chars total per field.',
+  '- Do NOT paste long English sentences into Korean fields (Latin words as proper nouns only; no English paragraphs).',
+  '- Do NOT repeat the same Korean clause/sentence 3+ times across Korean fields — vary wording.',
+  '- ko_countermeasure MUST read like a **태국 20년 차 베테랑 교민** checklist: dry wit allowed, but include concrete imperatives (routes, apps, documents, official channels). If you cannot, stop and output only `[QUALITY FAILED]: countermeasure_weak` (no JSON).',
+  '- If you detect your own draft violates the filter, stop and output only `[QUALITY FAILED]: language_mix` or `[QUALITY FAILED]: repetition` (no JSON).',
+  '',
   'Output valid JSON only. Exactly these 16 keys (all strings except values noted):',
   'title_kr, content_kr, ko_blurb, ko_editor_note, ko_insight_impact, ko_countermeasure, feed_warning_ko,',
   'title_th, content_th, th_blurb, th_editor_note, th_insight_impact, th_countermeasure, feed_warning_th,',
@@ -767,24 +808,154 @@ async function callOpenAiCompatibleChatCompletion(params: {
   throw new Error(`LLM fetch 실패 (${host}): 응답 없음`);
 }
 
+const THAI_SCRIPT_RE = /[\u0E00-\u0E7F]/u;
+const LONG_LATIN_RUN_RE = /[A-Za-z][A-Za-z\s,.;:'"()\-]{34,}[A-Za-z]/;
+
+function extractJsonStringField(raw: string, key: string): string | null {
+  const escKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`"${escKey}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, 's');
+  const m = re.exec(raw);
+  if (!m?.[1]) return null;
+  return m[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\n/g, '\n').replace(/\\r/g, '\r');
+}
+
+/** JSON 본문이 깨졌을 때 주요 키만 RegEx 로 뽑아 최소 스키마를 채운다. */
+function tryRepairBilingualPayloadFromRawText(raw: string): Record<string, unknown> | null {
+  const keys = [
+    'title_kr',
+    'content_kr',
+    'ko_blurb',
+    'ko_editor_note',
+    'ko_insight_impact',
+    'ko_countermeasure',
+    'feed_warning_ko',
+    'title_th',
+    'content_th',
+    'th_blurb',
+    'th_editor_note',
+    'th_insight_impact',
+    'th_countermeasure',
+    'feed_warning_th',
+    'incident_attention',
+    'seo_keywords',
+  ] as const;
+  const out: Record<string, unknown> = {};
+  let any = false;
+  for (const k of keys) {
+    const v = extractJsonStringField(raw, k);
+    if (v != null) {
+      out[k] = v;
+      any = true;
+    }
+  }
+  return any ? out : null;
+}
+
+function hasThaiScriptInKoSurfaceFields(p: LlmBilingualPayload): boolean {
+  const blob = [
+    p.title_kr,
+    p.ko_blurb,
+    p.ko_editor_note,
+    p.ko_insight_impact,
+    p.ko_countermeasure,
+    p.feed_warning_ko,
+    Array.isArray(p.seo_keywords) ? p.seo_keywords.join(',') : '',
+  ].join('\n');
+  return THAI_SCRIPT_RE.test(blob);
+}
+
+function hasSuspiciousLatinRunInKoFields(p: LlmBilingualPayload): boolean {
+  const blob = [p.title_kr, p.ko_blurb, p.ko_insight_impact, p.ko_countermeasure, p.ko_editor_note].join('\n');
+  return LONG_LATIN_RUN_RE.test(blob);
+}
+
+function hasExcessiveKoreanRepetition(p: LlmBilingualPayload): boolean {
+  const blob = [p.title_kr, p.ko_blurb, p.ko_insight_impact, p.ko_countermeasure, p.ko_editor_note, p.content_kr]
+    .join('\n')
+    .replace(/\s+/gu, ' ')
+    .trim();
+  const chunks = blob.split(/(?<=[.!?。])\s+|[\n\r]+/u).map((s) => s.trim()).filter((s) => s.length >= 14);
+  const counts = new Map<string, number>();
+  for (const c of chunks) {
+    const k = c.slice(0, 80);
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+    if ((counts.get(k) ?? 0) >= 3) return true;
+  }
+  return false;
+}
+
+function isWeakKoCountermeasure(cm: string): boolean {
+  const t = cm.trim();
+  if (t.length < 52) return true;
+  if (!/[-•·]|\d+\./u.test(t)) return true;
+  return false;
+}
+
+/** LLM 출력이 [Language Filter] 를 위반하면 throw → 상위에서 JSON 재시도 */
+function assertBilingualKoQualityGate(p: LlmBilingualPayload): void {
+  const head = (p.title_kr ?? '').trim();
+  if (/^\[QUALITY FAILED\]/u.test(head)) {
+    throw new Error(head.slice(0, 120));
+  }
+  if (hasThaiScriptInKoSurfaceFields(p)) {
+    throw new Error('[QUALITY FAILED]: language_mix (Thai script in Korean fields)');
+  }
+  if (hasSuspiciousLatinRunInKoFields(p)) {
+    throw new Error('[QUALITY FAILED]: language_mix (long English run in Korean fields)');
+  }
+  if (hasExcessiveKoreanRepetition(p)) {
+    throw new Error('[QUALITY FAILED]: repetition');
+  }
+  if (isWeakKoCountermeasure(p.ko_countermeasure ?? '')) {
+    throw new Error('[QUALITY FAILED]: countermeasure_weak');
+  }
+}
+
 function parseBilingualPayloadFromContent(content: string, label: string): LlmBilingualPayload {
   const raw = stripMarkdownJsonFence(content);
+  const leading = raw.trim();
+  if (/^\[QUALITY FAILED\]/u.test(leading) && !raw.includes('{')) {
+    throw new Error(leading.slice(0, 500));
+  }
 
   const truncateForError = (s: string) =>
     s.length > 500 ? `${s.slice(0, 500)}…(truncated)` : s;
 
   const repairJson = (s: string): string => {
     let out = s.trim();
-    // 흔한 JSON 파손 패턴 완화(트레일링 콤마 등)
     out = out.replace(/,\s*([}\]])/g, '$1');
     return out;
+  };
+
+  const mergeRepairInto = (base: unknown, repair: Record<string, unknown>): unknown => {
+    if (base !== null && typeof base === 'object' && !Array.isArray(base)) {
+      return { ...(base as Record<string, unknown>), ...repair };
+    }
+    return repair;
+  };
+
+  const tryPayloadAfterRepair = (
+    baseObj: unknown,
+    sourceText: string,
+    logLabel: string,
+  ): LlmBilingualPayload | null => {
+    const first = parseLlmPayload(baseObj);
+    if (first) return first;
+    const rep = tryRepairBilingualPayloadFromRawText(sourceText);
+    if (!rep) return null;
+    const merged = mergeRepairInto(baseObj, rep);
+    const second = parseLlmPayload(merged);
+    if (second) {
+      console.warn(`[NewsLLM] [SCHEMA REPAIRED] ${logLabel}: RegEx·부분 키 병합`);
+    }
+    return second ?? null;
   };
 
   // LLM 응답이 JSON 외 텍스트를 섞는 경우가 있어,
   // 첫 번째 JSON 객체({ ... })만 찾아서 파싱하도록 완충 처리합니다.
   try {
     const parsed = JSON.parse(raw) as unknown;
-    const payload = parseLlmPayload(parsed);
+    const payload = tryPayloadAfterRepair(parsed, raw, label);
     if (!payload) {
       throw new Error(
         `${label} JSON 스키마 불일치 (title/content/blurb 필수 + 인사이트·대비책·incident_attention·seo_keywords 등 16키)`,
@@ -792,12 +963,7 @@ function parseBilingualPayloadFromContent(content: string, label: string): LlmBi
     }
     return payload;
   } catch {
-    // 1) JSON 블록이 코드펜스 밖에 섞여 있는 경우
-    // non-greedy로 첫 JSON 객체만 잡는다(평평한 flat object만 기대).
     const m = raw.match(/\{[\s\S]*?\}/m);
-
-    // 2) 혹시 non-greedy가 너무 일찍 끝났거나 trailing/leading 문자가 섞인 경우 대비:
-    // raw 중 첫 '{'부터 마지막 '}'까지를 통째로 한 번 더 시도.
     const first = raw.indexOf('{');
     const last = raw.lastIndexOf('}');
 
@@ -821,10 +987,12 @@ function parseBilingualPayloadFromContent(content: string, label: string): LlmBi
     }
 
     if (!parsed) {
+      const fromRep = tryPayloadAfterRepair(null, raw, label);
+      if (fromRep) return fromRep;
       throw new Error(`${label} JSON 파싱 실패: ${truncateForError(raw)}`);
     }
 
-    const payload = parseLlmPayload(parsed);
+    const payload = tryPayloadAfterRepair(parsed, raw, label);
     if (!payload) {
       throw new Error(
         `${label} JSON 스키마 불일치 (title/content/blurb 필수 + 인사이트·대비책·incident_attention·seo_keywords 등 16키)`,
@@ -929,6 +1097,7 @@ export async function runNewsSummaryProviders<T>(
   parseFromContent: (content: string, label: string) => T,
   maxTokens: number,
 ): Promise<T> {
+  loadMasterDockerEnvOnce();
   const provider = normalizeNewsSummaryProvider();
   const openaiKeys = getOpenAiApiKeyCandidates();
   const openaiModel = process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini';
@@ -1037,6 +1206,17 @@ export async function runNewsSummaryProviders<T>(
   }
   if (provider === 'openai') {
     return runOpenAi();
+  }
+
+  if (provider === 'auto' && shouldTryLocalLlmFirstInAuto(localBase)) {
+    try {
+      return await runLocal();
+    } catch (e) {
+      console.warn(
+        '[NewsSummary] Ollama(로컬) 선행 실패 — 클라우드 폴백:',
+        e instanceof Error ? e.message.slice(0, 220) : String(e),
+      );
+    }
   }
 
   if (openaiKeys.length > 0) {
@@ -1167,13 +1347,24 @@ async function callBilingualSummary(
       continue;
     }
     const sanitized = sanitizeNewsPayloadTone(enforceNewsBilingualCountermeasureSections(llm));
+    try {
+      assertBilingualKoQualityGate(sanitized);
+    } catch (qe) {
+      const qmsg = qe instanceof Error ? qe.message : String(qe);
+      if (attempt >= maxJson) throw qe;
+      console.warn(
+        `[NewsLLM] [Language Filter] 품질 게이트 → ${attempt + 1}/${maxJson} 재시도: ${qmsg.slice(0, 220)}`,
+      );
+      await sleepMs(400 * attempt);
+      continue;
+    }
     if (!newsBilingualPayloadNeedsJsonRetry(sanitized)) {
       if (attempt > 1) {
         console.warn(
           `[NewsLLM] title_kr·ko_blurb·ko_insight_impact·ko_countermeasure 품질 검사 통과 (${attempt}/${maxJson})`,
         );
       }
-      return llm;
+      return sanitized;
     }
     console.warn(
       `[NewsLLM] 한국어 품질/placeholder 감지 → JSON 재생성 ${attempt}/${maxJson} (title_kr·ko_blurb·ko_insight_impact·ko_countermeasure)`,

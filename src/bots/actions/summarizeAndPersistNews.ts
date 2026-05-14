@@ -15,6 +15,7 @@
  * - NEWS_LLM_MAX_ATTEMPTS: 위와 동일 목적(숫자가 더 최신). 둘 다 있으면 NEWS_LLM_FETCH_RETRIES 우선
  * - NEWS_LLM_INTER_ARTICLE_DELAY_MS: 배치에서 기사 건마다 LLM 호출 직후 대기(ms). 기본 400 (429 완화)
  * - NEWS_LLM_JSON_RETRIES: (문서용) 한국어 JSON 품질 재시도 — 코드에서 **6회 고정**(`newsLlmJsonQualityMaxAttempts`).
+ * - NEWS_LOCAL_LLM_JSON_OBJECT: 로컬(Ollama) 호출에 `response_format: json_object` 사용. `0|off|false` 로 끔. 미설정 시 **켬**(파싱 안정화).
  * - NEWS_SUMMARIZE_MAX_BATCH: summarize 배치 상한(기본 12, 최대 30)
  * - NEWS_INSIGHT_RETROFIT_MAX_BATCH: 인사이트 재가공 배치 상한(기본 12, 최대 25)
  * - NEWS_SUMMARY_FALLBACK_STUB: LLM 없음/호출 실패 시 원문 메타만으로 초안(processed_news) 생성 여부.
@@ -533,6 +534,12 @@ const BILINGUAL_SYSTEM_PROMPT = [
   'title_kr, content_kr, ko_blurb, ko_editor_note, ko_insight_impact, ko_countermeasure, feed_warning_ko,',
   'title_th, content_th, th_blurb, th_editor_note, th_insight_impact, th_countermeasure, feed_warning_th,',
   'incident_attention (none|elevated|high), seo_keywords.',
+  '',
+  '=== [OUTPUT CONTRACT — JSON ONLY] (mandatory; especially local/Ollama) ===',
+  '- Reply must be **one single JSON object** and nothing else: no markdown fences, no preamble like "Here is", no `**title_kr**:` pseudo-markdown.',
+  '- First non-whitespace character MUST be `{` ; last MUST be `}`. Do not wrap in ``` .',
+  '- Use strict JSON string keys exactly as listed (e.g. "title_kr": "..." , not title_kr: without quotes).',
+  '- Do not add any explanatory text before or after the JSON object.',
 ].join('\n');
 
 function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: string): string {
@@ -556,6 +563,8 @@ function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: 
     '- ko_countermeasure / th_countermeasure: 오늘 할 일·우회·확인처 등 실행 지침.',
     '- incident_attention + feed_warning_*: 사건·재난·대혼잡 등이면 elevated/high 와 짧은 경고 문구, 아니면 none + 빈 문자열.',
     '- seo_keywords: 키워드 5개, 쉼표로만 구분.',
+    '',
+    '[출력 계약] 반드시 **순수 JSON 객체 한 덩어리만** 출력한다. 마크다운 코드펜스·서두 설명·"다음은 JSON입니다" 등 **어떤 텍스트도 JSON 앞뒤에 붙이지 마라**. 첫 글자는 `{` 로 시작하고 마지막은 `}` 로 끝낸다.',
   ].join('\n');
 }
 
@@ -1103,6 +1112,12 @@ function localLlmModelsUrl(baseUrl: string): string {
   return `${b}/v1/models`;
 }
 
+function localLlmJsonObjectModeEnabled(): boolean {
+  const raw = process.env.NEWS_LOCAL_LLM_JSON_OBJECT?.trim().toLowerCase();
+  if (raw === '0' || raw === 'false' || raw === 'no' || raw === 'off') return false;
+  return true;
+}
+
 async function ensureLocalLlmReachable(baseUrl: string): Promise<void> {
   const cached = localLlmReachability.get(baseUrl);
   if (cached === true) return;
@@ -1157,7 +1172,7 @@ export async function runNewsSummaryProviders<T>(
       model: localModel,
       apiKey: localKey,
       messages,
-      jsonObjectMode: false,
+      jsonObjectMode: localLlmJsonObjectModeEnabled(),
       maxTokens,
     });
     return parseFromContent(content, '로컬 LLM');

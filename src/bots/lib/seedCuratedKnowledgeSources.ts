@@ -11,8 +11,8 @@ const CURATED_RSS: { name: string; rss_url: string }[] = [
   { name: 'Bangkok Post — Thailand', rss_url: 'https://www.bangkokpost.com/rss/data/thailand.xml' },
 ];
 
+/** 구(舊) 다중 피드만 끔. topstories 는 general.xml 404 대체용으로 살림(091·173 마이그레이션과 일치). */
 const RSS_URLS_TO_DEACTIVATE = [
-  'https://www.bangkokpost.com/rss/data/topstories.xml',
   'https://www.bangkokpost.com/rss/data/world.xml',
   'https://www.bangkokpost.com/rss/data/business.xml',
   'https://www.bangkokpost.com/rss/data/opinion.xml',
@@ -73,6 +73,28 @@ export async function seedCuratedKnowledgeSources(): Promise<SeedCuratedKnowledg
   if (offRssErr) {
     out.error = `[knowledge_sources] 구 RSS 비활성화: ${offRssErr.message}`;
     return out;
+  }
+
+  const bangkokPostRssRemaps: { from: string; to: string }[] = [
+    {
+      from: 'https://www.bangkokpost.com/rss/data/crime.xml',
+      to: 'https://www.bangkokpost.com/rss/data/thailand.xml',
+    },
+    {
+      from: 'https://www.bangkokpost.com/rss/data/general.xml',
+      to: 'https://www.bangkokpost.com/rss/data/topstories.xml',
+    },
+  ];
+  for (const m of bangkokPostRssRemaps) {
+    const { error: bpErr } = await client
+      .from('knowledge_sources')
+      .update({ rss_url: m.to, is_active: true })
+      .eq('kind', 'rss')
+      .eq('rss_url', m.from);
+    if (bpErr) {
+      out.error = `[knowledge_sources] Bangkok Post RSS remap (${m.from}): ${bpErr.message}`;
+      return out;
+    }
   }
 
   for (const row of CURATED_RSS) {

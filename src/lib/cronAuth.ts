@@ -5,6 +5,7 @@ import 'server-only';
  * POST /api/bot/* 수동 트리거도 동일 헤더가 필요합니다(CRON_SECRET 또는 BOT_CRON_SECRET 설정 시).
  * 로컬에서 둘 다 없으면 검증 생략(개발 편의).
  * 시크릿 교체 시: Vercel·로컬 `.env.local` 저장 후 재배포(또는 `next dev` 재시작)하면 `process.env`에 즉시 반영됩니다.
+ * 로컬 dotenv@v17: 큰따옴표 안의 `\\`는 한 글자로 합쳐지지 않습니다. 파일에 적은 백슬래시 개수가 그대로 값에 들어가므로 Vercel UI 값과 바이트 단위로 맞추세요.
  */
 
 function stripEnvNoise(s: string): string {

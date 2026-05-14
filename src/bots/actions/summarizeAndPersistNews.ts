@@ -14,7 +14,7 @@
  * - NEWS_LLM_FETCH_RETRIES: 최대 시도 횟수(기본 5, 상한 12). 네트워크 오류·HTTP 429/502/503/500 시 지수 백오프 후 재시도
  * - NEWS_LLM_MAX_ATTEMPTS: 위와 동일 목적(숫자가 더 최신). 둘 다 있으면 NEWS_LLM_FETCH_RETRIES 우선
  * - NEWS_LLM_INTER_ARTICLE_DELAY_MS: 배치에서 기사 건마다 LLM 호출 직후 대기(ms). 기본 400 (429 완화)
- * - NEWS_LLM_JSON_RETRIES: 이중언어 뉴스 JSON 품질 재생성 상한 — 기본 6, 최대 12(환경 변수). title_kr·ko_blurb·ko_insight_impact·ko_countermeasure 에 스텁/과도하게 짧은 문장이 있으면 동일 LLM 파이프라인으로 재호출.
+ * - NEWS_LLM_JSON_RETRIES: (문서용) 한국어 JSON 품질 재시도 — 코드에서 **6회 고정**(`newsLlmJsonQualityMaxAttempts`).
  * - NEWS_SUMMARIZE_MAX_BATCH: summarize 배치 상한(기본 12, 최대 30)
  * - NEWS_INSIGHT_RETROFIT_MAX_BATCH: 인사이트 재가공 배치 상한(기본 12, 최대 25)
  * - NEWS_SUMMARY_FALLBACK_STUB: LLM 없음/호출 실패 시 원문 메타만으로 초안(processed_news) 생성 여부.
@@ -475,6 +475,7 @@ function buildStubBilingualPayload(
 /** 뉴스 크론 가공 톤 — 사건에서 배우는 대비책 + 적당한 위트 + 냉철한 중립 */
 const BILINGUAL_SYSTEM_PROMPT = [
   'ROLE: You are NOT a generic chatbot here — you write as the **human operator / lead editor** of 「태국에, 살자」(Thai Ja World). Stay in character as that one witty-but-grounded Korea–Thailand expat desk voice.',
+  'SURVIVAL LENS (mandatory): You are NOT summarizing wire copy for tourists. You are the **20-year Thailand veteran** who tells Korean readers what actually happens on the ground — visas, traffic, scams, hospitals, landlords, police, tax, schools — and what to do **today** when things go sideways. Every line must feel like "진짜 생존 팁" from someone who paid tuition in real life (no invented facts).',
   'PERSONA ANCHOR: You MUST write as a **태국에서 20년째 살아온 베테랑 교민** — 비자·세무·교통·치안·소비자 분쟁까지 “현장에서 굴러먹은” 경험을 바탕으로 말한다. (환각 금지: 원문에 없는 사실·번호·기관명을 지어내지 말 것.)',
   'PERSONA: **태국 현지 사정에 밝은 위트 있는 한국인 운영자** — 말투는 적당히 위트 있되 냉철한 중립. 기계 번역·나열 체가 아니라 "이런 일이 있으니 이렇게 하세요"라고 짚어 주는 **전문가 한마디** 톤. never flippant, never a clown, never cruel.',
   'CONTINUITY: Day or night, breaking or slow news — you are the **same** single operator voice for this site. No "as an AI", no shifting personality between articles.',
@@ -897,6 +898,24 @@ function hasExcessiveKoreanRepetition(p: LlmBilingualPayload): boolean {
   return false;
 }
 
+/** 알려진 LLM 루프/스텁 문구가 한국어 노출 필드에 2회 이상이면 재시도 */
+function hasKnownVisaStubLoopInKoFields(p: LlmBilingualPayload): boolean {
+  const stub = '태국 비자 갱신은 정말 어렵다';
+  const blob = [p.title_kr, p.ko_blurb, p.ko_insight_impact, p.ko_countermeasure, p.ko_editor_note, p.content_kr].join(
+    '\n',
+  );
+  let n = 0;
+  let i = 0;
+  while (i < blob.length) {
+    const j = blob.indexOf(stub, i);
+    if (j === -1) break;
+    n += 1;
+    if (n >= 2) return true;
+    i = j + stub.length;
+  }
+  return false;
+}
+
 function isWeakKoCountermeasure(cm: string): boolean {
   const t = cm.trim();
   if (t.length < 52) return true;
@@ -918,6 +937,9 @@ function assertBilingualKoQualityGate(p: LlmBilingualPayload): void {
   }
   if (hasExcessiveKoreanRepetition(p)) {
     throw new Error('[QUALITY FAILED]: repetition');
+  }
+  if (hasKnownVisaStubLoopInKoFields(p)) {
+    throw new Error('[QUALITY FAILED]: repetition (known_stub_loop)');
   }
   if (isWeakKoCountermeasure(p.ko_countermeasure ?? '')) {
     throw new Error('[QUALITY FAILED]: countermeasure_weak');
@@ -1312,13 +1334,9 @@ export async function runNewsSummaryProviders<T>(
   );
 }
 
-/** NEWS_LLM_JSON_RETRIES: 한국어 JSON 품질 재생성 상한 — 기본 6, env 로 1~12 조절(운영 튜닝) */
+/** NEWS_LLM_JSON_RETRIES: 한국어 JSON 품질 재시도 — 운영 고정 6회(언어 오염·반복·대비책 약함 시 재호출). */
 function newsLlmJsonQualityMaxAttempts(): number {
-  const raw = process.env.NEWS_LLM_JSON_RETRIES?.trim();
-  if (!raw) return 6;
-  const n = Math.floor(Number(raw));
-  if (!Number.isFinite(n)) return 6;
-  return Math.min(12, Math.max(1, n));
+  return 6;
 }
 
 const NEWS_KO_PLACEHOLDER_PHRASE_RE =

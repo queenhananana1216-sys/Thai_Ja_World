@@ -1,4 +1,10 @@
-import 'server-only';
+try {
+  // Allow Node CLI/tsx maintenance scripts to reuse this module.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- optional in non-Next runtimes
+  require('server-only');
+} catch {
+  // no-op: tsx / plain Node (scripts/run-news-ingest-once.ts 등)
+}
 
 /** Runtime: read process.env only. Master F: paths are next.config build-time only. */
 

@@ -105,6 +105,19 @@ function loadMasterDockerEnvOnce(): void {
   try {
     if (!existsSync(path)) return;
     dotenvConfig({ path, override: false });
+    const resolved = resolveLocalLlmBaseUrlForRuntime(process.env.LOCAL_LLM_BASE_URL?.trim());
+    const model = process.env.LOCAL_LLM_MODEL?.trim();
+    if (resolved) {
+      console.warn(
+        `[NewsLLM] loadMasterDockerEnv: LOCAL_LLM_BASE_URL resolved → host=${safeUrlHost(resolved)} (LOCAL_LLM_MODEL=${model || 'default'})`,
+      );
+    } else if (process.env.LOCAL_LLM_BASE_URL?.trim()) {
+      console.warn(
+        '[NewsLLM] loadMasterDockerEnv: LOCAL_LLM_BASE_URL is set but runtime-resolved empty (localhost stripped on Vercel or invalid URL).',
+      );
+    } else {
+      console.warn('[NewsLLM] loadMasterDockerEnv: LOCAL_LLM_BASE_URL not set after master dotenv merge.');
+    }
   } catch {
     // no-op: 로컬 경로 없거나 읽기 실패 시 클라우드 env 만 사용
   }

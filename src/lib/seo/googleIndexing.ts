@@ -1,4 +1,9 @@
-import 'server-only';
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- optional in non-Next runtimes
+  require('server-only');
+} catch {
+  // no-op: tsx / plain Node
+}
 
 import crypto from 'node:crypto';
 

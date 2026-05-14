@@ -15,6 +15,8 @@
  * - NEWS_LLM_MAX_ATTEMPTS: 위와 동일 목적(숫자가 더 최신). 둘 다 있으면 NEWS_LLM_FETCH_RETRIES 우선
  * - NEWS_LLM_INTER_ARTICLE_DELAY_MS: 배치에서 기사 건마다 LLM 호출 직후 대기(ms). 기본 400 (429 완화)
  * - NEWS_LLM_JSON_RETRIES: (문서용) 한국어 JSON 품질 재시도 — 코드에서 **6회 고정**(`newsLlmJsonQualityMaxAttempts`).
+ * - NEWS_DUAL_LLM_CROSSCHECK: 1|true|on 일 때 보조 모델과 한국어 제목·훅 일치율(Jaccard) ≥85%가 아니면 주 모델 재생성.
+ *   로컬+Gemini 키가 있으면(비-Vercel) 보조=Gemini, 그 외 Gemini+OpenAI 둘 다 있으면 보조=Gemini.
  * - NEWS_LOCAL_LLM_JSON_OBJECT: 로컬(Ollama) 호출에 `response_format: json_object` 사용. `0|off|false` 로 끔. 미설정 시 **켬**(파싱 안정화).
  * - NEWS_SUMMARIZE_MAX_BATCH: summarize 배치 상한(기본 12, 최대 30)
  * - NEWS_INSIGHT_RETROFIT_MAX_BATCH: 인사이트 재가공 배치 상한(기본 12, 최대 25)
@@ -38,6 +40,11 @@ import {
 import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
 import { requestGoogleIndexing } from '@/lib/seo/googleIndexing';
 import { absoluteUrl } from '@/lib/seo/site';
+import {
+  bilingualKoHeadlineAgreement,
+  filterSeoKeywordsAgainstBody,
+  headlineRawOverlap,
+} from '@/lib/seo/site';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type NewsSummaryProvider = 'openai' | 'gemini' | 'local' | 'ollama' | 'auto';
@@ -1389,6 +1396,97 @@ export async function runNewsSummaryProviders<T>(
   );
 }
 
+function dualLlmCrossCheckEnabled(): boolean {
+  const v = process.env.NEWS_DUAL_LLM_CROSSCHECK?.trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
+/** 원문·제목 맥락과 맞지 않는 SEO 키워드 제거 후 정규화 */
+function applySeoAlignmentToBilingual(
+  payload: LlmBilingualPayload,
+  rawBody: string | null,
+  wireTitle: string,
+): LlmBilingualPayload {
+  const corpus = [rawBody ?? '', wireTitle, payload.title_kr, payload.content_kr, payload.ko_blurb].join('\n');
+  const filtered = filterSeoKeywordsAgainstBody(payload.seo_keywords, corpus, 0.22);
+  const seo_keywords =
+    filtered.length > 0 ? normalizeSeoKeywords(filtered) : stubSeoKeywordsFromTitle(payload.title_kr);
+  return { ...payload, seo_keywords };
+}
+
+/**
+ * Ollama(로컬) vs Gemini 또는 OpenAI vs Gemini 로 한국어 헤드라인·훅 교차 검증.
+ * 보조 호출 실패 시 주 결과만 채택(true).
+ */
+async function bilingualDualProviderAgreementOrTrue(
+  messages: Array<{ role: string; content: string }>,
+  primary: LlmBilingualPayload,
+): Promise<boolean> {
+  if (!dualLlmCrossCheckEnabled()) return true;
+  const geminiKeys = getGeminiApiKeyCandidates();
+  const openaiKeys = getOpenAiApiKeyCandidates();
+  const localBase = resolveLocalLlmBaseUrlForRuntime(process.env.LOCAL_LLM_BASE_URL);
+  const geminiBase =
+    process.env.GEMINI_OPENAI_BASE_URL?.trim() ||
+    'https://generativelanguage.googleapis.com/v1beta/openai';
+  const geminiModel = process.env.GEMINI_MODEL?.trim() || 'gemini-2.0-flash';
+  const localModel = process.env.LOCAL_LLM_MODEL?.trim() || 'llama3.2';
+  const localKey = process.env.LOCAL_LLM_API_KEY?.trim();
+
+  let secondaryRaw: LlmBilingualPayload | null = null;
+  try {
+    if (localBase && !process.env.VERCEL && geminiKeys.length > 0) {
+      const content = await callOpenAiCompatibleChatCompletion({
+        baseUrl: geminiBase,
+        model: geminiModel,
+        apiKeyCandidates: geminiKeys,
+        messages,
+        jsonObjectMode: true,
+        maxTokens: 3800,
+      });
+      secondaryRaw = parseBilingualPayloadFromContent(content, 'Gemini(교차)');
+    } else if (geminiKeys.length > 0 && openaiKeys.length > 0) {
+      const content = await callOpenAiCompatibleChatCompletion({
+        baseUrl: geminiBase,
+        model: geminiModel,
+        apiKeyCandidates: geminiKeys,
+        messages,
+        jsonObjectMode: true,
+        maxTokens: 3800,
+      });
+      secondaryRaw = parseBilingualPayloadFromContent(content, 'Gemini(교차·클라우드)');
+    } else if (localBase && !process.env.VERCEL && openaiKeys.length > 0) {
+      await ensureLocalLlmReachable(localBase);
+      const content = await callOpenAiCompatibleChatCompletion({
+        baseUrl: localBase,
+        model: localModel,
+        apiKey: localKey,
+        messages,
+        jsonObjectMode: localLlmJsonObjectModeEnabled(),
+        maxTokens: 3800,
+      });
+      secondaryRaw = parseBilingualPayloadFromContent(content, '로컬 LLM(교차)');
+    } else {
+      return true;
+    }
+  } catch (e) {
+    const m = e instanceof Error ? e.message : String(e);
+    console.warn(`[NewsLLM] 이중 교차검증 보조 모델 실패 — 주 결과만 채택: ${m.slice(0, 200)}`);
+    return true;
+  }
+  if (!secondaryRaw) return true;
+  const sec = sanitizeNewsPayloadTone(enforceNewsBilingualCountermeasureSections(secondaryRaw));
+  try {
+    assertBilingualKoQualityGate(sec);
+  } catch {
+    console.warn('[NewsLLM] 교차검증 보조 초안 품질 게이트 미통과 — 주 결과만 채택');
+    return true;
+  }
+  const agreement = bilingualKoHeadlineAgreement(primary, sec);
+  console.warn(`[NewsLLM] 이중 모델 헤드라인 일치율(Jaccard): ${(agreement * 100).toFixed(1)}%`);
+  return agreement >= 0.85;
+}
+
 /** NEWS_LLM_JSON_RETRIES: 한국어 JSON 품질 재시도 — 운영 고정 6회(언어 오염·반복·대비책 약함 시 재호출). */
 function newsLlmJsonQualityMaxAttempts(): number {
   return 6;
@@ -1444,13 +1542,39 @@ async function callBilingualSummary(
       await sleepMs(400 * attempt);
       continue;
     }
-    if (!newsBilingualPayloadNeedsJsonRetry(sanitized)) {
+    let aligned = applySeoAlignmentToBilingual(sanitized, body, title);
+    const rawLen = (body ?? '').trim().length;
+    const hookOverlap = headlineRawOverlap(`${aligned.title_kr}\n${aligned.ko_blurb}`, body);
+    if (rawLen > 180 && hookOverlap < 0.028) {
+      if (attempt >= maxJson) {
+        throw new Error(
+          `[NewsLLM] 한국어 제목·훅이 원문과 정합성이 너무 낮음(Jaccard ${hookOverlap.toFixed(3)}) — ${maxJson}회 재시도 소진`,
+        );
+      }
+      console.warn(
+        `[NewsLLM] 원문 정합성 낮음(Jaccard ${hookOverlap.toFixed(3)}) → ${attempt + 1}/${maxJson} 재생성`,
+      );
+      await sleepMs(420 * attempt);
+      continue;
+    }
+    const dualOk = await bilingualDualProviderAgreementOrTrue(messages, aligned);
+    if (!dualOk) {
+      if (attempt >= maxJson) {
+        throw new Error(
+          '[NewsLLM] 이중 모델(로컬↔Gemini 등) 헤드라인 일치율 85% 미만 — 교차 검증 재시도 소진',
+        );
+      }
+      console.warn(`[NewsLLM] 이중 모델 일치율 85% 미만 → ${attempt + 1}/${maxJson} 주 모델 재생성`);
+      await sleepMs(480 * attempt);
+      continue;
+    }
+    if (!newsBilingualPayloadNeedsJsonRetry(aligned)) {
       if (attempt > 1) {
         console.warn(
           `[NewsLLM] title_kr·ko_blurb·ko_insight_impact·ko_countermeasure 품질 검사 통과 (${attempt}/${maxJson})`,
         );
       }
-      return sanitized;
+      return aligned;
     }
     console.warn(
       `[NewsLLM] 한국어 품질/placeholder 감지 → JSON 재생성 ${attempt}/${maxJson} (title_kr·ko_blurb·ko_insight_impact·ko_countermeasure)`,
@@ -1943,7 +2067,8 @@ async function persistBilingualProcessedNews(
   publishedOverride?: boolean,
 ): Promise<SummarizeRowResult> {
   const url = row.external_url ?? '';
-  const sanitized = sanitizeNewsPayloadTone(enforceNewsBilingualCountermeasureSections(llm));
+  let sanitized = sanitizeNewsPayloadTone(enforceNewsBilingualCountermeasureSections(llm));
+  sanitized = applySeoAlignmentToBilingual(sanitized, row.raw_body, row.title?.trim() || '(제목 없음)');
   if (newsPersistViolatesPublicQualityGate(sanitized)) {
     return {
       raw_news_id: row.id,
@@ -2045,7 +2170,8 @@ async function updateBilingualProcessedNews(
   options?: UpdateBilingualProcessedNewsOptions,
 ): Promise<SummarizeRowResult> {
   const url = row.external_url ?? '';
-  const sanitized = sanitizeNewsPayloadTone(enforceNewsBilingualCountermeasureSections(llm));
+  let sanitized = sanitizeNewsPayloadTone(enforceNewsBilingualCountermeasureSections(llm));
+  sanitized = applySeoAlignmentToBilingual(sanitized, row.raw_body, row.title?.trim() || '(제목 없음)');
   if (newsPersistViolatesPublicQualityGate(sanitized)) {
     return {
       raw_news_id: row.id,

@@ -158,7 +158,7 @@ const ko: Portal2026Copy = {
   newsLink: '뉴스',
   more: '더보기',
   newsHubMore: '뉴스 허브에서 전체 보기 →',
-  emptyList: '목록을 불러오지 못했습니다.',
+  emptyList: '일부 목록이 아직 도착하지 않았습니다. 새로고침하면 대부분 복구됩니다.',
   weatherWidgetAria: '방콕 현재 날씨',
   weatherLoading: '날씨 불러오는 중…',
   weatherUnavailable: '날씨를 불러오지 못했습니다.',

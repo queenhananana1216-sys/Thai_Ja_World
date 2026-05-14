@@ -19,7 +19,7 @@ export function TjRouteSuspenseFallback() {
           <div className="h-full w-2/5 animate-pulse rounded-full bg-gradient-to-r from-amber-300/95 via-violet-300/90 to-cyan-300/90" />
         </div>
         <p className="m-0 text-sm font-semibold leading-relaxed text-slate-200">
-          페이지 뼈대를 불러오는 중입니다…
+          화면을 준비하는 중입니다…
         </p>
       </div>
     </div>

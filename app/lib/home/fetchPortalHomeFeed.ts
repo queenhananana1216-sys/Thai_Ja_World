@@ -128,7 +128,7 @@ export const HONEST_EMPTY_PORTAL_HOME_FEED: PortalHomeFeed = {
   thailandPhotos: [],
 };
 
-const HOME_FETCH_TIMEOUT_MS = 8000;
+const HOME_FETCH_TIMEOUT_MS = 14_000;
 
 function unifiedItemToLine(item: HomeUnifiedFeedItem, locale: Locale): PortalFeedLine | null {
   const id = String(item.id ?? '').trim();

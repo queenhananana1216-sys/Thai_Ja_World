@@ -35,3 +35,86 @@ export function trimForMetaDescription(text: string, maxLen = 155): string {
   if (t.length <= maxLen) return t;
   return `${t.slice(0, maxLen - 1).trim()}…`;
 }
+
+function normalizeSeoOverlapText(s: string): string {
+  return String(s ?? '')
+    .toLowerCase()
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function seoOverlapTokens(s: string): Set<string> {
+  const out = new Set<string>();
+  for (const part of normalizeSeoOverlapText(s).split(/[\s,]+/)) {
+    const t = part.trim();
+    if (t.length >= 2) out.add(t);
+  }
+  return out;
+}
+
+export function seoTokenSetJaccard(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  let inter = 0;
+  for (const x of a) {
+    if (b.has(x)) inter += 1;
+  }
+  const union = a.size + b.size - inter;
+  return union > 0 ? inter / union : 0;
+}
+
+export function avgKeywordBodySupport(keywords: string[], body: string): number {
+  const bodyN = normalizeSeoOverlapText(body);
+  const bodyTok = seoOverlapTokens(body);
+  if (!keywords.length) return 1;
+  let sum = 0;
+  for (const raw of keywords) {
+    const k = raw.trim();
+    if (!k) continue;
+    const kt = seoOverlapTokens(k);
+    if (kt.size === 0) {
+      sum += bodyN.includes(normalizeSeoOverlapText(k)) ? 1 : 0;
+      continue;
+    }
+    let hit = 0;
+    for (const t of kt) {
+      if (bodyTok.has(t) || (t.length >= 3 && bodyN.includes(t))) hit += 1;
+    }
+    sum += hit / Math.max(1, kt.size);
+  }
+  return sum / keywords.length;
+}
+
+export function filterSeoKeywordsAgainstBody(
+  keywords: string[],
+  body: string,
+  minSupport = 0.28,
+): string[] {
+  const bodyN = normalizeSeoOverlapText(body);
+  const bodyTok = seoOverlapTokens(body);
+  return keywords
+    .map((k) => k.trim())
+    .filter(Boolean)
+    .filter(
+      (k) =>
+        avgKeywordBodySupport([k], bodyN.length ? bodyN : body) >= minSupport ||
+        bodyTok.has(normalizeSeoOverlapText(k)),
+    );
+}
+
+export function headlineRawOverlap(headline: string, rawBody: string | null | undefined): number {
+  const h = headline.trim();
+  const b = String(rawBody ?? '').slice(0, 12000);
+  if (!h || !b.trim()) return 0;
+  return seoTokenSetJaccard(seoOverlapTokens(h), seoOverlapTokens(b));
+}
+
+export function bilingualKoHeadlineAgreement(
+  a: { title_kr: string; ko_blurb: string },
+  b: { title_kr: string; ko_blurb: string },
+): number {
+  const ta = seoOverlapTokens(`${a.title_kr}\n${a.ko_blurb}`);
+  const tb = seoOverlapTokens(`${b.title_kr}\n${b.ko_blurb}`);
+  return seoTokenSetJaccard(ta, tb);
+}

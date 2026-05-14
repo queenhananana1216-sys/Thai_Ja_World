@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { avgKeywordBodySupport } from '@/lib/seo/site';
 import type { KnowledgeLlmOutput } from '@/lib/knowledge/knowledgeLlmTypes';
 import { isKnowledgeStubKoSummary } from '@/lib/knowledge/knowledgeStubConstants';
 import { buildPostContent, excerptFromKnowledgeKo, validateKnowledgePublish } from '@/lib/knowledge/knowledgePostBodyShared';
@@ -741,6 +742,38 @@ export default function KnowledgeQueueClient({
         </div>
       ) : null}
       <KnowledgeLlmEnvBanner diagnostics={diagnostics} />
+      {stubQueueOnly && displayItems.length > 0 ? (
+        <div
+          style={{
+            marginBottom: 14,
+            padding: 12,
+            background: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            borderRadius: 10,
+            fontSize: 12,
+          }}
+        >
+          <strong style={{ display: 'block', marginBottom: 6, color: '#166534' }}>
+            SEO 키워드·본문 정합(자가 점검)
+          </strong>
+          <p style={{ margin: '0 0 8px', color: '#166534', lineHeight: 1.55 }}>
+            태그(ko_tags) 토큰이 한국어 제목·요약과 얼마나 겹치는지 보여 줍니다. 낮으면 재가공·태그 수정을 권장합니다.
+          </p>
+          <ul style={{ margin: 0, paddingLeft: 18, color: '#14532d' }}>
+            {displayItems.slice(0, 14).map((it) => {
+              const corpus = `${it.ko_title}\n${it.ko_summary}`;
+              const score = Math.round(avgKeywordBodySupport(it.ko_tags, corpus) * 100);
+              return (
+                <li key={it.id} style={{ marginBottom: 4 }}>
+                  <span style={{ fontFamily: 'ui-monospace, monospace' }}>{it.id.slice(0, 8)}…</span> — 태그·본문 일치{' '}
+                  {score}%
+                  {score < 40 ? <span style={{ color: '#b45309' }}> (낮음)</span> : null}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
       <StubLlmBulkToolbar
         items={items}
         busy={bulkLlmBusy}

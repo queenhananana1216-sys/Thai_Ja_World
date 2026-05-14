@@ -13,7 +13,7 @@
  * - NEWS_LLM_FETCH_RETRIES: 최대 시도 횟수(기본 5, 상한 12). 네트워크 오류·HTTP 429/502/503/500 시 지수 백오프 후 재시도
  * - NEWS_LLM_MAX_ATTEMPTS: 위와 동일 목적(숫자가 더 최신). 둘 다 있으면 NEWS_LLM_FETCH_RETRIES 우선
  * - NEWS_LLM_INTER_ARTICLE_DELAY_MS: 배치에서 기사 건마다 LLM 호출 직후 대기(ms). 기본 400 (429 완화)
- * - NEWS_LLM_JSON_RETRIES: 이중언어 뉴스 JSON 품질 재생성 상한 — **코드에서 6회로 고정**(이 이름의 env는 무시). title_kr·ko_blurb·ko_insight_impact·ko_countermeasure 에 스텁/과도하게 짧은 문장이 있으면 동일 LLM 파이프라인으로 재호출.
+ * - NEWS_LLM_JSON_RETRIES: 이중언어 뉴스 JSON 품질 재생성 상한 — 기본 6, 최대 12(환경 변수). title_kr·ko_blurb·ko_insight_impact·ko_countermeasure 에 스텁/과도하게 짧은 문장이 있으면 동일 LLM 파이프라인으로 재호출.
  * - NEWS_SUMMARIZE_MAX_BATCH: summarize 배치 상한(기본 12, 최대 30)
  * - NEWS_INSIGHT_RETROFIT_MAX_BATCH: 인사이트 재가공 배치 상한(기본 12, 최대 25)
  * - NEWS_SUMMARY_FALLBACK_STUB: LLM 없음/호출 실패 시 원문 메타만으로 초안(processed_news) 생성 여부.
@@ -1119,9 +1119,13 @@ export async function runNewsSummaryProviders<T>(
   );
 }
 
-/** NEWS_LLM_JSON_RETRIES: env 무시, 이중언어 JSON 품질 재생성 상한 6회 고정 */
+/** NEWS_LLM_JSON_RETRIES: 한국어 JSON 품질 재생성 상한 — 기본 6, env 로 1~12 조절(운영 튜닝) */
 function newsLlmJsonQualityMaxAttempts(): number {
-  return 6;
+  const raw = process.env.NEWS_LLM_JSON_RETRIES?.trim();
+  if (!raw) return 6;
+  const n = Math.floor(Number(raw));
+  if (!Number.isFinite(n)) return 6;
+  return Math.min(12, Math.max(1, n));
 }
 
 const NEWS_KO_PLACEHOLDER_PHRASE_RE =

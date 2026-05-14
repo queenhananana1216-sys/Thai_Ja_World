@@ -15,6 +15,11 @@ function stripEnvNoise(s: string): string {
     .trim();
 }
 
+/** Word / Pages 등에서 복사된 스마트 따옴표를 ASCII 따옴표로 통일 */
+function normalizeAsciiQuotes(s: string): string {
+  return s.replace(/\u201C|\u201D/g, '"').replace(/\u2018|\u2019/g, "'");
+}
+
 /** Dotenv/Vercel UI에서 값 전체가 따옴표로 감싸진 경우 한 겹만 제거 */
 function stripOptionalOuterQuotes(s: string): string {
   if (s.length < 2) return s;
@@ -30,7 +35,9 @@ function normalizeCronSecret(): string | null {
   const raw =
     process.env.CRON_SECRET?.trim() || process.env.BOT_CRON_SECRET?.trim();
   if (!raw) return null;
-  const cleaned = stripOptionalOuterQuotes(stripEnvNoise(raw));
+  const cleaned = stripOptionalOuterQuotes(
+    normalizeAsciiQuotes(stripEnvNoise(raw)),
+  );
   return cleaned.length > 0 ? cleaned : null;
 }
 
@@ -39,7 +46,9 @@ function normalizeBearerToken(authHeader: string | null): string | null {
   if (!raw) return null;
   const m = /^Bearer\s+([\s\S]+)$/i.exec(raw);
   if (!m?.[1]) return null;
-  return stripOptionalOuterQuotes(stripEnvNoise(m[1]));
+  return stripOptionalOuterQuotes(
+    normalizeAsciiQuotes(stripEnvNoise(m[1])),
+  );
 }
 
 export function isCronAuthorized(authHeader: string | null): boolean {

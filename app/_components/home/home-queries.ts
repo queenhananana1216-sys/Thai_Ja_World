@@ -134,7 +134,11 @@ export type UxTotalsPublic = {
 /** 홈 통합 피드·게시 폴백에서 숨길 저품질 스텁(제목·발췌·본문) */
 function isStubHomePortalText(title: string, excerpt?: string | null, content?: string | null): boolean {
   const blob = `${title}\n${excerpt ?? ''}\n${content ?? ''}`;
-  return /내용\s*준비\s*중|내용\s*준비중|가공\s*전|가공전|placeholder/i.test(blob);
+  return (
+    /내용\s*준비|내용\s*준비\s*중|내용\s*준비중|가공\s*전|가공전|작성\s*중|작성\s*예정|업데이트\s*예정|준비\s*중\s*입니다|placeholder|lorem\s+ipsum|TBD|coming\s*soon|to\s*be\s*continued|여기에\s*입력|\(제목\s*없음\)/i.test(
+      blob,
+    ) || !/\S/u.test(title.trim())
+  );
 }
 
 function mapUnifiedRpcRow(r: Record<string, unknown>): HomeUnifiedFeedItem {

@@ -1202,7 +1202,7 @@ export async function runNewsSummaryProviders<T>(
       model: geminiModel,
       apiKeyCandidates: geminiKeys,
       messages,
-      jsonObjectMode: false,
+      jsonObjectMode: true,
       maxTokens,
     });
     return parseFromContent(content, 'Gemini');
@@ -1248,8 +1248,47 @@ export async function runNewsSummaryProviders<T>(
     );
   };
 
+  /** NEWS_SUMMARY_PROVIDER=local 일 때 Ollama 실패 시 클라우드로 이어져 스텁 남발을 줄임 */
+  const runCloudBilingualFallback = async (reason: string): Promise<T> => {
+    if (openaiKeys.length > 0) {
+      try {
+        console.warn(`[NewsSummary] ${reason} → OpenAI 폴백 시도`);
+        return await runOpenAi();
+      } catch (eo) {
+        console.warn(
+          '[NewsSummary] OpenAI 폴백 실패:',
+          eo instanceof Error ? eo.message.slice(0, 200) : String(eo),
+        );
+      }
+    }
+    if (geminiKeys.length > 0) {
+      try {
+        console.warn(`[NewsSummary] ${reason} → Gemini 폴백 시도`);
+        return await runGemini();
+      } catch (eg) {
+        console.warn(
+          '[NewsSummary] Gemini 폴백 실패:',
+          eg instanceof Error ? eg.message.slice(0, 200) : String(eg),
+        );
+      }
+    }
+    if (groqKeys.length > 0) {
+      console.warn(`[NewsSummary] ${reason} → Groq 폴백 시도`);
+      return await runGroq();
+    }
+    throw new Error(
+      `${reason} — OPENAI_API_KEY·GEMINI_API_KEY·GROQ_API_KEY 중 하나를 Vercel/로컬에 설정하면 Ollama 장애 시에도 JSON 가공이 이어집니다.`,
+    );
+  };
+
   if (provider === 'local') {
-    return runLocal();
+    try {
+      return await runLocal();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn('[NewsSummary] LOCAL(Ollama) 실패 — 클라우드 폴백:', msg.slice(0, 240));
+      return runCloudBilingualFallback('LOCAL(Ollama) 실패');
+    }
   }
   if (provider === 'gemini') {
     return runGemini();

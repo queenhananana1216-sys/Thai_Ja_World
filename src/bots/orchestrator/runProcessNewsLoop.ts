@@ -31,8 +31,8 @@ export async function runProcessNewsLoop(
 ): Promise<RunProcessNewsResult> {
   const { idempotencyKey, limit: limitOpt } = options;
   const envBatch = Number(process.env.NEWS_SUMMARIZE_BATCH_SIZE);
-  /** 기본 3: 로컬 Ollama 직렬 가공 시 타임아웃·발열 완화 (env 로 상향 가능, 상한 30) */
-  const defaultLimit = Number.isFinite(envBatch) && envBatch >= 1 ? Math.min(envBatch, 30) : 3;
+  /** 기본 1: Ollama 직렬 가공 시 타임아웃 최소화 (NEWS_SUMMARIZE_BATCH_SIZE 로 상향 가능, 상한 30) */
+  const defaultLimit = Number.isFinite(envBatch) && envBatch >= 1 ? Math.min(envBatch, 30) : 1;
   const limit = limitOpt ?? defaultLimit;
   const run_id = randomUUID();
 

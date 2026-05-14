@@ -131,19 +131,42 @@ export type UxTotalsPublic = {
   avg_dwell_seconds?: number;
 };
 
-/** 홈 통합 피드·게시 폴백에서 숨길 저품질 스텁(제목·발췌·본문) */
+/** 홈 통합 피드·게시 폴백: 스텁 문구 + 간이 품질(100 만점, 80 미만 숨김) */
+function homePortalFeedQualityScore(title: string, excerpt?: string | null, content?: string | null): number {
+  const t = (title ?? '').trim();
+  const e = (excerpt ?? '').trim();
+  const c = (content ?? '').trim();
+  const blob = `${t}\n${e}\n${c}`;
+  if (!/\S/u.test(t)) return 0;
+  let score = 38;
+  score += Math.min(22, Math.floor(t.length / 2));
+  score += Math.min(28, Math.floor(e.length / 3));
+  score += Math.min(18, Math.floor(c.length / 24));
+  if (/[\-•·]|^\s*\d+\./mu.test(blob)) score += 6;
+  if (/\*\*운영자의 대비책\*\*|운영자의 대비책|핵심 한 줄|🔥/u.test(blob)) score += 10;
+  if (/내용\s*준비|가공\s*전|TBD|placeholder|coming\s*soon|작성\s*예정|LLM\s*없음|원문만으로는/i.test(blob)) score -= 95;
+  const visaStub = '태국 비자 갱신은 정말 어렵다';
+  const visaCount = Math.max(0, blob.split(visaStub).length - 1);
+  if (visaCount >= 2) score -= 70;
+  if (visaCount === 1 && e.length < 28) score -= 12;
+  if (e.length > 0 && e.length < 18) score -= 18;
+  if (t.length < 10) score -= 12;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
 function isStubHomePortalText(title: string, excerpt?: string | null, content?: string | null): boolean {
   const blob = `${title}\n${excerpt ?? ''}\n${content ?? ''}`;
   const visaStub = '태국 비자 갱신은 정말 어렵다';
   const visaRepeats =
     blob.includes(visaStub) && blob.indexOf(visaStub) !== blob.lastIndexOf(visaStub);
-  return (
+  const legacyStub =
     visaRepeats ||
     /내용\s*준비|내용\s*준비\s*중|내용\s*준비중|가공\s*전|가공전|작성\s*중|작성\s*예정|업데이트\s*예정|준비\s*중\s*입니다|placeholder|lorem\s+ipsum|TBD|coming\s*soon|to\s*be\s*continued|여기에\s*입력|\(제목\s*없음\)/i.test(
       blob,
     ) ||
-    !/\S/u.test(title.trim())
-  );
+    !/\S/u.test(title.trim());
+  if (legacyStub) return true;
+  return homePortalFeedQualityScore(title, excerpt, content) < 80;
 }
 
 function mapUnifiedRpcRow(r: Record<string, unknown>): HomeUnifiedFeedItem {

@@ -56,7 +56,20 @@ export function isCronAuthorized(authHeader: string | null): boolean {
   if (!secret) return true;
 
   const token = normalizeBearerToken(authHeader);
-  if (!token) return false;
+  if (!token) {
+    console.warn('[cronAuth] CRON: Bearer token missing (Authorization header empty or not Bearer).');
+    return false;
+  }
 
-  return token === secret;
+  if (token !== secret) {
+    /** TEMP: mismatch triage — remove after Vercel·마스터 env 동기화 확인 (전체 시크릿은 로그 금지) */
+    const secretPrefix = secret.slice(0, 3);
+    const tokenPrefix = token.slice(0, 3);
+    console.warn(
+      `[cronAuth] CRON mismatch len(secret)=${secret.length} len(token)=${token.length} secretPrefix=${JSON.stringify(secretPrefix)} tokenPrefix=${JSON.stringify(tokenPrefix)}`,
+    );
+    return false;
+  }
+
+  return true;
 }

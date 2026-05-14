@@ -10,8 +10,8 @@ if (!secret) {
 }
 
 const u = new URL("https://www.thaijaworld.com/api/cron/news");
-u.searchParams.set("itemsPerFeed", "10");
-u.searchParams.set("limit", "10");
+u.searchParams.set("itemsPerFeed", "8");
+u.searchParams.set("limit", "1");
 
 const req = https.request(
   u,

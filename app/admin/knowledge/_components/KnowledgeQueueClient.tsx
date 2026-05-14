@@ -253,10 +253,13 @@ export default function KnowledgeQueueClient({
   items,
   diagnostics,
   orphanRawKnowledge = [],
+  stubQueueOnly = false,
 }: {
   items: KnowledgeQueueItem[];
   diagnostics?: KnowledgeQueueDiagnostics | null;
   orphanRawKnowledge?: OrphanRawKnowledgeItem[];
+  /** true: 스텁(미가공) 초안만 표시 — `?view=stubs` */
+  stubQueueOnly?: boolean;
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -614,6 +617,10 @@ export default function KnowledgeQueueClient({
       </div>
     ) : null;
 
+  const displayItems = stubQueueOnly
+    ? items.filter((it) => isKnowledgeStubKoSummary(it.ko_summary))
+    : items;
+
   if (items.length === 0) {
     return (
       <div style={{ marginTop: 16 }}>
@@ -676,9 +683,37 @@ export default function KnowledgeQueueClient({
     );
   }
 
+  if (stubQueueOnly && displayItems.length === 0) {
+    return (
+      <div style={{ marginTop: 16 }}>
+        <KnowledgeLlmEnvBanner diagnostics={diagnostics} />
+        {orphanPanel}
+        <p style={{ color: '#047857', fontSize: 14, margin: '0 0 12px', lineHeight: 1.6 }}>
+          현재 승인 대기 큐에 <strong>스텁(미가공)</strong>으로 분류된 초안이 없습니다. 전체 목록은{' '}
+          <button
+            type="button"
+            onClick={() => router.push('/admin/knowledge')}
+            style={{
+              border: 'none',
+              background: 'none',
+              color: '#2563eb',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              font: 'inherit',
+              padding: 0,
+            }}
+          >
+            꿀팁 큐 전체
+          </button>
+          에서 확인하세요.
+        </p>
+      </div>
+    );
+  }
+
   // board_target 별 그룹
   const byBoard = new Map<string, KnowledgeQueueItem[]>();
-  for (const it of items) {
+  for (const it of displayItems) {
     const list = byBoard.get(it.board_target) ?? [];
     list.push(it);
     byBoard.set(it.board_target, list);
@@ -689,10 +724,12 @@ export default function KnowledgeQueueClient({
   const llmReady = diagnostics?.knowledgeLlmConfigured ?? false;
 
   return (
-    <div style={{ marginTop: 12, paddingBottom: items.length > 0 ? 100 : 0 }}>
-      {items.length > 0 ? (
+    <div style={{ marginTop: 12, paddingBottom: displayItems.length > 0 ? 100 : 0 }}>
+      {displayItems.length > 0 ? (
         <div className="admin-news-float" role="toolbar" aria-label="꿀팁 일괄 게시 — 미가공은 서버에서 AI 보정">
-          <span className="admin-news-float__meta">승인 대기 {items.length}</span>
+          <span className="admin-news-float__meta">
+            {stubQueueOnly ? '스텁만' : '승인 대기'} {displayItems.length}
+          </span>
           <button
             type="button"
             className="admin-news-float__btn admin-news-float__btn--primary"

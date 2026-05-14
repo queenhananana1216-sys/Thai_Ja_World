@@ -12,6 +12,8 @@ import {
   isMaskedOrPlaceholderPhone,
   isDemoKoreanBizPlaceId,
   normalizeExternalChatUrl,
+  normalizeThailandPhoneForDisplay,
+  normalizeThailandPhoneForTelHref,
 } from '@/lib/korean-biz/publicContact';
 import type { KoreanBizCategory, KoreanBizRow } from '@/lib/korean-biz/koreanBizTypes';
 import { getKoreanBizDisplayViews, koreanBizCommunityWhisper } from '@/lib/korean-biz/koreanBizVitality';
@@ -440,8 +442,9 @@ export default function KoreanBizHubClient({
               !integrityPending &&
               !isMaskedOrPlaceholderPhone(row.phone) &&
               row.phone?.trim()
-                ? row.phone.trim()
+                ? normalizeThailandPhoneForDisplay(row.phone.trim()) ?? row.phone.trim()
                 : null;
+            const phoneTelHref = phoneDisplay ? normalizeThailandPhoneForTelHref(row.phone) : null;
             const contactBroken = row.contact_link_ok === false && !integrityPending;
             const checkingLabel = locale === 'th' ? 'กำลังตรวจสอบลิงก์' : '연락 링크 확인 중';
             const chatPrimary = integrityPending ? null : lineU ?? waU;
@@ -529,7 +532,7 @@ export default function KoreanBizHubClient({
                         ) : null}
                         {phoneDisplay ? (
                           <a
-                            href={`tel:${phoneDisplay.replace(/\s/g, '')}`}
+                            href={phoneTelHref ?? `tel:${phoneDisplay.replace(/\s/g, '')}`}
                             className="text-center font-mono text-sm font-semibold tracking-wide text-amber-100/95 underline decoration-amber-500/50 underline-offset-2 hover:text-amber-50"
                           >
                             {phoneDisplay}

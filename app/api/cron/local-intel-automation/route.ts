@@ -3,6 +3,14 @@ import { isCronAuthorized } from '@/lib/cronAuth';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { processKnowledgeFromResolvedRaw } from '@/bots/actions/processAndPersistKnowledge';
 import { upsertTipsArticleBySourceUrl } from '@/bots/actions/summarizeAndPersistNews';
+import {
+  buildAddressFromOsmTags,
+  buildGoogleMapsUrlFromOsmLatLon,
+  extractPhonesFromOsmTags,
+  isLikelySyntheticOrDemoPhone,
+  normalizeThailandPhoneForDisplay,
+  pickCrossCheckedPhoneFromOsmAndLlm,
+} from '@/lib/korean-biz/publicContact';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,6 +33,8 @@ type VerifiedIntel = {
   slug?: string;
   confidence?: 'high' | 'medium' | 'low';
   reason?: string;
+  /** raw 본문에 등장하는 전화만 — OSM 태그와 교차검증에 사용 */
+  phone?: string | null;
 };
 
 function cronSecret(): string {
@@ -126,11 +136,11 @@ async function verifyLocalIntelWithLlm(item: IntelItem): Promise<VerifiedIntel> 
 
   const system = `You verify Thailand local survival intel for 2026 "Living in Thai" (태국에, 살자) community standards.
 Return JSON only:
-{"ok":boolean,"normalized_name":"string","normalized_summary":"string","category":"hospital|pharmacy|mart|info|real-estate|job","region":"string","slug":"string","confidence":"high|medium|low","reason":"string"}
+{"ok":boolean,"normalized_name":"string","normalized_summary":"string","category":"hospital|pharmacy|mart|info|real-estate|job","region":"string","slug":"string","confidence":"high|medium|low","reason":"string","phone":"string or null"}
 Rules:
 - Cross-check plausibility from title/raw text only. If uncertain set ok=false with reason.
 - Normalize Korean copy concise and practical.
-- No phone numbers hallucination.
+- **phone**: ONLY if a phone number appears verbatim in the raw JSON/text (OSM tags or body). Copy digits/format as shown; otherwise null. Never invent.
 - category must be one of allowed values.`;
   const user = `title=${item.title}
 url=${item.external_url}
@@ -260,6 +270,36 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (ai.category === 'hospital' || ai.category === 'pharmacy' || ai.category === 'mart' || ai.category === 'real-estate') {
       const name = (ai.normalized_name || item.title).trim();
       const slug = sanitizeSlug(ai.slug || name || item.title);
+
+      let phone: string | null = null;
+      let address: string | null = null;
+      let map_url: string | null = null;
+      try {
+        const parsedBody = JSON.parse(item.raw_body) as {
+          lat?: unknown;
+          lon?: unknown;
+          tags?: Record<string, unknown>;
+          name?: unknown;
+        };
+        const tags = parsedBody.tags;
+        const lat = typeof parsedBody.lat === 'number' ? parsedBody.lat : null;
+        const lon = typeof parsedBody.lon === 'number' ? parsedBody.lon : null;
+        const osmPhones = extractPhonesFromOsmTags(tags);
+        const cross = pickCrossCheckedPhoneFromOsmAndLlm(osmPhones, ai.phone ?? null);
+        if (cross.ok && cross.display) {
+          const normalized = normalizeThailandPhoneForDisplay(cross.display);
+          if (normalized && !isLikelySyntheticOrDemoPhone(normalized)) phone = normalized;
+        }
+        address = buildAddressFromOsmTags(tags);
+        map_url = buildGoogleMapsUrlFromOsmLatLon(
+          lat,
+          lon,
+          typeof parsedBody.name === 'string' ? parsedBody.name : name,
+        );
+      } catch {
+        /* raw is not OSM JSON — skip enrichment */
+      }
+
       const { error } = await admin.from('local_businesses').upsert(
         {
           slug,
@@ -271,6 +311,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           tags: ['auto', 'verified', '2026'],
           is_active: true,
           is_recommended: ai.confidence === 'high',
+          ...(phone ? { phone } : {}),
+          ...(address ? { address } : {}),
+          ...(map_url ? { map_url } : {}),
         },
         { onConflict: 'slug' },
       );

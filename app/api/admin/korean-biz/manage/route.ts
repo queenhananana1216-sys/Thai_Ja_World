@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 import { resolveAdminAccess } from '@/lib/admin/resolveAdminAccess';
 import type { KoreanBizCategory } from '@/lib/korean-biz/koreanBizTypes';
 import { probeAndPersistKoreanBizContacts } from '@/lib/korean-biz/probeKoreanBizContactUrls';
-import { preservePhoneFromPlaces } from '@/lib/korean-biz/publicContact';
+import { preservePhoneFromPlaces, normalizeThailandPhoneForDisplay } from '@/lib/korean-biz/publicContact';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -70,7 +70,10 @@ export async function PATCH(req: Request): Promise<NextResponse> {
   if (typeof o.name === 'string' && o.name.trim()) patch.name = o.name.trim();
   if (typeof o.address === 'string') patch.address = o.address.trim() || null;
   if (o.phone === null) patch.phone = null;
-  else if (typeof o.phone === 'string') patch.phone = preservePhoneFromPlaces(o.phone.trim()) ?? o.phone.trim();
+  else if (typeof o.phone === 'string') {
+    const raw = o.phone.trim();
+    patch.phone = normalizeThailandPhoneForDisplay(raw) ?? preservePhoneFromPlaces(raw) ?? (raw || null);
+  }
   if (typeof o.line_url === 'string') patch.line_url = o.line_url.trim() || null;
   else if (o.line_url === null) patch.line_url = null;
   if (typeof o.whatsapp_url === 'string') patch.whatsapp_url = o.whatsapp_url.trim() || null;
@@ -152,7 +155,9 @@ export async function POST(req: Request): Promise<NextResponse> {
       o.phone === null
         ? null
         : typeof o.phone === 'string'
-          ? preservePhoneFromPlaces(o.phone.trim()) ?? o.phone.trim()
+          ? normalizeThailandPhoneForDisplay(o.phone.trim()) ??
+            preservePhoneFromPlaces(o.phone.trim()) ??
+            o.phone.trim()
           : null,
     latitude: typeof o.latitude === 'number' && Number.isFinite(o.latitude) ? o.latitude : null,
     longitude: typeof o.longitude === 'number' && Number.isFinite(o.longitude) ? o.longitude : null,

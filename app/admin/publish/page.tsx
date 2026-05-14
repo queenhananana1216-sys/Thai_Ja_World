@@ -185,6 +185,25 @@ export default async function AdminPublishHubPage() {
             태국 생활 정보. 스텁이면 LLM 재가공 후, 미리보기로 확인하고 «일괄 승인» 또는 건별 «최종 승인」.
           </span>
         </Link>
+        <Link
+          href="/admin/knowledge?view=stubs"
+          style={{
+            display: 'block',
+            padding: 18,
+            borderRadius: 12,
+            border: '2px solid #c026d3',
+            background: '#fdf4ff',
+            textDecoration: 'none',
+            color: '#86198f',
+            gridColumn: '1 / -1',
+          }}
+        >
+          <strong style={{ fontSize: 15, display: 'block', marginBottom: 8 }}>지식 초안 스텁 큐 →</strong>
+          <span style={{ fontSize: 13, lineHeight: 1.55 }}>
+            LLM 미가공·발췌 스텁만 한 화면에 모아 확인합니다. 상단 「스텁 …건 순서대로 LLM 재가공」으로 20년 차 교민 톤 일괄 요리,
+            또는 카드별 「AI 다시 가공」을 누르세요.
+          </span>
+        </Link>
       </div>
 
       <p style={{ fontSize: 12, color: '#94a3b8', margin: 0 }}>

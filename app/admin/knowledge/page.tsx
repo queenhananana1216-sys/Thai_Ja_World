@@ -24,7 +24,14 @@ function parseKnowledgeCleanBody(existing: unknown): KnowledgeLlmOutput | null {
   return null;
 }
 
-export default async function AdminKnowledgeQueuePage() {
+export default async function AdminKnowledgeQueuePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const sp = await searchParams;
+  const stubQueueOnly = sp.view === 'stubs';
+
   const admin = createServiceRoleClient();
   const since14d = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -143,19 +150,36 @@ export default async function AdminKnowledgeQueuePage() {
   return (
     <div className="admin-page-narrow" style={{ padding: '20px 24px', maxWidth: 960, margin: '0 auto' }}>
       <h1 className="admin-dash__title" style={{ fontSize: '1.25rem' }}>
-        꿀팁 · 지식 큐
+        {stubQueueOnly ? '지식 초안 스텁 큐' : '꿀팁 · 지식 큐'}
       </h1>
       <p className="admin-dash__lead" style={{ maxWidth: '62ch' }}>
-        운영팀 가공 결과 <strong>컨셉 카드</strong>를 확인하고 <strong>게시하기</strong> 또는 <strong>다시 가공</strong>을 쓰면 됩니다. 수동
-        편집은 카드 아래 「상세 편집」에서 엽니다.{' '}
-        <Link href="/admin/publish" style={{ color: 'var(--admin-link)' }}>
-          승인 허브 →
-        </Link>
+        {stubQueueOnly ? (
+          <>
+            <strong>미가공·스텁</strong> 초안만 모아 둔 화면입니다. 상단 일괄 재가공 또는 카드별 「AI 다시 가공」으로 20년 차 교민
+            페르소나로 다시 요리한 뒤 게시하세요.{' '}
+            <Link href="/admin/knowledge" style={{ color: 'var(--admin-link)' }}>
+              전체 큐 →
+            </Link>
+          </>
+        ) : (
+          <>
+            운영팀 가공 결과 <strong>컨셉 카드</strong>를 확인하고 <strong>게시하기</strong> 또는 <strong>다시 가공</strong>을 쓰면 됩니다. 수동
+            편집은 카드 아래 「상세 편집」에서 엽니다.{' '}
+            <Link href="/admin/publish" style={{ color: 'var(--admin-link)' }}>
+              승인 허브 →
+            </Link>
+          </>
+        )}
       </p>
 
       <AdminKnowledgeImportClient />
 
-      <KnowledgeQueueClient items={items} diagnostics={diagnostics} orphanRawKnowledge={orphanRawKnowledge} />
+      <KnowledgeQueueClient
+        items={items}
+        diagnostics={diagnostics}
+        orphanRawKnowledge={orphanRawKnowledge}
+        stubQueueOnly={stubQueueOnly}
+      />
     </div>
   );
 }

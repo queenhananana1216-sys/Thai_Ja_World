@@ -11,6 +11,7 @@ import { runWeatherCoupledGoogleIndexingPass } from '@/lib/seo/weatherCoupledGoo
 import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
 import { fetchThailandCitiesWeather } from '@/lib/weather/fetchThailandCitiesWeather';
 import { isThailandWeatherSnapshotComplete } from '@/lib/weather/thailandWeatherSnapshot';
+import { upsertTipsArticleBySourceUrl } from '@/bots/actions/summarizeAndPersistNews';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -336,8 +337,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         throw new Error(`raw_news upsert failed: ${upsertError.message}`);
       }
 
-      const { error: tipsError } = await admin.from('tips_articles').upsert(
-        snapshots.map((s) => ({
+      for (const s of snapshots) {
+        const { error: tipsError } = await upsertTipsArticleBySourceUrl(admin, {
           source_url: s.external_url,
           title: s.title,
           excerpt: `[AUTO][${s.source}] daily pipeline snapshot`,
@@ -348,11 +349,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           content_th: s.raw_body.slice(0, 900),
           status: 'draft',
           published_at: null,
-        })),
-        { onConflict: 'source_url' },
-      );
-      if (tipsError) {
-        console.error('[API /api/cron/content-automation] tips_articles upsert warning:', tipsError.message);
+        });
+        if (tipsError) {
+          console.error('[API /api/cron/content-automation] tips_articles sync warning:', tipsError.message);
+        }
       }
     }
 

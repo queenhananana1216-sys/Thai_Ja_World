@@ -13,6 +13,7 @@
     "verify:release": "npm run preflight && npx tsx scripts/verify-production-pipeline.ts --strict",
     "lint": "next lint",
     "news:ingest": "tsx scripts/run-news-ingest-once.ts",
+    "vercel:push-cron-secret": "node scripts/vercel-env-cron-secret.mjs",
     "knowledge:ingest": "tsx scripts/run-knowledge-ingest-once.ts",
     "home-copy:refresh": "tsx scripts/run-home-copy-refresh.ts",
     "local-shop-template:pipeline": "tsx scripts/run-local-shop-template-pipeline.ts",

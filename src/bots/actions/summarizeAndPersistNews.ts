@@ -38,6 +38,7 @@ import {
 import { recordPipelineErrorEvent } from '@/lib/pipeline/pipelineErrorLearning';
 import { requestGoogleIndexing } from '@/lib/seo/googleIndexing';
 import { absoluteUrl } from '@/lib/seo/site';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type NewsSummaryProvider = 'openai' | 'gemini' | 'local' | 'ollama' | 'auto';
 
@@ -168,15 +169,15 @@ function getGroqApiKeyCandidates(): string[] {
 export function isNewsSummaryLlmConfigured(): boolean {
   const p = normalizeNewsSummaryProvider();
   const localOk = Boolean(resolveLocalLlmBaseUrlForRuntime(process.env.LOCAL_LLM_BASE_URL));
-  if (p === 'openai') return getOpenAiApiKeyCandidates().length > 0;
-  if (p === 'gemini') return getGeminiApiKeyCandidates().length > 0;
-  if (p === 'local') return localOk;
-  return (
+  const cloudOk =
     getOpenAiApiKeyCandidates().length > 0 ||
     getGeminiApiKeyCandidates().length > 0 ||
-    getGroqApiKeyCandidates().length > 0 ||
-    localOk
-  );
+    getGroqApiKeyCandidates().length > 0;
+  if (p === 'openai') return getOpenAiApiKeyCandidates().length > 0;
+  if (p === 'gemini') return getGeminiApiKeyCandidates().length > 0;
+  /** Ollama 장애 시 클라우드 폴백이 있으면 파이프라인을 «준비됨»으로 간주 */
+  if (p === 'local') return localOk || cloudOk;
+  return cloudOk || localOk;
 }
 
 /**
@@ -1248,19 +1249,8 @@ export async function runNewsSummaryProviders<T>(
     );
   };
 
-  /** NEWS_SUMMARY_PROVIDER=local 일 때 Ollama 실패 시 클라우드로 이어져 스텁 남발을 줄임 */
+  /** Ollama 타임아웃·JSON 실패 시 Gemini(OpenAI 호환) 우선, 그다음 OpenAI·Groq */
   const runCloudBilingualFallback = async (reason: string): Promise<T> => {
-    if (openaiKeys.length > 0) {
-      try {
-        console.warn(`[NewsSummary] ${reason} → OpenAI 폴백 시도`);
-        return await runOpenAi();
-      } catch (eo) {
-        console.warn(
-          '[NewsSummary] OpenAI 폴백 실패:',
-          eo instanceof Error ? eo.message.slice(0, 200) : String(eo),
-        );
-      }
-    }
     if (geminiKeys.length > 0) {
       try {
         console.warn(`[NewsSummary] ${reason} → Gemini 폴백 시도`);
@@ -1272,12 +1262,23 @@ export async function runNewsSummaryProviders<T>(
         );
       }
     }
+    if (openaiKeys.length > 0) {
+      try {
+        console.warn(`[NewsSummary] ${reason} → OpenAI 폴백 시도`);
+        return await runOpenAi();
+      } catch (eo) {
+        console.warn(
+          '[NewsSummary] OpenAI 폴백 실패:',
+          eo instanceof Error ? eo.message.slice(0, 200) : String(eo),
+        );
+      }
+    }
     if (groqKeys.length > 0) {
       console.warn(`[NewsSummary] ${reason} → Groq 폴백 시도`);
       return await runGroq();
     }
     throw new Error(
-      `${reason} — OPENAI_API_KEY·GEMINI_API_KEY·GROQ_API_KEY 중 하나를 Vercel/로컬에 설정하면 Ollama 장애 시에도 JSON 가공이 이어집니다.`,
+      `${reason} — GEMINI_API_KEY·OPENAI_API_KEY·GROQ_API_KEY 중 하나를 Vercel/로컬에 설정하면 Ollama 장애 시에도 JSON 가공이 이어집니다.`,
     );
   };
 
@@ -1858,6 +1859,82 @@ type RawNewsTodoRow = {
   external_url: string | null;
 };
 
+export type TipsArticleNewsSyncInput = {
+  source_url: string | null;
+  title: string;
+  excerpt: string | null;
+  body_preview: string;
+  title_kr: string;
+  content_kr: string;
+  title_th: string;
+  content_th: string;
+  status: string;
+  published_at?: string | null;
+};
+
+/** `tips_articles.source_url` 유니크 없을 때: URL 있으면 첫 행 갱신, 없으면 삽입 */
+export async function upsertTipsArticleBySourceUrl(
+  client: SupabaseClient,
+  row: TipsArticleNewsSyncInput,
+): Promise<{ error: { message: string } | null }> {
+  const url = typeof row.source_url === 'string' ? row.source_url.trim() : '';
+  const base: Record<string, unknown> = {
+    title: row.title,
+    excerpt: row.excerpt,
+    body_preview: row.body_preview,
+    title_kr: row.title_kr,
+    content_kr: row.content_kr,
+    title_th: row.title_th,
+    content_th: row.content_th,
+    status: row.status,
+  };
+  if (row.published_at !== undefined) {
+    base.published_at = row.published_at;
+  }
+
+  if (url) {
+    const { data: rows, error: selErr } = await client
+      .from('tips_articles')
+      .select('id')
+      .eq('source_url', url)
+      .limit(1);
+    if (selErr) return { error: selErr };
+    const id = rows?.[0]?.id as string | undefined;
+    if (id) {
+      const { error: upErr } = await client.from('tips_articles').update({ ...base, source_url: url }).eq('id', id);
+      return { error: upErr };
+    }
+  }
+
+  const { error: insErr } = await client.from('tips_articles').insert({
+    ...base,
+    source_url: url || null,
+  });
+  return { error: insErr };
+}
+
+/** 홈 포털 스텁·placeholder 금지(`home-queries` 휴리스틱과 정합) — DB 저장 직전 차단 */
+function newsPersistViolatesPublicQualityGate(
+  s: Pick<LlmBilingualPayload, 'title_kr' | 'ko_blurb' | 'content_kr' | 'title_th' | 'content_th' | 'th_blurb'>,
+): boolean {
+  const t = s.title_kr.trim();
+  const e = s.ko_blurb.trim();
+  const c = s.content_kr.trim();
+  const blob = `${t}\n${e}\n${c}\n${s.title_th.trim()}\n${s.th_blurb.trim()}\n${s.content_th.trim()}`;
+  if (!/\S/u.test(t)) return true;
+  if (
+    /내용\s*준비|내용\s*준비\s*중|가공\s*전|가공전|작성\s*중|작성\s*예정|업데이트\s*예정|placeholder|lorem\s+ipsum|TBD|coming\s*soon|to\s*be\s*continued|여기에\s*입력|\(제목\s*없음\)/iu.test(
+      blob,
+    )
+  ) {
+    return true;
+  }
+  const visaStub = '태국 비자 갱신은 정말 어렵다';
+  if (blob.includes(visaStub) && blob.indexOf(visaStub) !== blob.lastIndexOf(visaStub)) return true;
+  if (t.length < 10) return true;
+  return false;
+}
+
 async function persistBilingualProcessedNews(
   client: ReturnType<typeof getServerSupabaseClient>,
   row: RawNewsTodoRow,
@@ -1867,6 +1944,14 @@ async function persistBilingualProcessedNews(
 ): Promise<SummarizeRowResult> {
   const url = row.external_url ?? '';
   const sanitized = sanitizeNewsPayloadTone(enforceNewsBilingualCountermeasureSections(llm));
+  if (newsPersistViolatesPublicQualityGate(sanitized)) {
+    return {
+      raw_news_id: row.id,
+      ok: false,
+      error:
+        '[QUALITY GATE] 내용 준비 중·가공 전·스텁 반복 등 포털 노출 금지 패턴이 감지되어 저장하지 않았습니다.',
+    };
+  }
   const cleanBody = buildPersistedCleanBodyJson(sanitized, url);
 
   const publishedFlag =
@@ -1918,20 +2003,17 @@ async function persistBilingualProcessedNews(
     return { raw_news_id: row.id, ok: false, error: sTh.message };
   }
 
-  const { error: tipUpsertError } = await client.from('tips_articles').upsert(
-    {
-      source_url: url || null,
-      title: sanitized.title_kr,
-      excerpt: sanitized.ko_blurb,
-      body_preview: sanitized.content_kr.slice(0, 900),
-      title_kr: sanitized.title_kr,
-      content_kr: sanitized.content_kr,
-      title_th: sanitized.title_th,
-      content_th: sanitized.content_th,
-      status: 'draft',
-    },
-    { onConflict: 'source_url' },
-  );
+  const { error: tipUpsertError } = await upsertTipsArticleBySourceUrl(client, {
+    source_url: url || null,
+    title: sanitized.title_kr,
+    excerpt: sanitized.ko_blurb,
+    body_preview: sanitized.content_kr.slice(0, 900),
+    title_kr: sanitized.title_kr,
+    content_kr: sanitized.content_kr,
+    title_th: sanitized.title_th,
+    content_th: sanitized.content_th,
+    status: 'draft',
+  });
   if (tipUpsertError) {
     return { raw_news_id: row.id, ok: false, error: tipUpsertError.message };
   }
@@ -1964,6 +2046,14 @@ async function updateBilingualProcessedNews(
 ): Promise<SummarizeRowResult> {
   const url = row.external_url ?? '';
   const sanitized = sanitizeNewsPayloadTone(enforceNewsBilingualCountermeasureSections(llm));
+  if (newsPersistViolatesPublicQualityGate(sanitized)) {
+    return {
+      raw_news_id: row.id,
+      ok: false,
+      error:
+        '[QUALITY GATE] 내용 준비 중·가공 전·스텁 반복 등 포털 노출 금지 패턴이 감지되어 갱신하지 않았습니다.',
+    };
+  }
   const cleanBody = buildPersistedCleanBodyJson(sanitized, url);
   const publishedPatch = options?.publishedPatch;
   const skipTipsArticles = options?.skipTipsArticles === true;
@@ -2013,20 +2103,17 @@ async function updateBilingualProcessedNews(
   }
 
   if (!skipTipsArticles) {
-    const { error: tipUpsertError } = await client.from('tips_articles').upsert(
-      {
-        source_url: url || null,
-        title: sanitized.title_kr,
-        excerpt: sanitized.ko_blurb,
-        body_preview: sanitized.content_kr.slice(0, 900),
-        title_kr: sanitized.title_kr,
-        content_kr: sanitized.content_kr,
-        title_th: sanitized.title_th,
-        content_th: sanitized.content_th,
-        status: 'draft',
-      },
-      { onConflict: 'source_url' },
-    );
+    const { error: tipUpsertError } = await upsertTipsArticleBySourceUrl(client, {
+      source_url: url || null,
+      title: sanitized.title_kr,
+      excerpt: sanitized.ko_blurb,
+      body_preview: sanitized.content_kr.slice(0, 900),
+      title_kr: sanitized.title_kr,
+      content_kr: sanitized.content_kr,
+      title_th: sanitized.title_th,
+      content_th: sanitized.content_th,
+      status: 'draft',
+    });
     if (tipUpsertError) {
       return { raw_news_id: row.id, ok: false, error: tipUpsertError.message };
     }

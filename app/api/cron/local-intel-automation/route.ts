@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { isCronAuthorized } from '@/lib/cronAuth';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 import { processKnowledgeFromResolvedRaw } from '@/bots/actions/processAndPersistKnowledge';
+import { upsertTipsArticleBySourceUrl } from '@/bots/actions/summarizeAndPersistNews';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -241,20 +242,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     if (result.ok) processedCount += 1;
 
     if (ai.category === 'info') {
-      const { error } = await admin.from('tips_articles').upsert(
-        {
-          source_url: item.external_url,
-          title: ai.normalized_name ?? item.title,
-          excerpt: ai.normalized_summary ?? '비자/생활 인텔 자동 검증 항목',
-          body_preview: item.raw_body.slice(0, 900),
-          title_kr: ai.normalized_name ?? item.title,
-          content_kr: ai.normalized_summary ?? '자동 검증 완료',
-          title_th: ai.normalized_name ?? item.title,
-          content_th: ai.normalized_summary ?? 'Auto verified',
-          status: 'draft',
-        },
-        { onConflict: 'source_url' },
-      );
+      const { error } = await upsertTipsArticleBySourceUrl(admin, {
+        source_url: item.external_url,
+        title: ai.normalized_name ?? item.title,
+        excerpt: ai.normalized_summary ?? '비자/생활 인텔 자동 검증 항목',
+        body_preview: item.raw_body.slice(0, 900),
+        title_kr: ai.normalized_name ?? item.title,
+        content_kr: ai.normalized_summary ?? '자동 검증 완료',
+        title_th: ai.normalized_name ?? item.title,
+        content_th: ai.normalized_summary ?? 'Auto verified',
+        status: 'draft',
+      });
       if (!error) tipsCount += 1;
       continue;
     }

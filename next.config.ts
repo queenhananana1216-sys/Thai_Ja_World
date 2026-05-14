@@ -3,25 +3,33 @@ import path from 'node:path';
 import { config as loadEnv } from 'dotenv';
 import type { NextConfig } from 'next';
 
-/** 로컬·Docker 빌드에서 마스터 키 파일을 우선 로드(Vercel 등에는 파일이 없으면 무시) */
-const masterEnvCandidates = [
-  process.env.SUPABASE_MASTER_ENV_PATH,
-  'F:/02_Master_Keys/API_JSON/.env.docker',
-  process.env.USERPROFILE
-    ? path.join(process.env.USERPROFILE, 'Desktop', '02_Master_Keys', 'API_JSON', '.env.docker')
-    : undefined,
-].filter((p): p is string => Boolean(p));
+/**
+ * 로컬·자체 호스트(Docker) 빌드 시에만 동작합니다.
+ * Vercel 클라우드에는 `F:/...` 마스터 파일이 없으므로 이 블록은 no-op 이고,
+ * 동일 키는 반드시 Vercel Dashboard → Environment Variables 에 수동 입력해야 합니다.
+ */
+function loadMasterEnvFromDisk(): void {
+  const masterEnvCandidates = [
+    process.env.SUPABASE_MASTER_ENV_PATH,
+    'F:/02_Master_Keys/API_JSON/.env.docker',
+    process.env.USERPROFILE
+      ? path.join(process.env.USERPROFILE, 'Desktop', '02_Master_Keys', 'API_JSON', '.env.docker')
+      : undefined,
+  ].filter((p): p is string => Boolean(p));
 
-for (const envPath of masterEnvCandidates) {
-  try {
-    if (fs.existsSync(envPath)) {
-      loadEnv({ path: path.resolve(envPath), override: true });
-      break;
+  for (const envPath of masterEnvCandidates) {
+    try {
+      if (fs.existsSync(envPath)) {
+        loadEnv({ path: path.resolve(envPath), override: true });
+        break;
+      }
+    } catch {
+      /* ignore */
     }
-  } catch {
-    /* ignore */
   }
 }
+
+loadMasterEnvFromDisk();
 
 // CACHE_BUSTER: 2026-05-01-FORCE-DEPLOY — Vercel 이전 빌드 산출물 재사용 회피(설정 해시 변경)
 

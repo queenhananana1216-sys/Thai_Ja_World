@@ -88,7 +88,19 @@ export async function logStart(params: LogStartParams): Promise<string | null> {
     .single();
 
   if (error) {
-    console.error('[BotLogger] logStart 실패:', error.message);
+    const cause = error instanceof Error && 'cause' in error ? (error as Error & { cause?: unknown }).cause : undefined;
+    const causeMsg =
+      cause instanceof Error
+        ? `${cause.message}${'code' in cause ? ` (${String((cause as NodeJS.ErrnoException).code)})` : ''}`
+        : cause != null
+          ? String(cause)
+          : '';
+    console.error(
+      '[BotLogger] logStart 실패:',
+      error.message,
+      causeMsg ? `| cause: ${causeMsg}` : '',
+      '| Supabase URL·방화벽·VPN·프록시 확인 → npm run diagnose:supabase',
+    );
     return null;
   }
 

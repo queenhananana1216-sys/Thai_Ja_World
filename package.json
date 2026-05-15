@@ -14,6 +14,7 @@
     "lint": "next lint",
     "news:ingest": "tsx scripts/run-news-ingest-once.ts",
     "news:cron:sync": "node scripts/trigger-news-cron.cjs --purge-stubs --verify",
+    "diagnose:supabase": "node scripts/trigger-news-cron.cjs --diagnose-supabase",
     "vercel:push-cron-secret": "node scripts/vercel-env-cron-secret.mjs",
     "knowledge:ingest": "tsx scripts/run-knowledge-ingest-once.ts",
     "home-copy:refresh": "tsx scripts/run-home-copy-refresh.ts",

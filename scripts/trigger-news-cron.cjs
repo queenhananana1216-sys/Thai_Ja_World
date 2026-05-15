@@ -160,10 +160,70 @@ function logSyncProcessResult(json) {
   }
 }
 
+function formatFetchCause(err) {
+  if (!(err instanceof Error)) return String(err);
+  const parts = [err.message];
+  let c = err.cause;
+  let depth = 0;
+  while (c instanceof Error && depth < 4) {
+    const code = c.code ? ` code=${c.code}` : "";
+    parts.push(`cause: ${c.message}${code}`);
+    c = c.cause;
+    depth += 1;
+  }
+  return parts.join(" | ");
+}
+
+async function diagnoseSupabaseConnection() {
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  const anon = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim();
+  console.log("[diagnose-supabase] Node", process.version);
+  console.log("[diagnose-supabase] URL host:", url ? new URL(url).host : "(missing)");
+  console.log("[diagnose-supabase] service role key:", key ? `set (${key.length} chars)` : "MISSING");
+  console.log("[diagnose-supabase] HTTPS_PROXY:", process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "(none)");
+  if (!url || !key) {
+    console.error("[diagnose-supabase] Fix .env.local: NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY");
+    return 1;
+  }
+  const healthUrl = `${url.replace(/\/+$/, "")}/rest/v1/`;
+  try {
+    const t0 = Date.now();
+    const res = await fetch(healthUrl, {
+      method: "GET",
+      headers: { apikey: anon || key, Authorization: `Bearer ${key}` },
+    });
+    console.log("[diagnose-supabase] fetch", healthUrl, "->", res.status, `${Date.now() - t0}ms`);
+  } catch (e) {
+    console.error("[diagnose-supabase] fetch FAILED:", formatFetchCause(e));
+    console.error(
+      "[diagnose-supabase] Typical fixes: disable VPN, allow *.supabase.co in firewall, set HTTPS_PROXY if corporate proxy, try another network.",
+    );
+    return 1;
+  }
+  try {
+    const { createClient } = require("@supabase/supabase-js");
+    const sb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { count, error } = await sb.from("bot_actions").select("id", { count: "exact", head: true });
+    if (error) throw error;
+    console.log("[diagnose-supabase] bot_actions reachable, row count (approx):", count ?? "?");
+    return 0;
+  } catch (e) {
+    console.error("[diagnose-supabase] supabase-js FAILED:", formatFetchCause(e));
+    return 1;
+  }
+}
+
 async function main() {
   if (PURGE_STUBS) {
     console.log("[trigger-news-cron] --purge-stubs: deleting stub rows…");
-    await purgeStubRowsFromDb();
+    try {
+      await purgeStubRowsFromDb();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn("[trigger-news-cron] purge skipped (network/DB):", msg);
+      console.warn("[trigger-news-cron] Run: npm run diagnose:supabase — or purge via Supabase SQL Editor.");
+    }
   }
   console.log(
     `[trigger-news-cron] mode=${USE_DEFERRED ? "deferred(202+poll)" : "sync(200)"} path=${CRON_NEWS_PATH}`,
@@ -236,7 +296,16 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("[trigger-news-cron]", err);
-  process.exit(1);
-});
+if (process.argv.includes("--diagnose-supabase")) {
+  diagnoseSupabaseConnection()
+    .then((code) => process.exit(code))
+    .catch((err) => {
+      console.error("[diagnose-supabase]", err);
+      process.exit(1);
+    });
+} else {
+  main().catch((err) => {
+    console.error("[trigger-news-cron]", err);
+    process.exit(1);
+  });
+}

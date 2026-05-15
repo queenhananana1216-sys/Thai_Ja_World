@@ -162,6 +162,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           meta: {
             mode: 'deferred_error',
             job_id: jobId,
+            route: '/api/cron/news',
             error: message.slice(0, 800),
           },
         });

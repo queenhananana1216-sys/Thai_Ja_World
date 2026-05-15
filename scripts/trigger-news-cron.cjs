@@ -79,10 +79,11 @@ async function main() {
 
   if (first.res.status === 202 && first.json && first.json.job_id) {
     const jobId = String(first.json.job_id);
-    const deadline = Date.now() + 240_000;
+    /** 파이프라인 maxDuration(300s) + 여유 — 너무 짧으면 deferred_done 전에 타임아웃 */
+    const deadline = Date.now() + 420_000;
     let last = null;
     while (Date.now() < deadline) {
-      await sleep(4000);
+      await sleep(5000);
       const pollUrl = `${SITE_ORIGIN}${POLL_PATH_BASE}&job_id=${encodeURIComponent(jobId)}`;
       const poll = await fetchJson(pollUrl);
       last = poll.json;
@@ -101,7 +102,12 @@ async function main() {
       }
       process.stdout.write(".");
     }
-    console.error("\n[trigger-news-cron] poll timeout (4m). Last snapshot:", JSON.stringify(last, null, 2).slice(0, 2000));
+    const snap = JSON.stringify(last, null, 2).slice(0, 2000);
+    console.error(
+      "\n[trigger-news-cron] poll timeout (~7m). Last snapshot:",
+      snap,
+      "\nHint: recent가 비면 Vercel에 최신 main 배포(Redeploy) 후 재실행 — publish_logs UUID 수정 반영 필요.",
+    );
     process.exit(1);
   }
 

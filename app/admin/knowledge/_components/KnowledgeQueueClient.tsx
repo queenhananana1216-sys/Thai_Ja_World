@@ -188,6 +188,26 @@ function knowledgeOpsCountermeasure(summary: string, editorial: string, checklis
   return '대비책·안내가 비어 있으면 「AI 다시 가공」을 먼저 눌러 주세요.';
 }
 
+/** 편집 중인 한글 제목·요약 기준 0~100 가공 품질 추정(스텁·태그 정합·메타 점수) */
+function knowledgeDraftQualityScore(
+  item: KnowledgeQueueItem,
+  koSummary: string,
+  koTitle: string,
+): { score: number; label: string } {
+  const stub = isKnowledgeStubKoSummary(koSummary);
+  const confPts = item.confidence_level === 'high' ? 28 : item.confidence_level === 'medium' ? 16 : 6;
+  const nov = Math.min(36, Math.max(0, item.novelty_score * 0.36));
+  const use = Math.min(36, Math.max(0, item.usefulness_score * 0.36));
+  const corpus = `${koTitle}\n${koSummary}`;
+  const tagFit = avgKeywordBodySupport(item.ko_tags, corpus);
+  const tagPts = Math.min(22, tagFit * 22);
+  let score = Math.round(confPts + nov + use + tagPts);
+  if (stub) score = Math.min(score, 22);
+  score = Math.min(100, Math.max(0, score));
+  const label = score >= 72 ? '우수' : score >= 48 ? '보통' : '재가공 권장';
+  return { score, label };
+}
+
 /** 스텁·LLM 미가공 초안만 골라 순차 재가공 (요청당 타임아웃을 피하려 한 건씩 API 호출) */
 function StubLlmBulkToolbar({
   items,
@@ -742,6 +762,24 @@ export default function KnowledgeQueueClient({
         </div>
       ) : null}
       <KnowledgeLlmEnvBanner diagnostics={diagnostics} />
+      {displayItems.length > 0 ? (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: '10px 12px',
+            background: '#0f172a',
+            border: '1px solid #334155',
+            borderRadius: 8,
+            fontSize: 12,
+            color: '#e2e8f0',
+            lineHeight: 1.55,
+          }}
+        >
+          <strong style={{ color: '#f8fafc' }}>가공 품질 점수</strong> — 카드 상단 배지의 0~100은 신뢰도·신규성·유용성·태그-본문
+          정합을 합산한 추정치입니다. <strong style={{ color: '#fda4af' }}>재가공 권장</strong>이면 「AI 다시 가공」으로
+          LLM을 즉시 다시 돌리세요.
+        </div>
+      ) : null}
       {stubQueueOnly && displayItems.length > 0 ? (
         <div
           style={{
@@ -846,6 +884,7 @@ function DraftCard({
   const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stubLike = isKnowledgeStubKoSummary(koSummary);
+  const quality = knowledgeDraftQualityScore(item, koSummary, koTitle);
 
   const fieldsKo = (): Pick<KnowledgeQueueItem, 'ko_title' | 'ko_summary' | 'ko_editorial_note'> => ({
     ko_title: koTitle,
@@ -919,6 +958,20 @@ function DraftCard({
         ) : (
           <span style={{ fontSize: 11, color: '#34d399' }}>AI 가공 완료</span>
         )}
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: quality.score >= 72 ? '#6ee7b7' : quality.score >= 48 ? '#fcd34d' : '#fb7185',
+            padding: '2px 8px',
+            borderRadius: 8,
+            background: 'rgba(15,23,42,0.35)',
+            border: '1px solid rgba(148,163,184,0.35)',
+          }}
+          title="신뢰도·신규성·유용성·태그-본문 정합 추정"
+        >
+          품질 {quality.score} · {quality.label}
+        </span>
         <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 'auto' }}>
           {new Date(item.created_at).toLocaleString('ko-KR')}
         </span>

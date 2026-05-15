@@ -15,7 +15,8 @@
  * - NEWS_LLM_MAX_ATTEMPTS: 위와 동일 목적(숫자가 더 최신). 둘 다 있으면 NEWS_LLM_FETCH_RETRIES 우선
  * - NEWS_LLM_INTER_ARTICLE_DELAY_MS: 배치에서 기사 건마다 LLM 호출 직후 대기(ms). 기본 400 (429 완화)
  * - NEWS_LLM_JSON_RETRIES: (문서용) 한국어 JSON 품질 재시도 — 코드에서 **6회 고정**(`newsLlmJsonQualityMaxAttempts`).
- * - NEWS_DUAL_LLM_CROSSCHECK: 1|true|on 일 때 보조 모델과 한국어 제목·훅 일치율(Jaccard) ≥85%가 아니면 주 모델 재생성.
+ * - NEWS_DUAL_LLM_CROSSCHECK: 보조 모델과 한국어 제목·훅 일치율(Jaccard) ≥85%가 아니면 주 모델 재생성(최대 6회 루프 안에서).
+ *   기본값 **자동 ON**(보조 경로가 있을 때만). 끄려면 `0|off|false|no`. 강제 ON은 `1|true|on`(보조 불가면 스킵).
  *   로컬+Gemini 키가 있으면(비-Vercel) 보조=Gemini, 그 외 Gemini+OpenAI 둘 다 있으면 보조=Gemini.
  * - NEWS_LOCAL_LLM_JSON_OBJECT: 로컬(Ollama) 호출에 `response_format: json_object` 사용. `0|off|false` 로 끔. 미설정 시 **켬**(파싱 안정화).
  * - NEWS_SUMMARIZE_MAX_BATCH: summarize 배치 상한(기본 12, 최대 30)
@@ -44,6 +45,8 @@ import {
   bilingualKoHeadlineAgreement,
   filterSeoKeywordsAgainstBody,
   headlineRawOverlap,
+  seoOverlapTokens,
+  seoTokenSetJaccard,
 } from '@/lib/seo/site';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -1397,9 +1400,22 @@ export async function runNewsSummaryProviders<T>(
   );
 }
 
+function dualLlmCrossCheckCanRun(): boolean {
+  const geminiKeys = getGeminiApiKeyCandidates();
+  const openaiKeys = getOpenAiApiKeyCandidates();
+  const localBase = resolveLocalLlmBaseUrlForRuntime(process.env.LOCAL_LLM_BASE_URL);
+  return (
+    (Boolean(localBase) && !process.env.VERCEL && geminiKeys.length > 0) ||
+    (geminiKeys.length > 0 && openaiKeys.length > 0) ||
+    (Boolean(localBase) && !process.env.VERCEL && openaiKeys.length > 0)
+  );
+}
+
+/** 기본 ON(교차 경로 있을 때). `NEWS_DUAL_LLM_CROSSCHECK=0|off|false|no` 로만 끔. */
 function dualLlmCrossCheckEnabled(): boolean {
   const v = process.env.NEWS_DUAL_LLM_CROSSCHECK?.trim().toLowerCase();
-  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+  if (v === '0' || v === 'off' || v === 'false' || v === 'no') return false;
+  return dualLlmCrossCheckCanRun();
 }
 
 /** 원문·제목 맥락과 맞지 않는 SEO 키워드 제거 후 정규화 */
@@ -1494,7 +1510,7 @@ function newsLlmJsonQualityMaxAttempts(): number {
 }
 
 const NEWS_KO_PLACEHOLDER_PHRASE_RE =
-  /내용\s*준비|준비\s*중\s*입니다|가공\s*전|가공전|placeholder|TBD|작성\s*예정|추후\s*공개|coming\s*soon|\(제목\s*없음\)|여기에\s*입력|메타데이터|원문만으로는|LLM\s*없음/i;
+  /내용\s*준비|준비\s*중\s*입니다|가공\s*전|가공전|placeholder|TBD|작성\s*예정|추후\s*공개|coming\s*soon|\(제목\s*없음\)|여기에\s*입력|메타데이터|원문만으로는|LLM\s*없음|태국\s*비자\s*갱신은\s*정말\s*어렵|비자\s*갱신은\s*정말\s*어렵|비자\s*갱신.*어렵다|갱신은\s*정말\s*어렵다/i;
 
 function newsBilingualPayloadNeedsJsonRetry(sanitized: LlmBilingualPayload): boolean {
   const titleKr = (sanitized.title_kr ?? '').trim();
@@ -1544,6 +1560,23 @@ async function callBilingualSummary(
       continue;
     }
     let aligned = applySeoAlignmentToBilingual(sanitized, body, title);
+    const titleTok = seoOverlapTokens(aligned.title_kr);
+    const blurbTok = seoOverlapTokens(aligned.ko_blurb);
+    /** 토큰이 충분할 때만 제목·훅 정합 검사(짧은 한 줄 훅은 Jaccard가 과도하게 낮아질 수 있음) */
+    const titleBlurbJaccard =
+      titleTok.size >= 4 && blurbTok.size >= 3 ? seoTokenSetJaccard(titleTok, blurbTok) : 1;
+    if (titleBlurbJaccard < 0.85) {
+      if (attempt >= maxJson) {
+        throw new Error(
+          `[NewsLLM] 한국어 제목·훅(ko_blurb) 토큰 Jaccard ${(titleBlurbJaccard * 100).toFixed(1)}% — ${maxJson}회 재시도 소진`,
+        );
+      }
+      console.warn(
+        `[NewsLLM] 제목·훅 정합 Jaccard ${(titleBlurbJaccard * 100).toFixed(1)}% (<85%) → ${attempt + 1}/${maxJson} 재생성`,
+      );
+      await sleepMs(400 * attempt);
+      continue;
+    }
     const rawLen = (body ?? '').trim().length;
     const hookOverlap = headlineRawOverlap(`${aligned.title_kr}\n${aligned.ko_blurb}`, body);
     if (rawLen > 180 && hookOverlap < 0.028) {

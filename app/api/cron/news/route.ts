@@ -74,7 +74,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       .eq('channel', 'cron_pipeline')
       .eq('target_type', 'cron_pipeline')
       .order('published_at', { ascending: false })
-      .limit(80);
+      .limit(120);
     if (error) {
       return NextResponse.json({ status: 'error', error: error.message }, { status: 500 });
     }

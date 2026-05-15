@@ -21,6 +21,19 @@ import type { LocalBusiness } from '@/types/taeworld';
 import type { HomeUnifiedFeedItem } from './home-feed-types';
 import { mergeWarmupTodayThaiRanking } from '@/lib/vitality/warmupRanking';
 
+function portalHomeContentWindowDays(): number {
+  const raw = process.env.PORTAL_HOME_NEWS_WINDOW_DAYS?.trim();
+  const n = raw ? Number(raw) : 5;
+  if (!Number.isFinite(n)) return 5;
+  return Math.min(30, Math.max(1, Math.floor(n)));
+}
+
+function portalHomeContentNotBeforeIso(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - portalHomeContentWindowDays());
+  return d.toISOString();
+}
+
 export type { HomeUnifiedFeedItem } from './home-feed-types';
 
 const PUBLIC_FETCH_TIMEOUT_MS = 10_000;
@@ -292,11 +305,13 @@ export async function fetchHomeNewsMarqueeTitles(limit = 24): Promise<{ titles: 
   if (!sb) return { titles: [], error: 'Supabase 환경 변수가 없습니다.' };
 
   const fetchCap = Math.min(Math.max(limit * 6, limit), 96);
+  const notBefore = portalHomeContentNotBeforeIso();
   const { data, error } = await sb
     .from('processed_news')
     .select('id, clean_body, language, summaries(summary_text, model)')
     .eq('published', true)
     .eq('language', 'ko')
+    .gte('created_at', notBefore)
     .order('created_at', { ascending: false })
     .limit(fetchCap);
 
@@ -431,11 +446,13 @@ export async function fetchHomeNewsDigest(
   if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
 
   const fetchCap = Math.min(Math.max(limit * 8, limit), 120);
+  const notBefore = portalHomeContentNotBeforeIso();
   const { data, error } = await sb
     .from('processed_news')
     .select('id, clean_body, created_at, language, summaries(summary_text, model)')
     .eq('published', true)
     .eq('language', 'ko')
+    .gte('created_at', notBefore)
     .order('created_at', { ascending: false })
     .limit(fetchCap);
 
@@ -872,15 +889,20 @@ export async function fetchHomeTipsPublic(
 
   if (error) return { rows: [], error: error.message };
 
+  const notBeforeMs = Date.parse(portalHomeContentNotBeforeIso());
   const rows = (Array.isArray(data) ? data : []) as {
     id: string;
     title: string;
     excerpt: string;
     created_at: string;
   }[];
+  const filtered = rows.filter((r) => {
+    const t = Date.parse(String(r.created_at ?? ''));
+    return Number.isFinite(t) && t >= notBeforeMs;
+  });
 
   return {
-    rows: rows.map((r) => ({
+    rows: filtered.map((r) => ({
       id: String(r.id ?? ''),
       title: String(r.title ?? ''),
       excerpt: String(r.excerpt ?? ''),
@@ -896,10 +918,12 @@ export async function fetchHomeTipsArticles(
   const sb = tryCreate();
   if (!sb) return { rows: [], error: 'Supabase 환경 변수가 없습니다.' };
 
+  const notBefore = portalHomeContentNotBeforeIso();
   const { data, error } = await sb
     .from('tips_articles')
     .select('id, title, excerpt, published_at, created_at')
     .eq('status', 'published')
+    .gte('created_at', notBefore)
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(limit);

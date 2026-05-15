@@ -548,6 +548,7 @@ const BILINGUAL_SYSTEM_PROMPT = [
   '- First non-whitespace character MUST be `{` ; last MUST be `}`. Do not wrap in ``` .',
   '- Use strict JSON string keys exactly as listed (e.g. "title_kr": "..." , not title_kr: without quotes).',
   '- Do not add any explanatory text before or after the JSON object.',
+  '- **title_kr, ko_blurb, ko_insight_impact, ko_countermeasure** must each read as the **same 20-year Thailand veteran Korean expat**: sharp wit at most one beat per field, distinct wording across fields (no copy-paste), survival-first — never empty, never generic wire tone.',
 ].join('\n');
 
 function buildBilingualUserBlock(title: string, body: string | null, sourceUrl: string): string {

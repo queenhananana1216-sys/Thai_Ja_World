@@ -20,6 +20,15 @@ export const revalidate = 0;
 const NEWS_HUB_LIMIT = 100;
 const NEWS_HUB_FETCH_CAP = 320;
 
+function portalHomeNewsNotBeforeIso(): string {
+  const raw = process.env.PORTAL_HOME_NEWS_WINDOW_DAYS?.trim();
+  const n = raw ? Number(raw) : 5;
+  const days = Number.isFinite(n) ? Math.min(30, Math.max(1, Math.floor(n))) : 5;
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString();
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   const loc = await getLocale();
   const d = await getDictionary(loc);
@@ -49,11 +58,13 @@ export default async function NewsHubPage() {
   }
 
   const sb = createServerClient();
+  const notBefore = portalHomeNewsNotBeforeIso();
   const { data: processed, error: procErr } = await sb
     .from('processed_news')
     .select('id, clean_body, language, created_at, summaries(summary_text, model)')
     .eq('published', true)
     .eq('language', 'ko')
+    .gte('created_at', notBefore)
     .order('created_at', { ascending: false })
     .limit(NEWS_HUB_FETCH_CAP);
 

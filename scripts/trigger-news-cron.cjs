@@ -11,7 +11,7 @@ const path = require("node:path");
 
 const ENV_DOCKER_PATH = "F:/02_Master_Keys/API_JSON/.env.docker";
 const SITE_ORIGIN = "https://www.thaijaworld.com";
-const CRON_NEWS_PATH = "/api/cron/news?itemsPerFeed=8&limit=2";
+const CRON_NEWS_PATH = "/api/cron/news?itemsPerFeed=12&limit=10";
 const POLL_PATH_BASE = "/api/cron/news?status=1";
 
 if (!fs.existsSync(ENV_DOCKER_PATH)) {

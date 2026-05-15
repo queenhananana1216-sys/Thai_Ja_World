@@ -1,10 +1,22 @@
 import { NextResponse } from 'next/server';
+import { createHash } from 'node:crypto';
 import { createServiceRoleClient } from '@/lib/supabase/admin';
 
 const FAILURE_REPEAT_THRESHOLD = 3;
 const PAUSE_MINUTES = 15;
 
 type JsonRecord = Record<string, unknown>;
+
+/** DB `publish_logs.target_id` 가 uuid 일 때 문자열 pipeline slug 를 넣을 수 없어 SHA1 기반 결정적 UUID 로 매핑 */
+function publishLogTargetUuid(pipelineId: string): string {
+  const h = createHash('sha1').update(`tj:cron_pipeline:${pipelineId}`).digest();
+  const b = Buffer.alloc(16);
+  h.copy(b, 0, 0, 16);
+  b[6] = (b[6]! & 0x0f) | 0x50;
+  b[8] = (b[8]! & 0x3f) | 0x80;
+  const hex = b.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -20,11 +32,12 @@ export async function logCronEvent(params: {
   await admin.from('publish_logs').insert({
     channel: 'cron_pipeline',
     target_type: 'cron_pipeline',
-    target_id: params.pipelineId,
+    target_id: publishLogTargetUuid(params.pipelineId),
     meta: {
       event: params.event,
       status: params.status,
       at: nowIso(),
+      pipeline_slug: params.pipelineId,
       ...(params.meta ?? {}),
     },
   });
@@ -37,7 +50,7 @@ export async function findActivePause(pipelineId: string): Promise<{ pausedUntil
     .select('meta, published_at')
     .eq('channel', 'cron_pipeline')
     .eq('target_type', 'cron_pipeline')
-    .eq('target_id', pipelineId)
+    .eq('target_id', publishLogTargetUuid(pipelineId))
     .order('published_at', { ascending: false })
     .limit(30);
 
@@ -62,7 +75,7 @@ async function countRepeatedFailures(pipelineId: string, reason: string): Promis
     .select('meta, published_at')
     .eq('channel', 'cron_pipeline')
     .eq('target_type', 'cron_pipeline')
-    .eq('target_id', pipelineId)
+    .eq('target_id', publishLogTargetUuid(pipelineId))
     .order('published_at', { ascending: false })
     .limit(60);
 

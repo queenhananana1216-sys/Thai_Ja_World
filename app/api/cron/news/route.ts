@@ -73,17 +73,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       .select('published_at, meta')
       .eq('channel', 'cron_pipeline')
       .eq('target_type', 'cron_pipeline')
-      .eq('target_id', 'cron/news')
       .order('published_at', { ascending: false })
-      .limit(40);
+      .limit(80);
     if (error) {
       return NextResponse.json({ status: 'error', error: error.message }, { status: 500 });
     }
     type PublishMeta = Record<string, unknown>;
-    const rows = (data ?? []).map((r) => ({
-      published_at: r.published_at as string,
-      meta: (r.meta ?? {}) as PublishMeta,
-    }));
+    const isNewsCronRow = (meta: PublishMeta) =>
+      meta?.route === '/api/cron/news' ||
+      meta?.pipeline_slug === 'cron/news' ||
+      (meta?.event === 'news_fetch' && typeof meta?.job_id === 'string');
+    const rows = (data ?? [])
+      .map((r) => ({
+        published_at: r.published_at as string,
+        meta: (r.meta ?? {}) as PublishMeta,
+      }))
+      .filter((r) => isNewsCronRow(r.meta));
     const filtered =
       jobIdPoll && jobIdPoll.length > 0
         ? rows.filter((r) => String(r.meta?.job_id ?? '') === jobIdPoll)

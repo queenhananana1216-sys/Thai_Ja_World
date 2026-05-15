@@ -19,6 +19,7 @@ import {
 import JsonLd from '@/lib/seo/JsonLd';
 import { buildHreflangAlternates } from '@/lib/seo/hreflangAlternates';
 import { absoluteUrl, trimForMetaDescription } from '@/lib/seo/site';
+import { BRAND_PIPELINE_GATHERING_KO } from '@/lib/site-brand/constants';
 import { extractHostname, formatDate } from '@/lib/utils/formatDate';
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -402,9 +403,7 @@ export default async function NewsStoryPage({ params }: PageProps) {
 
         {user && useGracefulFallback ? (
           <div className={`${portalStyles.glassBlue} mt-8 p-4 sm:p-6`}>
-            <p className="text-base leading-relaxed text-slate-100">
-              💡 현지 리포터가 소식을 정리 중입니다. 운영팀 팩트체크가 끝나면 본문이 자동으로 반영됩니다. 급한 내용은 아래 원문 링크를 먼저 확인해 주세요.
-            </p>
+            <p className="text-base leading-relaxed text-slate-100">{BRAND_PIPELINE_GATHERING_KO}</p>
           </div>
         ) : null}
 

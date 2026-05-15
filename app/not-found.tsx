@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { TjBrandElephantMark } from '@/components/brand/TjBrandElephantMark';
+import { BRAND_PIPELINE_GATHERING_KO } from '@/lib/site-brand/constants';
 
 type RadarPhase = 'scanning' | 'redirecting' | 'processing' | 'idle';
 
@@ -67,10 +68,7 @@ export default function NotFound() {
           return;
         }
         if (data.status === 'processing') {
-          setProcessingMessage(
-            data.message?.trim() ||
-              '현지 리포터가 소식을 정리 중입니다. 운영팀 팩트체크 후 곧 게시됩니다.',
-          );
+          setProcessingMessage(data.message?.trim() || BRAND_PIPELINE_GATHERING_KO);
           setPhase('processing');
           return;
         }

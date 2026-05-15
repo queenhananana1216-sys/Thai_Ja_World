@@ -1,4 +1,5 @@
 import type { Locale } from './types';
+import { BRAND_PIPELINE_PARTIAL_LOAD_KO } from '@/lib/site-brand/constants';
 
 /** 홈 3열 포털(`Portal2026View`) 전용 문구 — `getLocale()`과 함께 사용 */
 export type Portal2026Copy = {
@@ -158,7 +159,7 @@ const ko: Portal2026Copy = {
   newsLink: '뉴스',
   more: '더보기',
   newsHubMore: '뉴스 허브에서 전체 보기 →',
-  emptyList: '일부 목록이 아직 도착하지 않았습니다. 새로고침하면 대부분 복구됩니다.',
+  emptyList: BRAND_PIPELINE_PARTIAL_LOAD_KO,
   weatherWidgetAria: '방콕 현재 날씨',
   weatherLoading: '날씨 불러오는 중…',
   weatherUnavailable: '날씨를 불러오지 못했습니다.',
@@ -261,7 +262,7 @@ const th: Portal2026Copy = {
   newsLink: 'ข่าว',
   more: 'เพิ่มเติม',
   newsHubMore: 'ดูทั้งหมดในฮับข่าว →',
-  emptyList: 'โหลดรายการไม่ได้',
+  emptyList: 'บางรายการกำลังตามมา — รีเฟรชแล้วจะครบ; ทีมงานกำลังผูกข้อมูลให้ครบถ้วน',
   weatherWidgetAria: 'สภาพอากาศกรุงเทพฯ',
   weatherLoading: 'กำลังโหลดสภาพอากาศ…',
   weatherUnavailable: 'โหลดสภาพอากาศไม่ได้',

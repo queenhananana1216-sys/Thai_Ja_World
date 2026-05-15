@@ -1,8 +1,8 @@
 import { TjBrandElephantMark } from '@/components/brand/TjBrandElephantMark';
+import { BRAND_PIPELINE_GATHERING_KO } from '@/lib/site-brand/constants';
 import styles from '../../portal/portal-2026.module.css';
 
-const DEFAULT_MESSAGE =
-  '현지 리포터가 소식을 정리 중입니다. 운영팀이 팩트체크 후 업로드 예정입니다.';
+const DEFAULT_MESSAGE = BRAND_PIPELINE_GATHERING_KO;
 
 type Props = {
   message?: string;

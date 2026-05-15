@@ -3,6 +3,7 @@
  */
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { BRAND_PIPELINE_GATHERING_KO } from '@/lib/site-brand/constants';
 
 export const runtime = 'nodejs';
 
@@ -51,7 +52,7 @@ export async function GET(req: Request) {
       }
       return NextResponse.json({
         status: 'processing' as const,
-        message: '현지 리포터가 소식을 정리 중입니다. 운영팀 팩트체크 후 곧 게시됩니다.',
+        message: BRAND_PIPELINE_GATHERING_KO,
       });
     }
   }

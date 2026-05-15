@@ -15,9 +15,13 @@ const SITE_ORIGIN = "https://www.thaijaworld.com";
 const ITEMS_PER_FEED = process.env.NEWS_CRON_ITEMS_PER_FEED || "12";
 const PROCESS_LIMIT = process.env.NEWS_CRON_PROCESS_LIMIT || "10";
 const USE_DEFERRED = process.env.NEWS_CRON_DEFERRED === "1";
-const CRON_NEWS_PATH = USE_DEFERRED
-  ? `/api/cron/news?itemsPerFeed=${ITEMS_PER_FEED}&limit=${PROCESS_LIMIT}`
-  : `/api/cron/news?sync=1&itemsPerFeed=${ITEMS_PER_FEED}&limit=${PROCESS_LIMIT}`;
+function buildCronPath(includePurge) {
+  const base = USE_DEFERRED
+    ? `/api/cron/news?itemsPerFeed=${ITEMS_PER_FEED}&limit=${PROCESS_LIMIT}`
+    : `/api/cron/news?sync=1&itemsPerFeed=${ITEMS_PER_FEED}&limit=${PROCESS_LIMIT}`;
+  if (!includePurge) return base;
+  return base.includes("?") ? `${base}&purge=1` : `${base}?purge=1`;
+}
 const POLL_PATH_BASE = "/api/cron/news?status=1";
 const SYNC_FETCH_MS = Number(process.env.NEWS_CRON_SYNC_TIMEOUT_MS || "360000");
 
@@ -46,6 +50,15 @@ if (parsed.error) {
 const PURGE_STUBS = process.argv.includes("--purge-stubs") || process.env.PURGE_STUBS === "1";
 const VERIFY_PUBLISHED = process.argv.includes("--verify") || process.env.NEWS_CRON_VERIFY === "1";
 
+const {
+  probeSupabase,
+  flushDnsCacheBestEffort,
+  createSupabaseClient,
+  OWNER_UNPAUSE,
+  undiciFetch,
+  KEEPALIVE,
+} = require("./lib/supabase-probe.cjs");
+
 const secret = (
   process.env.CRON_SECRET ||
   process.env.BOT_CRON_SECRET ||
@@ -71,9 +84,13 @@ async function fetchJson(url, options = {}) {
       ? setTimeout(() => controller.abort(), timeoutMs)
       : null;
   try {
-    const res = await fetch(url, {
+    const res = await undiciFetch(url, {
       method: "GET",
-      headers: { Authorization: `Bearer ${secret}` },
+      dispatcher: KEEPALIVE,
+      headers: {
+        Authorization: `Bearer ${secret}`,
+        Connection: "keep-alive",
+      },
       signal: controller.signal,
     });
     const text = await res.text();
@@ -94,10 +111,16 @@ async function purgeStubRowsFromDb() {
   const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
   if (!url || !key) {
     console.warn("[trigger-news-cron] --purge-stubs: SUPABASE_SERVICE_ROLE_KEY missing, skip");
-    return;
+    return { local: false, reason: "missing_env" };
   }
-  const { createClient } = require("@supabase/supabase-js");
-  const sb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  flushDnsCacheBestEffort();
+  const probe = await probeSupabase();
+  if (probe.status !== "ok") {
+    console.error(`[trigger-news-cron] Supabase probe: ${probe.status} — ${probe.message}`);
+    if (probe.ownerAction) console.error(`[trigger-news-cron] OWNER: ${probe.ownerAction}`);
+    throw new Error(probe.message);
+  }
+  const sb = createSupabaseClient();
   const newsOr =
     "title_kr.ilike.%placeholder%,title_kr.ilike.%TBD%,title_kr.ilike.%coming soon%," +
     "content_kr.ilike.%placeholder%,title_kr.ilike.%\uB0B4\uC6A9 \uC900\uBE44%,title_kr.ilike.%\uAC00\uACF5 \uC804%," +
@@ -114,6 +137,17 @@ async function purgeStubRowsFromDb() {
     if (error) throw new Error(`purge ${table}: ${error.message}`);
     console.log(`[trigger-news-cron] purge ${table}: deleted ${data?.length ?? 0}`);
   }
+  return { local: true };
+}
+
+async function purgeViaProductionApi() {
+  const path = buildCronPath(true) + "&purge_only=1";
+  const { res, json } = await fetchJson(`${SITE_ORIGIN}${path}`, { timeoutMs: 120_000 });
+  if (!res.ok) {
+    throw new Error(`server purge HTTP ${res.status}: ${JSON.stringify(json).slice(0, 300)}`);
+  }
+  console.log("[trigger-news-cron] server purge:", JSON.stringify(json?.purge ?? json));
+  return { server: true };
 }
 
 async function logTodayPublishedCount() {
@@ -186,30 +220,19 @@ async function diagnoseSupabaseConnection() {
     console.error("[diagnose-supabase] Fix .env.local: NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY");
     return 1;
   }
-  const healthUrl = `${url.replace(/\/+$/, "")}/rest/v1/`;
-  try {
-    const t0 = Date.now();
-    const res = await fetch(healthUrl, {
-      method: "GET",
-      headers: { apikey: anon || key, Authorization: `Bearer ${key}` },
-    });
-    console.log("[diagnose-supabase] fetch", healthUrl, "->", res.status, `${Date.now() - t0}ms`);
-  } catch (e) {
-    console.error("[diagnose-supabase] fetch FAILED:", formatFetchCause(e));
-    console.error(
-      "[diagnose-supabase] ENOTFOUND = DNS cannot resolve host. Try: nslookup <host> 8.8.8.8",
-    );
-    console.error(
-      "[diagnose-supabase] Also check Supabase Dashboard: paused projects return 503 and may break ingest.",
-    );
-    console.error(
-      "[diagnose-supabase] Vercel: npm run vercel:push-supabase-env (if .env.production has empty SUPABASE_*).",
-    );
+  flushDnsCacheBestEffort();
+  const probe = await probeSupabase();
+  console.log("[diagnose-supabase] probe:", probe.status, probe.message, probe.httpStatus ?? "");
+  if (probe.status === "paused") {
+    console.error("[diagnose-supabase] OWNER:", OWNER_UNPAUSE);
+    return 1;
+  }
+  if (probe.status !== "ok") {
+    console.error("[diagnose-supabase] OWNER:", probe.ownerAction || OWNER_UNPAUSE);
     return 1;
   }
   try {
-    const { createClient } = require("@supabase/supabase-js");
-    const sb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    const sb = createSupabaseClient();
     const { count, error } = await sb.from("bot_actions").select("id", { count: "exact", head: true });
     if (error) throw error;
     console.log("[diagnose-supabase] bot_actions reachable, row count (approx):", count ?? "?");
@@ -221,20 +244,31 @@ async function diagnoseSupabaseConnection() {
 }
 
 async function main() {
+  flushDnsCacheBestEffort();
+  let serverPurge = PURGE_STUBS;
   if (PURGE_STUBS) {
     console.log("[trigger-news-cron] --purge-stubs: deleting stub rows…");
     try {
       await purgeStubRowsFromDb();
+      serverPurge = false;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.warn("[trigger-news-cron] purge skipped (network/DB):", msg);
-      console.warn("[trigger-news-cron] Run: npm run diagnose:supabase — or purge via Supabase SQL Editor.");
+      console.warn("[trigger-news-cron] local purge failed:", msg);
+      console.warn("[trigger-news-cron] fallback: Vercel /api/cron/news?purge=1");
+      try {
+        await purgeViaProductionApi();
+        serverPurge = false;
+      } catch (e2) {
+        console.warn("[trigger-news-cron] server purge failed:", e2 instanceof Error ? e2.message : e2);
+        console.warn("[trigger-news-cron] OWNER:", OWNER_UNPAUSE);
+      }
     }
   }
+  const cronPath = buildCronPath(serverPurge);
   console.log(
-    `[trigger-news-cron] mode=${USE_DEFERRED ? "deferred(202+poll)" : "sync(200)"} path=${CRON_NEWS_PATH}`,
+    `[trigger-news-cron] mode=${USE_DEFERRED ? "deferred(202+poll)" : "sync(200)"} path=${cronPath}`,
   );
-  const cronUrl = `${SITE_ORIGIN}${CRON_NEWS_PATH}`;
+  const cronUrl = `${SITE_ORIGIN}${cronPath}`;
   const first = await fetchJson(cronUrl, {
     timeoutMs: USE_DEFERRED ? 120_000 : SYNC_FETCH_MS,
   });
@@ -250,6 +284,15 @@ async function main() {
         "[trigger-news-cron] 401 Unauthorized — Vercel Production CRON_SECRET 과 .env.docker CRON_SECRET 이 동일한지 확인하세요.",
       );
     }
+    if (first.res.status === 503 && first.json?.error === "SUPABASE_UNREACHABLE") {
+      console.error("[trigger-news-cron] OWNER:", first.json?.hint || OWNER_UNPAUSE);
+    }
+    process.exit(1);
+  }
+
+  const procSucceeded = first.json?.process?.output?.succeeded ?? 0;
+  if (!USE_DEFERRED && first.res.ok && procSucceeded === 0 && first.json?.process?.success === false) {
+    console.error("[trigger-news-cron] process succeeded=0 — check Supabase Unpause and LLM keys on Vercel.");
     process.exit(1);
   }
 

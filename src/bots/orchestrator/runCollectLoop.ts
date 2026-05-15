@@ -49,25 +49,7 @@ export async function runCollectLoop(
     }
   }
 
-  const rowId = await logStart({
-    run_id,
-    bot_name: BOT_NAME,
-    action_type: ACTION_TYPE,
-    objective: OBJECTIVE,
-    target_entity: 'external_feed',
-    priority: PRIORITY,
-    input_payload: inputPayload,
-  });
-
-  if (!rowId) {
-    return {
-      run_id,
-      skipped: false,
-      success: false,
-      error: 'DB insert failed at logStart — 환경 변수 또는 네트워크를 확인하세요.',
-    };
-  }
-
+  /** Data-first: RSS 수집·raw_news 저장을 bot_actions 로깅보다 먼저 실행 */
   const result = await collectArticles(inputPayload);
 
   if (result.success) {
@@ -78,18 +60,34 @@ export async function runCollectLoop(
       persist_raw_news: persist,
     };
 
-    await logSuccess(rowId, {
-      output_payload: outputPayload,
-      metrics_after: {
-        article_count: out.articles.length,
-        feeds_ok: out.feeds_succeeded.length,
-        feeds_err: out.feeds_failed.length,
-        raw_news_upserted: persist.upserted,
-        news_sources_created: persist.sources_created,
-        raw_news_persist_attempted: persist.attempted,
-        ...(persist.error ? { raw_news_persist_error: persist.error } : {}),
-      },
+    const rowId = await logStart({
+      run_id,
+      bot_name: BOT_NAME,
+      action_type: ACTION_TYPE,
+      objective: OBJECTIVE,
+      target_entity: 'external_feed',
+      priority: PRIORITY,
+      input_payload: inputPayload,
     });
+
+    if (rowId) {
+      await logSuccess(rowId, {
+        output_payload: outputPayload,
+        metrics_after: {
+          article_count: out.articles.length,
+          feeds_ok: out.feeds_succeeded.length,
+          feeds_err: out.feeds_failed.length,
+          raw_news_upserted: persist.upserted,
+          news_sources_created: persist.sources_created,
+          raw_news_persist_attempted: persist.attempted,
+          ...(persist.error ? { raw_news_persist_error: persist.error } : {}),
+        },
+      });
+    } else {
+      console.warn(
+        `[RunCollectLoop] data-first: 수집·저장 완료, bot_actions 로그 생략 (Supabase Unpause·env 확인) run_id=${run_id}`,
+      );
+    }
 
     if (persist.error) {
       console.warn(`[RunCollectLoop] RSS 수집 OK, DB 저장 경고: ${persist.error}`);
@@ -103,11 +101,22 @@ export async function runCollectLoop(
   const out = result.output as CollectArticlesOutput;
   const outputPayload = out as unknown as Record<string, unknown>;
 
-  await logFail(rowId, {
-    error_code: 'COLLECT_ARTICLES_FAILED',
-    error_message: result.error?.message ?? 'collectArticles failed',
-    current_retry_count: 0,
+  const rowId = await logStart({
+    run_id,
+    bot_name: BOT_NAME,
+    action_type: ACTION_TYPE,
+    objective: OBJECTIVE,
+    target_entity: 'external_feed',
+    priority: PRIORITY,
+    input_payload: inputPayload,
   });
+  if (rowId) {
+    await logFail(rowId, {
+      error_code: 'COLLECT_ARTICLES_FAILED',
+      error_message: result.error?.message ?? 'collectArticles failed',
+      current_retry_count: 0,
+    });
+  }
 
   console.error(`[RunCollectLoop] ✗ FAILED run_id=${run_id}:`, result.error?.message);
   return {

@@ -16,7 +16,7 @@
     "news:cron:sync": "node scripts/trigger-news-cron.cjs --purge-stubs --verify",
     "diagnose:supabase": "node scripts/trigger-news-cron.cjs --diagnose-supabase",
     "vercel:push-cron-secret": "node scripts/vercel-env-cron-secret.mjs",
-    "vercel:push-supabase-env": "node scripts/vercel-env-supabase.mjs",
+    "vercel:push-supabase-env": "node scripts/vercel-env-supabase.cjs",
     "knowledge:ingest": "tsx scripts/run-knowledge-ingest-once.ts",
     "home-copy:refresh": "tsx scripts/run-home-copy-refresh.ts",
     "local-shop-template:pipeline": "tsx scripts/run-local-shop-template-pipeline.ts",

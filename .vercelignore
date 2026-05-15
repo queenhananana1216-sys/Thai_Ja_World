@@ -1,1 +1,2 @@
-cookbook/
+.env.production
+.env.production.*

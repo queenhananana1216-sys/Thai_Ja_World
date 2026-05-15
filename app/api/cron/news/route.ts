@@ -23,6 +23,11 @@ import {
   pausedResponse,
   registerFailureAndSelfHeal,
 } from '@/lib/cron/omniLogger';
+import { purgeStubRows, type PurgeStubRowsResult } from '@/lib/news/purgeStubRows';
+import {
+  formatProbeForConsole,
+  probeSupabaseConnectivity,
+} from '@/lib/supabase/connectivityProbe';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -107,6 +112,37 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
   }
 
+  const doPurge = searchParams.get('purge') === '1' || searchParams.get('purge_stubs') === '1';
+  let purgeResult: PurgeStubRowsResult | undefined;
+  if (doPurge) {
+    const purgeProbe = await probeSupabaseConnectivity();
+    if (
+      purgeProbe.status === 'paused' ||
+      purgeProbe.status === 'dns_error' ||
+      purgeProbe.status === 'network_error'
+    ) {
+      console.error(formatProbeForConsole(purgeProbe));
+      return NextResponse.json(
+        {
+          status: 'error',
+          error: 'SUPABASE_UNREACHABLE',
+          probe: purgeProbe,
+          hint: purgeProbe.ownerAction,
+        },
+        { status: 503 },
+      );
+    }
+    try {
+      purgeResult = await purgeStubRows();
+      if (searchParams.get('purge_only') === '1') {
+        return NextResponse.json({ status: 'ok', purge: purgeResult });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return NextResponse.json({ status: 'error', error: 'PURGE_FAILED', message }, { status: 500 });
+    }
+  }
+
   const pipelineId = 'cron/news';
   const paused = await findActivePause(pipelineId);
   if (paused) {
@@ -187,6 +223,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     );
   }
 
+  const probe = await probeSupabaseConnectivity();
+  if (probe.status !== 'ok') {
+    console.error(formatProbeForConsole(probe));
+    return NextResponse.json(
+      {
+        status: 'error',
+        error: 'SUPABASE_UNREACHABLE',
+        probe,
+        hint: probe.ownerAction,
+      },
+      { status: 503 },
+    );
+  }
+
   try {
     const { collect: collectRun, process: summarizeRun } = await runNewsIngestPipeline({
       collect: collectOpts,
@@ -195,6 +245,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     await logCronEvent({ pipelineId, event: 'news_fetch', status: 'success', meta: { route: '/api/cron/news' } });
     return NextResponse.json({
       status: 'ok',
+      ...(purgeResult ? { purge: purgeResult } : {}),
       collect: collectRun,
       process: summarizeRun,
     });

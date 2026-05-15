@@ -197,7 +197,13 @@ async function diagnoseSupabaseConnection() {
   } catch (e) {
     console.error("[diagnose-supabase] fetch FAILED:", formatFetchCause(e));
     console.error(
-      "[diagnose-supabase] Typical fixes: disable VPN, allow *.supabase.co in firewall, set HTTPS_PROXY if corporate proxy, try another network.",
+      "[diagnose-supabase] ENOTFOUND = DNS cannot resolve host. Try: nslookup <host> 8.8.8.8",
+    );
+    console.error(
+      "[diagnose-supabase] Also check Supabase Dashboard: paused projects return 503 and may break ingest.",
+    );
+    console.error(
+      "[diagnose-supabase] Vercel: npm run vercel:push-supabase-env (if .env.production has empty SUPABASE_*).",
     );
     return 1;
   }
